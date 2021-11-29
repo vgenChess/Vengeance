@@ -1,0 +1,111 @@
+
+https://lczero.org/dev/wiki/testing-guide/
+
+ucinewgame
+setoption name Hash value 120
+setoption name Threads value 4
+
+
+8/5pk1/3p3p/3Pq1pP/pR4P1/P1P5/1P4Q1/7K b - - // large score gaps between consecutive depths
+4rr1k/1pp5/8/p7/P2P2N1/3n4/1P1B1N2/R4K2 b - - 4 33 // very large scores
+r4r2/1pp3k1/3p2np/p3p2q/P2PP1Q1/2P1bN1B/1P1N2K1/R1B5 b - - 6 23 // returns large score
+1r6/Q1p2pkp/3b1qp1/3P4/3p4/3P1BP1/Pr2RPKP/R7 b - - 3 22 // alternating pv and scores (about 50 centipawns diff)
+1r6/2p3k1/3b2p1/3P1p2/3p2q1/P2P2Pp/4RP1P/2Q2K1B b - - 0 33
+r7/8/4k3/8/2K2p2/5p1p/8/8 b - - 9 74 // Makes illegal move
+5rk1/4P3/6p1/7p/ppQ1P3/q2r3P/PR4P1/K7 b - - 1 41 // horizon effect (is losing but returns normal results)
+7k/8/3pr1Pp/p1n2K1N/1pPb3P/1P2p3/6B1/4R3 b - - 1 59 // horizon effect (especially with NNUE)
+6N1/7k/3p1N1p/p1P1r3/1p1b2KP/1P2p3/6n1/8 b - - 1 64 // horizon effect
+1r4R1/2b2p2/2Q2k1q/p7/Br1P4/1N6/1P6/4R1K1 b - - 13 41 // takes long to detect Mate  
+
+2rr2k1/2b2p1p/p5p1/4p1q1/1QNpP3/1P1P3P/1PP1KPP1/R3R3 b - - 0 27 //  Is losing, but returns normal results
+r2qkb1r/pp3ppp/2nppn2/2p5/2P1P3/1P3N2/P2PQPPP/RNB2RK1 w kq - 1 9 // current move report is lagging
+r2qkb1r/pp3ppp/2nppn2/2p5/2P1P3/1P3N2/P2PQPPP/RNB2RK1 w kq - 1 9 // Took very long to move
+
+3r2k1/1b3p2/2p1q1p1/1p1nP3/p2P4/P4BPp/1PQ1N2P/2R3K1 b - - 0 29 // Sometime plays the bad move - g6g5
+
+7R/5p2/4p1k1/6p1/2P5/P6p/1P4b1/2K5 b - - 1 35
+ // Is winning but doesnt report winning score. (Could be eval related. Is fine with NNUE eval) 
+ // Is related with Singular search for Classical Eval, returns low scores. Not with NNUE eval.
+2R5/5p2/4p1k1/6p1/2P4p/P7/1P4b1/2K5 b - - 0 34 (Same case as above)
+
+position startpos moves e2e4 c7c5 c2c3 d7d5 e4d5 d8d5 d2d4 b8c6 g1f3 e7e6 c1e3 c5d4 c3d4 g8f6 b1c3 d5d8 f1b5 f8d6 e1g1 e8g8 e3g5 c8d7 d4d5 c6e5 f1e1 e5f3 d1f3 d7b5 c3b5 e6d5 a1d1 d6b4 e1e5 a7a6 b5d4 d8d6 g5f6 d6f6 f3f6 g7f6 e5d5 a8d8 d4f5 d8d5 d1d5 f8e8 g2g4 b7b5 g1g2 e8c8 d5d7 b4f8 d7a7 c8c4 h2h3 c4c2 a7a8 c2b2 f5h6 g8g7 h6f5 g7g8 f5h6 g8g7 h6f5 // Repetition detection is not working
+
+// Crashes (Segmentation fault)
+position startpos moves e2e4 c7c5 g1f3 b8c6 d2d4 c5d4 f3d4 g8f6 b1c3 e7e5 d4b5 d7d6 c1g5 a7a6 b5a3 b7b5 g5f6 d8f6 c3d5 f6d8 c2c3 c6e7 f1b5 a6b5 d5c7 d8c7 a3b5 c7c6 b5d6 e8d7 d6f7 d7e8 f7d6 e8d8 d6f7 d8e8 f7d6 e8d8 d6f7 d8c7 d1d8 c7b7 d8d3 c8e6 f7h8 e7g8 f2f4 e5f4 h1f1 e6c4 d3d4 a8d8 d4d8 c6e4 e1d1 e4e2 d1c1 e2f1 d8d1
+
+5k2/5ppp/1pN5/p2P3P/3K1P2/2rB3P/8/8 b - - 2 37 // Rook blindly captures piece which is defended by the opponent king
+
+8/1K3b2/N7/1P5p/P7/5k2/8/8 b - - 0 72 // Doesn't see winning position via promotion
+
+5r2/2b1Qr2/2P3pk/p6p/P2B1p2/5P1P/6PK/8 w - - 8 41 // Doesnt detect repetition
+6k1/5p2/p4p2/P2P4/2P1bP1p/3N4/3K4/8 b - - 0 42 // misses winning position via capture and promotion
+3r2k1/p5pp/4p3/1bq2P2/5P2/6P1/2r2RBP/R3Q1K1 w - - 1 28 // Judges losing postion as equal
+
+8/1b6/5k2/p2p1Pp1/1p1K2P1/1P5N/P7/8 b - - 0 48 // Judges losing position as equal
+1rr4k/1p5p/1R2Nqp1/p2R1p1b/P1P1pP2/1Q6/4PP1P/5K2 b - - 2 42 // Blind to discovered attacks, white knight moves to fork rook and black queen gets attacked by white rook
+
+6k1/r5b1/2q1p1Q1/8/1pBp4/1P4PK/2P2R1P/r7 b - - 4 45  // Blind to mates
+
+
+
+Speculations
+    - Agressive Reductions will work with good move ordering
+    - Average move ordering should use less agressive reductions to avoid skipping good moves
+
+// TODO
+    - Use std::fill command to clear move ordering tables
+    - Move ordering (Counter move heuristics, Follow up move, Counter move etc)
+    - Stockfish's move ordering techniques (movepick.h)
+
+
+    - Evaluation Terms to add (Outpost, Knight outpost)
+    
+
+    - Rewrite logic for copy/paste code
+    - Investigate saving info into tt table for quiescense search
+    - Add tempo for eval and tuning
+    - Check pawn evaluation hashing implementation
+    - Better endgame detection for null move etc
+
+
+Needs investigation
+    - more Depth / cutoffs
+    - reduce search explosion for higher depths
+    - Search takes much long time for the (TT / PV) move compared to non-PV moves for higher depths
+    - Late game weakness (Ignoring pawn moves, promotion blindness, pieces getting trapped, not detecting mates)
+    - PV info is short
+    - Delay reporting to the Uci during initial seconds 
+    - material imbalance evaluation
+
+
+// DONE (under observation)
+    - Store pv in quiescense 
+    - Increase total time usage limit per move  
+    - Set a minimum time for a search before exiting via stable move time clause 
+    - Hash key implementation check
+    - Hash table implemention check
+            Enhancement to Hash table
+            - If you use the "replace if deeper or same depth" scheme, your table might eventually fill up with outdated deep nodes.  The solution to this is either to clear the table each time you move, or add a "sequence" field to your element, so the replacement scheme becomes, "replace if same depth, deeper, or the element pertains to an ancient search"
+
+    - Check repetition detection
+    - Lmr logic check. (Not reducing PV nodes)[Reduction stress on PV nodes(LMR + Reverse IID)]
+    - Add 50 moves rule
+    
+
+
+
+Test
+
+Capture reductions (with / without) = -70 elo
+FP Val 200/250 = 0 elo
+
+
+Vengeance = Weiss code
+VengeanceTest = SF's code
+
+
+
+
+
+
+
