@@ -1,0 +1,7 @@
+
+// Winning positions to test search scores
+
+6k1/5p1p/p4p2/P7/2PPbP2/3p3q/3Q1K1P/4N3 b - - 0 38
+6k1/5p2/p4p2/P2P3p/2P1bP2/3p3q/3Q1K1P/4N3 b - - 0 39
+6k1/5p2/p4p2/P2P3p/2P1bP2/3pK3/3Q3q/4N3 b - - 1 40
+6k1/5p2/p4p2/P2P3p/2P1bP2/3p4/3K4/4N3 b - - 0 41
