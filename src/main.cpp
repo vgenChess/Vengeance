@@ -96,7 +96,7 @@ static void runBenchmark(int argc, char **argv) {
     uint64_t nodes[256], totalNodes;
     u32 bestMoves[256];
     
-    int depth     = 15;
+    int depth     = 10;
     MAX_DEPTH     = depth;
 
 
