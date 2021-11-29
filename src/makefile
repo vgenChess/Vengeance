@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-std=c++17 -pthread -Wall -Wextra -fopenmp -O2
 DEBUG =-g -D DEBUG
-SOURCES=$(wildcard src/*.cpp)
+SOURCES=$(wildcard *.cpp)
 OBJECTS=$(patsubst %.cpp, %.o, $(SOURCES))
 EXECUTABLE=Vengeance
 TEST_EXECUTABLE=VengeanceTest
@@ -18,7 +18,7 @@ $(TEST_EXECUTABLE):	$(OBJECTS)
 $(EXECUTABLE):	$(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $(OBJECTS)
 
-$(OBJECTS):	src/%.o	:	src/%.cpp
+$(OBJECTS):	%.o	:	%.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
 build:
