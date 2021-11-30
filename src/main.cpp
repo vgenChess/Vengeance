@@ -31,57 +31,52 @@ static void runBenchmark(int argc, char **argv);
 
 int main(int argc, char **argv) {
     
-    // init_piece_bb();
+    // init_piece_bb();     //TODO cleanup
     init_index_bb();
     init_king_attacks();
     init_knight_attacks();
     init_magic_moves();
     initCastleMaskAndFlags();
     initZobristKeys();
-    // should be called after initialising main zobrist keys
-    initPawnZobristKeys();
+    initPawnZobristKeys();  // should be called after initialising main zobrist keys
 	init_inbetween_bb(); 
     initPSQT();
-    initHashTable(16); // default hash size = 16 megabytes
+    initHashTable(16);      // default hash size = 16 megabytes
     
     // initNNUE("nn.bin");
 
-    // int nProcessors = omp_get_max_threads();
-    // option_thread_count = nProcessors;
-    // omp_set_num_threads(nProcessors);
+    int nProcessors = omp_get_max_threads();
+    option_thread_count = nProcessors;
+    omp_set_num_threads(nProcessors);
 
-    option_thread_count = 3;
 
-    Threads.set(1);
-  
     // initThreads(); 
-
   
     timeSet = false;
     stopped = false;
     
-    bool bench = false;
-
-    if (argc > 1 && strcmp(argv[1], "bench") == 0) {
-        
-        bench = true;
-    }
+    
+    bool bench = argc > 1 && strcmp(argv[1], "bench") == 0;
 
     if (bench) {
+
+        Threads.set(1);
     
         runBenchmark(argc, argv);
     } else {
+
+        Threads.set(option_thread_count);
     
         UciLoop();
     }
     
-
     if (sizeof(hashTable) > 0) {
 
         delete[] hashTable; 
     }
 
-	return 0 ;
+
+	return 0;
 }
 
     

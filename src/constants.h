@@ -21,11 +21,11 @@ const uint16_t X_NODES = 2500;
 
 const uint16_t BONUS_COUNTER_MOVE = 2500;
 
-const uint16_t F_PRUNE_THRESHOLD = 		225;
+const uint16_t F_PRUNE_THRESHOLD = 		265;
 const uint16_t EXT_F_PRUNE_THRESHOLD = 	515;
 const uint16_t LTD_RZR_THRESHOLD = 		915;
 
-const uint16_t R_F_PRUNE_THRESHOLD = 		225;
+const uint16_t R_F_PRUNE_THRESHOLD = 		265;
 const uint16_t R_EXT_F_PRUNE_THRESHOLD = 	515;
 const uint16_t R_LTD_RZR_THRESHOLD = 		915;
 
