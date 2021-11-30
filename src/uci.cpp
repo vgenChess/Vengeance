@@ -201,6 +201,8 @@ void setOption(std::string &line) {
 
         option_thread_count = std::stoi(line.substr(29, std::string::npos));
 
+        Threads.set(option_thread_count);
+
         std::cout<<"info string set Threads to " << option_thread_count << "\n";
     }
 }

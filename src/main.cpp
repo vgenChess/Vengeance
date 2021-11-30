@@ -46,9 +46,11 @@ int main(int argc, char **argv) {
     // initNNUE("nn.bin");
 
     int nProcessors = omp_get_max_threads();
-    option_thread_count = nProcessors;
     omp_set_num_threads(nProcessors);
 
+
+    option_thread_count = 1;
+    
 
     // initThreads(); 
   
