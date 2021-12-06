@@ -91,10 +91,10 @@ static void runBenchmark(int argc, char **argv) {
 
     int scores[256];
     double times[256];
-    uint64_t nodes[256], totalNodes;
+    uint64_t nodes[256], totalNodes = 0;
     u32 bestMoves[256];
     
-    int depth     = 10;
+    int depth     = 16;
     MAX_DEPTH     = depth;
 
 
@@ -171,11 +171,18 @@ static void runBenchmark(int argc, char **argv) {
 
     printf("===============================================================================\n");
 
+    double totalTime = 0;
     // Report the overall statistics
-    double time_elapsed = std::chrono::duration_cast<std::chrono::seconds>(
-            std::chrono::steady_clock::now() - startTime).count();
-    for (int i = 0; strcmp(Benchmarks[i], ""); i++) totalNodes += nodes[i];
-    printf("OVERALL: %47d nodes %12d nps\n", (int)totalNodes, (int)(1000.0f * totalNodes / (time_elapsed + 1)));
+    for (int i = 0; strcmp(Benchmarks[i], ""); i++) { 
+	    
+	    totalNodes += nodes[i];
+	    totalTime += times[i];
+    }
+
+    //std::cout<<"nodes " << totalNodes << " nps " << totalNodes / time_elapsed << std::endl;
+
+
+    printf("OVERALL: %47d nodes %12d nps\n", (int)totalNodes, (int)(1000.0f * totalNodes / (totalTime + 1)));
 }
 
  
