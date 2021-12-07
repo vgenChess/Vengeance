@@ -736,10 +736,10 @@ void startTuner() {
 				if (type[i] == NORMAL && coeffs[WHITE][i] - coeffs[BLACK][i] != 0.0) {
 
 					CoefficientsInfo coefficientsInfo = {
-						i, 
-						coeffs[WHITE][i], 
-						coeffs[BLACK][i],
-						type[i]
+						static_cast<uint16_t>(i),
+						static_cast<int8_t>(coeffs[WHITE][i]), 
+						static_cast<int8_t>(coeffs[BLACK][i]),
+						static_cast<int8_t>(type[i])
 					};
 
 					infoList.push_back(coefficientsInfo);
@@ -748,10 +748,10 @@ void startTuner() {
 				if (type[i] != NORMAL && (coeffs[WHITE][i] != 0.0 || coeffs[BLACK][i] != 0.0)) {
 
 					CoefficientsInfo coefficientsInfo = {
-						i, 
-						coeffs[WHITE][i], 
-						coeffs[BLACK][i],
-						type[i]
+						static_cast<uint16_t>(i),
+						static_cast<int8_t>(coeffs[WHITE][i]), 
+						static_cast<int8_t>(coeffs[BLACK][i]),
+						static_cast<int8_t>(type[i])
 					};
 
 					infoList.push_back(coefficientsInfo);	

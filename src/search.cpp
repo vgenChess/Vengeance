@@ -75,98 +75,11 @@ int ABORT_SIGNAL;
 std::vector<Thread> sThreads;
 std::mutex mtx;
 
-
-// void initThreads() {
-
-// 	for (int i = 0; i < option_thread_count; i++) {
-		
-// 		Thread th;
-// 		th.index = i;
-
-// 		sThreads.push_back(th);
-// 	}
-// }
-
 int MAX_DEPTH = 100;
 
 void startSearch(u8 sideToMove) {
 
 	age++; // For storing hash age information
-
-{
-	// std::vector<Thread> tList;
-	// for (std::vector<Thread>::iterator i = sThreads.begin(); i != sThreads.end(); ++i) {		
-
-	// 	Thread th = *i;
-
-	// 	th.pvLine.clear();
-	// 	th.moveStack.clear();	
-	// 	th.undoMoveStack.clear();
-	// 	th.movesHistory.clear();
-
-
-	// 	th.pvLine = std::vector<PV> (MAX_PLY);
-	// 	th.moveStack = std::vector<MOVE_STACK> (MAX_PLY);
-	// 	th.undoMoveStack = std::vector<UNDO_MOVE_STACK> (MAX_PLY);
-	// 	th.movesHistory = std::vector<MOVES_HISTORY> (MAX_PLY);
-
-
-	// 	//TODO use one line code to copy all the init struct to other struct, like memcopy etc
-	// 	th.moveStack[0].castleFlags = initThread.moveStack[0].castleFlags;
-	// 	th.moveStack[0].epFlag = initThread.moveStack[0].epFlag;
-	// 	th.moveStack[0].epSquare = initThread.moveStack[0].epSquare;
-
-	// 	for (int i = 0; i < MAX_PLY; i++) {
-
-	// 		th.movesHistory[i].hashKey = initThread.movesHistory[i].hashKey;
-	// 		th.movesHistory[i].fiftyMovesCounter = initThread.movesHistory[i].fiftyMovesCounter;
-	// 	}
-
-	// 	th.movesHistoryCounter = initThread.movesHistoryCounter;
-
-
-	// 	for (int piece = 0; piece < MAX_PIECES; piece++) {
-
-	// 		th.whitePieceBB[piece] = initThread.whitePieceBB[piece];
-	// 		th.blackPieceBB[piece] = initThread.blackPieceBB[piece];
-	// 	}
-
-	// 	th.occupied = initThread.occupied;
-	// 	th.empty = initThread.empty;
-
-
-	// 	th.hashKey = initThread.hashKey;
-	// 	th.pawnsHashKey = initThread.pawnsHashKey;
-
-
-	// 	tList.push_back(th);
-	// }
-
-	// sThreads = tList;
-
-	// std::vector<std::thread> threads;
-
-	// ABORT_SIGNAL = 0;
-	
-	// for (std::vector<Thread>::iterator i = tList.begin() + 1; i != tList.end(); ++i)
- //   		threads.push_back(std::thread(search, sideToMove, &(*i)));
-	
-	// search(sideToMove, &tList[0]);
-	
-	// ABORT_SIGNAL = 1;
-	
-	// // int ct = 1;
-	// for (auto &th : threads) {
-	// 	// ct++;
-	// 	th.join();	
-	// }
-	// // std::cout << "\n" << ct << "\n";
-
-}
-
-
-
-
 
 	Threads.start_searching(); // start non-main threads
 	searchMain(sideToMove, Threads.main());          // main thread start searching
@@ -187,24 +100,16 @@ void startSearch(u8 sideToMove) {
 	// Wait until all threads have finished
 	Threads.wait_for_search_finished();
 
+   SearchThread *bestThread = Threads.get_best_thread();
 
-
-
-
-
-
-
-
-   	SearchThread *bestThread = Threads.get_best_thread();
-
-   	if (bestThread != Threads.main()) {
+	if (bestThread != Threads.main()) {
 
 		display(sideToMove, 
 			bestThread->depth,
 			bestThread->selDepth, 
 			bestThread->pvLine[bestThread->depth].score, 
 			bestThread->pvLine[bestThread->depth].line);
-   	}
+   }
 
 
 	const u32 bestMove = bestThread->pvLine[bestThread->depth].line[0];
@@ -328,33 +233,26 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th, const int depth) {
 	searchInfo.isNullMoveAllowed = false;
 
 
-	while (true) {
-
+	while (true)	{
 
 		pline.clear();
 		th->selDepth = NO_DEPTH;
 		
 		score = alphabetaSearch(alpha, beta, th, &pline, &searchInfo, MATE);
 
-		if (Threads.stop) {
-
+		if (Threads.stop) 
 			return; 
-		}	
-		
-
-		if (score <= alpha)
-		{
+	
+		if (score <= alpha)	{
 
 			beta = (alpha + beta) / 2;
 			alpha = std::max(score - window, -INF);
 		}
-		else if (score >= beta)
-		{
+		else if (score >= beta)	{
 
 			beta = std::min(score + window, INF);
-		}
-		else
-		{
+		}	
+		else	{
 
 			th->depth = depth;
 
@@ -368,40 +266,15 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th, const int depth) {
 		}
 
 		window += window / 4 + 5; 
-
-
-/*		if (score > alpha && score < beta) {
-
-			th->depth = depth;
-
-			th->pvLine[depth].score = score;
-			th->pvLine[depth].line.clear();
-			std::copy(pline.begin(), pline.end(), back_inserter(th->pvLine[depth].line));
-
-			th->pvMove = pline.size() > 0 ? pline[0] : NO_MOVE;
-
-			break;	
-		} else {
-
-			alpha = -INF;
-			beta = INF;
-		}*/
 	}
-
 
 	assert (score > alpha && score < beta);
 
 
-
-	if (th == Threads.main()) {
-
-	
-		// std::cout<<th->index() << " ";
-
+	if (th == Threads.main())	{
 
 		display(sideToMove, th->depth, th->selDepth, th->pvLine[depth].score, th->pvLine[depth].line);
 	
-
 		if (!th->canReportCurrMove) {
 
 			int interval = std::chrono::duration_cast<std::chrono::seconds>(
@@ -579,7 +452,8 @@ void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> 
 }
 
 
-void updateCaptureHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> &captureMovesPlayed, Thread *th) {
+void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,
+	std::vector<u32>&captureMovesPlayed, Thread *th) {
 
 
 	int bonus = std::min(400, depth * depth), delta = 0;

@@ -6,11 +6,12 @@
 //
 
 
-#include <stdlib.h>
-#include <bits/stdc++.h> 
+#include <stdlib.h> 
 #include <string>
+#include <string.h>
 #include <iostream>
 #include <vector>
+#include <assert.h>
 
 #include "fen.h"
 #include "utility.h"
