@@ -44,20 +44,17 @@ std::chrono::steady_clock::time_point stopTime;
 
 int timePerMove;
 
-uint16_t seeVal[8] = { 
+int seeVal[8] = { 
+    
     0, 
-    VALUE_PAWN, VALUE_KNIGHT, VALUE_BISHOP, 
-    VALUE_ROOK,	VALUE_QUEEN, VALUE_KING, 
+    VALUE_PAWN, 
+    VALUE_KNIGHT, 
+    VALUE_BISHOP, 
+    VALUE_ROOK,	
+    VALUE_QUEEN, 
+    VALUE_KING, 
     0
 };
-
-
-#ifndef piece_name
-
-	char pieceName[2][8] = { { ' ', (char) 0, 'N', 'B', 'R', 'Q', 'K', '\0' }, {
-		' ', (char) 0, 'n', 'b', 'r', 'q', 'k', '\0' } };
-#endif
-
 
 std::vector<Stage> STAGES = {
 
@@ -109,7 +106,7 @@ void startSearch(u8 sideToMove) {
 			bestThread->selDepth, 
 			bestThread->pvLine[bestThread->depth].score, 
 			bestThread->pvLine[bestThread->depth].line);
-   }
+    }
 
 
 	const u32 bestMove = bestThread->pvLine[bestThread->depth].line[0];
@@ -120,28 +117,27 @@ void startSearch(u8 sideToMove) {
 	strcat(str, algebricPos(from_sq(bestMove)));
 	strcat(str, algebricPos(to_sq(bestMove)));
 
-	if (move_type(bestMove) == MOVE_PROMOTION) {
+    if (move_type(bestMove) == MOVE_PROMOTION) {
 
-		switch (promType(bestMove)) {
+    	u8 pt = promType(bestMove);
 
-			case PROMOTE_TO_ROOK:
-				strcat(str, "r");
-				// sideToMove ? strcat(str, "r") : strcat(str, "R");
-				break;
-			case PROMOTE_TO_BISHOP:
-				strcat(str, "b");
-				// sideToMove ? strcat(str, "b") : strcat(str, "B");
-				break;
-			case PROMOTE_TO_KNIGHT:
-				strcat(str, "n");
-				// sideToMove ? strcat(str, "n") : strcat(str, "N");
-				break;
-			default:
-				strcat(str, "q");
-				// sideToMove ? strcat(str, "q") : strcat(str, "Q");
-				break;
-		}
-	}
+        if  (pt == PROMOTE_TO_ROOK) {
+                
+            strcat(str, "r");
+        }
+        else if (pt == PROMOTE_TO_BISHOP) {
+                
+            strcat(str, "b");
+        }   
+        else if (pt == PROMOTE_TO_KNIGHT) {
+                
+            strcat(str, "n");
+        } 
+        else {
+                
+            strcat(str, "q");
+        }
+    }
 
 	std::cout << "bestmove " << str << std::endl;
 
@@ -178,10 +174,16 @@ void searchMain(int sideToMove, SearchThread *th) {
 
 			for (SearchThread *thread : Threads) {
 
-				if (thread->index() == Threads.main()->index()) continue;
+				if (thread->index() == Threads.main()->index()) { 
+				 
+				    continue;
+				}
 
-				if ((th->index() != thread->index()) && (thread->depth == depth))
+				if (    th->index() != thread->index()
+	                &&  thread->depth == depth) {
+				
 					count++;	
+	            }
 			}
 
 			if (count >= (Threads.size() / 2)) {
@@ -267,6 +269,7 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th, const int depth) {
 
 		window += window / 4 + 5; 
 	}
+	
 
 	assert (score > alpha && score < beta);
 
@@ -347,28 +350,27 @@ void display(u8 sideToMove, int depth, int selDepth, int score, std::vector<u32>
 		strcat(str, algebricPos(from_sq(move)));
 		strcat(str, algebricPos(to_sq(move)));
 
-		if (move_type(move) == MOVE_PROMOTION) {
+        if (move_type(move) == MOVE_PROMOTION) {
 
-			switch (promType(move)) {
+    		u8 pt = promType(move);
 
-				case PROMOTE_TO_ROOK:
-					strcat(str, "r");
-					// sideToMove ? strcat(str, "r") : strcat(str, "R");
-					break;
-				case PROMOTE_TO_BISHOP:
-					strcat(str, "b");
-					// sideToMove ? strcat(str, "b") : strcat(str, "B");
-					break;
-				case PROMOTE_TO_KNIGHT:
-					strcat(str, "n");
-					// sideToMove ? strcat(str, "n") : strcat(str, "N");
-					break;
-				default:
-					strcat(str, "q");
-					// sideToMove ? strcat(str, "q") : strcat(str, "Q");
-					break;
-			}
-		}
+            if  (pt == PROMOTE_TO_ROOK) {
+                
+                strcat(str, "r");
+            }
+            else if (pt == PROMOTE_TO_BISHOP) {
+                
+                strcat(str, "b");
+            }   
+            else if (pt == PROMOTE_TO_KNIGHT) {
+                
+                strcat(str, "n");
+            } 
+            else {
+                
+                strcat(str, "q");
+            }
+	    }
 
 		std::cout << " " << str;
 	}
@@ -390,25 +392,24 @@ void reportCurrentMove(int side, int depth, int currentMoveNumber, u32 move) {
 
 	if (move_type(move) == MOVE_PROMOTION) {
 
-		switch (promType(move)) {
+		u8 pt = promType(move);
 
-			case PROMOTE_TO_ROOK:
-
-				side ? strcat(str, "r") : strcat(str, "R");
-				break;
-			case PROMOTE_TO_BISHOP:
-
-				side ? strcat(str, "b") : strcat(str, "B");
-				break;
-			case PROMOTE_TO_KNIGHT:
-
-				side ? strcat(str, "n") : strcat(str, "N");
-				break;
-			default:
-
-				side ? strcat(str, "q") : strcat(str, "Q");
-				break;
-		}
+        if  (pt == PROMOTE_TO_ROOK) {
+                
+            strcat(str, "r");
+        }
+        else if (pt == PROMOTE_TO_BISHOP) {
+                
+            strcat(str, "b");
+        }   
+        else if (pt == PROMOTE_TO_KNIGHT) {
+                
+            strcat(str, "n");
+        } 
+        else {
+                
+            strcat(str, "q");
+        }
 	}
 
 	std::cout << str << " currmovenumber " << currentMoveNumber << std::endl;
@@ -770,8 +771,8 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 		else if (std::abs(score) >= WIN_SCORE_THRESHOLD) {	// Mate Threat extension
 
-			depth++;	
-		}	
+			depth++;
+		}
 	}
 
 
@@ -874,6 +875,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 		}
 
 		//------------------------------------------------------------------------------------
+
 
 
 
@@ -1182,7 +1184,10 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 			}
 		}
 
-		if (failedHigh) break;
+		if (failedHigh) {
+		    
+		    break;
+		}
 	}
 
 
@@ -1211,7 +1216,6 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 
 	recordHash(age, bestMove, depth, bestScore, hashf, sEval, th);
-
 
 
 
@@ -1264,6 +1268,8 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 		// readInput();	
 	}
+	
+	
 
 	// return if need to stop due to input or move time reached
 	if (is_main_thread && Threads.stop) {
@@ -1321,11 +1327,17 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 	
 		if (ttDepth >= depth) {
             
-	        if (	ttBound == hashfEXACT) 	return ttValue;
+	        if (	ttBound == hashfEXACT) 	{
+	            return ttValue;
+	        }
 	        
-	        if (	ttBound == hashfALPHA && ttValue <= alpha)	return alpha;
+	        if (	ttBound == hashfALPHA && ttValue <= alpha)  {
+	            return alpha;
+	        }
 	        
-	        if (	ttBound == hashfBETA && ttValue >= beta)	return beta;
+	        if (	ttBound == hashfBETA && ttValue >= beta)    {
+	            return beta;
+	        }
 		}
 	}
 
@@ -1384,7 +1396,6 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 		moveList.clear();
 		getMoves(ply, side, moveList, stage, true, th);
-
 
 
 		n = moveList.size();
