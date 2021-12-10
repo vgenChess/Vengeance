@@ -327,7 +327,7 @@ void SearchThread::init() {
 	board.pieces[0] = &whitePieceBB[PAWNS];
 	board.pieces[1] = &blackPieceBB[PAWNS];
 	
-	nn_load(th->nn, NN_FILE);
+	nn_load(&nn, NN_FILE);
 }
 
 void SearchThread::search() {
