@@ -323,6 +323,9 @@ void SearchThread::init() {
 
 	hashKey = initThread.hashKey;
 	pawnsHashKey = initThread.pawnsHashKey;
+
+	board.pieces[0] = &whitePieceBB[PAWNS];
+	board.pieces[1] = &blackPieceBB[PAWNS];
 }
 
 void SearchThread::search() {

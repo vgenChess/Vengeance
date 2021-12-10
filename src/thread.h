@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "globals.h"
+#include "cerebrum.h"
 
 class Thread {
 	
@@ -33,7 +34,10 @@ class Thread {
 		u64 occupied, empty;
 
 		u64 hashKey, pawnsHashKey;
-			
+
+		NN_Network nn;
+ 		NN_Board board, save;
+ 		
 		explicit Thread();
 		void clear();
 };

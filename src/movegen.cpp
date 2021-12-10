@@ -19,7 +19,6 @@
 #include "constants.h"
 
 typedef unsigned char u8;
-typedef unsigned long long int u64;
 
 void genMoves(int ply, std::vector<Move> &moves, u8 side, Thread *th) {
     
