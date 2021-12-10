@@ -660,11 +660,15 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 		if (sEval == -INF) {
 
-			sEval = NNUE ? evaluateNNUE(side, th) : fullEval(side, th);	
+			//sEval = NNUE ? evaluateNNUE(side, th) : fullEval(side, th);	
+			
+			sEval = nn_eval(&th->nn, &th->board, (side == WHITE ? 0 : 1));
 		}
 	} else {
 
-		sEval = NNUE ? evaluateNNUE(side, th) : fullEval(side, th);
+		//sEval = NNUE ? evaluateNNUE(side, th) : fullEval(side, th);
+		
+		sEval = nn_eval(&th->nn, &th->board, (side == WHITE ? 0 : 1));
 
 		recordHash(age, NO_MOVE, NO_DEPTH, -INF, NO_BOUND, sEval, th);		
 	}
@@ -1344,7 +1348,9 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 	if (sEval == -INF) { 
 	
-		sEval = NNUE ? evaluateNNUE(side, th) : fullEval(side, th);
+		//sEval = NNUE ? evaluateNNUE(side, th) : fullEval(side, th);
+		
+		sEval = nn_eval(&th->nn, &th->board, (side == WHITE ? 0 : 1));
 	}
 
 

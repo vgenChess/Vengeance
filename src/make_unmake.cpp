@@ -13,6 +13,7 @@
 #include "utility.h"
 #include "hash.h"
 #include "thread.h"
+#include "cerebrum.h"
 
 
 u64 KEY_SIDE_TO_MOVE;
@@ -93,6 +94,25 @@ void make_move(int ply, u32 move, Thread *th) {
 
 	// making any move will make the ep move invalid
 	th->moveStack[ply].epFlag = 0;
+
+
+	memcpy(&th->save, &th->board, sizeof(th->board));
+ 
+ if (piece == KING || mtype == MOVE_PROMOTION || mtype == MOVE_ENPASSANT) {
+ 
+    th->board.pieces[0] = &th->whitePieceBB[PAWNS];
+    th->board.pieces[1] = &th->blackPieceBB[PAWNS];
+     nn_inputs_upd_all(&th->nn, &th->board);
+  } else {
+ 
+     nn_inputs_mov_piece(&th->nn, &board, piece-1, (sideToMove== WHITE ? 0 : 1), fromSq, toSq);
+      
+      if (capture) {
+          nn_inputs_del_piece(&th->nn, &th->board, c_piece-1, (sideToMove == WHITE ? 1 : 0), toSq);
+     }
+ }
+ 
+
 
 
 
@@ -571,7 +591,8 @@ void make_move(int ply, u32 move, Thread *th) {
 
 void unmake_move(int ply, u32 move, Thread *th) {
 
-
+  memcpy(&th->board, &th->save, sizeof(th->save));
+ 
 	u8 castleDirection = castleDir(move);
 
 	const u8 sideToMove = colorType(move);
