@@ -105,9 +105,9 @@ void make_move(int ply, u32 move, Thread *th) {
      nn_inputs_upd_all(&th->nn, &th->board);
   } else {
  
-     nn_inputs_mov_piece(&th->nn, &board, piece-1, (sideToMove== WHITE ? 0 : 1), fromSq, toSq);
+     nn_inputs_mov_piece(&th->nn, &th->board, piece-1, (sideToMove== WHITE ? 0 : 1), fromSq, toSq);
       
-      if (capture) {
+      if (mtype==MOVE_CAPTURE) {
           nn_inputs_del_piece(&th->nn, &th->board, c_piece-1, (sideToMove == WHITE ? 1 : 0), toSq);
      }
  }
