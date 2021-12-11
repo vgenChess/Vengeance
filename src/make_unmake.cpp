@@ -802,6 +802,8 @@ void unmake_move(int ply, u32 move, Thread *th) {
 
 void makeNullMove(int ply, Thread *th) { // Needs investigation
 
+    memcpy(&th->save, &th->board, sizeof(th->board));
+ 
 
 	const int mhCounter = th->moves_history_counter + ply; // Needs investigation 
 
@@ -824,6 +826,8 @@ void makeNullMove(int ply, Thread *th) { // Needs investigation
 
 
 void unmakeNullMove(int ply, Thread *th) {
+
+    memcpy(&th->board, &th->save, sizeof(th->save));
 
 	th->moveStack[ply].castleFlags = th->undoMoveStack[ply].castleFlags;
 	th->moveStack[ply].epFlag = th->undoMoveStack[ply].epFlag;

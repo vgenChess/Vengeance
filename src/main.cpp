@@ -103,7 +103,7 @@ static void runBenchmark(int argc, char **argv) {
 
 
     std::chrono::steady_clock::time_point 
-        start_time = std::chrono::steady_clock::now(), time;    
+	start_time = std::chrono::steady_clock::now(), time;    
 
     for (int i = 0; strcmp(Benchmarks[i], ""); i++) {
 

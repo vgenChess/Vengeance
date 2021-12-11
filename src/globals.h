@@ -336,12 +336,10 @@ extern int weight_king_many_enemy_pawn_storm;
 extern int weight_king_enemy_pawn_storm;
 
 
-
 extern int arr_weight_knight_mobility[16];
 extern int arr_weight_bishop_mobility[16];
 extern int arr_weight_rook_mobility[16];
 extern int arr_weight_queen_mobility[32];
-
 
 
 extern int pawnPSQT[64];

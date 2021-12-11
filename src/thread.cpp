@@ -312,7 +312,7 @@ void SearchThread::init() {
 	moves_history_counter = initThread.moves_history_counter;
 
 
-	for (int piece = 0; piece < MAX_PIECES; piece++) {
+	for (int piece = DUMMY; piece <= PIECES; piece++) {
 
 		whitePieceBB[piece] = initThread.whitePieceBB[piece];
 		blackPieceBB[piece] = initThread.blackPieceBB[piece];
