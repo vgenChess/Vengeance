@@ -69,6 +69,9 @@
  */
  
 #include "cerebrum.h"
+#include "incbin.h"
+
+INCBIN(NetworkData, NN_FILE);
 
 static NN_Storage storage;
 static NN_Storage* st = &storage;
@@ -213,6 +216,7 @@ int nn_load(NN_Network* nn, char* filename) {
 	*nn = (NN_Network) {0};
 	*st = (NN_Storage) {0};
 	
+	/*
 	FILE* file = fopen(filename, "rb");
 	
 	if (file == NULL) {
@@ -226,9 +230,9 @@ int nn_load(NN_Network* nn, char* filename) {
 	
 	if (file == NULL) {
 		return -1;
-	}
+	}*/
 	
-	fread(st, sizeof(NN_Storage), 1, file);
+	fread(st, sizeof(NN_Storage), 1, gNetworkDataData);
 	
 	for (size_t i = 0; i < (sizeof(st->W0) / sizeof(st->W0[0])); i++) {
 		nn->W0[i] = st->W0[i] / FACTOR;
