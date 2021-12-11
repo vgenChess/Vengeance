@@ -34,8 +34,7 @@ class Thread {
 		u64 occupied, empty;
 
 		u64 hashKey, pawnsHashKey;
-
-		NN_Network nn;
+		
  		NN_Board board, save;
  		
 		explicit Thread();

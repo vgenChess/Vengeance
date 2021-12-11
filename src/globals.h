@@ -369,4 +369,8 @@ extern int weight_queen_check;
 extern int weight_safety_adjustment;
 
 
+//NNUE
+
+extern NN_Network nn;
+
 #endif /* globals_h */

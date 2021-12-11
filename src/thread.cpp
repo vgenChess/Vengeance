@@ -7,6 +7,7 @@
 Thread initThread;
 SearchThreadPool Threads; // Global object
 
+
 void SearchThreadPool::set(size_t requested) {
 
 	if (size() > 0)   // destroy any existing thread(s)
@@ -326,8 +327,6 @@ void SearchThread::init() {
 
 	board.pieces[0] = &whitePieceBB[PAWNS];
 	board.pieces[1] = &blackPieceBB[PAWNS];
-	
-	nn_load(&nn, NN_FILE);
 }
 
 void SearchThread::search() {
