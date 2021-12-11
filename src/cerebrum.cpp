@@ -217,24 +217,24 @@ int nn_load(NN_Network* nn, char* filename) {
 	*st = (NN_Storage) {0};
 	
 	
-	//FILE* file = fopen(filename, "rb");
+	FILE* file = fopen(filename, "rb");
 	
-	//if (file == NULL) {
-		//printf("info debug NN file conversion...\n");
-		//if (nn_convert(filename) == -1) {
-			//return -1;
-		//}
-	//}
+	if (file == NULL) {
+		printf("info debug NN file conversion...\n");
+		if (nn_convert(filename) == -1) {
+			return -1;
+		}
+	}
 	
-	//file = fopen(filename, "rb");
+	file = fopen(filename, "rb");
 	
-	//if (file == NULL) {
-		//return -1;
-	//}
+	if (file == NULL) {
+		return -1;
+	}
 	
-	//fread(st, sizeof(NN_Storage), 1, file);
+	fread(st, sizeof(NN_Storage), 1, file);
 	
-	memcpy(st, gNetworkData, sizeof(NN_Storage));
+	//memcpy(st, gNetworkData, sizeof(NN_Storage));
 	
 	for (size_t i = 0; i < (sizeof(st->W0) / sizeof(st->W0[0])); i++) {
 		
@@ -248,7 +248,7 @@ int nn_load(NN_Network* nn, char* filename) {
 	
 	memcpy(nn->B0, st->B0, size);
 	
-	//fclose(file);
+	fclose(file);
 	
 	
 	
