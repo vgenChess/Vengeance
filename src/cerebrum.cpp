@@ -71,7 +71,7 @@
 #include "cerebrum.h"
 #include "incbin.h"
 
-INCBIN(NetworkData, NN_FILE);
+INCBIN(Network,  NN_FILE);
 
 static NN_Storage storage;
 static NN_Storage* st = &storage;
@@ -216,25 +216,28 @@ int nn_load(NN_Network* nn, char* filename) {
 	*nn = (NN_Network) {0};
 	*st = (NN_Storage) {0};
 	
-	/*
-	FILE* file = fopen(filename, "rb");
 	
-	if (file == NULL) {
-		printf("info debug NN file conversion...\n");
-		if (nn_convert(filename) == -1) {
-			return -1;
-		}
-	}
+	//FILE* file = fopen(filename, "rb");
 	
-	file = fopen(filename, "rb");
+	//if (file == NULL) {
+		//printf("info debug NN file conversion...\n");
+		//if (nn_convert(filename) == -1) {
+			//return -1;
+		//}
+	//}
 	
-	if (file == NULL) {
-		return -1;
-	}*/
+	//file = fopen(filename, "rb");
 	
-	fread(st, sizeof(NN_Storage), 1, gNetworkDataData);
+	//if (file == NULL) {
+		//return -1;
+	//}
+	
+	//fread(st, sizeof(NN_Storage), 1, file);
+	
+	memcopy(st, gNetworkData, sizeof(NN_Storage));
 	
 	for (size_t i = 0; i < (sizeof(st->W0) / sizeof(st->W0[0])); i++) {
+		
 		nn->W0[i] = st->W0[i] / FACTOR;
 	}
 	
@@ -245,7 +248,17 @@ int nn_load(NN_Network* nn, char* filename) {
 	
 	memcpy(nn->B0, st->B0, size);
 	
-	fclose(file);
+	//fclose(file);
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	return 0;
 }
