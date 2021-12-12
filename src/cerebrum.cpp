@@ -70,6 +70,7 @@
  
 #include "cerebrum.h"
 #include "incbin.h"
+#include "global.h"
 
 //INCBIN(Network,  NN_FILE);
 
@@ -401,9 +402,11 @@ void nn_inputs_upd_all(NN_Network* nn, NN_Board* board) {
 	memcpy(board->accumulator[0], nn->B0, sizeof(nn->B0));
 	memcpy(board->accumulator[1], nn->B0, sizeof(nn->B0));
 	
+	u64 pieces;
 	for (int piece_color = 0; piece_color <= 1; piece_color++) {
 		for (int piece_type = 0; piece_type <= 4; piece_type++) {
-			uint64_t pieces = board->pieces[piece_color][piece_type];
+			
+			pieces = board->pieces[piece_color][piece_type];
 			
 			while (pieces) {
 				const int piece_position = NN_GET_POSITION(pieces);
