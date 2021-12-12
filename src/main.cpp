@@ -25,12 +25,7 @@
 #include "uci.h"
 #include "NnueEval.h"
 
-#include "incbin.h"
-
 NN_Network nn;
-
-INCBIN(Network,  NN_FILE);
-
 
 static void runBenchmark(int argc, char **argv);
 
