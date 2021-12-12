@@ -122,7 +122,6 @@ void make_move(int ply, u32 move, Thread *th) {
 		  		(sideToMove == WHITE ? 1 : 0), toSq);
      	}
  	}
- 
 
 
 

@@ -15,6 +15,7 @@
 #include <ctime>
 #include <ratio>
 #include <chrono>
+#include "cerebrum.h"
 
 #define INPUT_BUFFER 800 * 6
 
