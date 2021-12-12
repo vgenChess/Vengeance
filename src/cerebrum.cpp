@@ -235,7 +235,7 @@ int nn_load(NN_Network* nn, char* filename) {
 	fread(st, sizeof(NN_Storage), 1, file);
 	*/
 	
-	memcpy(&st, gNetworkData, sizeof(NN_Storage));
+	memcpy(st, &gNetworkData, sizeof(NN_Storage));
 	
 	for (size_t i = 0; i < (sizeof(st->W0) / sizeof(st->W0[0])); i++) {
 		nn->W0[i] = st->W0[i] / FACTOR;
