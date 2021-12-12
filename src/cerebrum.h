@@ -46,7 +46,8 @@
 #include <inttypes.h>
 #include "immintrin.h"
 
-
+typedef unsigned int u16;
+typedef unsigned long long int u64;
 
 /****************************************************************************/
 /** MACROS                                                                 **/

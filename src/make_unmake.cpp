@@ -105,20 +105,20 @@ void make_move(int ply, u32 move, Thread *th) {
 		th->board.pieces[0] = &th->whitePieceBB[PAWNS];
  	   th->board.pieces[1] = &th->blackPieceBB[PAWNS];
 	
-		nn_inputs_upd_all(nn, &th->board);
+		nn_inputs_upd_all(&nn, &th->board);
  	 } 
 	else {
  
     	 if (	piece > 0)	{
        
-          	nn_inputs_mov_piece(nn, &th->board, piece-1,
+          	nn_inputs_mov_piece(&nn, &th->board, piece-1,
 			 	(sideToMove== WHITE ? 0 : 1), fromSq, toSq);
      	 }
       
      	 if (	mtype==MOVE_CAPTURE 
 			&&	c_piece > 0)	{
        
-     	     nn_inputs_del_piece(nn, &th->board, c_piece-1, 	
+     	     nn_inputs_del_piece(&nn, &th->board, c_piece-1, 	
 		  		(sideToMove == WHITE ? 1 : 0), toSq);
      	}
  	}

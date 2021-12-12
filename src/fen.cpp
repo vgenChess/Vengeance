@@ -13,6 +13,7 @@
 #include <vector>
 #include <assert.h>
 
+#include "globals.h"
 #include "fen.h"
 #include "utility.h"
 
