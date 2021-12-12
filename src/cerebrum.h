@@ -46,8 +46,7 @@
 #include <inttypes.h>
 #include "immintrin.h"
 
-typedef unsigned int u16;
-typedef unsigned long long int u64;
+
 
 /****************************************************************************/
 /** MACROS                                                                 **/
@@ -95,7 +94,7 @@ typedef struct {
 } NN_Network;
 
 typedef struct {
-	u16 W0[40960*NN_SIZE];
+	int16_t W0[40960*NN_SIZE];
 	float B0[NN_SIZE];
 	float W1[NN_SIZE*2*32];
 	float B1[32];
@@ -113,7 +112,7 @@ typedef struct {
  */
 
 typedef struct {
-	u64* pieces[2];
+	uint64_t* pieces[2];
 	float accumulator[2][NN_SIZE];
 } NN_Board;
 

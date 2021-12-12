@@ -19,10 +19,10 @@
 
 #define INPUT_BUFFER 800 * 6
 
-typedef unsigned char u8;
-typedef unsigned int u16;
-typedef unsigned long int u32;
-typedef unsigned long long int u64;
+typedef uint8_t 		u8;
+typedef uint16_t 	u16;
+typedef uint32_t 	u32;
+typedef uint64_t 	u64;
 
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
 #define BYTE_TO_BINARY(byte)  \

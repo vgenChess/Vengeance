@@ -69,9 +69,6 @@
  */
  
 #include "cerebrum.h"
-#include "incbin.h"
-
-//INCBIN(Network,  NN_FILE);
 
 static NN_Storage storage;
 static NN_Storage* st = &storage;
@@ -216,7 +213,6 @@ int nn_load(NN_Network* nn, char* filename) {
 	*nn = (NN_Network) {0};
 	*st = (NN_Storage) {0};
 	
-	
 	FILE* file = fopen(filename, "rb");
 	
 	if (file == NULL) {
@@ -234,11 +230,7 @@ int nn_load(NN_Network* nn, char* filename) {
 	
 	fread(st, sizeof(NN_Storage), 1, file);
 	
-	
-	//memcpy(st, gNetworkData, sizeof(NN_Storage));
-	
 	for (size_t i = 0; i < (sizeof(st->W0) / sizeof(st->W0[0])); i++) {
-		
 		nn->W0[i] = st->W0[i] / FACTOR;
 	}
 	
@@ -250,16 +242,6 @@ int nn_load(NN_Network* nn, char* filename) {
 	memcpy(nn->B0, st->B0, size);
 	
 	fclose(file);
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	
 	return 0;
 }
@@ -295,7 +277,7 @@ static float clamp(float value) {
 static void nn_compute_layer(float* B, float* I, float* W, float* O, int idim, int odim, int with_relu) {
 	#if defined(NN_DEBUG)
 		assert(idim > 0 && odim > 0 && (with_relu == 0 || with_relu == 1));
-	#endif
+	#end if
 	
 	for (int o = 0; o < odim; o++) {
 		float sum = B[o];
@@ -320,7 +302,7 @@ static void nn_compute_layer(float* B, float* I, float* W, float* O, int idim, i
 			#if defined(NN_DEBUG)
 				// input layer must contain a multiple of 32 neurons to allow parallel dot product
 				assert( (idim % 32) == 0 );
-			#endif
+			#end if
 			
 			const int offset = o * idim;
 			
@@ -402,11 +384,9 @@ void nn_inputs_upd_all(NN_Network* nn, NN_Board* board) {
 	memcpy(board->accumulator[0], nn->B0, sizeof(nn->B0));
 	memcpy(board->accumulator[1], nn->B0, sizeof(nn->B0));
 	
-	u64 pieces;
 	for (int piece_color = 0; piece_color <= 1; piece_color++) {
 		for (int piece_type = 0; piece_type <= 4; piece_type++) {
-			
-			pieces = board->pieces[piece_color][piece_type];
+			uint64_t pieces = board->pieces[piece_color][piece_type];
 			
 			while (pieces) {
 				const int piece_position = NN_GET_POSITION(pieces);
