@@ -277,7 +277,7 @@ static float clamp(float value) {
 static void nn_compute_layer(float* B, float* I, float* W, float* O, int idim, int odim, int with_relu) {
 	#if defined(NN_DEBUG)
 		assert(idim > 0 && odim > 0 && (with_relu == 0 || with_relu == 1));
-	#end if
+	#endif
 	
 	for (int o = 0; o < odim; o++) {
 		float sum = B[o];
@@ -302,7 +302,7 @@ static void nn_compute_layer(float* B, float* I, float* W, float* O, int idim, i
 			#if defined(NN_DEBUG)
 				// input layer must contain a multiple of 32 neurons to allow parallel dot product
 				assert( (idim % 32) == 0 );
-			#end if
+			#endif
 			
 			const int offset = o * idim;
 			
