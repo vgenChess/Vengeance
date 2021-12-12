@@ -69,9 +69,7 @@
  */
  
 #include "cerebrum.h"
-#include "incbin.h"
 
-INCBIN(Network,  NN_FILE);
 
 static NN_Storage storage;
 static NN_Storage* st = &storage;
