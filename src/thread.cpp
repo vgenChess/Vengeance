@@ -136,6 +136,9 @@ Thread::Thread() {
 
 	this->occupied = 0;
 	this->empty = 0;
+	
+	board.pieces[0] = &whitePieceBB[PAWNS];
+	board.pieces[1] = &blackPieceBB[PAWNS];
 }
 
 void Thread::clear() {
