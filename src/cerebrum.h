@@ -45,6 +45,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include "immintrin.h"
+#include "thread.h"
 
 
 
@@ -127,11 +128,11 @@ struct NnueAccumulator {
 
 int nn_load(NN_Network* nn, char* filename);
 
-void nn_inputs_upd_all(NN_Network* nn, NN_Board* board);
-void nn_inputs_add_piece(NN_Network* nn, NN_Board* board, int piece_type, int piece_color, int piece_position);
-void nn_inputs_del_piece(NN_Network* nn, NN_Board* board, int piece_type, int piece_color, int piece_position);
-void nn_inputs_mov_piece(NN_Network* nn, NN_Board* board, int piece_type, int piece_color, int from, int to);
+void nn_inputs_upd_all(NN_Network* nn, Thread* th);
+void nn_inputs_add_piece(NN_Network* nn, Thread* th, int piece_type, int piece_color, int piece_position);
+void nn_inputs_del_piece(NN_Network* nn, Thread* th, int piece_type, int piece_color, int piece_position);
+void nn_inputs_mov_piece(NN_Network* nn, Thread* th, int piece_type, int piece_color, int from, int to);
 
-int nn_eval(NN_Network* nn, NN_Board* board, int color);
+int nn_eval(NN_Network* nn, Thread* th, int color);
 
 #endif // CEREBRUM_H_INCLUDED
