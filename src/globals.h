@@ -15,7 +15,6 @@
 #include <ctime>
 #include <ratio>
 #include <chrono>
-#include "cerebrum.h"
 
 #define INPUT_BUFFER 800 * 6
 
@@ -170,6 +169,12 @@ enum Stage {
 	STAGE_BAD_CAPTURES,
 	STAGE_NORMAL_MOVES
 };
+
+typedef struct {
+
+	float v[2][NN_SIZE]; 
+} NnueAccumulator;
+
 
 typedef struct {
     

@@ -117,11 +117,6 @@ typedef struct {
 	float accumulator[2][NN_SIZE];
 } NN_Board;
 
-typedef struct {
-
-	float v[2][NN_SIZE]; 
-} NnueAccumulator;
-
 /****************************************************************************/
 /** EXTERNAL FUNCTIONS                                                     **/
 /****************************************************************************/
