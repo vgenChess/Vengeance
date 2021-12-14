@@ -216,22 +216,17 @@ int nn_load(NN_Network* nn, char* filename) {
 	*st = (NN_Storage) {0};
 	
 	/*
-	
 	FILE* file = fopen(filename, "rb");
-	
 	if (file == NULL) {
 		printf("info debug NN file conversion...\n");
 		if (nn_convert(filename) == -1) {
 			return -1;
 		}
 	}
-	
 	file = fopen(filename, "rb");
-	
 	if (file == NULL) {
 		return -1;
 	}
-	
 	fread(st, sizeof(NN_Storage), 1, file);
 	*/
 	

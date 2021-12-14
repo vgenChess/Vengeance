@@ -25,7 +25,7 @@
 #include "uci.h"
 #include "NnueEval.h"
 
-NN_Network nn;
+NN_Network *nn;
 
 static void runBenchmark(int argc, char **argv);
 
@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
     
     // initNNUE("nn.bin");
     
-    nn_load(&nn, NN_FILE) ;
+    nn_load(nn, NN_FILE) ;
 
     int nProcessors = omp_get_max_threads();
     omp_set_num_threads(nProcessors);

@@ -68,10 +68,10 @@ typedef uint64_t 	u64;
 #define CASTLE_FLAG_WHITE_KING		2
 #define CASTLE_FLAG_WHITE_QUEEN		1
 #define CASTLE_FLAG_BLACK_KING		8
-#define	CASTLE_FLAG_BLACK_QUEEN		4
+#define CASTLE_FLAG_BLACK_QUEEN		4
 
 
-#define	WHITE_CASTLE_QUEEN_SIDE    	0
+#define WHITE_CASTLE_QUEEN_SIDE    	0
 #define WHITE_CASTLE_KING_SIDE  	1
 #define BLACK_CASTLE_QUEEN_SIDE 	2
 #define BLACK_CASTLE_KING_SIDE 		3
@@ -372,6 +372,6 @@ extern int weight_safety_adjustment;
 
 //NNUE
 
-extern NN_Network nn;
+extern NN_Network *nn;
 
 #endif /* globals_h */
