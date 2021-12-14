@@ -45,6 +45,7 @@ int main(int argc, char **argv) {
     
     // initNNUE("nn.bin");
     
+    nn = NULL;
     nn_load(nn, NN_FILE) ;
 
     int nProcessors = omp_get_max_threads();
