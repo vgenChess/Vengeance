@@ -205,7 +205,7 @@ typedef struct {
 typedef struct {
 	uint64_t* pieces[2];
 	float accumulator[2][NN_SIZE];
-} NN_Board
+} NN_Board;
 
 typedef struct {
 
