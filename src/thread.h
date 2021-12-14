@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "globals.h"
-#include "cerebrum.h"
 
 class Thread {
 	
