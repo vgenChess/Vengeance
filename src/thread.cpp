@@ -3,6 +3,7 @@
 #include "thread.h"
 #include "search.h"
 #include "constants.h"
+#include "cerebrum.h"
 
 Thread initThread;
 SearchThreadPool Threads; // Global object
