@@ -24,6 +24,7 @@
 #include "search.h"
 #include "uci.h"
 #include "NnueEval.h"
+#include "cerebrum.h"
 
 NN_Network nn;
 
