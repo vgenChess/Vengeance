@@ -97,7 +97,7 @@ void make_move(int ply, u32 move, Thread *th) {
 
 
 	memcpy(&th->undoMoveStack[ply].accumulator,
-		&th->accumulator, sizeof(th->accumulator);
+		&th->accumulator, sizeof(th->accumulator));
  
 	if (	piece == KING 
 		||	mtype == MOVE_PROMOTION 
@@ -597,7 +597,7 @@ void make_move(int ply, u32 move, Thread *th) {
 void unmake_move(int ply, u32 move, Thread *th) {
  
  	memcpy(&th->accumulator, &th->undoMoveStack[ply].accumulator,
- 		sizeof(th->undoMoveStack[ply].accumulator);
+ 		sizeof(th->undoMoveStack[ply].accumulator));
  
 	u8 castleDirection = castleDir(move);
 
@@ -809,7 +809,7 @@ void unmake_move(int ply, u32 move, Thread *th) {
 void makeNullMove(int ply, Thread *th) { // Needs investigation
 
     memcpy(&th->undoMoveStack[ply].accumulator,
-		&th->accumulator, sizeof(th->accumulator);
+		&th->accumulator, sizeof(th->accumulator));
  
  
 	const int mhCounter = th->moves_history_counter + ply; // Needs investigation 
@@ -835,7 +835,7 @@ void makeNullMove(int ply, Thread *th) { // Needs investigation
 void unmakeNullMove(int ply, Thread *th) {
 
     memcpy(&th->accumulator, &th->undoMoveStack[ply].accumulator,
- 		sizeof(th->undoMoveStack[ply].accumulator);
+ 		sizeof(th->undoMoveStack[ply].accumulator));
 
 
 	th->moveStack[ply].castleFlags = th->undoMoveStack[ply].castleFlags;
