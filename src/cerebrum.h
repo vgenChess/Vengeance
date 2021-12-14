@@ -119,7 +119,7 @@ typedef struct {
 struct NnueAccumulator {
 
 	float v[2][NN_SIZE]; 
-}
+};
 
 /****************************************************************************/
 /** EXTERNAL FUNCTIONS                                                     **/
