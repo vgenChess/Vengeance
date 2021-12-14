@@ -356,8 +356,8 @@ int nn_eval(NN_Network* nn, Thread *th, int color) {
 	float O0[NN_SIZE*2];
 	
 	for (int o = 0; o < NN_SIZE; o++) {
-		O0[o          ] = clamp(th->accumulator[color][o]);
-		O0[o + NN_SIZE] = clamp(th->accumulator[1 - color][o]);
+		O0[o          ] = clamp(th->accumulator.v[color][o]);
+		O0[o + NN_SIZE] = clamp(th->accumulator.v[1 - color][o]);
 	}
 	
 	// layers 1 & 2 (with ReLU), layer 3 (without ReLU)
