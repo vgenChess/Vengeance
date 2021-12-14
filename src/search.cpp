@@ -32,6 +32,7 @@
 #include "thread.h"
 #include "see.h"
 #include "constants.h"
+#include "cerebrum.h"
 
 int age = 0;
 
