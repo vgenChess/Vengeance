@@ -326,7 +326,6 @@ void SearchThread::init() {
 	hashKey = initThread.hashKey;
 	pawnsHashKey = initThread.pawnsHashKey;
 
-
 	nn_inputs_upd_all(&nn, this); 
 }
 
