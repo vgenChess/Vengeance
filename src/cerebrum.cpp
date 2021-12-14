@@ -397,7 +397,7 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 			while (pieces) {
 				
 				const int piece_position = NN_GET_POSITION(pieces);
-				nn_inputs_add_piece(nn, board, piece_type, piece_color, piece_position);
+				nn_inputs_add_piece(nn, th, piece_type, piece_color, piece_position);
 				NN_POP_POSITION(pieces);
 			}
 		}
