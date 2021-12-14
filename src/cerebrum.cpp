@@ -346,7 +346,7 @@ static void nn_compute_layer(float* B, float* I, float* W, float* O, int idim, i
 	}
 }
 
-int nn_eval(NN_Network* nn, NN_Board* board, int color) {
+int nn_eval(NN_Network* nn, Thread *th, int color) {
 	#if defined(NN_DEBUG)
 		assert(color == 0 || color == 1);
 	#endif
@@ -356,8 +356,8 @@ int nn_eval(NN_Network* nn, NN_Board* board, int color) {
 	float O0[NN_SIZE*2];
 	
 	for (int o = 0; o < NN_SIZE; o++) {
-		O0[o          ] = clamp(board->accumulator[color][o]);
-		O0[o + NN_SIZE] = clamp(board->accumulator[1 - color][o]);
+		O0[o          ] = clamp(th->accumulator[color][o]);
+		O0[o + NN_SIZE] = clamp(th->accumulator[1 - color][o]);
 	}
 	
 	// layers 1 & 2 (with ReLU), layer 3 (without ReLU)
@@ -375,7 +375,8 @@ int nn_eval(NN_Network* nn, NN_Board* board, int color) {
 
 /* *************************************************************** */
 
-void nn_inputs_upd_all(NN_Network* nn, NN_Board* board) {
+void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
+	
 	/*
 	for (int o = 0; o < NN_SIZE; o++) {
 		board->accumulator[0][o] = nn->B0[o];
@@ -383,14 +384,18 @@ void nn_inputs_upd_all(NN_Network* nn, NN_Board* board) {
 	}
 	*/
 	
-	memcpy(board->accumulator[0], nn->B0, sizeof(nn->B0));
-	memcpy(board->accumulator[1], nn->B0, sizeof(nn->B0));
+	memcpy(th->accumulator.v[0], nn->B0, sizeof(nn->B0));
+	memcpy(th->accumulator.v[1], nn->B0, sizeof(nn->B0));
 	
 	for (int piece_color = 0; piece_color <= 1; piece_color++) {
 		for (int piece_type = 0; piece_type <= 4; piece_type++) {
-			uint64_t pieces = board->pieces[piece_color][piece_type];
+			
+			uint64_t pieces = piece_color?
+				th->blackPieceBB[piece_type + 1] :
+				th->whitePieceBB[piece_type + 1];
 			
 			while (pieces) {
+				
 				const int piece_position = NN_GET_POSITION(pieces);
 				nn_inputs_add_piece(nn, board, piece_type, piece_color, piece_position);
 				NN_POP_POSITION(pieces);
@@ -399,9 +404,10 @@ void nn_inputs_upd_all(NN_Network* nn, NN_Board* board) {
 	}
 }
 
-void nn_inputs_add_piece(NN_Network* nn, NN_Board* board, int piece_type, int piece_color, int piece_position) {
-	const int white_king_position = NN_GET_POSITION(board->pieces[0][5]);
-	const int black_king_position = NN_GET_POSITION(board->pieces[1][5]) ^ 63;
+void nn_inputs_add_piece(NN_Network* nn, Thread* th, int piece_type, int piece_color, int piece_position) {
+	
+	const int white_king_position = NN_GET_POSITION(th->whitePieceBB[KING]);
+	const int black_king_position = NN_GET_POSITION(th->blackPieceBB[KING]) ^ 63;
 	
 	#if defined(NN_DEBUG)
 		assert(piece_type >= 0 && piece_type <= 4);
@@ -431,14 +437,15 @@ void nn_inputs_add_piece(NN_Network* nn, NN_Board* board, int piece_type, int pi
 	#endif
 	
 	for (int o = 0; o < NN_SIZE; o++) {
-		board->accumulator[0][o] += nn->W0[NN_SIZE * feature_w + o];
-		board->accumulator[1][o] += nn->W0[NN_SIZE * feature_b + o];
+		th->accumulator.v[0][o] += nn->W0[NN_SIZE * feature_w + o];
+		th->accumulator.v[1][o] += nn->W0[NN_SIZE * feature_b + o];
 	}
 }
 
-void nn_inputs_del_piece(NN_Network* nn, NN_Board* board, int piece_type, int piece_color, int piece_position) {
-	const int white_king_position = NN_GET_POSITION(board->pieces[0][5]);
-	const int black_king_position = NN_GET_POSITION(board->pieces[1][5]) ^ 63;
+void nn_inputs_del_piece(NN_Network* nn, Thread* th, int piece_type, int piece_color, int piece_position) {
+	
+	const int white_king_position = NN_GET_POSITION(th->whitePieceBB[KING]);
+	const int black_king_position = NN_GET_POSITION(th->blackPieceBB[KING]) ^ 63;
 	
 	#if defined(NN_DEBUG)
 		assert(piece_type >= 0 && piece_type <= 4);
@@ -468,14 +475,15 @@ void nn_inputs_del_piece(NN_Network* nn, NN_Board* board, int piece_type, int pi
 	#endif
 	
 	for (int o = 0; o < NN_SIZE; o++) {
-		board->accumulator[0][o] -= nn->W0[NN_SIZE * feature_w + o];
-		board->accumulator[1][o] -= nn->W0[NN_SIZE * feature_b + o];
+		th->accumulator.v[0][o] -= nn->W0[NN_SIZE * feature_w + o];
+		th->accumulator.v[1][o] -= nn->W0[NN_SIZE * feature_b + o];
 	}
 }
 
-void nn_inputs_mov_piece(NN_Network* nn, NN_Board* board, int piece_type, int piece_color, int from, int to) {
-	const int white_king_position = NN_GET_POSITION(board->pieces[0][5]);
-	const int black_king_position = NN_GET_POSITION(board->pieces[1][5]) ^ 63;
+void nn_inputs_mov_piece(NN_Network* nn,  Thread *th, int piece_type, int piece_color, int from, int to) {
+	
+	const int white_king_position = NN_GET_POSITION(th->whitePieceBB[KING]);
+	const int black_king_position = NN_GET_POSITION(th->blackPieceBB[KING]) ^ 63;
 	
 	#if defined(NN_DEBUG)
 		assert(piece_type >= 0 && piece_type <= 4);
@@ -513,10 +521,11 @@ void nn_inputs_mov_piece(NN_Network* nn, NN_Board* board, int piece_type, int pi
 	#endif
 	
 	for (int o = 0; o < NN_SIZE; o++) {
-		board->accumulator[0][o] += nn->W0[NN_SIZE * feature_w_to + o];
-		board->accumulator[0][o] -= nn->W0[NN_SIZE * feature_w_fr + o];
 		
-		board->accumulator[1][o] += nn->W0[NN_SIZE * feature_b_to + o];
-		board->accumulator[1][o] -= nn->W0[NN_SIZE * feature_b_fr + o];
+		th->accumulator.v[0][o] += nn->W0[NN_SIZE * feature_w_to + o];
+		th->accumulator.v[0][o] -= nn->W0[NN_SIZE * feature_w_fr + o];
+		
+		th->accumulator.v[1][o] += nn->W0[NN_SIZE * feature_b_to + o];
+		th->accumulator.v[1][o] -= nn->W0[NN_SIZE * feature_b_fr + o];
 	}
 }

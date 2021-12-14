@@ -95,35 +95,30 @@ void make_move(int ply, u32 move, Thread *th) {
 	th->moveStack[ply].epFlag = 0;
 
 
-	memcpy(&th->save, &th->board, sizeof(th->board));
- 
+
+	memcpy(&th->undoMoveStack[ply].accumulator,
+		&th->accumulator, sizeof(th->accumulator);
  
 	if (	piece == KING 
 		||	mtype == MOVE_PROMOTION 
 		||	mtype == MOVE_ENPASSANT) {
  
-		th->board.pieces[0] = &th->whitePieceBB[PAWNS];
- 	   th->board.pieces[1] = &th->blackPieceBB[PAWNS];
-	
-		nn_inputs_upd_all(nn, &th->board);
+		nn_inputs_upd_all(&nn, th);
  	 } 
 	else {
- 
-    	 if (	piece > 0)	{
+		
+		if (	piece > 0) {
+          
+			nn_inputs_mov_piece(&nn, th, piece - 1,
+			 (sideToMove== WHITE ? 0 : 1), fromSq, toSq);
+     	}	   
+     	
+		if (	mtype==MOVE_CAPTURE && c_piece > 0)	{
        
-          	nn_inputs_mov_piece(nn, &th->board, piece-1,
-			 	(sideToMove== WHITE ? 0 : 1), fromSq, toSq);
-     	 }
-      
-     	 if (	mtype==MOVE_CAPTURE 
-			&&	c_piece > 0)	{
-       
-     	     nn_inputs_del_piece(nn, &th->board, c_piece-1, 	
+     	     nn_inputs_del_piece(&nn, th, c_piece - 1, 	
 		  		(sideToMove == WHITE ? 1 : 0), toSq);
      	}
  	}
-
-
 
 
 
@@ -600,8 +595,9 @@ void make_move(int ply, u32 move, Thread *th) {
 
 
 void unmake_move(int ply, u32 move, Thread *th) {
-
-  memcpy(&th->board, &th->save, sizeof(th->save));
+ 
+ 	memcpy(&th->accumulator, &th->undoMoveStack[ply].accumulator,
+ 		sizeof(th->undoMoveStack[ply].accumulator);
  
 	u8 castleDirection = castleDir(move);
 
@@ -812,9 +808,10 @@ void unmake_move(int ply, u32 move, Thread *th) {
 
 void makeNullMove(int ply, Thread *th) { // Needs investigation
 
-    memcpy(&th->save, &th->board, sizeof(th->board));
+    memcpy(&th->undoMoveStack[ply].accumulator,
+		&th->accumulator, sizeof(th->accumulator);
  
-
+ 
 	const int mhCounter = th->moves_history_counter + ply; // Needs investigation 
 
 	th->undoMoveStack[ply].fiftyMovesCounter = th->movesHistory[mhCounter].fiftyMovesCounter;
@@ -837,7 +834,9 @@ void makeNullMove(int ply, Thread *th) { // Needs investigation
 
 void unmakeNullMove(int ply, Thread *th) {
 
-    memcpy(&th->board, &th->save, sizeof(th->save));
+    memcpy(&th->accumulator, &th->undoMoveStack[ply].accumulator,
+ 		sizeof(th->undoMoveStack[ply].accumulator);
+
 
 	th->moveStack[ply].castleFlags = th->undoMoveStack[ply].castleFlags;
 	th->moveStack[ply].epFlag = th->undoMoveStack[ply].epFlag;

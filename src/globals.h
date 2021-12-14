@@ -212,6 +212,8 @@ typedef struct {
 	u64 hashKey;
 	u64 pawnsHashKey;
 	int fiftyMovesCounter;
+	
+	NnueAccumulator accumulator;
 } UNDO_MOVE_STACK;
 
 typedef struct {
@@ -372,6 +374,6 @@ extern int weight_safety_adjustment;
 
 //NNUE
 
-extern NN_Network *nn;
+extern NN_Network nn;
 
 #endif /* globals_h */

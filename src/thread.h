@@ -35,7 +35,7 @@ class Thread {
 
 		u64 hashKey, pawnsHashKey;
 		
- 		NN_Board board, save;
+		NnueAccumulator accumulator;
  		
 		explicit Thread();
 		void clear();
