@@ -137,7 +137,6 @@ Thread::Thread() {
 
 	this->occupied = 0;
 	this->empty = 0;
-	
 }
 
 void Thread::clear() {
@@ -261,7 +260,6 @@ void SearchThread::idle_loop() {
 
 SearchThread* SearchThreadPool::get_best_thread() const {
 
-
     SearchThread* bestThread = front();
     
     int bestScore = -INF, bestDepth = NO_DEPTH;
@@ -314,7 +312,6 @@ void SearchThread::init() {
 
 	moves_history_counter = initThread.moves_history_counter;
 
-
 	for (int piece = DUMMY; piece <= PIECES; piece++) {
 
 		whitePieceBB[piece] = initThread.whitePieceBB[piece];
@@ -327,7 +324,10 @@ void SearchThread::init() {
 	hashKey = initThread.hashKey;
 	pawnsHashKey = initThread.pawnsHashKey;
 
-	nn_inputs_upd_all(&nn, this); 
+    memcpy(&accumulator, &initThread.accumulator,
+    	sizeof(initThread.accumulator));
+
+	//nn_inputs_upd_all(&nn, this); 
 }
 
 void SearchThread::search() {

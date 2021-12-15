@@ -89,6 +89,8 @@ u8 parsePosition (std::string str, Thread *th) {
     }
 
 
+	nn_inputs_upd_all(&nn, th); 
+
 
     initThread.moves_history_counter = 0;
     initThread.movesHistory[0].hashKey = initThread.hashKey;

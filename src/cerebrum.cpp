@@ -81,6 +81,7 @@ INCBIN(Network, NN_FILE);
 /****************************************************************************/
 
 static int nn_convert(char* filename) {
+	
 	FILE* file = fopen("network.txt", "r");
 	
 	if (file == NULL) {
@@ -347,6 +348,7 @@ static void nn_compute_layer(float* B, float* I, float* W, float* O, int idim, i
 }
 
 int nn_eval(NN_Network* nn, Thread *th, int color) {
+	
 	#if defined(NN_DEBUG)
 		assert(color == 0 || color == 1);
 	#endif
@@ -390,8 +392,7 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 	for (int piece_color = 0; piece_color <= 1; piece_color++) {
 		for (int piece_type = 0; piece_type <= 4; piece_type++) {
 			
-			uint64_t pieces = piece_color?
-				th->blackPieceBB[piece_type + 1] :
+			uint64_t pieces = piece_color ? th->blackPieceBB[piece_type + 1] :
 				th->whitePieceBB[piece_type + 1];
 			
 			while (pieces) {
@@ -403,6 +404,7 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 		}
 	}
 }
+
 
 void nn_inputs_add_piece(NN_Network* nn, Thread* th, int piece_type, int piece_color, int piece_position) {
 	
