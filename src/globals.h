@@ -150,7 +150,7 @@ typedef uint64_t 	u64;
 //#define NN_DEBUG
 
 // allows the use of intrinsics, to increase speed of dot products
-//#define NN_WITH_FMA
+#define NN_WITH_FMA
 
 // name of the default network file
 #define NN_FILE "network.nn"
