@@ -12,6 +12,8 @@
 class Thread {
 	
 	public:
+	
+		bool isInit = false;
 
 		u8 side;
 

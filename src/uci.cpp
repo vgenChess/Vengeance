@@ -90,7 +90,7 @@ u8 parsePosition (std::string str, Thread *th) {
     }
 
 
-	nn_inputs_upd_all(&nn, th); 
+	//nn_inputs_upd_all(&nn, th); 
 
 
     initThread.moves_history_counter = 0;
@@ -217,7 +217,8 @@ using namespace std;
 void UciLoop() {
 
     std::string startLine = "position startpos";
-
+	
+	initThread.isInit = true;
     initThread.side = parsePosition(startLine, &initThread);
     
     quit = false;

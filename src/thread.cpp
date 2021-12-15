@@ -324,10 +324,10 @@ void SearchThread::init() {
 	hashKey = initThread.hashKey;
 	pawnsHashKey = initThread.pawnsHashKey;
 
-    memcpy(&accumulator, &initThread.accumulator,
-    	sizeof(initThread.accumulator));
+    //memcpy(&accumulator, &initThread.accumulator,
+    //	sizeof(initThread.accumulator));
 
-	//nn_inputs_upd_all(&nn, this); 
+	nn_inputs_upd_all(&nn, this); 
 }
 
 void SearchThread::search() {
