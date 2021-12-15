@@ -26,6 +26,7 @@
 #include "evaluate.h"
 #include "thread.h"
 #include "tuner.h"
+#include "cerebrum.h"
 
 #define NAME "V0.9"
 #define START_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
