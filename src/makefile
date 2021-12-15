@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-std=c++14 -pthread -Wall -Wextra -fopenmp -O2
+CFLAGS=-std=c++14 -pthread -Wall -Wextra -fopenmp -O2 -mavx
 DEBUG =-g -D DEBUG
 SOURCES=$(wildcard *.cpp)
 OBJECTS=$(patsubst %.cpp, %.o, $(SOURCES))
