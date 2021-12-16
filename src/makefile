@@ -36,9 +36,7 @@
  SSSE​ = -mssse3 -msse3 -msse2 -msse -mpopcnt 
  ​AVX2​ = -mavx2 -mavx -mfma -msse4.1 ​$(​SSSE​)
 
-avx2​: $(​CC​)​ ​$(​RFLAGS​)​ ​$(​SRC​)​​ ​$(​AVX2​)​ -o ​$(​EXE​)​
-
-all: avx2
+all: $(​CC​)​ ​$(​RFLAGS​)​ ​$(​SRC​)​​ ​$(​AVX2​)​ -o ​$(​EXE​)​
 
 clean:
 	rm -rf $(EXE)  $(OBJECTS) 
