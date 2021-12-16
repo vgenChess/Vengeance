@@ -207,11 +207,18 @@ typedef struct {
 	float accumulator[2][NN_SIZE];
 } NN_Board;
 
-typedef struct {
+struct alignas(64) NnueAccumulator {
 
-	float v[2][NN_SIZE]; 
-} NnueAccumulator;
+	int16_t v[2][NN_SIZE]; 
+};
 
+/*
+struct  alignas(64)  NnueAccumulator  {
+
+ //  Two  vectors  of  size  N.  v[0]  for  white's,  and  v[1]  for  black's  perspect
+ int16_t  v[2][NN_SIZE]; 
+ int16_t*  operator[](Color  perspective)  { return  v[perspective]; }
+};*/
 
 enum {
 

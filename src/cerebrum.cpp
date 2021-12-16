@@ -244,6 +244,8 @@ int nn_load(NN_Network* nn, char* filename) {
 	
 	memcpy(nn->B0, st->B0, size);
 	
+	
+	
 	//fclose(file);
 	
 	return 0;
@@ -259,6 +261,7 @@ int nn_load(NN_Network* nn, char* filename) {
 #define NN_POP_POSITION(pieces) pieces &= pieces - 1
 
 static float clamp(float value) {
+	
 	if (value < NN_RELU_MIN) {
 		return NN_RELU_MIN;
 	}
@@ -283,6 +286,7 @@ static void nn_compute_layer(float* B, float* I, float* W, float* O, int idim, i
 	#endif
 	
 	for (int o = 0; o < odim; o++) {
+		
 		float sum = B[o];
 		
 		// intrinsics dot product (simple, but poor performance)
@@ -377,6 +381,7 @@ int nn_eval(NN_Network* nn, Thread *th, int color) {
 
 /* *************************************************************** */
 
+/*
 void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 	
 	/*
@@ -404,6 +409,131 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 		}
 	}
 }
+*/
+
+void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
+	
+	int piece_position;
+	u64 pieces;
+	
+	int M = NN_SIZE;
+	
+	
+    // The compiler should use one register per value, and hopefully
+    // won't spill anything. Always check the assembly generated to be sure!
+    constexpr int register_width = 256 / 16;
+    static_assert(M % register_width == 0, "We're processing 16 elements at a time");
+    constexpr int num_chunks = M / register_width;
+    __m128i regs_w[num_chunks], regs_b[num_chunks];
+
+    // Load bias to registers and operate on registers only.
+    for (int i = 0; i < num_chunks; ++i) {
+    	
+        regs_w[i] = _mm256_load_si256(&nn->B0[i * register_width]);
+        regs_b[i] = _mm256_load_si256(&nn->B0[i * register_width]);
+    }
+	
+	
+	for (int piece_color = 0; piece_color <= 1; piece_color++) {
+		for (int piece_type = 0; piece_type <= 4; piece_type++) {
+			
+			pieces = piece_color ? th->blackPieceBB[piece_type + 1] :
+				th->whitePieceBB[piece_type + 1];
+			
+			while (pieces) {
+				
+				piece_position = NN_GET_POSITION(pieces);
+				
+				index_w = (piece_type << 1) + (piece_color);
+				index_b = (piece_type << 1) + (1 - piece_color);
+	
+				sq_w = piece_position;
+				sq_b = piece_position ^ 63;
+	
+				feature_w = (640 * white_king_position) + (64 * index_w) + (sq_w);
+				feature_b = (640 * black_king_position) + (64 * index_b) + (sq_b);
+	
+	
+				for (int i = 0; i < num_chunks; i++) {
+        	
+					_mm256_add_epi16(regs_w[i], &nn->W0[NN_SIZE * feature + (i * register_width)]);
+					
+					_mm256_add_epi16(regs_b[i], &nn->W0[NN_SIZE * feature + (i * register_width)]);
+				}
+					
+				NN_POP_POSITION(pieces);
+			}
+		}
+	}
+	
+	for (int i = 0; i < num_chunks; ++i) {
+					
+		_mm256_store_si256(&th->accumulator[0][i * register_width], regs_w[i]);
+       
+    	_mm256_store_si256(&th->accumulator[1][i * register_width], regs_b[i]);
+    }
+}
+
+/*
+
+void refresh_accumulator(
+    const LinearLayer&      layer,            // this will always be L_0
+    NnueAccumulator&        new_acc,          // storage for the result
+) {
+	
+	int M = NN_SIZE;
+	
+	
+    // The compiler should use one register per value, and hopefully
+    // won't spill anything. Always check the assembly generated to be sure!
+    constexpr int register_width = 256 / 16;
+    static_assert(M % register_width == 0, "We're processing 16 elements at a time");
+    constexpr int num_chunks = M / register_width;
+    __m128i regs[num_chunks];
+
+    // Load bias to registers and operate on registers only.
+    for (int i = 0; i < num_chunks; ++i) {
+        regs[i] = _mm256_load_si256(&nn->B0[i * register_width]);
+    }
+
+    for (int a : active_features) {
+        for (int i = 0; i < num_chunks; ++i) {
+            // Now we do 1 memory operation instead of 2 per loop iteration.
+            regs[i] = _mm256_add_epi16(regs[i], &nn->W0[a][i * register_width]);
+        }
+    }
+    
+    
+    
+    const int index = (piece_type << 1) + (piece_color);
+	const int index_b = (piece_type << 1) + (1 - piece_color);
+	
+	#if defined(NN_DEBUG)
+		assert(index_w >= 0 && index_w <= 9);
+		assert(index_b >= 0 && index_b <= 9);
+	#endif
+	
+	const int sq_w = piece_position;
+	const int sq_b = piece_position ^ 63;
+
+   const int feature = (640 * king_position) + (64 * index) + (sq);
+   for (int a : active_features) {
+   	
+   
+   
+        for (int i = 0; i < num_chunks; i++) {
+        	
+			_mm256_add_epi16(regs[i], &nn->W0[NN_SIZE * feature + (i * register_width)]);
+		}
+    }
+     
+    // Only after all the accumulation is done do the write.
+    for (int i = 0; i < num_chunks; ++i) {
+        _mm256_store_si256(&new_acc[perspective][i * register_width], regs[i]);
+    }
+}
+*/
+
 
 
 void nn_inputs_add_piece(NN_Network* nn, Thread* th, int piece_type, int piece_color, int piece_position) {

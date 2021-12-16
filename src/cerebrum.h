@@ -62,4 +62,10 @@ void nn_inputs_mov_piece(NN_Network* nn, Thread* th, int piece_type, int piece_c
 
 int nn_eval(NN_Network* nn, Thread* th, int color);
 
+void refresh_accumulator(
+    NnueAccumulator&        new_acc,          // storage for the result
+    const std::vector<int>& active_features,  // the indices of features that are active for this position
+    const int                   perspective       // the perspective to refresh
+) 
+
 #endif // CEREBRUM_H_INCLUDED
