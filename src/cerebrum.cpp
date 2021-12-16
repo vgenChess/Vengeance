@@ -458,9 +458,9 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 	
 				for (int i = 0; i < num_chunks; i++) {
         	
-					regs_w[i] = _mm256_add_ps(regs_w[i], nn->W0[NN_SIZE * feature_w + (i * register_width)]);
+					regs_w[i] = _mm256_add_ps(regs_w[i], _mm256_loadu_ps(&nn->W0[NN_SIZE * feature_w + (i * register_width)]));
 					
-					regs_b[i] = _mm256_add_ps(regs_b[i], nn->W0[NN_SIZE * feature_b + (i * register_width)]);
+					regs_b[i] = _mm256_add_ps(regs_b[i], _mm256_loadu_ps(&nn->W0[NN_SIZE * feature_b + (i * register_width)]));
 				}
 					
 				NN_POP_POSITION(pieces);
