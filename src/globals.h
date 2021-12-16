@@ -207,9 +207,9 @@ typedef struct {
 	float accumulator[2][NN_SIZE];
 } NN_Board;
 
-struct alignas(64) NnueAccumulator {
+struct NnueAccumulator {
 
-	int16_t v[2][NN_SIZE]; 
+	float v[2][NN_SIZE]; 
 };
 
 /*

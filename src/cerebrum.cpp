@@ -381,8 +381,8 @@ int nn_eval(NN_Network* nn, Thread *th, int color) {
 
 /* *************************************************************** */
 
-/*
-void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
+
+//void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 	
 	/*
 	for (int o = 0; o < NN_SIZE; o++) {
@@ -391,29 +391,29 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 	}
 	*/
 	
-	memcpy(th->accumulator.v[0], nn->B0, sizeof(nn->B0));
-	memcpy(th->accumulator.v[1], nn->B0, sizeof(nn->B0));
+	//memcpy(th->accumulator.v[0], nn->B0, sizeof(nn->B0));
+	//memcpy(th->accumulator.v[1], nn->B0, sizeof(nn->B0));
 	
-	for (int piece_color = 0; piece_color <= 1; piece_color++) {
-		for (int piece_type = 0; piece_type <= 4; piece_type++) {
+	//for (int piece_color = 0; piece_color <= 1; piece_color++) {
+		//for (int piece_type = 0; piece_type <= 4; piece_type++) {
 			
-			uint64_t pieces = piece_color ? th->blackPieceBB[piece_type + 1] :
-				th->whitePieceBB[piece_type + 1];
+			//uint64_t pieces = piece_color ? th->blackPieceBB[piece_type + 1] :
+				//th->whitePieceBB[piece_type + 1];
 			
-			while (pieces) {
+			//while (pieces) {
 				
-				const int piece_position = NN_GET_POSITION(pieces);
-				nn_inputs_add_piece(nn, th, piece_type, piece_color, piece_position);
-				NN_POP_POSITION(pieces);
-			}
-		}
-	}
-}
-*/
+				//const int piece_position = NN_GET_POSITION(pieces);
+				//nn_inputs_add_piece(nn, th, piece_type, piece_color, piece_position);
+				//NN_POP_POSITION(pieces);
+			//}
+		//}
+	//}
+//}
+
 
 void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 	
-	int piece_position;
+	int piece_position, index_w, index_b, sq_w, sq_b, feature_w, feature_b;
 	u64 pieces;
 	
 	int M = NN_SIZE;
@@ -424,13 +424,13 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
     constexpr int register_width = 256 / 16;
     static_assert(M % register_width == 0, "We're processing 16 elements at a time");
     constexpr int num_chunks = M / register_width;
-    __m128i regs_w[num_chunks], regs_b[num_chunks];
+    __m256 regs_w[num_chunks], regs_b[num_chunks];
 
     // Load bias to registers and operate on registers only.
     for (int i = 0; i < num_chunks; ++i) {
     	
-        regs_w[i] = _mm256_load_si256(&nn->B0[i * register_width]);
-        regs_b[i] = _mm256_load_si256(&nn->B0[i * register_width]);
+        regs_w[i] = _mm256_load_ps(&nn->B0[i * register_width]);
+        regs_b[i] = _mm256_load_ps(&nn->B0[i * register_width]);
     }
 	
 	
@@ -453,12 +453,11 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 				feature_w = (640 * white_king_position) + (64 * index_w) + (sq_w);
 				feature_b = (640 * black_king_position) + (64 * index_b) + (sq_b);
 	
-	
 				for (int i = 0; i < num_chunks; i++) {
         	
-					_mm256_add_epi16(regs_w[i], &nn->W0[NN_SIZE * feature + (i * register_width)]);
+					regs_w[i] = _mm256_add_ps(regs_w[i], nn->W0[NN_SIZE * feature_w + (i * register_width)]);
 					
-					_mm256_add_epi16(regs_b[i], &nn->W0[NN_SIZE * feature + (i * register_width)]);
+					regs_b[i] = _mm256_add_ps(regs_b[i], nn->W0[NN_SIZE * feature_b + (i * register_width)]);
 				}
 					
 				NN_POP_POSITION(pieces);
@@ -468,9 +467,9 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 	
 	for (int i = 0; i < num_chunks; ++i) {
 					
-		_mm256_store_si256(&th->accumulator.v[0][i * register_width], regs_w[i]);
+		_mm256_store_ps(&th->accumulator.v[0][i * register_width], regs_w[i]);
        
-    	_mm256_store_si256(&th->accumulator.v[1][i * register_width], regs_b[i]);
+    	_mm256_store_ps(&th->accumulator.v[1][i * register_width], regs_b[i]);
     }
 }
 
