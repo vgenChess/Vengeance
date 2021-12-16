@@ -84,11 +84,6 @@ int main(int argc, char **argv) {
     
 static void runBenchmark(int argc, char **argv) {
 
-	printf("OVERALL: %47d nodes %12d nps\n", 1,  700000);
-    
-    return;
-
-
     static const char *Benchmarks[] = {
         #include "bench.csv"
         ""
@@ -99,7 +94,7 @@ static void runBenchmark(int argc, char **argv) {
     uint64_t nodes[256], totalNodes = 0;
     u32 bestMoves[256];
     
-    int depth     = 13;
+    int depth     = 10;
     MAX_DEPTH     = depth;
 
 
