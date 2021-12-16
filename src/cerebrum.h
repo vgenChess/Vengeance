@@ -66,6 +66,6 @@ void refresh_accumulator(
     NnueAccumulator&        new_acc,          // storage for the result
     const std::vector<int>& active_features,  // the indices of features that are active for this position
     const int                   perspective       // the perspective to refresh
-) 
+);
 
 #endif // CEREBRUM_H_INCLUDED
