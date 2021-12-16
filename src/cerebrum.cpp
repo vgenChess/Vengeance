@@ -216,7 +216,7 @@ int nn_load(NN_Network* nn, char* filename) {
 	*nn = (NN_Network) {0};
 	*st = (NN_Storage) {0};
 	
-/*
+	/*
 	FILE* file = fopen(filename, "rb");
 	if (file == NULL) {
 		printf("info debug NN file conversion...\n");
