@@ -23,7 +23,7 @@ AVX2 = -mavx2 -mavx -mfma -msse4.1 $(SSSE)
 	#$(CC) $(CFLAGS) -c $< -o $@
 	
 avx2:
-	$(CC) $(RFLAGS) $(SRC) $(AVX2) -o $(EXE)
+	$(CC) $(CFLAGS) $(SRC) $(AVX2) -o $(EXE)
 
 all: avx2
 
