@@ -424,16 +424,16 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 	
     // The compiler should use one register per value, and hopefully
     // won't spill anything. Always check the assembly generated to be sure!
-    constexpr int register_width = 256 / 16;
-    static_assert(M % register_width == 0, "We're processing 16 elements at a time");
-    constexpr int num_chunks = M / register_width;
-    __m256 regs_w[num_chunks], regs_b[num_chunks];
+ //   constexpr int register_width = 256 / 16;
+    //static_assert(M % register_width == 0, "We're processing 16 elements at a time");
+//    constexpr int num_chunks = M / register_width;
+    __m256 regs_w[M], regs_b[M];
 
     // Load bias to registers and operate on registers only.
-    for (int i = 0; i < num_chunks; ++i) {
+    for (int i = 0; i < M; i += 4) {
     	
-        regs_w[i] = _mm256_load_ps(&nn->B0[i * register_width]);
-        regs_b[i] = _mm256_load_ps(&nn->B0[i * register_width]);
+        regs_w[i] = _mm256_loadu_ps(&nn->B0[i]);
+        regs_b[i] = _mm256_loadu_ps(&nn->B0[i]);
     }
 	
 	
@@ -456,11 +456,11 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 				feature_w = (640 * white_king_position) + (64 * index_w) + (sq_w);
 				feature_b = (640 * black_king_position) + (64 * index_b) + (sq_b);
 	
-				for (int i = 0; i < num_chunks; i++) {
+				for (int i = 0; i < M; i += 4) {
         	
-					regs_w[i] = _mm256_add_ps(regs_w[i], _mm256_loadu_ps(&nn->W0[NN_SIZE * feature_w + (i * register_width)]));
+					regs_w[i] = _mm256_add_ps(regs_w[i], _mm256_loadu_ps(&nn->W0[NN_SIZE * feature_w + i]));
 					
-					regs_b[i] = _mm256_add_ps(regs_b[i], _mm256_loadu_ps(&nn->W0[NN_SIZE * feature_b + (i * register_width)]));
+					regs_b[i] = _mm256_add_ps(regs_b[i], _mm256_loadu_ps(&nn->W0[NN_SIZE * feature_b + i]));
 				}
 					
 				NN_POP_POSITION(pieces);
@@ -468,11 +468,11 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 		}
 	}
 	
-	for (int i = 0; i < num_chunks; ++i) {
+	for (int i = 0; i < M; i += 4) {
 					
-		_mm256_store_ps(&th->accumulator.v[0][i * register_width], regs_w[i]);
+		_mm256_storeu_ps(&th->accumulator.v[0][i], regs_w[i]);
        
-    	_mm256_store_ps(&th->accumulator.v[1][i * register_width], regs_b[i]);
+    	_mm256_storeu_ps(&th->accumulator.v[1][i], regs_b[i]);
     }
 }
 
