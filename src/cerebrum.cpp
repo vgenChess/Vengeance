@@ -468,9 +468,9 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 	
 	for (int i = 0; i < num_chunks; ++i) {
 					
-		_mm256_store_si256(&th->accumulator[0][i * register_width], regs_w[i]);
+		_mm256_store_si256(&th->accumulator.v[0][i * register_width], regs_w[i]);
        
-    	_mm256_store_si256(&th->accumulator[1][i * register_width], regs_b[i]);
+    	_mm256_store_si256(&th->accumulator.v[1][i * register_width], regs_b[i]);
     }
 }
 
