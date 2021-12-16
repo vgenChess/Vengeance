@@ -416,7 +416,10 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 	int piece_position, index_w, index_b, sq_w, sq_b, feature_w, feature_b;
 	u64 pieces;
 	
-	int M = NN_SIZE;
+	const int M = NN_SIZE;
+	
+	const int white_king_position = NN_GET_POSITION(th->whitePieceBB[KING]);
+	const int black_king_position = NN_GET_POSITION(th->blackPieceBB[KING]) ^ 63;
 	
 	
     // The compiler should use one register per value, and hopefully
