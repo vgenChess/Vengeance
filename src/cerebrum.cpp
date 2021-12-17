@@ -211,25 +211,12 @@ static int nn_convert(char* filename) {
 	return 0;
 }
 
+
+
 int nn_load(NN_Network* nn, char* filename) {
 	
 	*nn = (NN_Network) {0};
 	*st = (NN_Storage) {0};
-	
-	/*
-	FILE* file = fopen(filename, "rb");
-	if (file == NULL) {
-		printf("info debug NN file conversion...\n");
-		if (nn_convert(filename) == -1) {
-			return -1;
-		}
-	}
-	file = fopen(filename, "rb");
-	if (file == NULL) {
-		return -1;
-	}
-	fread(st, sizeof(NN_Storage), 1, file);
-	*/
 	
 	memcpy(st, &gNetworkData, sizeof(NN_Storage));
 	
@@ -243,11 +230,8 @@ int nn_load(NN_Network* nn, char* filename) {
 	size += sizeof(st->W3) + sizeof(st->B3);
 	
 	memcpy(nn->B0, st->B0, size);
-	
-	
-	
-	//fclose(file);
-	
+
+
 	return 0;
 }
 
@@ -270,6 +254,8 @@ static float clamp(float value) {
 	}
 	return value;
 }
+
+
 
 
 
@@ -351,6 +337,9 @@ static void nn_compute_layer(float* B, float* I, float* W, float* O, int idim, i
 	}
 }
 
+
+
+
 int nn_eval(NN_Network* nn, Thread *th, int color) {
 	
 	#if defined(NN_DEBUG)
@@ -382,35 +371,6 @@ int nn_eval(NN_Network* nn, Thread *th, int color) {
 /* *************************************************************** */
 
 
-//void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
-	
-	/*
-	for (int o = 0; o < NN_SIZE; o++) {
-		board->accumulator[0][o] = nn->B0[o];
-		board->accumulator[1][o] = nn->B0[o];
-	}
-	*/
-	
-	//memcpy(th->accumulator.v[0], nn->B0, sizeof(nn->B0));
-	//memcpy(th->accumulator.v[1], nn->B0, sizeof(nn->B0));
-	
-	//for (int piece_color = 0; piece_color <= 1; piece_color++) {
-		//for (int piece_type = 0; piece_type <= 4; piece_type++) {
-			
-			//uint64_t pieces = piece_color ? th->blackPieceBB[piece_type + 1] :
-				//th->whitePieceBB[piece_type + 1];
-			
-			//while (pieces) {
-				
-				//const int piece_position = NN_GET_POSITION(pieces);
-				//nn_inputs_add_piece(nn, th, piece_type, piece_color, piece_position);
-				//NN_POP_POSITION(pieces);
-			//}
-		//}
-	//}
-//}
-
-
 
 
 
@@ -429,6 +389,7 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
     constexpr int register_width = 256 / 32;
     //static_assert(M % register_width == 0, "We're processing 8 elements at a time");
     constexpr int num_chunks = M / register_width;
+    
     __m256 regs_w[num_chunks], regs_b[num_chunks];
 
     // Load bias to registers and operate on registers only.
@@ -442,7 +403,8 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 		
 		for (int piece_type = 0; piece_type <= 4; piece_type++) {
 			
-			pieces = piece_color ? th->blackPieceBB[piece_type + 1] :
+			pieces = piece_color ? 
+				th->blackPieceBB[piece_type + 1] :
 				th->whitePieceBB[piece_type + 1];
 			
 			while (pieces) {
@@ -474,9 +436,8 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 	
 	for (int i = 0; i < num_chunks; i ++) {
 					
-		_mm256_store_ps(&th->accumulator.v[0][i * register_width], regs_w[i]);
-       
-    	_mm256_store_ps(&th->accumulator.v[1][i * register_width], regs_b[i]);
+		_mm256_store_ps(&th->accumulator.v[WHITE][i * register_width], regs_w[i]);
+    	_mm256_store_ps(&th->accumulator.v[BLACK][i * register_width], regs_b[i]);
     }
 }
 
@@ -534,11 +495,9 @@ void nn_inputs_mov_piece(NN_Network* nn,  Thread *th, int piece_type, int piece_
     
     for (int i = 0; i < num_chunks; i++) {
     	
-        regs_w[i]=_mm256_load_ps(&th->accumulator.v[0][i * register_width]);
-        regs_b[i]=_mm256_load_ps(&th->accumulator.v[1][i * register_width]);
+        regs_w[i]=_mm256_load_ps(&th->accumulator.v[WHITE][i * register_width]);
+        regs_b[i]=_mm256_load_ps(&th->accumulator.v[BLACK][i * register_width]);
     }
-	
-	
 	
 	for (int i = 0; i < num_chunks; i++) {
         	
@@ -556,12 +515,10 @@ void nn_inputs_mov_piece(NN_Network* nn,  Thread *th, int piece_type, int piece_
 			_mm256_load_ps(&nn->W0[NN_SIZE * feature_b_fr + (i * register_width)]));
 	}
 	
-	
 	for (int i = 0; i < num_chunks; i ++) {
 					
-		_mm256_store_ps(&th->accumulator.v[0][i * register_width], regs_w[i]);
-       
-    	_mm256_store_ps(&th->accumulator.v[1][i * register_width], regs_b[i]);
+		_mm256_store_ps(&th->accumulator.v[WHITE][i * register_width], regs_w[i]);
+    	_mm256_store_ps(&th->accumulator.v[BLACK][i * register_width], regs_b[i]);
     }
 }
 
@@ -610,8 +567,8 @@ void nn_inputs_del_piece(NN_Network* nn, Thread* th, int piece_type, int piece_c
     
     for (int i = 0; i < num_chunks; i++) {
     	
-        regs_w[i]=_mm256_load_ps(&th->accumulator.v[0][i * register_width]);
-        regs_b[i]=_mm256_load_ps(&th->accumulator.v[1][i * register_width]);
+        regs_w[i]=_mm256_load_ps(&th->accumulator.v[WHITE][i * register_width]);
+        regs_b[i]=_mm256_load_ps(&th->accumulator.v[BLACK][i * register_width]);
     }
     
 	
@@ -627,72 +584,64 @@ void nn_inputs_del_piece(NN_Network* nn, Thread* th, int piece_type, int piece_c
 	
 	for (int i = 0; i < num_chunks; i ++) {
 					
-		_mm256_store_ps(&th->accumulator.v[0][i * register_width], regs_w[i]);
-       
-    	_mm256_store_ps(&th->accumulator.v[1][i * register_width], regs_b[i]);
+		_mm256_store_ps(&th->accumulator.v[WHITE][i * register_width], regs_w[i]);
+    	_mm256_store_ps(&th->accumulator.v[BLACK][i * register_width], regs_b[i]);
     }
 }
 
 
 
-/*
 
-void refresh_accumulator(
-    const LinearLayer&      layer,            // this will always be L_0
-    NnueAccumulator&        new_acc,          // storage for the result
-) {
-	
-	int M = NN_SIZE;
-	
-    // The compiler should use one register per value, and hopefully
-    // won't spill anything. Always check the assembly generated to be sure!
-    constexpr int register_width = 256 / 16;
-    static_assert(M % register_width == 0, "We're processing 16 elements at a time");
-    constexpr int num_chunks = M / register_width;
-    __m128i regs[num_chunks];
 
-    // Load bias to registers and operate on registers only.
-    for (int i = 0; i < num_chunks; ++i) {
-        regs[i] = _mm256_load_si256(&nn->B0[i * register_width]);
-    }
 
-    for (int a : active_features) {
-        for (int i = 0; i < num_chunks; ++i) {
-            // Now we do 1 memory operation instead of 2 per loop iteration.
-            regs[i] = _mm256_add_epi16(regs[i], &nn->W0[a][i * register_width]);
-        }
-    }
-    
-    
-    
-    const int index = (piece_type << 1) + (piece_color);
-	const int index_b = (piece_type << 1) + (1 - piece_color);
-	
-	#if defined(NN_DEBUG)
-		assert(index_w >= 0 && index_w <= 9);
-		assert(index_b >= 0 && index_b <= 9);
-	#endif
-	
-	const int sq_w = piece_position;
-	const int sq_b = piece_position ^ 63;
 
-   const int feature = (640 * king_position) + (64 * index) + (sq);
-   for (int a : active_features) {
-   	
-   
-   
-        for (int i = 0; i < num_chunks; i++) {
-        	
-			_mm256_add_epi16(regs[i], &nn->W0[NN_SIZE * feature + (i * register_width)]);
-		}
-    }
-     
-    // Only after all the accumulation is done do the write.
-    for (int i = 0; i < num_chunks; ++i) {
-        _mm256_store_si256(&new_acc[perspective][i * register_width], regs[i]);
-    }
-}
-*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
+	
+	/*
+	for (int o = 0; o < NN_SIZE; o++) {
+		board->accumulator[0][o] = nn->B0[o];
+		board->accumulator[1][o] = nn->B0[o];
+	}
+	*/
+	
+	//memcpy(th->accumulator.v[0], nn->B0, sizeof(nn->B0));
+	//memcpy(th->accumulator.v[1], nn->B0, sizeof(nn->B0));
+	
+	//for (int piece_color = 0; piece_color <= 1; piece_color++) {
+		//for (int piece_type = 0; piece_type <= 4; piece_type++) {
+			
+			//uint64_t pieces = piece_color ? th->blackPieceBB[piece_type + 1] :
+				//th->whitePieceBB[piece_type + 1];
+			
+			//while (pieces) {
+				
+				//const int piece_position = NN_GET_POSITION(pieces);
+				//nn_inputs_add_piece(nn, th, piece_type, piece_color, piece_position);
+				//NN_POP_POSITION(pieces);
+			//}
+		//}
+	//}
+//}
+
 
 
 /*
@@ -733,9 +682,7 @@ void nn_inputs_add_piece(NN_Network* nn, Thread* th, int piece_type, int piece_c
 		th->accumulator.v[1][o] += nn->W0[NN_SIZE * feature_b + o];
 	}
 }
-*/
 
-/*
 void nn_inputs_del_piece(NN_Network* nn, Thread* th, int piece_type, int piece_color, int piece_position) {
 	
 	const int white_king_position = NN_GET_POSITION(th->whitePieceBB[KING]);
@@ -773,8 +720,7 @@ void nn_inputs_del_piece(NN_Network* nn, Thread* th, int piece_type, int piece_c
 		th->accumulator.v[1][o] -= nn->W0[NN_SIZE * feature_b + o];
 	}
 }
-*/
-/*
+
 void nn_inputs_mov_piece(NN_Network* nn,  Thread *th, int piece_type, int piece_color, int from, int to) {
 	
 	const int white_king_position = NN_GET_POSITION(th->whitePieceBB[KING]);
@@ -825,3 +771,5 @@ void nn_inputs_mov_piece(NN_Network* nn,  Thread *th, int piece_type, int piece_
 	}
 }
 */
+
+
