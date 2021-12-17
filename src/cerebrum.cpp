@@ -431,8 +431,8 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
     // Load bias to registers and operate on registers only.
     for (int i = 0; i < M; i += 4) {
     	
-        regs_w[i] = _mm256_loadu_ps(&nn->B0[i]);
-        regs_b[i] = _mm256_loadu_ps(&nn->B0[i]);
+        _mm256_storeu_ps(&regs_w[i], _mm256_loadu_ps(&nn->B0[i]));
+        _mm256_storeu_ps(&regs_b[i], _mm256_loadu_ps(&nn->B0[i]));
     }
 	
 	
@@ -471,9 +471,9 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 	
 	for (int i = 0; i < M; i += 4) {
 					
-		_mm256_storeu_ps(&th->accumulator.v[0][i], regs_w[i]);
+		_mm256_storeu_ps(&th->accumulator.v[0][i], _mm256_loadu_ps(&regs_w[i]));
        
-    	_mm256_storeu_ps(&th->accumulator.v[1][i], regs_b[i]);
+    	_mm256_storeu_ps(&th->accumulator.v[1][i], _mm256_loadu_ps(&regs_b[i]));
     }
 }
 
