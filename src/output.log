@@ -1,1 +1,0 @@
-g++ -O3 -std=c++17 -Wall -Wextra -Wshadow -fopenmp -g -flto -march=native *.cpp -mavx2 -mavx -mfma -msse4.1 -mssse3 -msse3 -msse2 -msse -mpopcnt -o Vengeance
