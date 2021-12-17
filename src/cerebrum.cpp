@@ -390,8 +390,15 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
     //static_assert(M % register_width == 0, "We're processing 8 elements at a time");
     constexpr int num_chunks = M / register_width;
     
-    __m256 reg;
-    
+    __m256 regs_w[num_chunks], regs_b[num_chunks];
+
+    // Load bias to registers and operate on registers only.
+    for (int i = 0; i < num_chunks; i++) {
+    	
+        regs_w[i]=_mm256_load_ps(&nn->B0[i * register_width]);
+        regs_b[i]=_mm256_load_ps(&nn->B0[i * register_width]);
+    }
+	
 	for (int piece_color = 0; piece_color <= 1; piece_color++) {
 		
 		for (int piece_type = 0; piece_type <= 4; piece_type++) {
@@ -414,24 +421,24 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 				feature_b = (640 * black_king_position) + (64 * index_b) + (sq_b);
 	
 				for (int i = 0; i < num_chunks; i++) {
-        			
-					reg=_mm256_load_ps(&nn->B0[i * register_width]);
-					reg= _mm256_add_ps(reg,
+        	
+					regs_w[i] = _mm256_add_ps(regs_w[i],
  				   	_mm256_load_ps(&nn->W0[NN_SIZE * feature_w + (i * register_width)]));
-					_mm256_store_ps(&th->accumulator.v[WHITE][i * register_width], reg);
 					
-					
-					
-					reg=_mm256_load_ps(&nn->B0[i * register_width]);
-					reg= _mm256_add_ps(reg, 
+					regs_b[i] = _mm256_add_ps(regs_b[i], 
 						_mm256_load_ps(&nn->W0[NN_SIZE * feature_b + (i * register_width)]));
-					_mm256_store_ps(&th->accumulator.v[BLACK][i * register_width], reg);
 				}
 					
 				NN_POP_POSITION(pieces);
 			}
 		}
-	}   
+	}
+	
+	for (int i = 0; i < num_chunks; i ++) {
+					
+		_mm256_store_ps(&th->accumulator.v[WHITE][i * register_width], regs_w[i]);
+    	_mm256_store_ps(&th->accumulator.v[BLACK][i * register_width], regs_b[i]);
+    }
 }
 
 
@@ -483,24 +490,24 @@ void nn_inputs_mov_piece(NN_Network* nn,  Thread *th, int piece_type, int piece_
     //static_assert(M % register_width == 0, "We're processing 8 elements at a time");
     constexpr int num_chunks = M / register_width;
     
-    __m256 reg;
+    __m256 regs;
 
     for (int i = 0; i < num_chunks; i++) {
     	
-        reg=_mm256_load_ps(&th->accumulator.v[WHITE][i * register_width]);
-        reg= _mm256_add_ps(reg,
+        regs=_mm256_load_ps(&th->accumulator.v[WHITE][i * register_width]);
+        regs= _mm256_add_ps(regs,
 			_mm256_load_ps(&nn->W0[NN_SIZE * feature_w_to + (i * register_width)]));
-		reg= _mm256_sub_ps(reg,
+		regs= _mm256_sub_ps(regs,
 			_mm256_load_ps(&nn->W0[NN_SIZE * feature_w_fr + (i * register_width)]));
-		_mm256_store_ps(&th->accumulator.v[WHITE][i * register_width], reg);
+		_mm256_store_ps(&th->accumulator.v[WHITE][i * register_width], regs);
         
         
-        reg=_mm256_load_ps(&th->accumulator.v[BLACK][i * register_width]);
-        reg= _mm256_add_ps(reg, 
+        regs=_mm256_load_ps(&th->accumulator.v[BLACK][i * register_width]);
+        regs= _mm256_add_ps(regs, 
 			_mm256_load_ps(&nn->W0[NN_SIZE * feature_b_to + (i * register_width)]));
-		reg= _mm256_sub_ps(reg, 
+		regs= _mm256_sub_ps(regs, 
 			_mm256_load_ps(&nn->W0[NN_SIZE * feature_b_fr + (i * register_width)]));
-		_mm256_store_ps(&th->accumulator.v[BLACK][i * register_width], reg);
+		_mm256_store_ps(&th->accumulator.v[BLACK][i * register_width], regs);
     }
 }
 
@@ -545,20 +552,20 @@ void nn_inputs_del_piece(NN_Network* nn, Thread* th, int piece_type, int piece_c
     constexpr int num_chunks = M / register_width;
    
    
-    __m256 reg;
+    __m256 regs;
 
     for (int i = 0; i < num_chunks; i++) {
     	
-        reg=_mm256_load_ps(&th->accumulator.v[WHITE][i * register_width]);
-        reg= _mm256_sub_ps(reg,
+        regs=_mm256_load_ps(&th->accumulator.v[WHITE][i * register_width]);
+        regs= _mm256_sub_ps(regs,
 			_mm256_load_ps(&nn->W0[NN_SIZE * feature_w + (i * register_width)]));
-		_mm256_store_ps(&th->accumulator.v[WHITE][i * register_width], reg);
+		_mm256_store_ps(&th->accumulator.v[WHITE][i * register_width], regs);
         
         
-        reg=_mm256_load_ps(&th->accumulator.v[BLACK][i * register_width]);
-        reg= _mm256_sub_ps(reg, 
+        regs=_mm256_load_ps(&th->accumulator.v[BLACK][i * register_width]);
+        regs= _mm256_sub_ps(regs, 
 			_mm256_load_ps(&nn->W0[NN_SIZE * feature_b + (i * register_width)]));
-		_mm256_store_ps(&th->accumulator.v[BLACK][i * register_width], reg);
+		_mm256_store_ps(&th->accumulator.v[BLACK][i * register_width], regs);
     }   
 }
 
