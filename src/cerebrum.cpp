@@ -420,11 +420,10 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 	int piece_position, index_w, index_b, sq_w, sq_b, feature_w, feature_b;
 	u64 pieces;
 	
-	const int M = NN_SIZE;
-	
 	const int white_king_position = NN_GET_POSITION(th->whitePieceBB[KING]);
 	const int black_king_position = NN_GET_POSITION(th->blackPieceBB[KING]) ^ 63;
 	
+	const int M = NN_SIZE;
     // The compiler should use one register per value, and hopefully
     // won't spill anything. Always check the assembly generated to be sure!
     constexpr int register_width = 256 / 32;
@@ -482,6 +481,89 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 }
 
 
+void nn_inputs_mov_piece(NN_Network* nn,  Thread *th, int piece_type, int piece_color, int from, int to) {
+	
+	const int white_king_position = NN_GET_POSITION(th->whitePieceBB[KING]);
+	const int black_king_position = NN_GET_POSITION(th->blackPieceBB[KING]) ^ 63;
+	
+	#if defined(NN_DEBUG)
+		assert(piece_type >= 0 && piece_type <= 4);
+		assert(piece_color >= 0 && piece_color <= 1);
+		assert(from >= 0 && from <= 63 && to >= 0 && to <= 63);
+		assert(white_king_position >= 0 && white_king_position <= 63);
+		assert(black_king_position >= 0 && black_king_position <= 63);
+	#endif
+	
+	const int index_w = (piece_type << 1) + (piece_color);
+	const int index_b = (piece_type << 1) + (1 - piece_color);
+	
+	#if defined(NN_DEBUG)
+		assert(index_w >= 0 && index_w <= 9);
+		assert(index_b >= 0 && index_b <= 9);
+	#endif
+	
+	const int fr_w = from;
+	const int fr_b = from ^ 63;
+	
+	const int to_w = to;
+	const int to_b = to ^ 63;
+	
+	const int feature_w_fr = (640 * white_king_position) + (64 * index_w) + (fr_w);
+	const int feature_b_fr = (640 * black_king_position) + (64 * index_b) + (fr_b);
+	
+	const int feature_w_to = (640 * white_king_position) + (64 * index_w) + (to_w);
+	const int feature_b_to = (640 * black_king_position) + (64 * index_b) + (to_b);
+	
+	#if defined(NN_DEBUG)
+		assert(feature_w_fr >= 0 && feature_w_fr <= 40960);
+		assert(feature_b_fr >= 0 && feature_b_fr <= 40960);
+		assert(feature_w_to >= 0 && feature_w_to <= 40960);
+		assert(feature_b_to >= 0 && feature_b_to <= 40960);
+	#endif
+	
+	
+	const int M = NN_SIZE;
+    // The compiler should use one register per value, and hopefully
+    // won't spill anything. Always check the assembly generated to be sure!
+    constexpr int register_width = 256 / 32;
+    //static_assert(M % register_width == 0, "We're processing 8 elements at a time");
+    constexpr int num_chunks = M / register_width;
+    
+    __m256 regs_w[num_chunks], regs_b[num_chunks];
+
+    
+    for (int i = 0; i < num_chunks; i++) {
+    	
+        regs_w[i]=_mm256_load_ps(&th->accumulator.v[0][i * register_width]);
+        regs_b[i]=_mm256_load_ps(&th->accumulator.v[1][i * register_width]);
+    }
+	
+	
+	
+	for (int i = 0; i < num_chunks; i++) {
+        	
+		regs_w[i] = _mm256_add_ps(regs_w[i],
+			_mm256_load_ps(&nn->W0[NN_SIZE * feature_w_to + (i * register_width)]));
+		
+		regs_w[i] = _mm256_sub_ps(regs_w[i],
+			_mm256_load_ps(&nn->W0[NN_SIZE * feature_w_fr + (i * register_width)]));
+			
+		
+		regs_b[i] = _mm256_add_ps(regs_b[i], 
+			_mm256_load_ps(&nn->W0[NN_SIZE * feature_b_to + (i * register_width)]));
+			
+		regs_b[i] = _mm256_sub_ps(regs_b[i], 
+			_mm256_load_ps(&nn->W0[NN_SIZE * feature_b_fr + (i * register_width)]));
+	}
+	
+	
+	for (int i = 0; i < num_chunks; i ++) {
+					
+		_mm256_store_ps(&th->accumulator.v[0][i * register_width], regs_w[i]);
+       
+    	_mm256_store_ps(&th->accumulator.v[1][i * register_width], regs_b[i]);
+    }
+}
 
 
 
@@ -627,7 +709,7 @@ void nn_inputs_del_piece(NN_Network* nn, Thread* th, int piece_type, int piece_c
 	}
 }
 
-
+/*
 void nn_inputs_mov_piece(NN_Network* nn,  Thread *th, int piece_type, int piece_color, int from, int to) {
 	
 	const int white_king_position = NN_GET_POSITION(th->whitePieceBB[KING]);
@@ -677,3 +759,4 @@ void nn_inputs_mov_piece(NN_Network* nn,  Thread *th, int piece_type, int piece_
 		th->accumulator.v[1][o] -= nn->W0[NN_SIZE * feature_b_fr + o];
 	}
 }
+*/
