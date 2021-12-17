@@ -566,7 +566,72 @@ void nn_inputs_mov_piece(NN_Network* nn,  Thread *th, int piece_type, int piece_
 }
 
 
+void nn_inputs_del_piece(NN_Network* nn, Thread* th, int piece_type, int piece_color, int piece_position) {
+	
+	const int white_king_position = NN_GET_POSITION(th->whitePieceBB[KING]);
+	const int black_king_position = NN_GET_POSITION(th->blackPieceBB[KING]) ^ 63;
+	
+	#if defined(NN_DEBUG)
+		assert(piece_type >= 0 && piece_type <= 4);
+		assert(piece_color >= 0 && piece_color <= 1);
+		assert(piece_position >= 0 && piece_position <= 63);
+		assert(white_king_position >= 0 && white_king_position <= 63);
+		assert(black_king_position >= 0 && black_king_position <= 63);
+	#endif
+	
+	const int index_w = (piece_type << 1) + (piece_color);
+	const int index_b = (piece_type << 1) + (1 - piece_color);
+	
+	#if defined(NN_DEBUG)
+		assert(index_w >= 0 && index_w <= 9);
+		assert(index_b >= 0 && index_b <= 9);
+	#endif
+	
+	const int sq_w = piece_position;
+	const int sq_b = piece_position ^ 63;
+	
+	const int feature_w = (640 * white_king_position) + (64 * index_w) + (sq_w);
+	const int feature_b = (640 * black_king_position) + (64 * index_b) + (sq_b);
+	
+	#if defined(NN_DEBUG)
+		assert(feature_w >= 0 && feature_w <= 40960);
+		assert(feature_b >= 0 && feature_b <= 40960);
+	#endif
+	
+	const int M = NN_SIZE;
+    // The compiler should use one register per value, and hopefully
+    // won't spill anything. Always check the assembly generated to be sure!
+    constexpr int register_width = 256 / 32;
+    //static_assert(M % register_width == 0, "We're processing 8 elements at a time");
+    constexpr int num_chunks = M / register_width;
+    
+    __m256 regs_w[num_chunks], regs_b[num_chunks];
 
+    
+    for (int i = 0; i < num_chunks; i++) {
+    	
+        regs_w[i]=_mm256_load_ps(&th->accumulator.v[0][i * register_width]);
+        regs_b[i]=_mm256_load_ps(&th->accumulator.v[1][i * register_width]);
+    }
+    
+	
+	for (int i = 0; i < num_chunks; i++) {
+        	
+		regs_w[i] = _mm256_sub_ps(regs_w[i],
+			_mm256_load_ps(&nn->W0[NN_SIZE * feature_w + (i * register_width)]));
+		
+		regs_b[i] = _mm256_sub_ps(regs_b[i], 
+			_mm256_load_ps(&nn->W0[NN_SIZE * feature_b + (i * register_width)]));
+	}
+	
+	
+	for (int i = 0; i < num_chunks; i ++) {
+					
+		_mm256_store_ps(&th->accumulator.v[0][i * register_width], regs_w[i]);
+       
+    	_mm256_store_ps(&th->accumulator.v[1][i * register_width], regs_b[i]);
+    }
+}
 
 
 
@@ -630,7 +695,7 @@ void refresh_accumulator(
 */
 
 
-
+/*
 void nn_inputs_add_piece(NN_Network* nn, Thread* th, int piece_type, int piece_color, int piece_position) {
 	
 	const int white_king_position = NN_GET_POSITION(th->whitePieceBB[KING]);
@@ -668,9 +733,9 @@ void nn_inputs_add_piece(NN_Network* nn, Thread* th, int piece_type, int piece_c
 		th->accumulator.v[1][o] += nn->W0[NN_SIZE * feature_b + o];
 	}
 }
+*/
 
-
-
+/*
 void nn_inputs_del_piece(NN_Network* nn, Thread* th, int piece_type, int piece_color, int piece_position) {
 	
 	const int white_king_position = NN_GET_POSITION(th->whitePieceBB[KING]);
@@ -708,7 +773,7 @@ void nn_inputs_del_piece(NN_Network* nn, Thread* th, int piece_type, int piece_c
 		th->accumulator.v[1][o] -= nn->W0[NN_SIZE * feature_b + o];
 	}
 }
-
+*/
 /*
 void nn_inputs_mov_piece(NN_Network* nn,  Thread *th, int piece_type, int piece_color, int from, int to) {
 	
