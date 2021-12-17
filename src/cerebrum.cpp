@@ -421,13 +421,12 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 	const int white_king_position = NN_GET_POSITION(th->whitePieceBB[KING]);
 	const int black_king_position = NN_GET_POSITION(th->blackPieceBB[KING]) ^ 63;
 	
-	
     // The compiler should use one register per value, and hopefully
     // won't spill anything. Always check the assembly generated to be sure!
  //   constexpr int register_width = 256 / 16;
     //static_assert(M % register_width == 0, "We're processing 16 elements at a time");
 //    constexpr int num_chunks = M / register_width;
-    __m256 regs_w[M], regs_b[M];
+    float regs_w[M], regs_b[M];
 
     // Load bias to registers and operate on registers only.
     for (int i = 0; i < M; i += 4) {
@@ -458,9 +457,11 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 	
 				for (int i = 0; i < M; i += 4) {
         	
-					regs_w[i] = _mm256_add_ps(regs_w[i], _mm256_loadu_ps(&nn->W0[NN_SIZE * feature_w + i]));
+					regs_w[i] = _mm256_add_ps(_mm256_loadu_ps(&regs_w[i]),
+ 				   	_mm256_loadu_ps(&nn->W0[NN_SIZE * feature_w + i]));
 					
-					regs_b[i] = _mm256_add_ps(regs_b[i], _mm256_loadu_ps(&nn->W0[NN_SIZE * feature_b + i]));
+					regs_b[i] = _mm256_add_ps(_mm256_loadu_ps(&regs_b[i]), 
+						_mm256_loadu_ps(&nn->W0[NN_SIZE * feature_b + i]));
 				}
 					
 				NN_POP_POSITION(pieces);
