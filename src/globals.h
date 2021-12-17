@@ -173,7 +173,7 @@ typedef uint64_t 	u64;
 /** TYPE DEFINITIONS                                                       **/
 /****************************************************************************/
 
-typedef struct {
+typedef struct alignas(64) {
 	float W0[40960*NN_SIZE];
 	float B0[NN_SIZE];
 	float W1[NN_SIZE*2*32];
@@ -184,7 +184,7 @@ typedef struct {
 	float B3[1];
 } NN_Network;
 
-typedef struct {
+typedef struct alignas(64) {
 	int16_t W0[40960*NN_SIZE];
 	float B0[NN_SIZE];
 	float W1[NN_SIZE*2*32];
@@ -207,7 +207,7 @@ typedef struct {
 	float accumulator[2][NN_SIZE];
 } NN_Board;
 
-struct NnueAccumulator {
+struct alignas(64) NnueAccumulator {
 
 	float v[2][NN_SIZE]; 
 };
