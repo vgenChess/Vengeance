@@ -426,7 +426,7 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
  //   constexpr int register_width = 256 / 16;
     //static_assert(M % register_width == 0, "We're processing 16 elements at a time");
 //    constexpr int num_chunks = M / register_width;
-    __mm256 regs_w[M /4], regs_b[M / 4];
+    __m256 regs_w[M /4], regs_b[M / 4];
 
     // Load bias to registers and operate on registers only.
     for (int i = 0; i < M / 4; i += 4) {
