@@ -24,6 +24,7 @@ AVX2 = -mavx2 -mavx -mfma -msse4.1 $(SSSE)
 	
 avx2:
 	$(CC) $(CFLAGS) $(SRC) $(AVX2) -o $(EXE)
+	#(RFLAGS results in a seg fault)
 
 all: avx2
 
