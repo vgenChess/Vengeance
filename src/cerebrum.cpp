@@ -389,11 +389,10 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
     constexpr int register_width = 256 / 32;
     //static_assert(M % register_width == 0, "We're processing 8 elements at a time");
     constexpr int num_chunks = M / register_width;
-    
-    __m256 regs[num_chunks];
 	
 	for (int piece_color = 0; piece_color <= 1; piece_color++) {
 		
+		__m256 regs[num_chunks];
 		// Load bias to registers and operate on registers only.
     	for (int i = 0; i < num_chunks; i++) {
     	
