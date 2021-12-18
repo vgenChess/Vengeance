@@ -68,6 +68,8 @@
  * nn_eval(&nn, &board, (color == WHITE ? 0 : 1));
  */
  
+#include <vector>
+ 
 #include "cerebrum.h"
 #include "incbin.h"
 
