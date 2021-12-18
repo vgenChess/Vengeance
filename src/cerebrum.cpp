@@ -408,8 +408,8 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 				feature_w = (640 * white_king_position) + (64 * index_w) + (sq_w);
 				feature_b = (640 * black_king_position) + (64 * index_b) + (sq_b);
 	
-	            featureWhite.push_back(feature_w);
-				featureBlack.push_back(feature_b);
+	            featuresWhite.push_back(feature_w);
+				featuresBlack.push_back(feature_b);
                 
 				NN_POP_POSITION(pieces);
 			}
