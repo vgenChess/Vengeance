@@ -383,22 +383,10 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 	const int white_king_position = NN_GET_POSITION(th->whitePieceBB[KING]);
 	const int black_king_position = NN_GET_POSITION(th->blackPieceBB[KING]) ^ 63;
 	
-	const int M = NN_SIZE;
-    // The compiler should use one register per value, and hopefully
-    // won't spill anything. Always check the assembly generated to be sure!
-    constexpr int register_width = 256 / 32;
-    //static_assert(M % register_width == 0, "We're processing 8 elements at a time");
-    constexpr int num_chunks = M / register_width;
-	
+    std::vector<int> featuresWhite, featuresBlack;
+       
 	for (int piece_color = 0; piece_color <= 1; piece_color++) {
-		
-		__m256 regs[num_chunks];
-		// Load bias to registers and operate on registers only.
-    	for (int i = 0; i < num_chunks; i++) {
-    	
-            regs[i]=_mm256_load_ps(&nn->B0[i * register_width]);
-    	}
-		
+	
 		for (int piece_type = 0; piece_type <= 4; piece_type++) {
 			
 			pieces = piece_color ? 
@@ -418,21 +406,69 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 				feature_w = (640 * white_king_position) + (64 * index_w) + (sq_w);
 				feature_b = (640 * black_king_position) + (64 * index_b) + (sq_b);
 	
-				for (int i = 0; i < num_chunks; i++) {
-        	
-					regs[i] = _mm256_add_ps(regs[i],
- 				   	_mm256_load_ps(&nn->W0[NN_SIZE * feature_w + (i * register_width)]));
-				}
-					
+	            featureWhite.push_back(feature_w);
+				featureBlack.push_back(feature_b);
+                
 				NN_POP_POSITION(pieces);
 			}
 		}
+	}
+	
+	
+	const int M = NN_SIZE;
+    // The compiler should use one register per value, and hopefully
+    // won't spill anything. Always check the assembly generated to be sure!
+    constexpr int register_width = 256 / 32;
+    //static_assert(M % register_width == 0, "We're processing 8 elements at a time");
+    constexpr int num_chunks = M / register_width;
+    
+    __m256 regs[num_chunks];
+    
+    
+    //For side White
+    
+    // Load bias to registers and operate on registers only.
+    for (int i = 0; i < num_chunks; i++) {
+    	
+    	regs[i]=_mm256_load_ps(&nn->B0[i * register_width]);
+    }
+	
+	for (auto feature : &featuresWhite) {
 		
 		for (int i = 0; i < num_chunks; i++) {
-    	
-            _mm256_store_ps(&th->accumulator.v[piece_color][i * register_width], regs[i]);
-    	}
+        	
+			regs[i] = _mm256_add_ps(regs[i],
+				_mm256_load_ps(&nn->W0[NN_SIZE * feature + (i * register_width)]));
+		}
 	}
+	
+	for (int i = 0; i < num_chunks; i++) {
+    	
+    	_mm256_store_ps(&th->accumulator.v[WHITE][i * register_width], regs[i]);
+    }
+	
+	
+	//For side Black
+	
+	 // Load bias to registers and operate on registers only.
+    for (int i = 0; i < num_chunks; i++) {
+    	
+    	regs[i]=_mm256_load_ps(&nn->B0[i * register_width]);
+    }
+	
+	for (auto feature : &featuresBlack) {
+		
+		for (int i = 0; i < num_chunks; i++) {
+        	
+			regs[i] = _mm256_add_ps(regs[i],
+				_mm256_load_ps(&nn->W0[NN_SIZE * feature + (i * register_width)]));
+		}
+	}
+	
+	for (int i = 0; i < num_chunks; i++) {
+    	
+    	_mm256_store_ps(&th->accumulator.v[BLACK][i * register_width], regs[i]);
+    }
 }
 
 
