@@ -397,7 +397,7 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 		// Load bias to registers and operate on registers only.
     	for (int i = 0; i < num_chunks; i++) {
     	
-            regs=_mm256_load_ps(&nn->B0[i * register_width]);
+            regs[i]=_mm256_load_ps(&nn->B0[i * register_width]);
     	}
 		
 		for (int piece_type = 0; piece_type <= 4; piece_type++) {
@@ -431,7 +431,7 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
 		
 		for (int i = 0; i < num_chunks; i++) {
     	
-            _mm256_store_ps(&th->accumulator.v[piece_color][i * register_width], regs);
+            _mm256_store_ps(&th->accumulator.v[piece_color][i * register_width], regs[i]);
     	}
 	}
 }
