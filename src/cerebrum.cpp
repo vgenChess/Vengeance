@@ -435,7 +435,7 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
     	regs[i]=_mm256_load_ps(&nn->B0[i * register_width]);
     }
 	
-	for (auto feature : &featuresWhite) {
+	for (auto &feature : featuresWhite) {
 		
 		for (int i = 0; i < num_chunks; i++) {
         	
@@ -458,7 +458,7 @@ void nn_inputs_upd_all(NN_Network* nn, Thread* th) {
     	regs[i]=_mm256_load_ps(&nn->B0[i * register_width]);
     }
 	
-	for (auto feature : &featuresBlack) {
+	for (auto &feature : featuresBlack) {
 		
 		for (int i = 0; i < num_chunks; i++) {
         	
