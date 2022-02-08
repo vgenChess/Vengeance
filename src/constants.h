@@ -2,9 +2,6 @@
 #ifndef CONSTANTS
 #define CONSTANTS 
 
-
-const bool NNUE = false;
-
 const int INF = 	50000;
 const int MATE = 	25000;
 

@@ -34,6 +34,7 @@
 bool quit;
 
 int option_hash_size;
+bool NNUE = false;
 
 int totalTimeLeft;
 
@@ -207,7 +208,7 @@ void setOption(std::string &line) {
         Threads.set(option_thread_count);
 
         std::cout<<"info string set Threads to " << option_thread_count << "\n";
-    }
+    } 
 }
 
 
@@ -230,6 +231,7 @@ void UciLoop() {
 
         if (!getline(cin, cmd)) // Block here waiting for input or EOF 
             cmd = "quit";
+
 
         istringstream is(cmd);
 
@@ -280,8 +282,8 @@ void UciLoop() {
 
             timeSet = false;
 
-            uint32_t wtime = 0, btime = 0, movetime = 0, time = 0, nodes;
-            uint16_t winc, binc, movestogo, depthCurrent, inc;
+            uint32_t wtime = 0, btime = 0, movetime = 0, time = 0, nodes = 0;
+            uint16_t winc = 0, binc = 0, movestogo = 0, depthCurrent = 0, inc = 0;
 
             while (is >> token) {
 
@@ -303,7 +305,7 @@ void UciLoop() {
                 }
             }
                 
-            if (wtime != 0 || btime != 0) {
+            if (wtime > 0 || btime > 0) {
 
                 timeSet = true;
 
@@ -313,13 +315,17 @@ void UciLoop() {
 
             if (timeSet) {
 
-                stopTime = startTime + std::chrono::milliseconds(time);
+                stopTime = startTime + std::chrono::milliseconds(time - 1000);
 
-                timePerMove = (time / (movestogo + 1)) + inc; 
+                timePerMove = (time / (movestogo + 2)) + inc; 
 
                 totalTimeLeft = time;    
-            }
+            } 
             
+
+
+
+
             // if (depthCurrent == -1) {
 
             //     depthCurrent = MAX_DEPTH;

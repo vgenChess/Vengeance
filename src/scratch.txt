@@ -100,12 +100,5 @@ Capture reductions (with / without) = -70 elo
 FP Val 200/250 = 0 elo
 
 
-Vengeance = Weiss code
-VengeanceTest = SF's code
-
-
-
-
-
 
 

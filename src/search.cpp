@@ -44,6 +44,8 @@ std::chrono::steady_clock::time_point startTime;
 std::chrono::steady_clock::time_point stopTime;
 
 int timePerMove;
+int MAX_TIME_PER_SEARCH = 0;
+int MIN_TIME_PER_SEARCH = 0;
 
 int seeVal[8] = { 
     
@@ -146,7 +148,7 @@ void startSearch(u8 sideToMove) {
 	stopped = false;
 }
 
-int extendedTime;
+int timeAllocatedForSearch;
 
 void searchMain(int sideToMove, SearchThread *th) {
 	
@@ -158,7 +160,9 @@ void searchMain(int sideToMove, SearchThread *th) {
 	th->depth = NO_DEPTH;
 	th->lastStableDepth = NO_DEPTH;
 
-	extendedTime = timePerMove;
+	timeAllocatedForSearch = timePerMove;
+	MAX_TIME_PER_SEARCH = timePerMove * 5;
+	MIN_TIME_PER_SEARCH = timePerMove / 3;
 
 	for (int depth = 1; depth < MAX_DEPTH; depth++) {
 		
@@ -276,6 +280,7 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th, const int depth) {
 
 
 	if (th == Threads.main())	{
+		
 
 		display(sideToMove, th->depth, th->selDepth, th->pvLine[depth].score, th->pvLine[depth].line);
 	
@@ -290,39 +295,49 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th, const int depth) {
 	 		
  		if (timeSet && th->depth >= 4) {
 			
+
 			const int this_depth = th->depth;
 		    const int this_value = th->pvLine[this_depth].score;
 		    const int last_value = th->pvLine[this_depth-1].score;
 
+
+		    int prevAllocatedTime = timeAllocatedForSearch;
+
 		    // Increase our time if the score suddenly dropped
-		    if (last_value > this_value + 10) extendedTime *= 1.050; // TODO change copied code
-		    if (last_value > this_value + 20) extendedTime *= 1.050;
-		    if (last_value > this_value + 40) extendedTime *= 1.050;
+		    if (last_value > this_value + 10) timeAllocatedForSearch *= 1.050; // TODO change copied code
+		    if (last_value > this_value + 20) timeAllocatedForSearch *= 1.050;
+		    if (last_value > this_value + 40) timeAllocatedForSearch *= 1.050;
 
 		    // Increase our time if the score suddenly jumped
-		    if (last_value + 15 < this_value) extendedTime *= 1.025;
-		    if (last_value + 30 < this_value) extendedTime *= 1.050;
+		    if (last_value + 15 < this_value) timeAllocatedForSearch *= 1.025;
+		    if (last_value + 30 < this_value) timeAllocatedForSearch *= 1.050;
 
 
-		    int stableMoveCount = 0;
+		    bool isTimeIncreased = timeAllocatedForSearch > prevAllocatedTime;
 
-		    for (int i = this_depth; (i - 1) >= th->lastStableDepth; i--) {
+		    if (!isTimeIncreased) { // before checking for a stable move time reduction
+		    						// check if score changed by more than 10 centipawns
 
-		    	if (th->pvLine[i].line.size() <= 0 || th->pvLine[i - 1].line.size() <= 0) break;
+		    	int stableMoveCount = 0;
 
-			    if (th->pvLine[i].line[0] == th->pvLine[i-1].line[0])	stableMoveCount++;	
-			    else
-			    	break;
+			    for (int i = this_depth; (i - 1) >= th->lastStableDepth; i--) {
 
-		    	if (stableMoveCount > 9)	break;
+			    	if (th->pvLine[i].line.size() <= 0 || th->pvLine[i - 1].line.size() <= 0) break;
+
+				    if (th->pvLine[i].line[0] == th->pvLine[i-1].line[0])	stableMoveCount++;	
+				    else
+				    	break;
+
+			    	if (stableMoveCount > 9)	break;
+			    }
+
+			    if (stableMoveCount > 9) {
+
+			    	timeAllocatedForSearch = timeAllocatedForSearch / 2;
+
+			    	th->lastStableDepth = th->depth;
+			    }		
 		    }
-
-		    if (stableMoveCount > 9) {
-
-		    	extendedTime *= 0.6;
-
-		    	th->lastStableDepth = th->depth;
-		    }		
 		}
 	} 
 }
@@ -497,6 +512,25 @@ void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,
 }
 
 
+void checkTime() {
+
+	std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
+
+    if (timeNow.time_since_epoch() > stopTime.time_since_epoch()) {
+        
+        Threads.stop = true;
+    }
+
+    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
+
+     if (timeAllocatedForSearch >= MAX_TIME_PER_SEARCH 
+    	|| (timeSpent >= timeAllocatedForSearch && timeSpent > MIN_TIME_PER_SEARCH)) {
+
+		Threads.stop = true;
+	}
+
+	// readInput();	
+}
 
 
 int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pline, SearchInfo *si, int mate) {
@@ -530,34 +564,12 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 	// Check time spent ------------------------------------------------------------------------------------		
 
-
 	if (	timeSet 
 		&&  is_main_thread 
 		&&  th->nodes % X_NODES == 0) {
 
-
-		std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
-
-	    if (timeNow.time_since_epoch() > stopTime.time_since_epoch()) {
-	        
-	        Threads.stop = true;
-	    }
-
-	    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
-
-	    if (timeSpent >= 0.8 * totalTimeLeft) {
-
-	        Threads.stop = true;
-	    }
-	    
-		if (timeSpent >= extendedTime && timeSpent >= 0.4 * timePerMove) {
-
-			Threads.stop = true;
-		}
-
-		// readInput();	
+		checkTime();
 	}
-
 
 	// return if need to stop due to input or move time reached
 	if (	is_main_thread 
@@ -660,17 +672,13 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	} else if (ttMatch) {
 
 		if (sEval == -INF) {
-
-			//sEval = NNUE ? evaluateNNUE(side, th) : fullEval(side, th);	
 			
-			sEval = nn_eval(&nn, th, (side == WHITE ? 0 : 1));
+			sEval = nn_eval(&nn, th, (side == WHITE ? 0 : 1));		
 		}
 	} else {
-
-		//sEval = NNUE ? evaluateNNUE(side, th) : fullEval(side, th);
 		
-		sEval = nn_eval(&nn, th, (side == WHITE ? 0 : 1));
-
+		sEval = nn_eval(&nn, th, (side == WHITE ? 0 : 1));			
+		
 		recordHash(age, NO_MOVE, NO_DEPTH, -INF, NO_BOUND, sEval, th);		
 	}
 
@@ -1245,35 +1253,13 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 	// Check if time limit has been reached-----------------------------------------------------------------------		
 
-
 	if (	timeSet 
 		&&  is_main_thread 
 		&&  th->nodes % X_NODES == 0) {
 
-
-		std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
-
-	    if (timeNow.time_since_epoch() > stopTime.time_since_epoch()) {
-	        
-	        Threads.stop = true;
-	    }
-
-	    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
-
-	    if (timeSpent >= 0.8 * totalTimeLeft) {
-
-	        Threads.stop = true;
-	    }
-	    
-		if (	timeSpent >= extendedTime 
-			&&  timeSpent >= 0.4 * timePerMove) {
-
-			Threads.stop = true;
-		}
-
-		// readInput();	
+		checkTime();	
 	}
-	
+
 	
 
 	// return if need to stop due to input or move time reached
@@ -1303,19 +1289,17 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 
 	// Repetition detection
-	{
-		for (int i = th->moves_history_counter + ply; i >= 0; i--) {
-			
-			if (th->movesHistory[i].hashKey == th->hashKey) {
+	for (int i = th->moves_history_counter + ply; i >= 0; i--) {
+		
+		if (th->movesHistory[i].hashKey == th->hashKey) {
 
-				if (	num_pieces > 22)	return -50;
-				if (	num_pieces > 12)	return -25;	// middlegame
-					     					return   0;	// endgame
-			}
+			if (	num_pieces > 22)	return -50;
+			if (	num_pieces > 12)	return -25;	// middlegame
+				     					return   0;	// endgame
 		}
-
-		th->movesHistory[th->moves_history_counter + ply + 1].hashKey = th->hashKey;
 	}
+
+	th->movesHistory[th->moves_history_counter + ply + 1].hashKey = th->hashKey;
 
 
 	int ttDepth = NO_DEPTH;
@@ -1349,9 +1333,7 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 	if (sEval == -INF) { 
 	
-		//sEval = NNUE ? evaluateNNUE(side, th) : fullEval(side, th);
-		
-		sEval = nn_eval(&nn, th, (side == WHITE ? 0 : 1));
+		sEval = nn_eval(&nn, th, (side == WHITE ? 0 : 1));			
 	}
 
 
