@@ -311,11 +311,11 @@ void UciLoop() {
 
                 time = initThread.side ? btime : wtime;
                 inc = initThread.side ? binc : winc;         
-            }
+            }   
 
             if (timeSet) {
 
-                stopTime = startTime + std::chrono::milliseconds(time - 1000);
+                stopTime = startTime + std::chrono::milliseconds((int)(time * 0.75));
 
                 timePerMove = (time / (movestogo + 2)) + inc; 
 

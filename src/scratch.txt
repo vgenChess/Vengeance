@@ -92,12 +92,10 @@ Needs investigation
     - Add 50 moves rule
     
 
+Bugs
+    - Crashes during endgame when the opponent replies with a very quick move
+    - No response during endgame mate (connection stalls)
 
-
-Test
-
-Capture reductions (with / without) = -70 elo
-FP Val 200/250 = 0 elo
 
 
 

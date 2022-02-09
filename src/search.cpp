@@ -148,7 +148,12 @@ void startSearch(u8 sideToMove) {
 	stopped = false;
 }
 
-int timeAllocatedForSearch;
+
+int stableMoveCount = 0;
+
+#define GET_MAX(a, b) a >= b ? a : b
+#define GET_MIN(a, b) a < b ? a : b
+
 
 void searchMain(int sideToMove, SearchThread *th) {
 	
@@ -160,15 +165,15 @@ void searchMain(int sideToMove, SearchThread *th) {
 	th->depth = NO_DEPTH;
 	th->lastStableDepth = NO_DEPTH;
 
-	timeAllocatedForSearch = timePerMove;
-	MAX_TIME_PER_SEARCH = timePerMove * 5;
-	MIN_TIME_PER_SEARCH = timePerMove / 3;
+	stableMoveCount = 0;
 
 	for (int depth = 1; depth < MAX_DEPTH; depth++) {
 		
 
-		if (ABORT_SIGNAL)	break;
+		if (ABORT_SIGNAL)	
+			break;
 	
+
 
 		if (!is_main_thread) { 
 
@@ -198,20 +203,59 @@ void searchMain(int sideToMove, SearchThread *th) {
 		} 
 
 
+
 		aspirationWindowSearch(sideToMove, th, depth);
 
 
-		if (Threads.stop) {
-
+		if (Threads.stop)
 			break;
+
+
+
+		if (th != Threads.main())
+			continue;
+
+
+
+ 		if (timeSet && th->depth >= 4) {
+
+			const int this_depth = th->depth;
+		    const int this_value = th->pvLine[this_depth].score;
+		    const int last_value = th->pvLine[this_depth-1].score;
+
+
+		    int scoreDiff = last_value - this_value;
+		    float scoreChangeFactor = GET_MAX(0.5, GET_MIN(1.5, 0.1 + scoreDiff * 0.05));
+
+
+			if (	th->pvLine[this_depth].line.size() <= 0 
+			||	th->pvLine[this_depth - 1].line.size() <= 0) {
+			
+				stableMoveCount = 0;    	
+			}
+				    
+		    if (th->pvLine[this_depth].line[0] == th->pvLine[this_depth-1].line[0]) {
+
+		    	stableMoveCount++;	
+		    } else {
+
+		    	stableMoveCount = 0;
+		    }
+
+
+		    float stableMoveFactor = 1.25 - std::min(10, stableMoveCount) * 0.05;
+
+		    std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
+		    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
+
+			if (timeSpent > timePerMove * scoreChangeFactor * stableMoveFactor) {
+
+				Threads.stop = true;
+				break;	
+			}
 		}
-
-	}
-
-	Threads.stop = true;
+	} 
 }
-
-
 
 
 void aspirationWindowSearch(u8 sideToMove, SearchThread *th, const int depth) {
@@ -274,77 +318,29 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th, const int depth) {
 
 		window += window / 4 + 5; 
 	}
-	
 
 	assert (score > alpha && score < beta);
 
 
-	if (th == Threads.main())	{
-		
-
-		display(sideToMove, th->depth, th->selDepth, th->pvLine[depth].score, th->pvLine[depth].line);
-	
-		if (!th->canReportCurrMove) {
-
-			int interval = std::chrono::duration_cast<std::chrono::seconds>(
-			    std::chrono::steady_clock::now() - startTime).count();    	
-
-			if (interval > 3) th->canReportCurrMove = true;
-		}
-
-	 		
- 		if (timeSet && th->depth >= 4) {
-			
-
-			const int this_depth = th->depth;
-		    const int this_value = th->pvLine[this_depth].score;
-		    const int last_value = th->pvLine[this_depth-1].score;
 
 
-		    int prevAllocatedTime = timeAllocatedForSearch;
-
-		    // Increase our time if the score suddenly dropped
-		    if (last_value > this_value + 10) timeAllocatedForSearch *= 1.050; // TODO change copied code
-		    if (last_value > this_value + 20) timeAllocatedForSearch *= 1.050;
-		    if (last_value > this_value + 40) timeAllocatedForSearch *= 1.050;
-
-		    // Increase our time if the score suddenly jumped
-		    if (last_value + 15 < this_value) timeAllocatedForSearch *= 1.025;
-		    if (last_value + 30 < this_value) timeAllocatedForSearch *= 1.050;
+	if (th != Threads.main()) 
+		return;
 
 
-		    bool isTimeIncreased = timeAllocatedForSearch > prevAllocatedTime;
+	display(sideToMove, th->depth, th->selDepth, th->pvLine[depth].score, th->pvLine[depth].line);
 
-		    if (!isTimeIncreased) { // before checking for a stable move time reduction
-		    						// check if score changed by more than 10 centipawns
+	if (!th->canReportCurrMove) {
 
-		    	int stableMoveCount = 0;
+		int interval = std::chrono::duration_cast<std::chrono::seconds>(
+		    std::chrono::steady_clock::now() - startTime).count();    	
 
-			    for (int i = this_depth; (i - 1) >= th->lastStableDepth; i--) {
-
-			    	if (th->pvLine[i].line.size() <= 0 || th->pvLine[i - 1].line.size() <= 0) break;
-
-				    if (th->pvLine[i].line[0] == th->pvLine[i-1].line[0])	stableMoveCount++;	
-				    else
-				    	break;
-
-			    	if (stableMoveCount > 9)	break;
-			    }
-
-			    if (stableMoveCount > 9) {
-
-			    	timeAllocatedForSearch = timeAllocatedForSearch / 2;
-
-			    	th->lastStableDepth = th->depth;
-			    }		
-		    }
-		}
-	} 
+		if (interval > 3) th->canReportCurrMove = true;
+	}
 }
 
 
 void display(u8 sideToMove, int depth, int selDepth, int score, std::vector<u32> pvLine) {
-
 
 	std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
     int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
@@ -353,7 +349,6 @@ void display(u8 sideToMove, int depth, int selDepth, int score, std::vector<u32>
 				<< " time " << timeSpent << " nodes " << Threads.getTotalNodes() 
 				/*<< " hashfull " << hashfull()*/ << " tbhits " << Threads.getTotalTTHits() 
 				<< " score cp " << score << " pv";
-
 
 	char str[10];
 	
@@ -503,28 +498,21 @@ void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,
 
 		th->capture_history_score[atk_piece][to][cap_piece] += 32 * delta - chScore * std::abs(delta) / 512;
 
-
 /*		mtx.lock();
 		if (th->capture_history_score[atk_piece][to][cap_piece] > 1000)
 			std::cout << th->capture_history_score[atk_piece][to][cap_piece] << ", ";
 		mtx.unlock();*/
+
 	}
 }
-
 
 void checkTime() {
 
 	std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
 
-    if (timeNow.time_since_epoch() > stopTime.time_since_epoch()) {
-        
-        Threads.stop = true;
-    }
-
     int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
 
-     if (timeAllocatedForSearch >= MAX_TIME_PER_SEARCH 
-    	|| (timeSpent >= timeAllocatedForSearch && timeSpent > MIN_TIME_PER_SEARCH)) {
+    if (timeNow.time_since_epoch() >= stopTime.time_since_epoch()) {
 
 		Threads.stop = true;
 	}
