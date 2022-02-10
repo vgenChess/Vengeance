@@ -148,7 +148,7 @@ int stableMoveCount = 0;
 void searchMain(int sideToMove, SearchThread *th) {
 	
 
-	const bool is_main_thread = th->index() == Threads.main()->index();
+	const bool is_main_thread = th == Threads.main();
 
 	th->nodes = 0;
 	th->ttHits = 0;	
@@ -164,7 +164,6 @@ void searchMain(int sideToMove, SearchThread *th) {
 		if (ABORT_SIGNAL)	
 			break;
 	
-
 
 		if (!is_main_thread) { 
 
@@ -247,10 +246,12 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th, const int depth) {
 	int score = -INF;
 	int alpha = -INF, beta = INF;
 
-	if (depth >= MIN_AP_DEPTH) {
+	int completedDepth = th->depth;
 
-  		alpha = std::max(-INF, th->pvLine[th->depth].score - window);
-	  	beta  = std::min( INF, th->pvLine[th->depth].score + window);	
+	if (completedDepth > 4) {
+
+  		alpha = std::max(-INF, th->pvLine.at(completedDepth).score - window);
+	  	beta  = std::min( INF, th->pvLine.at(completedDepth).score + window);	
 	}
  	
 
@@ -275,11 +276,11 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th, const int depth) {
 		if (score <= alpha)	{
 
 			beta = (alpha + beta) / 2;
-			alpha = std::max(score - window, -INF);
+			alpha = std::max(alpha - window, -INF);
 		}
 		else if (score >= beta)	{
 
-			beta = std::min(score + window, INF);
+			beta = std::min(beta + window, INF);
 		}	
 		else {
 
@@ -288,12 +289,12 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th, const int depth) {
 			th->pvLine.at(depth).score = score;
 
 			th->pvLine.at(depth).line.clear();
-			std::copy(pline.begin(), pline.end(), back_inserter(th->pvLine[depth].line));
+			std::copy(pline.begin(), pline.end(), back_inserter(th->pvLine.at(depth).line));
 
 			break;
 		}
 
-		window += window / 4 + 5; 
+		window += window / 4; 
 
 		if (Threads.stop) 
 			break;
@@ -447,7 +448,6 @@ void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> 
 void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,
 	std::vector<u32>&captureMovesPlayed, Thread *th) {
 
-
 	int bonus = std::min(400, depth * depth), delta = 0;
 
 	int16_t chScore;
@@ -539,7 +539,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 		checkTime();
 	}
 
-	// return if need to stop due to input or move time reached
+	// return if need to stop 
 	if (	is_main_thread 
 		&&  Threads.stop 
 		&&  !is_root_node) {
@@ -547,7 +547,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 		return 0;
 	}
 
-	// return from helper threads if ABORT_SIGNAL is set
+	// return from helper threads 
 	if (	!is_root_node 
 		&&  ABORT_SIGNAL)	{
 
@@ -687,13 +687,22 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 		assert(sEval != -INF);
 		
 		if (	depth == 1 
-			&&	sEval - R_F_PRUNE_THRESHOLD >= beta)		return beta; 	 
+			&&	sEval - R_F_PRUNE_THRESHOLD >= beta) {
+
+			return beta; 	
+		}		 
 
 		if (	depth == 2 
-			&&	sEval - R_EXT_F_PRUNE_THRESHOLD >= beta)	return beta;
+			&&	sEval - R_EXT_F_PRUNE_THRESHOLD >= beta) {
 
+			return beta;		
+		}	
+	
 		if (	depth == 3 
-			&&	sEval - R_LTD_RZR_THRESHOLD >= beta)		depth--;
+			&&	sEval - R_LTD_RZR_THRESHOLD >= beta) {
+
+			depth--;
+		}		
 	}
 
 
@@ -757,21 +766,29 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	}
 
 
-	// Futility Pruning-------------------------------------------------------------------------------------- Under observation
 
+	//(Under observation)
 
 	bool f_prune = false;
-
 	if (canPruneOrReduce)	{ 
 			
 		if (	depth == 1 
-			&&	sEval + F_PRUNE_THRESHOLD <= alpha)			f_prune = true;  
+			&&	sEval + F_PRUNE_THRESHOLD <= alpha) {
+
+			f_prune = true;  	// Futility Pruning
+		}
 		
 		else if (depth == 2 
-			&&	sEval + EXT_F_PRUNE_THRESHOLD <= alpha)	    f_prune = true; // Extended Futility Pruning
+			&&	sEval + EXT_F_PRUNE_THRESHOLD <= alpha) {
 
+			f_prune = true;		// Extended Futility Pruning	
+		}
+		
 		else if (depth == 3 
-			&&	sEval + LTD_RZR_THRESHOLD <= alpha)			depth--; // Limited Razoring
+			&&	sEval + LTD_RZR_THRESHOLD <= alpha)	{
+
+			depth--; 			// Limited Razoring		
+		}
 	}
 	
 
@@ -978,12 +995,12 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 					else {
 
 						// Capture History Pruning
-						// if (	depth <= CAPTURE_HISTORY_PRUNING_MAX_DEPTH
-						// 	&&	currentMove.score < CAPTURE_PRUNING_THRESHOLD) {
+						/*if (	depth <= CAPTURE_HISTORY_PRUNING_MAX_DEPTH
+							&&	currentMove.score < CAPTURE_PRUNING_THRESHOLD) {
 
-						// 	unmake_move(ply, currentMove.move, th);
-						// 	continue;
-						// }
+							unmake_move(ply, currentMove.move, th);
+							continue;
+						}*/
 
 						// Negative SEE pruning 
 						if (	stage == STAGE_BAD_CAPTURES 
@@ -998,6 +1015,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 		        // report current move via uci protocol
 		        if (	is_root_node 
+		        	&&	is_main_thread
 		        	&&	th->canReportCurrMove) {	
 
 		        	reportCurrentMove(side, si->depth, legalMoves + 1, currentMove.move);
@@ -1062,38 +1080,24 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 					score = -alphabetaSearch(-beta, -alpha, th, &line, &searchInfo, mate - 1);
 				} else {
 					
-					// Late Move Reductions --------------------------------------------------------------------------
-					// Needs rechecking
+					// Late Move Reductions (Under observation)
 
 					if (	depth > 2
 						&&	legalMoves > 3
-						// &&	!IS_PV			// TODO consider removing it
-						// &&	!in_check
-						&&	isQuietMove
-						) {
+						&&	isQuietMove) {
 							
+						reduce = depth > 6 ? 2 : 1;	
 
-						reduce = depth > 6 ? depth / 3 : 1;	
-						// reduce = depth > 9 ? 3 : 2;
-						// reduce = depth / 5 - 1;
-						// reduce = depth > 6 ? 2 : 1;
+						if (!is_pv_node) reduce++;
+						if (!improving && !in_check) reduce++; // in_check sets improving to false
+						if (in_check && pieceType(currentMove.move) == KING) reduce++;
 
-						reduce = std::max(1, std::min(5, reduce));
+						if (stage == STAGE_KILLER_MOVES) reduce--;
 						
-						// reduce -= IS_PV;		
-					    // reduce -= improving;		
-
-					    reduce += !is_pv_node;
-			            reduce += (!improving && !in_check); // in_check sets improving to false
-			            reduce += (in_check && pieceType(currentMove.move) == KING); 
-
-			            reduce -= stage == STAGE_KILLER_MOVES;		
-			            reduce -= pieceType(currentMove.move) == PAWNS;
 
 			            reduce -= std::max(-2, std::min(2, currentMove.score / 5000));	// TODO rewrite logic				
 
 			        	int r = std::min(depth - 1, std::max(reduce, 1));	// TODO rewrite logic
-
 
 			        	searchInfo.depth = newDepth - r;	
 
@@ -1232,13 +1236,13 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 	
 
-	// return if need to stop due to input or move time reached
+	// return if need to stop
 	if (is_main_thread && Threads.stop) {
 
 		return 0;
 	}
 
-	// return from helper threads if ABORT_SIGNAL is set
+	// return from helper threads 
 	if (ABORT_SIGNAL)	{
 
 		Threads.stop = true;
@@ -1457,7 +1461,8 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 			}
 		}
 
-		if (failedHigh) break;
+		if (failedHigh) 
+			break;
 	}
 
 
