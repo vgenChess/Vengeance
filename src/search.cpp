@@ -100,19 +100,9 @@ void startSearch(u8 sideToMove) {
 	// Wait until all threads have finished
 	Threads.wait_for_search_finished();
 
-   SearchThread *bestThread = Threads.get_best_thread();
-
-	if (bestThread != Threads.main()) {
-
-		display(sideToMove, 
-			bestThread->depth,
-			bestThread->selDepth, 
-			bestThread->pvLine[bestThread->depth].score, 
-			bestThread->pvLine[bestThread->depth].line);
-    }
 
 
-	const u32 bestMove = bestThread->pvLine[bestThread->depth].line[0];
+	const u32 bestMove = Threads.main()->pvLine[Threads.main()->depth].line[0];
 
 	char str[10];
 	str[0] = '\0';
@@ -157,6 +147,7 @@ int stableMoveCount = 0;
 
 void searchMain(int sideToMove, SearchThread *th) {
 	
+
 	const bool is_main_thread = th->index() == Threads.main()->index();
 
 	th->nodes = 0;
@@ -216,25 +207,18 @@ void searchMain(int sideToMove, SearchThread *th) {
 			continue;
 
 
-
  		if (timeSet && th->depth >= 4) {
 
-			const int this_depth = th->depth;
-		    const int this_value = th->pvLine[this_depth].score;
-		    const int last_value = th->pvLine[this_depth-1].score;
 
-
-		    int scoreDiff = last_value - this_value;
+		    int scoreDiff = th->pvLine[th->depth-3].score - th->pvLine[th->depth].score;
 		    float scoreChangeFactor = GET_MAX(0.5, GET_MIN(1.5, 0.1 + scoreDiff * 0.05));
 
 
-			if (	th->pvLine[this_depth].line.size() <= 0 
-			||	th->pvLine[this_depth - 1].line.size() <= 0) {
+			if (	th->pvLine[th->depth].line.size() <= 0 
+				||	th->pvLine[th->depth-1].line.size() <= 0) {
 			
 				stableMoveCount = 0;    	
-			}
-				    
-		    if (th->pvLine[this_depth].line[0] == th->pvLine[this_depth-1].line[0]) {
+			} else if (th->pvLine[th->depth].line[0] == th->pvLine[th->depth-1].line[0]) {
 
 		    	stableMoveCount++;	
 		    } else {
@@ -242,8 +226,12 @@ void searchMain(int sideToMove, SearchThread *th) {
 		    	stableMoveCount = 0;
 		    }
 
+		    stableMoveCount = std::min(10, stableMoveCount);
 
-		    float stableMoveFactor = 1.25 - std::min(10, stableMoveCount) * 0.05;
+		    float stableMoveFactor = 1.25 - stableMoveCount * 0.05;
+
+
+		    // Check for time 
 
 		    std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
 		    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
@@ -1222,6 +1210,8 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 	return bestScore;
 }
+
+
 
 
 

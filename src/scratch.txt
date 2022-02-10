@@ -47,6 +47,8 @@ position startpos moves e2e4 c7c5 g1f3 b8c6 d2d4 c5d4 f3d4 g8f6 b1c3 e7e5 d4b5 d
 6k1/r5b1/2q1p1Q1/8/1pBp4/1P4PK/2P2R1P/r7 b - - 4 45  // Blind to mates
 
 
+Priority
+    - Node explosion control
 
 Speculations
     - Agressive Reductions will work with good move ordering
@@ -95,6 +97,7 @@ Needs investigation
 Bugs
     - Crashes during endgame when the opponent replies with a very quick move
     - No response during endgame mate (connection stalls)
+    - 8/8/8/2K5/4k3/8/5p2/8 b - - 1 81 (Hangs during mate scores)
 
 
 
