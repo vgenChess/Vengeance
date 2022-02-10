@@ -210,13 +210,13 @@ void searchMain(int sideToMove, SearchThread *th) {
  		if (timeSet && th->depth >= 4) {
 
 
-		    int scoreDiff = th->pvLine[th->depth-3].score - th->pvLine[th->depth].score;
+		    int scoreDiff = th->pvLine.at(th->depth-3).score - th->pvLine.at(th->depth).score;
 		    float scoreChangeFactor = GET_MAX(0.5, GET_MIN(1.5, 0.1 + scoreDiff * 0.05));
 
 
-		    assert(th->pvLine[th->depth].line.size() > 0 && th->pvLine[th->depth-1].line.size() > 0);
+		    assert(th->pvLine.at(th->depth).line.size() > 0 && th->pvLine.at(th->depth-1).line.size() > 0);
 
-		    if (th->pvLine[th->depth].line[0] == th->pvLine[th->depth-1].line[0])
+		    if (th->pvLine.at(th->depth).line.at(0) == th->pvLine.at(th->depth-1).line.at(0))
 				stableMoveCount = std::min(10, stableMoveCount + 1);
 			else 
 				stableMoveCount = 0;
@@ -265,16 +265,13 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th, const int depth) {
 	searchInfo.isNullMoveAllowed = false;
 
 
-	while (true)	{
+	while (true) {
 
 		pline.clear();
 		th->selDepth = NO_DEPTH;
 		
 		score = alphabetaSearch(alpha, beta, th, &pline, &searchInfo, MATE);
 
-		if (Threads.stop) 
-			return; 
-	
 		if (score <= alpha)	{
 
 			beta = (alpha + beta) / 2;
@@ -284,20 +281,22 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th, const int depth) {
 
 			beta = std::min(score + window, INF);
 		}	
-		else	{
+		else {
 
 			th->depth = depth;
 
-			th->pvLine[depth].score = score;
-			th->pvLine[depth].line.clear();
-			std::copy(pline.begin(), pline.end(), back_inserter(th->pvLine[depth].line));
+			th->pvLine.at(depth).score = score;
 
-			th->pvMove = pline.size() > 0 ? pline[0] : NO_MOVE;
+			th->pvLine.at(depth).line.clear();
+			std::copy(pline.begin(), pline.end(), back_inserter(th->pvLine[depth].line));
 
 			break;
 		}
 
 		window += window / 4 + 5; 
+
+		if (Threads.stop) 
+			break;
 	}
 
 	assert (score > alpha && score < beta);

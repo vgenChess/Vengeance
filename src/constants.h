@@ -14,7 +14,7 @@ const uint8_t MIN_AP_DEPTH = 5;
 const uint8_t AP_WINDOW = 10;
 
 const uint16_t PV_DISPLAY_INTERVAL = 2500;
-const uint16_t X_NODES = 2500;
+const uint16_t X_NODES = 1024;
 
 const uint16_t BONUS_COUNTER_MOVE = 2500;
 

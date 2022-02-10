@@ -51,8 +51,6 @@ class SearchThread : public Thread {
 
 		int idx, depth, selDepth, lastStableDepth;
 
-		u32 pvMove;
-
 		std::atomic<uint64_t> nodes, ttHits;
 	    
 	    std::thread stdThread;
