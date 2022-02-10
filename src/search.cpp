@@ -214,19 +214,12 @@ void searchMain(int sideToMove, SearchThread *th) {
 		    float scoreChangeFactor = GET_MAX(0.5, GET_MIN(1.5, 0.1 + scoreDiff * 0.05));
 
 
-			if (	th->pvLine[th->depth].line.size() <= 0 
-				||	th->pvLine[th->depth-1].line.size() <= 0) {
-			
-				stableMoveCount = 0;    	
-			} else if (th->pvLine[th->depth].line[0] == th->pvLine[th->depth-1].line[0]) {
+		    assert(th->pvLine[th->depth].line.size() > 0 && th->pvLine[th->depth-1].line.size() > 0);
 
-		    	stableMoveCount++;	
-		    } else {
-
-		    	stableMoveCount = 0;
-		    }
-
-		    stableMoveCount = std::min(10, stableMoveCount);
+		    if (th->pvLine[th->depth].line[0] == th->pvLine[th->depth-1].line[0])
+				stableMoveCount = std::min(10, stableMoveCount + 1);
+			else 
+				stableMoveCount = 0;
 
 		    float stableMoveFactor = 1.25 - stableMoveCount * 0.05;
 
