@@ -77,6 +77,72 @@ std::mutex mtx;
 
 int MAX_DEPTH = 100;
 
+std::string getMoveNotation(const u32 move) {
+
+	char str[10];
+	str[0] = '\0';
+
+	strcat(str, algebricPos(from_sq(move)));
+	strcat(str, algebricPos(to_sq(move)));
+
+    if (move_type(move) == MOVE_PROMOTION) {
+
+    	u8 pt = promType(move);
+
+        if  (pt == PROMOTE_TO_ROOK) {
+                
+            strcat(str, "r");
+        }
+        else if (pt == PROMOTE_TO_BISHOP) {
+                
+            strcat(str, "b");
+        }   
+        else if (pt == PROMOTE_TO_KNIGHT) {
+                
+            strcat(str, "n");
+        } 
+        else {
+                
+            strcat(str, "q");
+        }
+    }
+
+    return std::string(str);
+}
+
+void reportBestMove() {
+
+	u32 bestMove = Threads.main()->pvLine[Threads.main()->depth].line[0];
+
+	std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
+}
+
+void reportCurrentMove(int side, int depth, int currentMoveNumber, u32 move) {
+
+	std::cout << "info depth " << depth << " currmove ";
+
+	std::cout << getMoveNotation(move) << " currmovenumber " << currentMoveNumber << std::endl;
+}
+
+void display(u8 sideToMove, int depth, int selDepth, int score, std::vector<u32> pvLine) {
+
+	std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
+    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
+
+	std::cout 	<< "info depth " << depth << " seldepth " << selDepth 
+				<< " time " << timeSpent << " nodes " << Threads.getTotalNodes() 
+				/*<< " hashfull " << hashfull()*/ << " tbhits " << Threads.getTotalTTHits() 
+				<< " score cp " << score << " pv";
+
+	for (std::vector<u32>::iterator i = pvLine.begin(); i != pvLine.end(); ++i) {
+		
+		std::cout << " " << getMoveNotation(*i);
+	}
+
+	std::cout << "\n";
+}
+
+
 void startSearch(u8 sideToMove) {
 
 	age++; // For storing hash age information
@@ -101,39 +167,9 @@ void startSearch(u8 sideToMove) {
 	Threads.wait_for_search_finished();
 
 
+	reportBestMove();
 
-	const u32 bestMove = Threads.main()->pvLine[Threads.main()->depth].line[0];
-
-	char str[10];
-	str[0] = '\0';
-
-	strcat(str, algebricPos(from_sq(bestMove)));
-	strcat(str, algebricPos(to_sq(bestMove)));
-
-    if (move_type(bestMove) == MOVE_PROMOTION) {
-
-    	u8 pt = promType(bestMove);
-
-        if  (pt == PROMOTE_TO_ROOK) {
-                
-            strcat(str, "r");
-        }
-        else if (pt == PROMOTE_TO_BISHOP) {
-                
-            strcat(str, "b");
-        }   
-        else if (pt == PROMOTE_TO_KNIGHT) {
-                
-            strcat(str, "n");
-        } 
-        else {
-                
-            strcat(str, "q");
-        }
-    }
-
-	std::cout << "bestmove " << str << std::endl;
-
+	
 	timeSet = false;
 	stopped = false;
 }
@@ -333,94 +369,6 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th, const int depth) {
 		if (interval > 3) th->canReportCurrMove = true;
 	}
 }
-
-
-void display(u8 sideToMove, int depth, int selDepth, int score, std::vector<u32> pvLine) {
-
-	std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
-    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
-
-	std::cout 	<< "info depth " << depth << " seldepth " << selDepth 
-				<< " time " << timeSpent << " nodes " << Threads.getTotalNodes() 
-				/*<< " hashfull " << hashfull()*/ << " tbhits " << Threads.getTotalTTHits() 
-				<< " score cp " << score << " pv";
-
-	char str[10];
-	
-	for (std::vector<u32>::iterator i = pvLine.begin(); i != pvLine.end(); ++i) {
-		
-		u32 move = *i;
-
-		str[0] = '\0';
-
-		strcat(str, algebricPos(from_sq(move)));
-		strcat(str, algebricPos(to_sq(move)));
-
-        if (move_type(move) == MOVE_PROMOTION) {
-
-    		u8 pt = promType(move);
-
-            if  (pt == PROMOTE_TO_ROOK) {
-                
-                strcat(str, "r");
-            }
-            else if (pt == PROMOTE_TO_BISHOP) {
-                
-                strcat(str, "b");
-            }   
-            else if (pt == PROMOTE_TO_KNIGHT) {
-                
-                strcat(str, "n");
-            } 
-            else {
-                
-                strcat(str, "q");
-            }
-	    }
-
-		std::cout << " " << str;
-	}
-
-	std::cout << "\n";
-}
-
-
-void reportCurrentMove(int side, int depth, int currentMoveNumber, u32 move) {
-
-
-	std::cout << "info depth " << depth << " currmove ";
-
-	char str[10];
-	str[0] = '\0';
-
-	strcat(str, algebricPos(from_sq(move)));
-	strcat(str, algebricPos(to_sq(move)));
-
-	if (move_type(move) == MOVE_PROMOTION) {
-
-		u8 pt = promType(move);
-
-        if  (pt == PROMOTE_TO_ROOK) {
-                
-            strcat(str, "r");
-        }
-        else if (pt == PROMOTE_TO_BISHOP) {
-                
-            strcat(str, "b");
-        }   
-        else if (pt == PROMOTE_TO_KNIGHT) {
-                
-            strcat(str, "n");
-        } 
-        else {
-                
-            strcat(str, "q");
-        }
-	}
-
-	std::cout << str << " currmovenumber " << currentMoveNumber << std::endl;
-}
-
 
 void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> &quietMovesPlayed, Thread *th) {
 
