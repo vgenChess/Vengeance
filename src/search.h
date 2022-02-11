@@ -39,7 +39,7 @@ void initThreads();
 
 void startSearch(u8 sideToMove);
 void searchMain(int side, SearchThread *thread);
-void aspirationWindowSearch(u8 sideToMove, SearchThread *th, const int depth);
+void aspirationWindowSearch(u8 sideToMove, SearchThread *th);
 
 void display(u8 sideToMove, int depth, int selDepth, int score, std::vector<u32> pvLine);
 

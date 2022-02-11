@@ -119,8 +119,8 @@ static void runBenchmark(int argc, char **argv) {
         {} // Busy wait for a stop or a ponder reset
 
 
-        bestMoves[i] = Threads.get_best_thread()->pvLine[Threads.get_best_thread()->depth].line[0];
-        scores[i] = Threads.get_best_thread()->pvLine[Threads.get_best_thread()->depth].score;
+        bestMoves[i] = Threads.main()->pvLine[Threads.main()->completedDepth].line[0];
+        scores[i] = Threads.main()->pvLine[Threads.main()->completedDepth].score;
 
         times[i] = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - time).count();

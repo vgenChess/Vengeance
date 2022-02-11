@@ -49,7 +49,7 @@ class SearchThread : public Thread {
 		bool exit = false, searching = true; // Set before starting std::thread
 		bool canReportCurrMove;
 
-		int idx, depth, selDepth, lastStableDepth;
+		int idx, depth, completedDepth, selDepth;
 
 		std::atomic<uint64_t> nodes, ttHits;
 	    
@@ -85,7 +85,6 @@ struct SearchThreadPool : public std::vector<SearchThread*> {
 
 
 	SearchThread* main()        const { return front(); }
-	SearchThread* get_best_thread() const;
 
 
 	uint64_t getTotalNodes() const;

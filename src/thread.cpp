@@ -258,32 +258,6 @@ void SearchThread::idle_loop() {
 	}
 }
 
-SearchThread* SearchThreadPool::get_best_thread() const {
-
-    SearchThread* bestThread = front();
-    
-    int bestScore = -INF, bestDepth = NO_DEPTH;
-
-    for (SearchThread* th : *this) {	
-
-    	int depth = th->depth;
-   		int score = th->pvLine[depth].score;
-   			
-  		if ((depth == bestDepth && score > bestScore) || 
-  			(score > WIN_SCORE_THRESHOLD && score > bestScore)) {
-			
-			bestThread = th;	
-  		}
-        
-        if (depth > bestDepth && (score > bestScore || score <= WIN_SCORE_THRESHOLD)) {
-
-            bestThread = th;
-        }
-    }
-
-    return bestThread;
-}
-
 void SearchThread::init() {
 
 
