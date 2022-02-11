@@ -531,6 +531,7 @@ void nn_inputs_mov_piece(NN_Network* nn,  Thread *th, int piece_type, int piece_
 			_mm256_load_ps(&nn->W0[NN_SIZE * feature_w_to + (i * register_width)]));
 		reg= _mm256_sub_ps(reg,
 			_mm256_load_ps(&nn->W0[NN_SIZE * feature_w_fr + (i * register_width)]));
+
 		_mm256_store_ps(&th->accumulator.v[WHITE][i * register_width], reg);
         
         
@@ -539,6 +540,7 @@ void nn_inputs_mov_piece(NN_Network* nn,  Thread *th, int piece_type, int piece_
 			_mm256_load_ps(&nn->W0[NN_SIZE * feature_b_to + (i * register_width)]));
 		reg= _mm256_sub_ps(reg, 
 			_mm256_load_ps(&nn->W0[NN_SIZE * feature_b_fr + (i * register_width)]));
+		
 		_mm256_store_ps(&th->accumulator.v[BLACK][i * register_width], reg);
     }
 }

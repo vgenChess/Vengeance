@@ -20,6 +20,7 @@ class SearchInfo {
 		u8 side;
 		int ply;
 		int depth;
+		int realDepth;
 		
 		bool isNullMoveAllowed;	 
 

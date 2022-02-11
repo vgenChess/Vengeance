@@ -25,7 +25,7 @@ const uint16_t R_F_PRUNE_THRESHOLD = 		265;
 const uint16_t R_EXT_F_PRUNE_THRESHOLD = 	515;
 const uint16_t R_LTD_RZR_THRESHOLD = 		915;
 
-const uint8_t MAX_EXTENSION = 15;
+const uint8_t MAX_EXTENSION = 10;
 
 const uint8_t LMP_BASE 		= 4;
 const uint8_t LMP_MAX_DEPTH = 6; 
