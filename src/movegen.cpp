@@ -510,17 +510,6 @@ void getMoves(const int ply, const int side, std::vector<Move> &moves, const int
                 if (mt == MOVE_ENPASSANT || mt == MOVE_PROMOTION) cap_piece = PAWNS;
 
                 (*i).score = th->capture_history_score[atk_piece][to][cap_piece];
-
-
-                // (*i).score = 64 * val_piece[cap_p] - val_piece[atk_p];
-                // if (isQuiescense) {
-
-                //     (*i).score = val_piece[atk_p] >= val_piece[cap_p] ? 
-                //         see(move, side, th) : val_piece[cap_p] - val_piece[atk_p];
-                // } else {
-
-                //     (*i).score = val_piece[cap_p] - val_piece[atk_p];
-                // }
             }
 
             break;

@@ -159,7 +159,7 @@ void searchMain(int sideToMove, SearchThread *th) {
 
 	stableMoveCount = 0;
 
-	maxTimePerMove = 4 * timePerMove;
+	maxTimePerMove = 5 * timePerMove;
 	minTimePerMove = timePerMove / 4;
 
 	for (int depth = 1; depth < MAX_DEPTH; depth++) {
@@ -319,8 +319,6 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th, const int depth) {
 	assert (score > alpha && score < beta);
 
 
-
-
 	if (th != Threads.main()) 
 		return;
 
@@ -424,7 +422,6 @@ void reportCurrentMove(int side, int depth, int currentMoveNumber, u32 move) {
 }
 
 
-
 void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> &quietMovesPlayed, Thread *th) {
 
 
@@ -433,8 +430,8 @@ void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> 
 	int16_t hScore;
 
 	u32 move, previousMove;
-	
-	// History Heuristics
+
+	// History Heuristics		
 	for (std::vector<u32>::iterator i = quietMovesPlayed.begin(); i != quietMovesPlayed.end(); ++i) {
 		
 		move = *i;
@@ -444,10 +441,10 @@ void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> 
 
 		th->historyScore[side][from_sq(move)][to_sq(move)] += 32 * delta - hScore * std::abs(delta) / 512;
 
-		/*mtx.lock();
-		if (th->historyScore[side][from_sq(move)][to_sq(move)] > 10000)
-			std::cout << th->historyScore[side][from_sq(move)][to_sq(move)] << ", ";
-		mtx.unlock();*/
+		// mtx.lock();
+		// if (th->historyScore[side][from_sq(move)][to_sq(move)] > 10000)
+		// 	std::cout << th->historyScore[side][from_sq(move)][to_sq(move)] << ", ";
+		// mtx.unlock();
 	}
 
 
@@ -461,8 +458,7 @@ void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> 
 }
 
 
-void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,
-	std::vector<u32>&captureMovesPlayed, Thread *th) {
+void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,std::vector<u32>&captureMovesPlayed, Thread *th) {
 
 	int bonus = std::min(400, depth * depth), delta = 0;
 
@@ -472,8 +468,8 @@ void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,
 	u32 move, previousMove;
 
 	u8 mt;
-	
-	// Capture History Heuristics
+
+	// Capture History Heuristics	
 	for (std::vector<u32>::iterator i = captureMovesPlayed.begin(); i != captureMovesPlayed.end(); ++i) {
 		
 		move = *i;
@@ -484,21 +480,20 @@ void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,
 		to = to_sq(move);
 		cap_piece = cPieceType(move);
 
-
 		mt = move_type(move);
 
-		if (mt == MOVE_ENPASSANT || mt == MOVE_PROMOTION) cap_piece = PAWNS;
+		if (mt == MOVE_ENPASSANT || mt == MOVE_PROMOTION) 
+			cap_piece = PAWNS;
 
 
 		chScore = th->capture_history_score[atk_piece][to][cap_piece];
 
 		th->capture_history_score[atk_piece][to][cap_piece] += 32 * delta - chScore * std::abs(delta) / 512;
 
-/*		mtx.lock();
-		if (th->capture_history_score[atk_piece][to][cap_piece] > 1000)
-			std::cout << th->capture_history_score[atk_piece][to][cap_piece] << ", ";
-		mtx.unlock();*/
-
+		// mtx.lock();
+		// if (th->capture_history_score[atk_piece][to][cap_piece] > 1000)
+		// 	std::cout << th->capture_history_score[atk_piece][to][cap_piece] << ", ";
+		// mtx.unlock();
 	}
 }
 
@@ -935,7 +930,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 				see_score = see(currentMove.move, side, th);
 				if (see_score < 0)	{
 
-					// currentMove.score = see_score;
+					currentMove.score = see_score;
 					badCaptures.push_back(currentMove);		
 
 					continue;
@@ -1407,12 +1402,6 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 	   	 			continue;
 	   	 		} 
-
-	   	 		// // Don't search moves with negative MVVLVA score 
-	   	 		// if (	currentMove.score < Q_MVV_LVA_PRUNING_THRESHOLD) {
-
-	   	 		// 	continue;
-	   	 		// }
 
 				see_score = see(currentMove.move, side, th);
 
