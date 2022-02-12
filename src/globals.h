@@ -337,6 +337,8 @@ typedef struct {
 
 	int stage;
 
+	bool isQuiescense;
+
 	std::vector<Move> moves;
 	std::vector<Move> badCaptures;
 

@@ -637,11 +637,15 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
                     return getNextMove(ply, side, th, moveList);
                 }
 
-                if (see(m.move, side, th) < 0) {
+                int seeScore = see(m.move, side, th);
+                if (seeScore < 0) { // bad capture
 
+                    m.score = seeScore;
                     moveList->badCaptures.push_back(m);
+                    
                     return getNextMove(ply, side, th, moveList);
-                }
+                } 
+
 
                 return m;
             }   
