@@ -79,33 +79,33 @@ u64 perft(int ply, u8 depth, u8 side, Thread *th) {
 
     std::vector<Move> moves;
     Move m;
-    for (int stage = STAGE_PROMOTIONS; stage <= STAGE_NORMAL_MOVES; stage++) {
+    // for (int stage = STAGE_PROMOTIONS; stage <= STAGE_NORMAL_MOVES; stage++) {
 
-        moves.clear();
-        getMoves(ply, side, moves, stage, false, th);       
+    //     moves.clear();
+    //     getMoves(ply, side, moves, stage, false, th);       
 
-        for (std::vector<Move>::iterator i = moves.begin(); i != moves.end(); i++) {
+    //     for (std::vector<Move>::iterator i = moves.begin(); i != moves.end(); i++) {
             
-            m = *i;
+    //         m = *i;
 
-            make_move(ply, m.move, th);
+    //         make_move(ply, m.move, th);
 
-            if (!isKingInCheck(side, th))
-                nodes += perft(ply + 1, depth - 1, side ^ 1, th);
-            else {
+    //         if (!isKingInCheck(side, th))
+    //             nodes += perft(ply + 1, depth - 1, side ^ 1, th);
+    //         else {
 
-                switch (move_type(m.move)) {
+    //             switch (move_type(m.move)) {
 
-                    case MOVE_CAPTURE: cap--; break;
-                    case MOVE_PROMOTION: prom--; break;
-                    case MOVE_CASTLE: cas--; break;
-                    case MOVE_ENPASSANT: ep--; break;
-                }
-            }
+    //                 case MOVE_CAPTURE: cap--; break;
+    //                 case MOVE_PROMOTION: prom--; break;
+    //                 case MOVE_CASTLE: cas--; break;
+    //                 case MOVE_ENPASSANT: ep--; break;
+    //             }
+    //         }
 
-            unmake_move(ply, m.move, th);
-        }
-    }
+    //         unmake_move(ply, m.move, th);
+    //     }
+    // }
     
     return nodes;
 }

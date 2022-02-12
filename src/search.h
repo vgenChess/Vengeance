@@ -57,6 +57,6 @@ u64 attacksTo(u64 occupied, u8 square, u8 sideToMove, Thread *th);
 
 void debugSEE(char ch, int sq);
 
-int QuiescenseForTuning(int ply, int side, int alpha, int beta, int depth, Thread *th, TraceCoefficients *T);
+// int QuiescenseForTuning(int ply, int side, int alpha, int beta, int depth, Thread *th, TraceCoefficients *T);
 
 #endif /* search_h */

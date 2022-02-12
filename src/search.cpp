@@ -1306,7 +1306,7 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 
 // For Tuning
-int QuiescenseForTuning(int ply, int side, int alpha, int beta, int depth, Thread *th, TraceCoefficients *T) {
+/*int QuiescenseForTuning(int ply, int side, int alpha, int beta, int depth, Thread *th, TraceCoefficients *T) {
 
 	
 	const u8 opponent = side ^ 1;
@@ -1381,4 +1381,4 @@ int QuiescenseForTuning(int ply, int side, int alpha, int beta, int depth, Threa
 	}
 
 	return alpha;
-}
+}*/
