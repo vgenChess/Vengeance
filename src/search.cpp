@@ -178,9 +178,6 @@ void startSearch(u8 sideToMove) {
 int maxTimePerMove = 0, minTimePerMove = 0; 
 int stableMoveCount = 0;
 
-#define GET_MIN(A, B) ((A) < (B) ? (A) : (B)) //TODO change to standard lib for float comparison
-#define GET_MAX(A, B) ((A) > (B) ? (A) : (B))
-
 void searchMain(int sideToMove, SearchThread *th) {
 	
 
@@ -194,7 +191,7 @@ void searchMain(int sideToMove, SearchThread *th) {
 
 	stableMoveCount = 0;
 
-	maxTimePerMove = 5 * timePerMove;
+	maxTimePerMove = 4 * timePerMove;
 	minTimePerMove = timePerMove / 4;
 
 	for (int depth = 1; depth < MAX_DEPTH; depth++) {
@@ -246,7 +243,7 @@ void searchMain(int sideToMove, SearchThread *th) {
 
 		    int scoreDiff = th->pvLine.at(th->completedDepth-3).score - th->pvLine.at(th->completedDepth).score;
 		    
-		    float scoreChangeFactor = GET_MAX(0.5, GET_MIN(1.5, 0.1 + scoreDiff * 0.05));
+		    float scoreChangeFactor = fmax(0.5, fmin(1.5, 0.1 + scoreDiff * 0.05));
 
 
 		    assert(th->pvLine.at(th->completedDepth).line.size() > 0 && th->pvLine.at(th->completedDepth-1).line.size() > 0);
@@ -268,15 +265,11 @@ void searchMain(int sideToMove, SearchThread *th) {
 		    std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
 		    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
 
-		    if (timeSpent > minTimePerMove) {
+	    	if (timeSpent > timePerMove * scoreChangeFactor * stableMoveFactor) {
 
-		    	if (timeSpent > maxTimePerMove || 
-					timeSpent > timePerMove * scoreChangeFactor * stableMoveFactor) {
-
-					Threads.stop = true;
-					break;	
-				}
-		    }
+				Threads.stop = true;
+				break;	
+			}
 		}
 	} 
 }
@@ -577,11 +570,14 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 			if (ttDepth >= depth) {
 	            
-		        if (ttBound == hashfEXACT)	return ttValue;
+		        if (ttBound == hashfEXACT)	
+		        	return ttValue;
 		        
-		        if ((ttBound == hashfALPHA) && (ttValue <= alpha))	return alpha;
+		        if ((ttBound == hashfALPHA) && (ttValue <= alpha))	
+		        	return alpha;
 		        
-		        if ((ttBound == hashfBETA) && (ttValue >= beta))	return beta;
+		        if ((ttBound == hashfBETA) && (ttValue >= beta))	
+		        	return beta;
 			}
 		}
 	}
@@ -799,10 +795,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 		moves.clear();
 
-		if (stage == STAGE_NORMAL_MOVES) {
-
-			moves = normalMoves;	
-		}	else if (stage == STAGE_BAD_CAPTURES) {
+		if (stage == STAGE_BAD_CAPTURES) {
 
 			moves = badCaptures; // TODO check logic
 		}	else {
@@ -810,27 +803,6 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 			getMoves(ply, side, moves, stage, false, th);		
 		} 
 	
-
-		if (stage == STAGE_KILLER_MOVES) {
-
-			// Logic can be improved
-			for (std::vector<Move>::iterator i = moves.begin(); i != moves.end(); ++i) {
-				
-				tmpMove = *i;		
-
-				if (	tmpMove.move == KILLER_MOVE_1	
-					||	tmpMove.move == KILLER_MOVE_2) {
-
-					killerMoves.push_back(tmpMove);
-				}	else {
-
-					normalMoves.push_back(tmpMove);		
-				} 				
-			}
-
-			moves = killerMoves;
-		}
-
 		//------------------------------------------------------------------------------------
 
 
@@ -866,19 +838,23 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	 		currentMove = *m;
 
 
-	 		if (	stage > STAGE_HASH_MOVE 
-	 			&&	currentMove.move == ttMove) {
+	 		if (stage > STAGE_HASH_MOVE && currentMove.move == ttMove) {
 
 	 			continue;	// dont search the hash move twice
 	 		}	
 			
+	 		if (	stage > STAGE_KILLER_MOVES 
+	 			&& (currentMove.move == KILLER_MOVE_1 || currentMove.move == KILLER_MOVE_2)) {
+
+	 			continue;
+	 		}
+
 
 			if (stage == STAGE_CAPTURES) {
 
 				see_score = see(currentMove.move, side, th);
 				if (see_score < 0)	{
 
-					currentMove.score = see_score;
 					badCaptures.push_back(currentMove);		
 
 					continue;
@@ -1013,6 +989,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 
 
+
 				th->moveStack[ply].extend = is_root_node ? 0 : th->moveStack[ply - 1].extend + extend;
 
 
@@ -1040,17 +1017,14 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 					// Late Move Reductions (Under observation)
 
 					if (	depth > 2
-						&&	legalMoves > 3
-						&&	!in_check
-						&&	isQuietMove
-						&&	pieceType(currentMove.move) != PAWNS) {
+						&&	legalMoves > 3) {
 							
 
 						reduce = depth > 6 ? 2 : 1;	
 
 
 						if (!is_pv_node) reduce++;
-						if (!improving) reduce++; // in_check sets improving to false
+						if (!improving && !in_check) reduce++; // in_check sets improving to false
 
 
 						if (stage == STAGE_KILLER_MOVES) reduce--;
@@ -1094,15 +1068,12 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 				if (score > bestScore) {
 
-					
 					bestScore = score;
-				
+					bestMove = currentMove.move;
+					
 					if (score > alpha) {
 					
 
-						bestMove = currentMove.move;
-							
-	
 						alpha = score;
 						hashf = hashfEXACT;
 
@@ -1155,13 +1126,11 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	}
 
 
-
-	if (legalMoves == 0) return in_check ? -mate : 0;
-
+	if (legalMoves == 0) 
+		return in_check ? -mate : 0;
 
 
 	recordHash(age, bestMove, depth, bestScore, hashf, sEval, th);
-
 
 
 	return bestScore;

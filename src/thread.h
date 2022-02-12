@@ -19,8 +19,8 @@ class Thread {
 
 		uint16_t moves_history_counter;
 		
-		int16_t capture_history_score[8][64][8]; // [piece][to][c_piece]
-		int16_t historyScore[2][64][64];
+		int32_t capture_history_score[8][64][8]; // [piece][to][c_piece]
+		int32_t historyScore[2][64][64];
 		u32 counterMove[2][64][64];
 		
 		std::vector<PV> pvLine;

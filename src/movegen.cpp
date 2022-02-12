@@ -382,55 +382,8 @@ void genPromotionsAttacks(std::vector<Move> &moves, u8 side, Thread *th) {
 }
 
 
-bool checkIfValidMove(int ply, u8 side, u32 move, Thread* th) {
-
-    if (move != NO_MOVE) {    
-
-        u8 p = pieceType(move);
-        // u8 cp = cPieceType(move);
-        // u8 mType = move_type(move);
-        
-        u64 pbb = side ? th->blackPieceBB[p] : th->whitePieceBB[p];
-        // u64 cpbb = (side ^ 1) ? th->blackPieceBB[cp] : th->whitePieceBB[cp];
-
-        int fromSQ = from_sq(move);     
-        // int toSQ = to_sq(move);
-
-        if ((1ULL << fromSQ) & pbb) return true;
-
-
-        // if ((1ULL << fromSQ) & pbb) {
-
-        //     if (mType == MOVE_NORMAL) {
-
-        //         if (~th->occupied & (1ULL << toSQ)) return true;
-        //     } else if (mType == MOVE_CASTLE) {
-                
-        //         Move moveList[MAX_MOVES]; 
-        //         int numberOfMoves = genCastlingMoves(ply, moveList, 0, side, th);
-        //         for (int i = 0; i < numberOfMoves; i++) {
-
-        //             if (moveList[i].move == move)   return true;
-        //         }
-        //     } else if (mType == MOVE_ENPASSANT) {
-
-        //         if (th->moveStack[ply].epFlag && (~th->occupied & (1ULL << toSQ))) return true;
-        //     } else if (mType == MOVE_CAPTURE) {
-
-        //         if ((1ULL << toSQ) & cpbb) return true;
-        //     } else if (mType == MOVE_PROMOTION) {
-
-        //         if (cp == DUMMY && ~th->occupied & (1ULL << toSQ)) return true;
-        //         if (cp != DUMMY && (1ULL << toSQ) & cpbb) return true;
-        //     }
-        // }
-    }
-
-    return false;
-}
-
-
 uint16_t val_piece[8] = { 
+
     0, 
     VALUE_PAWN, 
     VALUE_KNIGHT, 
@@ -440,6 +393,75 @@ uint16_t val_piece[8] = {
     VALUE_KING, 
     0
 };
+
+
+bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
+
+    u8 opponent = side ^ 1;
+
+    u8 fromSq = from_sq(move);
+    u8 toSq = to_sq(move);
+
+
+    u8 piece = pieceType(move);
+    u8 capturePiece = cPieceType(move);
+
+    
+    u64 pieceBB = side ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
+    u64 capturePieceBB = opponent ? th->blackPieceBB[capturePiece] : th->whitePieceBB[capturePiece];
+
+
+    int moveType = move_type(move);
+
+
+    if (moveType == MOVE_NORMAL || moveType == MOVE_DOUBLE_PUSH) {
+
+        return ((1ULL << fromSq) & pieceBB && (1ULL << toSq) & th->empty);
+    } 
+    else if (moveType == MOVE_CASTLE) {
+
+        u8 castleFlags = th->moveStack[ply].castleFlags;
+
+        u8 castleDirection = castleDir(move);
+    
+        if (castleDirection == WHITE_CASTLE_QUEEN_SIDE) {
+            
+            return castleFlags & CASTLE_FLAG_WHITE_QUEEN;
+        } 
+        else if (castleDirection == WHITE_CASTLE_KING_SIDE) {
+
+            return castleFlags & CASTLE_FLAG_WHITE_KING;
+        }
+        else if (castleDirection == BLACK_CASTLE_QUEEN_SIDE) {
+
+            return castleFlags & CASTLE_FLAG_BLACK_QUEEN;
+        }
+        else if (castleDirection == BLACK_CASTLE_KING_SIDE) {
+
+            return castleFlags & CASTLE_FLAG_BLACK_KING;
+        }
+    } 
+    else if (moveType == MOVE_CAPTURE) {
+
+        return (((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & capturePieceBB));
+    }
+    else if (moveType == MOVE_ENPASSANT) {
+
+        return th->moveStack[ply].epFlag && th->moveStack[ply].epSquare == toSq;
+    }
+    else if (moveType == MOVE_PROMOTION) {
+
+        if (capturePiece == DUMMY) {
+
+            return ((1ULL << fromSq) & pieceBB && (1ULL << toSq) & th->empty);
+        } else {
+
+            return ((1ULL << fromSq) & pieceBB && (1ULL << toSq) & capturePieceBB);
+        }
+    }
+
+    return false;
+}
 
 
 
@@ -461,11 +483,11 @@ void getMoves(const int ply, const int side, std::vector<Move> &moves, const int
             
             if (ttMove != NO_MOVE) {
             
-                if (checkIfValidMove(ply, side, ttMove, th)) {
+                if (isValidMove(side, ply, ttMove, th)) {
                     
                     Move m;
-                    m.move = ttMove;
 
+                    m.move = ttMove;
                     moves.push_back(m);            
                 }
             }
@@ -507,7 +529,8 @@ void getMoves(const int ply, const int side, std::vector<Move> &moves, const int
 
                 mt = move_type(move);
 
-                if (mt == MOVE_ENPASSANT || mt == MOVE_PROMOTION) cap_piece = PAWNS;
+                if (mt == MOVE_ENPASSANT || mt == MOVE_PROMOTION) 
+                    cap_piece = PAWNS;
 
                 (*i).score = th->capture_history_score[atk_piece][to][cap_piece];
             }
@@ -518,7 +541,52 @@ void getMoves(const int ply, const int side, std::vector<Move> &moves, const int
 
         case STAGE_KILLER_MOVES : {
 
-    
+            
+            const u32 KILLER_MOVE_1 = th->moveStack[ply].killerMoves[0];
+            const u32 KILLER_MOVE_2 = th->moveStack[ply].killerMoves[1];
+            
+            u32 previousMove = IS_ROOT_NODE ? NO_MOVE : th->moveStack[ply - 1].move;
+
+
+            Move move;        
+            if (isValidMove(side, ply, KILLER_MOVE_1, th)) {
+
+                move.move = KILLER_MOVE_1;
+                move.score = th->historyScore[side][from_sq(KILLER_MOVE_1)][to_sq(KILLER_MOVE_1)];
+                
+
+                if (    previousMove != NO_MOVE    
+                    &&  KILLER_MOVE_1 == th->counterMove[side][from_sq(previousMove)][to_sq(previousMove)]) {
+
+                    move.score += BONUS_COUNTER_MOVE;
+                }
+
+
+                moves.push_back(move);
+            }
+
+
+            if (isValidMove(side, ply, KILLER_MOVE_2, th)) {
+
+                move.move = KILLER_MOVE_2;
+                move.score = th->historyScore[side][from_sq(KILLER_MOVE_2)][to_sq(KILLER_MOVE_2)];
+
+
+                if (    previousMove != NO_MOVE    
+                    &&  KILLER_MOVE_2 == th->counterMove[side][from_sq(previousMove)][to_sq(previousMove)]) {
+
+                    move.score += BONUS_COUNTER_MOVE;
+                }
+
+                moves.push_back(move);
+            }
+
+            break;
+        }
+
+        case STAGE_NORMAL_MOVES : {
+
+
             genCastlingMoves(ply, moves, side, th);
     
             generatePushes(side, moves, th);
