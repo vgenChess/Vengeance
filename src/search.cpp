@@ -265,7 +265,8 @@ void searchMain(int sideToMove, SearchThread *th) {
 		    std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
 		    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
 
-	    	if (timeSpent > timePerMove * scoreChangeFactor * stableMoveFactor) {
+	    	if (timeSpent > maxTimePerMove ||
+	    		timeSpent > timePerMove * scoreChangeFactor * stableMoveFactor) {
 
 				Threads.stop = true;
 				break;	
@@ -445,7 +446,8 @@ void checkTime() {
 
     int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
 
-    if (timeNow.time_since_epoch() >= stopTime.time_since_epoch()) {
+    if (timeNow.time_since_epoch() >= stopTime.time_since_epoch()
+    	|| timeSpent > maxTimePerMove) {
 
 		Threads.stop = true;
 	}

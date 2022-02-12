@@ -314,7 +314,7 @@ void UciLoop() {
             }   
 
             if (timeSet) {
-
+                
                 stopTime = startTime + std::chrono::milliseconds((int)(time * 0.75));
 
                 timePerMove = (time / (movestogo + 2)) + inc; 
