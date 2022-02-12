@@ -359,7 +359,8 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
 		int interval = std::chrono::duration_cast<std::chrono::seconds>(
 		    std::chrono::steady_clock::now() - startTime).count();    	
 
-		if (interval > 3) th->canReportCurrMove = true;
+		if (interval > 3) 
+			th->canReportCurrMove = true;
 	}
 }
 
@@ -368,7 +369,7 @@ void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> 
 
 	int bonus = std::min(400, depth * depth), delta = 0;
 
-	int16_t hScore;
+	int32_t hScore;
 
 	u32 move, previousMove;
 
@@ -384,7 +385,7 @@ void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> 
 
 		// mtx.lock();
 		// if (th->historyScore[side][from_sq(move)][to_sq(move)] > 10000)
-		// 	std::cout << th->historyScore[side][from_sq(move)][to_sq(move)] << ", ";
+		//     std::cout << th->historyScore[side][from_sq(move)][to_sq(move)] << ", ";
 		// mtx.unlock();
 	}
 
@@ -403,7 +404,7 @@ void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,std::vector
 
 	int bonus = std::min(400, depth * depth), delta = 0;
 
-	int16_t chScore;
+	int32_t chScore;
 
 	uint16_t atk_piece, to, cap_piece;
 	u32 move, previousMove;
@@ -433,7 +434,7 @@ void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,std::vector
 
 		// mtx.lock();
 		// if (th->capture_history_score[atk_piece][to][cap_piece] > 1000)
-		// 	std::cout << th->capture_history_score[atk_piece][to][cap_piece] << ", ";
+		//     std::cout << th->capture_history_score[atk_piece][to][cap_piece] << ", ";
 		// mtx.unlock();
 	}
 }
@@ -451,6 +452,8 @@ void checkTime() {
 
 	// readInput();	
 }
+
+
 
 
 int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pline, SearchInfo *si, int mate) {
@@ -539,9 +542,13 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 			
 			if (th->movesHistory[i].hashKey == th->hashKey) {
 
-				if (	num_pieces > 22)	return -50;
-				if (	num_pieces > 12)	return -25;	// middlegame
-					     					return   0;	// endgame
+				if (num_pieces > 22)	
+					return -50;
+				
+				if (num_pieces > 12)	
+					return -25;	// middlegame
+					     					
+				return   0;	// endgame
 			}
 		}
 
@@ -583,9 +590,6 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	}
 
 
-	const auto num_opp_pieces = __builtin_popcountll(
-		opp ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
-
 	const auto in_check = isKingInCheck(side, th);
 
 
@@ -596,19 +600,18 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 		if (sEval == -INF) {
 			
-			sEval = nn_eval(&nn, th, (side == WHITE ? 0 : 1));		
+			sEval = nn_eval(&nnue, th, (side == WHITE ? 0 : 1));		
 		}
 	} else {
 		
-		sEval = nn_eval(&nn, th, (side == WHITE ? 0 : 1));			
+		sEval = nn_eval(&nnue, th, (side == WHITE ? 0 : 1));			
 		
 		recordHash(age, NO_MOVE, NO_DEPTH, -INF, NO_BOUND, sEval, th);		
 	}
 
 
-
 	bool improving = false;
-	if (is_root_node || in_check || ply < 2) {
+	if (in_check || ply < 2) {
 
 		improving = false;
 	} else {
@@ -621,6 +624,9 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	assert (!(!in_check && sEval == -INF));
 
 
+
+	const auto num_opp_pieces = __builtin_popcountll(
+		opp ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 	
 	bool canPruneOrReduce = false;
 
@@ -749,18 +755,9 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 
 
-	// Alternative to IID ----------------------------------------------------------------------------------- under observation
-	// (Reduce instead of finding the best move for low depths)
-	
-/*	if (	is_pv_node 
-		&&	depth >= 6 
-		&&	!ttMove) {
+	// Alternative to IID (under observation)
 
-		depth -= 2;	
-	}
-*/
-	if (	depth >= 4 
-		&&  !ttMove) {
+	if (depth >= 4 && !ttMove) {
 
 		depth--;	
 	}
@@ -784,325 +781,241 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	Move currentMove, tmpMove;
 
 	std::vector<u32> quietMovesPlayed, captureMovesPlayed;
-	std::vector<Move> moves, badCaptures, killerMoves, normalMoves;
-
-
-	// Seach Loop for the available moves ----------------------------------------------------------------
 	
-	for (auto stage : STAGES) {	
 
-		// get the moves according to current stage -------------------------------------------------------
+	th->moveList[ply].stage = PLAY_HASH_MOVE;
+	th->moveList[ply].moves.clear();
+	th->moveList[ply].badCaptures.clear();
 
-		moves.clear();
 
-		if (stage == STAGE_BAD_CAPTURES) {
+	while ((currentMove = getNextMove(ply, side, th, &th->moveList[ply])).move) {
 
-			moves = badCaptures; // TODO check logic
-		}	else {
 
-			getMoves(ply, side, moves, stage, false, th);		
-		} 
-	
-		//------------------------------------------------------------------------------------
+		assert (currentMove.move != NO_MOVE);
 
 
+		make_move(ply, currentMove.move, th);
 
 
-		// Sort the moves--------------------------------------------------------------------- 
-			
-		int n = moves.size();
-		for (int i = 0; i < n; i++) {   // loop n times - 1 per element
-	        for (int j = 0; j < n - i - 1; j++) { // last i elements are sorted already
-	    
-	            if (moves[j].score < moves[j + 1].score) {
+		isValidMove = !isKingInCheck(side, th);
 
-	                tmpMove = moves[j];
-	                moves[j] = moves[j + 1];
-	                moves[j + 1] = tmpMove;
-	            }
-	        }
-    	}		
-	
-		//------------------------------------------------------------------------------------
 
+		if (isValidMove) {
 
+			currentMoveType = move_type(currentMove.move);
 
+			isQuietMove = false;
+			if (	currentMoveType == MOVE_NORMAL 
+				||	currentMoveType == MOVE_CASTLE 
+				||	currentMoveType == MOVE_DOUBLE_PUSH) {
 
+				isQuietMove = true;
 
-    	// Search the moves-------------------------------------------------------------------------
-
-
-		for (std::vector<Move>::iterator m = moves.begin(); m != moves.end(); ++m) {
-				
-
-	 		currentMove = *m;
-
-
-	 		if (stage > STAGE_HASH_MOVE && currentMove.move == ttMove) {
-
-	 			continue;	// dont search the hash move twice
-	 		}	
-			
-	 		if (	stage > STAGE_KILLER_MOVES 
-	 			&& (currentMove.move == KILLER_MOVE_1 || currentMove.move == KILLER_MOVE_2)) {
-
-	 			continue;
-	 		}
-
-
-			if (stage == STAGE_CAPTURES) {
-
-				see_score = see(currentMove.move, side, th);
-				if (see_score < 0)	{
-
-					badCaptures.push_back(currentMove);		
-
-					continue;
-				}
-			}
-
-
-
-			assert (currentMove.move != NO_MOVE);
-
-
-			make_move(ply, currentMove.move, th);
-
-
-			isValidMove = !isKingInCheck(side, th);
-
-
-			if (isValidMove) {
-
-				currentMoveType = move_type(currentMove.move);
-
-				isQuietMove = false;
-				if (	currentMoveType == MOVE_NORMAL 
-					||	currentMoveType == MOVE_CASTLE 
-					||	currentMoveType == MOVE_DOUBLE_PUSH) {
-
-					isQuietMove = true;
-
-					quietMovesPlayed.push_back(currentMove.move);
-				} else {
-
-					isQuietMove = false;
-
-					captureMovesPlayed.push_back(currentMove.move);
-				}
-
-
-				// Pruning ----------------------------------------------------------------------
-				
-				if (	legalMoves > 0
-					&&	!is_root_node 
-					&&	!is_pv_node
-					&&	!in_check 
-					&&	stage != STAGE_PROMOTIONS) {
-
-
-					if (isQuietMove) {
-						
-						// Futility pruning
-						if (	f_prune) {
-			
-							unmake_move(ply, currentMove.move, th);
-							continue;
-						}
-
-						// Late move pruning
-						if (	depth <= LMP_MAX_DEPTH 
-							&&  legalMoves >= LMP_BASE * depth) {
-
-							unmake_move(ply, currentMove.move, th);
-							continue;
-						}
-
-						// History pruning
-						if (	depth <= HISTORY_PRUNING_MAX_DEPTH
-							&&	currentMove.score < HISTORY_PRUNING_THRESHOLD) {
-
-							unmake_move(ply, currentMove.move, th);
-							continue;
-						}
-					}	
-		
-					else {
-
-						// Capture History Pruning
-						/*if (	depth <= CAPTURE_HISTORY_PRUNING_MAX_DEPTH
-							&&	currentMove.score < CAPTURE_PRUNING_THRESHOLD) {
-
-							unmake_move(ply, currentMove.move, th);
-							continue;
-						}*/
-
-						// Negative SEE pruning 
-						if (	stage == STAGE_BAD_CAPTURES 
-							&&	currentMove.score < SEE_PRUNING_THRESHOLD) {
-							
-							unmake_move(ply, currentMove.move, th);
-							continue;
-						}	
-					}		
-				}
-
-
-		        // report current move via uci protocol
-		        if (	is_root_node 
-		        	&&	is_main_thread
-		        	&&	th->canReportCurrMove) {	
-
-		        	reportCurrentMove(side, si->realDepth, legalMoves + 1, currentMove.move);
-		        }
-
-
-
-		        th->moveStack[ply].move = currentMove.move;
-
-
-
-				extend = 0;
-
-
-
-				//	Extensions---------------------------------------------------------------------------------
-
-				if (	!is_root_node 
-					&&	th->moveStack[ply - 1].extend <= MAX_EXTENSION) {	
-
-
-					u8 sqCurrMove = to_sq(currentMove.move);
-					u8 pieceCurrMove = pieceType(currentMove.move);
-
-					bool is_prank = side ? 
-						sqCurrMove >= 8 && sqCurrMove <= 15 : 
-						sqCurrMove >= 48 && sqCurrMove <= 55;
-
-					if (	in_check 
-						||	stage == STAGE_PROMOTIONS 
-						||	(pieceCurrMove == PAWNS && is_prank)) {	// Check and promotions 
-
-						extend = 1;
-					}
-				} 
-
-
-
-
-				th->moveStack[ply].extend = is_root_node ? 0 : th->moveStack[ply - 1].extend + extend;
-
-
-
-  			    newDepth = (depth - 1) + extend;
-
-
-
-				reduce = 0;
-
-
-
-				searchInfo.side = opp;
-				searchInfo.ply = ply + 1;
-				searchInfo.isNullMoveAllowed = true;
-
-
-				if (legalMoves == 0) {
-
-					searchInfo.depth = newDepth;
-
-					score = -alphabetaSearch(-beta, -alpha, th, &line, &searchInfo, mate - 1);
-				} else {
-					
-					// Late Move Reductions (Under observation)
-
-					if (	depth > 2
-						&&	legalMoves > 3) {
-							
-
-						reduce = depth > 6 ? 2 : 1;	
-
-
-						if (!is_pv_node) reduce++;
-						if (!improving && !in_check) reduce++; // in_check sets improving to false
-
-
-						if (stage == STAGE_KILLER_MOVES) reduce--;
-			            reduce -= std::max(-2, std::min(2, currentMove.score / 5000));	// TODO rewrite logic				
-
-
-			        	int r = std::min(depth - 1, std::max(reduce, 1));	// TODO rewrite logic
-
-			        	searchInfo.depth = newDepth - r;	
-
-
-						score = -alphabetaSearch(-alpha - 1, -alpha, th, &line, &searchInfo, mate - 1);			
-
-					} else {
-
-						score = alpha + 1;
-					}
-
-					if (score > alpha) {
-
-						searchInfo.depth = newDepth;
-						
-						score = -alphabetaSearch(-alpha - 1, -alpha, th, &line, &searchInfo, mate - 1);					
-				
-						if (score > alpha && score < beta) {
-
-							score = -alphabetaSearch(-beta, -alpha, th, &line, &searchInfo, mate - 1);					
-						}
-					}
-				}
-
-
-
-
-				unmake_move(ply, currentMove.move, th);
-
-				legalMoves++;
-
-
-
-
-				if (score > bestScore) {
-
-					bestScore = score;
-					bestMove = currentMove.move;
-					
-					if (score > alpha) {
-					
-
-						alpha = score;
-						hashf = hashfEXACT;
-
-
-						pline->clear();
-						pline->push_back(bestMove);
-						std::copy(line.begin(), line.end(), back_inserter(*pline));
-						line.clear();
-
-
-						if (score >= beta) {
-
-							hashf = hashfBETA;
-							
-							failedHigh = true;
-
-							break;
-						} 					
-					} 
-				}
+				quietMovesPlayed.push_back(currentMove.move);
 			} else {
 
-				unmake_move(ply, currentMove.move, th);
-			}
-		}
+				isQuietMove = false;
 
-		if (failedHigh) {
-		    
-		    break;
+				captureMovesPlayed.push_back(currentMove.move);
+			}
+
+
+			// Pruning ----------------------------------------------------------------------
+			
+			if (	legalMoves > 0
+				&&	!is_root_node 
+				&&	!is_pv_node
+				&&	!in_check 
+				&&	move_type(currentMove.move) != MOVE_PROMOTION) {
+
+
+				if (isQuietMove) {
+					
+					// Futility pruning
+					if (	f_prune) {
+		
+						unmake_move(ply, currentMove.move, th);
+						continue;
+					}
+
+					// Late move pruning
+					if (	depth <= LMP_MAX_DEPTH 
+						&&  legalMoves >= LMP_BASE * depth) {
+
+						unmake_move(ply, currentMove.move, th);
+						continue;
+					}
+
+					// History pruning
+					if (	depth <= HISTORY_PRUNING_MAX_DEPTH
+						&&	currentMove.score < HISTORY_PRUNING_THRESHOLD) {
+
+						unmake_move(ply, currentMove.move, th);
+						continue;
+					}
+				}	
+	
+				else {
+
+					// Capture History Pruning
+					/*if (	depth <= CAPTURE_HISTORY_PRUNING_MAX_DEPTH
+						&&	currentMove.score < CAPTURE_PRUNING_THRESHOLD) {
+
+						unmake_move(ply, currentMove.move, th);
+						continue;
+					}*/
+
+					// Negative SEE pruning 
+					// if (	si->stage == STAGE_BAD_CAPTURES 
+					// 	&&	currentMove.score < SEE_PRUNING_THRESHOLD) {
+						
+					// 	unmake_move(ply, currentMove.move, th);
+					// 	continue;
+					// }	
+				}		
+			}
+
+
+	        // report current move via uci protocol
+	        if (	is_root_node 
+	        	&&	is_main_thread
+	        	&&	th->canReportCurrMove) {	
+
+	        	reportCurrentMove(side, si->realDepth, legalMoves + 1, currentMove.move);
+	        }
+
+
+
+	        th->moveStack[ply].move = currentMove.move;
+
+
+
+			extend = 0;
+
+
+
+			//	Extensions---------------------------------------------------------------------------------
+
+			if (	!is_root_node 
+				&&	th->moveStack[ply - 1].extend <= MAX_EXTENSION) {	
+
+
+				u8 sqCurrMove = to_sq(currentMove.move);
+				u8 pieceCurrMove = pieceType(currentMove.move);
+
+				bool is_prank = side ? 
+					sqCurrMove >= 8 && sqCurrMove <= 15 : 
+					sqCurrMove >= 48 && sqCurrMove <= 55;
+
+				if (	in_check 
+					||	move_type(currentMove.move) == MOVE_PROMOTION 
+					||	(pieceCurrMove == PAWNS && is_prank)) {	// Check and promotions 
+
+					extend = 1;
+				}
+			} 
+
+
+			th->moveStack[ply].extend = is_root_node ? 0 : th->moveStack[ply - 1].extend + extend;
+
+
+			newDepth = (depth - 1) + extend;
+
+
+
+			reduce = 0;
+
+
+
+			searchInfo.side = opp;
+			searchInfo.ply = ply + 1;
+			searchInfo.isNullMoveAllowed = true;
+
+
+			if (legalMoves == 0) {
+
+				searchInfo.depth = newDepth;
+
+				score = -alphabetaSearch(-beta, -alpha, th, &line, &searchInfo, mate - 1);
+			} else {
+				
+				// Late Move Reductions (Under observation)
+
+				if (	depth > 2
+					&&	legalMoves > 3) {
+						
+
+					reduce = depth > 6 ? depth / 3 : 1;	
+
+
+					if (!is_pv_node) reduce++;
+					if (!improving && !in_check) reduce++; // in_check sets improving to false
+
+
+					if (currentMove.move == KILLER_MOVE_1 || currentMove.move == KILLER_MOVE_2) reduce--;
+		            reduce -= std::max(-2, std::min(2, currentMove.score / 5000));	// TODO rewrite logic				
+
+
+		        	int r = std::min(depth - 1, std::max(reduce, 1));	// TODO rewrite logic
+
+		        	searchInfo.depth = newDepth - r;	
+
+
+					score = -alphabetaSearch(-alpha - 1, -alpha, th, &line, &searchInfo, mate - 1);			
+
+				} else {
+
+					score = alpha + 1;
+				}
+
+				if (score > alpha) {
+
+					searchInfo.depth = newDepth;
+					
+					score = -alphabetaSearch(-alpha - 1, -alpha, th, &line, &searchInfo, mate - 1);					
+			
+					if (score > alpha && score < beta) {
+
+						score = -alphabetaSearch(-beta, -alpha, th, &line, &searchInfo, mate - 1);					
+					}
+				}
+			}
+
+
+			unmake_move(ply, currentMove.move, th);
+
+			legalMoves++;
+
+
+			if (score > bestScore) {
+
+				bestScore = score;
+				bestMove = currentMove.move;
+				
+				if (score > alpha) {
+
+					alpha = score;
+					hashf = hashfEXACT;
+
+					pline->clear();
+					pline->push_back(bestMove);
+					
+					std::copy(line.begin(), line.end(), back_inserter(*pline));
+					line.clear();
+
+					if (score >= beta) {
+
+						hashf = hashfBETA;
+						
+						failedHigh = true;
+						
+						break;
+					} 					
+				} 
+			}
+		} else {
+
+			unmake_move(ply, currentMove.move, th);
 		}
 	}
 
@@ -1162,8 +1075,6 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 		checkTime();	
 	}
-
-	
 
 	// return if need to stop
 	if (is_main_thread && Threads.stop) {
@@ -1236,7 +1147,7 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 	if (sEval == -INF) { 
 	
-		sEval = nn_eval(&nn, th, (side == WHITE ? 0 : 1));			
+		sEval = nn_eval(&nnue, th, (side == WHITE ? 0 : 1));			
 	}
 
 
@@ -1279,113 +1190,78 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 	Move currentMove, tmpMove;
 
 	std::vector<u32> line;
-	std::vector<Move> moveList;	
 
-	bool failedHigh = false;
-
-	for (int stage = STAGE_PROMOTIONS; stage <= STAGE_CAPTURES; stage++) {
-
-
-		moveList.clear();
-		getMoves(ply, side, moveList, stage, true, th);
-
-
-		n = moveList.size();
-
-		for (int i = 0; i < n; i++) {   // loop n times - 1 per element
-        	for (int j = 0; j < n - i - 1; j++) { // last i elements are sorted already
-    
-            	if (moveList[j].score < moveList[j + 1].score) {
-            	
-                	tmpMove = moveList[j];
-                	moveList[j] = moveList[j + 1];
-                	moveList[j + 1] = tmpMove;
-           		}
-        	}
-    	}
-
-
-
-		for (std::vector<Move>::iterator m = moveList.begin(); m != moveList.end(); ++m) {
 	
+	th->moveList[ply].stage = GEN_PROMOTION_CAPTURE_MOVES;
 
-   	 		currentMove = *m;
+	th->moveList[ply].moves.clear();
+	th->moveList[ply].badCaptures.clear();
 
 
-   	 		if (stage != STAGE_PROMOTIONS) {
+	int capPiece;
 
-				// Delta pruning
-	   	 		if (	num_opp_pieces > 3
-	   	 			&&	Q_FUTILITY_BASE + seeVal[cPieceType(currentMove.move)] <= alpha) {
+	while ((currentMove = getNextMove(ply, side, th, &th->moveList[ply])).move) {
+   		
+   		if (th->moveList[ply].stage > PLAY_CAPTURE_MOVES) 
+   			break;
+		
 
-	   	 			continue;
-	   	 		} 
+		capPiece = cPieceType(currentMove.move);
+ 		if (capPiece != DUMMY) {
 
-				see_score = see(currentMove.move, side, th);
+			// Delta pruning
+	 		if (	num_opp_pieces > 3
+	 			&&	Q_FUTILITY_BASE + seeVal[capPiece] <= alpha) {
 
-   	 			// Don't search moves with negative SEE 
-				if (	see_score < Q_SEE_PRUNING_THRESHOLD) {
-
-					continue;
-				}	
-   	 		}
-
+	 			continue;
+	 		} 
+ 		}
 				
 
-			assert (currentMove.move != NO_MOVE);
+		assert (currentMove.move != NO_MOVE);
 
 
-			make_move(ply, currentMove.move, th);
+		make_move(ply, currentMove.move, th);
 
 
-			if (!isKingInCheck(side, th)) {
+		if (!isKingInCheck(side, th)) {
 
 
-				score = -quiescenseSearch(ply + 1, depth - 1, opp, -beta, -alpha, th, &line);
+			score = -quiescenseSearch(ply + 1, depth - 1, opp, -beta, -alpha, th, &line);
 
 
-				unmake_move(ply, currentMove.move, th);
+			unmake_move(ply, currentMove.move, th);
 
 
-				if (score > bestScore) {
+			if (score > bestScore) {
 
-
-					bestScore = score;
+				bestScore = score;
+				bestMove = currentMove.move;
+				
+				if (score > alpha) {	
 					
-					if (score > alpha) {	
+					alpha = score;
+					hashf = hashfEXACT;
 
+
+					pline->clear();
+					pline->push_back(bestMove);
+					std::copy(line.begin(), line.end(), back_inserter(*pline));
+					line.clear();
+
+
+					if (score >= beta) {
+
+						hashf = hashfBETA;
 						
-						bestMove = currentMove.move;
-
-						
-						alpha = score;
-						hashf = hashfEXACT;
-
-
-						pline->clear();
-						pline->push_back(bestMove);
-						std::copy(line.begin(), line.end(), back_inserter(*pline));
-						line.clear();
-
-
-						if (score >= beta) {
-
-							hashf = hashfBETA;
-							
-							failedHigh = true;
-
-							break;
-						} 					
-					} 
-				}
-			} else {
-
-				unmake_move(ply, currentMove.move, th);				
+						break;
+					} 					
+				} 
 			}
-		}
+		} else {
 
-		if (failedHigh) 
-			break;
+			unmake_move(ply, currentMove.move, th);				
+		}
 	}
 
 

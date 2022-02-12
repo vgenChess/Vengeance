@@ -23,6 +23,8 @@ class Thread {
 		int32_t historyScore[2][64][64];
 		u32 counterMove[2][64][64];
 		
+		std::vector<MOVE_LIST> moveList;
+
 		std::vector<PV> pvLine;
 		std::vector<MOVE_STACK> moveStack;
 		std::vector<UNDO_MOVE_STACK> undoMoveStack;

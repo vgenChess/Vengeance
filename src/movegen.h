@@ -11,6 +11,7 @@
 
 #include "globals.h"
 #include "thread.h"
+#include "search.h"
 
 u32 createMove(u32 promotion_type, u32 castle_dir, u32 move_type, u32 color, u32 c_piece, u32 piece, u32 from, u32 to);
 
@@ -30,5 +31,7 @@ void genPromotionsNormal(std::vector<Move> &moves, u8 sideToMove, Thread *th);
 void genPromotionsAttacks(std::vector<Move> &moves, u8 sideToMove, Thread *th);
 
 void getMoves(const int ply, const int side, std::vector<Move> &moves, const int stage, const bool isQuiescense, Thread *th);
+
+Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *searchInfo);
 
 #endif /* movegen_h */

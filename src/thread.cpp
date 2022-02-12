@@ -112,6 +112,8 @@ uint64_t SearchThreadPool::getTotalTTHits() const {
 
 Thread::Thread() {
 
+	this->moveList = std::vector<MOVE_LIST> (MAX_PLY);
+
 	this->pvLine = std::vector<PV> (MAX_PLY);
 	this->moveStack = std::vector<MOVE_STACK> (MAX_PLY);
 	this->undoMoveStack = std::vector<UNDO_MOVE_STACK> (MAX_PLY);
@@ -140,6 +142,8 @@ Thread::Thread() {
 }
 
 void Thread::clear() {
+
+	this->moveList.clear();
 
 	this->pvLine.clear();
 	this->moveStack.clear();
@@ -301,7 +305,7 @@ void SearchThread::init() {
     //memcpy(&accumulator, &initThread.accumulator,
     //	sizeof(initThread.accumulator));
 
-	nn_inputs_upd_all(&nn, this); 
+	nn_inputs_upd_all(&nnue, this); 
 }
 
 void SearchThread::search() {

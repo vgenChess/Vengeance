@@ -464,6 +464,311 @@ bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
 }
 
 
+int GetTopIdx(std::vector<Move> &moves) {
+  
+  int m = 0;
+  for (int i = m + 1; i < moves.size(); i++)
+    if (moves[i].score > moves[m].score) m = i;
+
+  return m;
+}
+
+
+void scoreCaptureMoves(Thread *th, MOVE_LIST *moveList) {
+
+    int atk_piece, to, cap_piece, mt;
+    u32 move;
+    for (std::vector<Move>::iterator i = moveList->moves.begin(); i != moveList->moves.end(); ++i) {
+
+        move = (*i).move;
+
+        atk_piece = pieceType(move);
+        to = to_sq(move);
+        cap_piece = cPieceType(move);
+
+        mt = move_type(move);
+
+        if (mt == MOVE_ENPASSANT || mt == MOVE_PROMOTION) 
+            cap_piece = PAWNS;
+
+        (*i).score = th->capture_history_score[atk_piece][to][cap_piece];
+    }
+}
+
+void scoreNormalMoves(int side, int ply, Thread *th, MOVE_LIST *moveList) {
+
+    u32 move;
+
+    u32 previousMove = ply == 0 ? NO_MOVE : th->moveStack[ply - 1].move;
+
+    int score;
+    for (std::vector<Move>::iterator i = moveList->moves.begin(); i != moveList->moves.end(); ++i)
+    {
+
+        move = (*i).move;
+        (*i).score = th->historyScore[side][from_sq(move)][to_sq(move)];
+
+        if (    previousMove != NO_MOVE    
+            &&  move == th->counterMove[side][from_sq(previousMove)][to_sq(previousMove)]) {
+
+            (*i).score += BONUS_COUNTER_MOVE;
+        }
+    }
+}
+
+
+
+Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
+
+
+    switch (moveList->stage) {
+
+        case PLAY_HASH_MOVE : {
+
+            moveList->stage = GEN_PROMOTION_CAPTURE_MOVES;
+
+            u32 ttMove = th->moveStack[ply].ttMove;
+
+            if (isValidMove(side, ply, ttMove, th)) {
+                    
+                Move m;
+
+                m.move = ttMove;
+                
+                return m;           
+            }
+        }
+        
+        // fallthrough
+
+        case GEN_PROMOTION_CAPTURE_MOVES : {
+
+            moveList->moves.clear();
+
+            genPromotionsAttacks(moveList->moves, side, th);
+            scoreCaptureMoves(th, moveList);
+            
+            moveList->stage = PLAY_PROMOTION_CAPTURE_MOVES;
+        }
+        
+        // fallthrough
+
+        case PLAY_PROMOTION_CAPTURE_MOVES : {
+
+            if (moveList->moves.size() > 0) {
+
+                int index = GetTopIdx(moveList->moves);
+                
+                Move m = moveList->moves[index];
+                
+                moveList->moves.erase(moveList->moves.begin() + index);
+                    
+                if (m.move == th->moveStack[ply].ttMove) {
+    
+                    return getNextMove(ply, side, th, moveList);
+                }
+
+                return m;
+            }
+
+            moveList->stage = GEN_PROMOTION_QUIET_MOVES;
+        }
+        
+        //fallthrough
+
+        case GEN_PROMOTION_QUIET_MOVES : {
+        
+            moveList->moves.clear();
+
+            genPromotionsNormal(moveList->moves, side, th);
+            scoreNormalMoves(side, ply, th, moveList);
+            
+            moveList->stage = PLAY_PROMOTION_QUIET_MOVES;
+        }
+        
+        //fallthrough 
+
+        case PLAY_PROMOTION_QUIET_MOVES : {
+
+            if (moveList->moves.size() > 0) {
+
+                int index = GetTopIdx(moveList->moves);
+                
+                Move m = moveList->moves[index];
+                
+                moveList->moves.erase(moveList->moves.begin() + index);
+                    
+                if (m.move == th->moveStack[ply].ttMove) {
+    
+                    return getNextMove(ply, side, th, moveList);
+                }
+
+                return m;
+            }
+
+            moveList->stage = GEN_CAPTURE_MOVES;
+        }
+        
+        //fallthrough
+
+        case GEN_CAPTURE_MOVES : {
+
+            moveList->moves.clear();
+            genAttacks(ply, moveList->moves, side, th);
+            scoreCaptureMoves(th, moveList);
+            
+            moveList->stage = PLAY_CAPTURE_MOVES;
+        }
+        
+        // fallthrough
+        
+        case PLAY_CAPTURE_MOVES : {
+
+            if (moveList->moves.size() > 0) {
+
+                int index = GetTopIdx(moveList->moves);
+                
+                Move m = moveList->moves[index];
+
+                moveList->moves.erase(moveList->moves.begin() + index);
+                
+                if (m.move == th->moveStack[ply].ttMove) {
+    
+                    return getNextMove(ply, side, th, moveList);
+                }
+
+                if (see(m.move, side, th) < 0) {
+
+                    moveList->badCaptures.push_back(m);
+                    return getNextMove(ply, side, th, moveList);
+                }
+
+                return m;
+            }   
+
+            moveList->stage = PLAY_KILLER_MOVE_1;
+        }
+        
+        //fallthrough
+
+        case PLAY_KILLER_MOVE_1 : {
+
+            moveList->stage = PLAY_KILLER_MOVE_2;
+
+            u32 killerMove1 = th->moveStack[ply].killerMoves[0];
+
+            if (isValidMove(side, ply, killerMove1, th)) {
+                    
+                Move m;
+
+                m.move = killerMove1;
+               
+                return m;           
+            }
+        }
+        
+        //fallthrough
+
+        case PLAY_KILLER_MOVE_2 : {
+
+            moveList->stage = GEN_QUIET_MOVES;
+
+            u32 killerMove2 = th->moveStack[ply].killerMoves[1];
+
+            if (isValidMove(side, ply, killerMove2, th)) {
+                    
+                Move m;
+
+                m.move = killerMove2;
+               
+                return m;           
+            }
+        }
+        
+        //fallthrough
+
+        case GEN_QUIET_MOVES : {
+
+            moveList->moves.clear();
+
+            genCastlingMoves(ply, moveList->moves, side, th);
+            generatePushes(side, moveList->moves, th);
+            
+            scoreNormalMoves(side, ply, th, moveList);
+          
+            moveList->stage = PLAY_QUIET_MOVES;
+        }
+        
+        //fallthrough
+
+        case PLAY_QUIET_MOVES : {
+
+            if (moveList->moves.size() > 0) {
+
+                int index = GetTopIdx(moveList->moves);
+                    
+                Move m = moveList->moves[index];
+
+                moveList->moves.erase(moveList->moves.begin() + index);
+
+                if (    m.move == th->moveStack[ply].ttMove 
+                    ||  m.move == th->moveStack[ply].killerMoves[0] 
+                    ||  m.move == th->moveStack[ply].killerMoves[1]) {
+                  
+                    return getNextMove(ply, side, th, moveList);
+                }
+
+                return m;
+            }
+
+            moveList->stage = PLAY_BAD_CAPTURES;
+        }
+        
+        //fallthrough
+
+        case PLAY_BAD_CAPTURES : {
+
+            if (moveList->badCaptures.size() > 0) {
+
+                int index = GetTopIdx(moveList->badCaptures);
+                    
+                Move m = moveList->badCaptures[index];
+
+                moveList->badCaptures.erase(moveList->badCaptures.begin() + index);
+
+                if (m.move == th->moveStack[ply].ttMove) {
+                  
+                    return getNextMove(ply, side, th, moveList);
+                }
+
+                return m;
+            }
+
+            moveList->stage = STAGE_DONE;
+
+
+            Move noMove;
+            noMove.move = NO_MOVE;
+
+            return noMove;
+        }
+
+        case STAGE_DONE:
+
+            Move noMove;
+            noMove.move = NO_MOVE;
+
+            return noMove;
+    }
+
+
+    Move noMove;
+    noMove.move = NO_MOVE;
+
+    return noMove;
+}
+
+
 
 void getMoves(const int ply, const int side, std::vector<Move> &moves, const int stage,
     const bool isQuiescense, Thread *th) {    

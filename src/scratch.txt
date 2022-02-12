@@ -96,6 +96,7 @@ Bugs
     - 3b4/1B6/3k4/2p2K2/1pPp4/pP1N4/P7/8 w - - 13 113 (White disconnects)
     - 6k1/1p1r1pp1/8/1P6/7p/4P2P/4p1P1/2R2NK1 w - - 0 39 (misses rook to back rank and judges position as equal)
     - 8/8/8/2K5/5N2/8/4R3/2k5 w - - 17 106 (Connection stalls, mate scores)
+    - 8/8/8/8/8/3RK3/1k6/8 w - - 23 80 (Disconnects and doesnt find mate)
 
 
 

@@ -252,6 +252,23 @@ enum Stage {
 	STAGE_NORMAL_MOVES
 };
 
+enum StageNew {
+
+	PLAY_HASH_MOVE,
+	GEN_PROMOTION_CAPTURE_MOVES,
+	PLAY_PROMOTION_CAPTURE_MOVES,
+	GEN_PROMOTION_QUIET_MOVES,
+	PLAY_PROMOTION_QUIET_MOVES,
+	GEN_CAPTURE_MOVES,
+	PLAY_CAPTURE_MOVES,
+	PLAY_KILLER_MOVE_1,
+	PLAY_KILLER_MOVE_2,
+	GEN_QUIET_MOVES,
+	PLAY_QUIET_MOVES,
+	PLAY_BAD_CAPTURES,
+	STAGE_DONE
+};
+
 typedef struct {
     
     u64 key; 
@@ -314,6 +331,17 @@ typedef struct {
 
 	u16 age;
 } HASHE;
+
+
+typedef struct {
+
+	int stage;
+
+	std::vector<Move> moves;
+	std::vector<Move> badCaptures;
+
+} MOVE_LIST;
+
 
 class PV {
 
@@ -455,6 +483,6 @@ extern int weight_safety_adjustment;
 
 //NNUE
 
-extern NN_Network nn;
+extern NN_Network nnue;
 
 #endif /* globals_h */

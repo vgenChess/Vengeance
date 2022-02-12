@@ -105,18 +105,18 @@ void make_move(int ply, u32 move, Thread *th) {
 			||	mtype == MOVE_PROMOTION 
 			||	mtype == MOVE_ENPASSANT) {
  
-			nn_inputs_upd_all(&nn, th);
+			nn_inputs_upd_all(&nnue, th);
 	 	 }	else {
 		
 			if (	piece > 0) {
           
-				nn_inputs_mov_piece(&nn, th, piece - 1,
+				nn_inputs_mov_piece(&nnue, th, piece - 1,
 					(sideToMove== WHITE ? 0 : 1), fromSq, toSq);
      		}	   
      	
 			if (	mtype==MOVE_CAPTURE && c_piece > 0)	{
        
-   	  	     nn_inputs_del_piece(&nn, th, c_piece - 1, 	
+   	  	     nn_inputs_del_piece(&nnue, th, c_piece - 1, 	
 		 	 		(sideToMove == WHITE ? 1 : 0), toSq);
    	  	}
  		}
