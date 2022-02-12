@@ -466,11 +466,13 @@ bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
 
 int GetTopIdx(std::vector<Move> &moves) {
   
-  int m = 0;
-  for (int i = m + 1; i < moves.size(); i++)
-    if (moves[i].score > moves[m].score) m = i;
+    int m = 0;
+    for (int i = m + 1; i < moves.size(); i++) {
 
-  return m;
+        if (moves[i].score > moves[m].score) m = i;
+    }
+
+    return m;
 }
 
 
@@ -771,159 +773,6 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
     return noMove;
 }
-
-
-
-void getMoves(const int ply, const int side, std::vector<Move> &moves, const int stage,
-    const bool isQuiescense, Thread *th) {    
-    
-
-    const bool IS_ROOT_NODE = ply == 0;
-        
-    moves.clear(); 
- 
-    switch (stage) {
-
-
-        case STAGE_HASH_MOVE : {
-            
-
-            u32 ttMove = th->moveStack[ply].ttMove;
-            
-            if (ttMove != NO_MOVE) {
-            
-                if (isValidMove(side, ply, ttMove, th)) {
-                    
-                    Move m;
-
-                    m.move = ttMove;
-                    moves.push_back(m);            
-                }
-            }
-
-            break; 
-        }
-
-
-        case STAGE_PROMOTIONS : {
-
-
-            genPromotionsNormal(moves, side, th);
-            
-            genPromotionsAttacks(moves, side, th);
-
-            break;
-        }
-
-
-        case STAGE_CAPTURES : {
-
-
-            genAttacks(ply, moves, side, th);
-            
-            u8 atk_piece, cap_piece, mt;
-
-            int to;
-
-            int score;
-            u32 move;
-
-            for (std::vector<Move>::iterator i = moves.begin(); i != moves.end(); ++i) {
-
-                move = (*i).move;
-
-                atk_piece = pieceType(move);
-                to = to_sq(move);
-                cap_piece = cPieceType(move);
-
-                mt = move_type(move);
-
-                if (mt == MOVE_ENPASSANT || mt == MOVE_PROMOTION) 
-                    cap_piece = PAWNS;
-
-                (*i).score = th->capture_history_score[atk_piece][to][cap_piece];
-            }
-
-            break;
-        }
-
-
-        case STAGE_KILLER_MOVES : {
-
-            
-            const u32 KILLER_MOVE_1 = th->moveStack[ply].killerMoves[0];
-            const u32 KILLER_MOVE_2 = th->moveStack[ply].killerMoves[1];
-            
-            u32 previousMove = IS_ROOT_NODE ? NO_MOVE : th->moveStack[ply - 1].move;
-
-
-            Move move;        
-            if (isValidMove(side, ply, KILLER_MOVE_1, th)) {
-
-                move.move = KILLER_MOVE_1;
-                move.score = th->historyScore[side][from_sq(KILLER_MOVE_1)][to_sq(KILLER_MOVE_1)];
-                
-
-                if (    previousMove != NO_MOVE    
-                    &&  KILLER_MOVE_1 == th->counterMove[side][from_sq(previousMove)][to_sq(previousMove)]) {
-
-                    move.score += BONUS_COUNTER_MOVE;
-                }
-
-
-                moves.push_back(move);
-            }
-
-
-            if (isValidMove(side, ply, KILLER_MOVE_2, th)) {
-
-                move.move = KILLER_MOVE_2;
-                move.score = th->historyScore[side][from_sq(KILLER_MOVE_2)][to_sq(KILLER_MOVE_2)];
-
-
-                if (    previousMove != NO_MOVE    
-                    &&  KILLER_MOVE_2 == th->counterMove[side][from_sq(previousMove)][to_sq(previousMove)]) {
-
-                    move.score += BONUS_COUNTER_MOVE;
-                }
-
-                moves.push_back(move);
-            }
-
-            break;
-        }
-
-        case STAGE_NORMAL_MOVES : {
-
-
-            genCastlingMoves(ply, moves, side, th);
-    
-            generatePushes(side, moves, th);
-   
-    
-            u32 previousMove = IS_ROOT_NODE ? NO_MOVE : th->moveStack[ply - 1].move;
-
-            int score;
-            u32 move;
-            for (std::vector<Move>::iterator i = moves.begin(); i != moves.end(); ++i)
-            {
-        
-                move = (*i).move;
-                (*i).score = th->historyScore[side][from_sq(move)][to_sq(move)];
-
-                if (    previousMove != NO_MOVE    
-                    &&  move == th->counterMove[side][from_sq(previousMove)][to_sq(previousMove)]) {
-
-                    (*i).score += BONUS_COUNTER_MOVE;
-                }
-            }
-
-            break;
-        }
-    }
-}
-
-
 
 
 /*

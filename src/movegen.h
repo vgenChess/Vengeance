@@ -30,8 +30,6 @@ void genEnpassantMoves(int ply, std::vector<Move> &moves, u8 color, Thread *th);
 void genPromotionsNormal(std::vector<Move> &moves, u8 sideToMove, Thread *th);
 void genPromotionsAttacks(std::vector<Move> &moves, u8 sideToMove, Thread *th);
 
-void getMoves(const int ply, const int side, std::vector<Move> &moves, const int stage, const bool isQuiescense, Thread *th);
-
 Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *searchInfo);
 
 #endif /* movegen_h */
