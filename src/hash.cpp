@@ -64,7 +64,7 @@ bool probeHash(int *eval_static, int *ttDepth, int *ttValue, int *ttBound, u32 *
 }
 
 
-void recordHash(u16 age, u32 bestMove, int depth, int value, int hashf, int eval_static, Thread *th) {
+void recordHash(u32 bestMove, int depth, int value, int hashf, int eval_static, Thread *th) {
    
     
     HASHE *phashe = &hashTable[th->hashKey % HASH_TABLE_SIZE];
@@ -75,16 +75,12 @@ void recordHash(u16 age, u32 bestMove, int depth, int value, int hashf, int eval
     
     bool isValidHash = (phashe->key ^ dataKey) == th->hashKey; 
 
-    if (isValidHash) { // Check whether to overwrite previous information
+    if (isValidHash && depth < phashe->depth) { // Check whether to overwrite previous information
 
-        if (depth < phashe->depth && (age - phashe->age) <= 10) {
-            
-            return; // Hash information is not old and is of sufficient depth          
-        }
+        return;           
     }
 
-
-    // Overwrite the hash information because it is old, or of equal and lesser depth       
+    // Overwrite the hash information 
 
     dataKey = bestMove ^ depth ^ value ^ hashf ^ eval_static;
    
@@ -94,7 +90,6 @@ void recordHash(u16 age, u32 bestMove, int depth, int value, int hashf, int eval
     phashe->depth = depth;
     phashe->bestMove = bestMove;
     phashe->eval_static = eval_static;
-    phashe->age = age;  // For checking old hash information
 }
 
 int hashfull() {
@@ -102,9 +97,9 @@ int hashfull() {
     int count = 0;
     for (unsigned int i = 0; i < 1000; i++) {
 
-        if (    hashTable[i].key != 0) {
+        if (hashTable[i].key != 0)
             count++;
-        }
     }
+    
     return count;
 }

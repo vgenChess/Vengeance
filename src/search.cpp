@@ -34,7 +34,6 @@
 #include "constants.h"
 #include "cerebrum.h"
 
-int age = 0;
 
 bool timeSet, stopped;
 
@@ -142,7 +141,6 @@ void display(u8 sideToMove, int depth, int selDepth, int score, std::vector<u32>
 
 void startSearch(u8 sideToMove) {
 
-	age++; // For storing hash age information
 
 	ABORT_SEARCH = false;
 
@@ -590,7 +588,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 		
 		sEval = nn_eval(&nnue, th, (side == WHITE ? 0 : 1));			
 		
-		recordHash(age, NO_MOVE, NO_DEPTH, -INF, NO_BOUND, sEval, th);		
+		recordHash(NO_MOVE, NO_DEPTH, -INF, NO_BOUND, sEval, th);		
 	}
 
 
@@ -990,7 +988,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	}
 
 
-	recordHash(age, bestMove, depth, bestScore, hashf, sEval, th);
+	recordHash(bestMove, depth, bestScore, hashf, sEval, th);
 
 
 	return bestScore;
@@ -1031,9 +1029,6 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 		return 0; 
 	}
-
-
-	//-----------------------------------------------------------------------------------------------------------------
 
 
 
@@ -1104,7 +1099,7 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 	if (sEval >= beta)	{
 
-		recordHash(age, NO_MOVE, NO_DEPTH, sEval, hashfBETA, sEval, th);		
+		recordHash(NO_MOVE, NO_DEPTH, sEval, hashfBETA, sEval, th);		
 
 		return sEval;
 	}
@@ -1208,7 +1203,7 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 	}
 
 
-	recordHash(age, bestMove, depth, bestScore, hashf, sEval, th);
+	recordHash(bestMove, depth, bestScore, hashf, sEval, th);
 
 
 	return bestScore;

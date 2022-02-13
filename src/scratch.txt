@@ -98,6 +98,7 @@ Bugs
     - 8/8/8/2K5/5N2/8/4R3/2k5 w - - 17 106 (Connection stalls, mate scores)
     - 8/8/8/8/8/3RK3/1k6/8 w - - 23 80 (Disconnects and doesnt find mate)
     - 8/8/6k1/r7/1K3P1P/p7/7R/8 w - - 7 65 (Ignores rook capture by opponent king)
+    - 1R6/3q1r2/4p3/B2pP3/1K1Pn3/6p1/6k1/8 b - - 21 114 (Disconnects when near to mate score)
 
 
 
