@@ -533,40 +533,36 @@ void scoreCaptureMoves(Thread *th, MOVE_LIST *moveList) {
 
     int atk_piece, to, cap_piece, mt;
     u32 move;
-    for (std::vector<Move>::iterator i = moveList->moves.begin(); i != moveList->moves.end(); ++i) {
 
-        move = (*i).move;
+    for (auto &m : moveList->moves) {
 
-        atk_piece = pieceType(move);
-        to = to_sq(move);
-        cap_piece = cPieceType(move);
+        atk_piece = pieceType(m.move);
+        to = to_sq(m.move);
+        cap_piece = cPieceType(m.move);
 
-        mt = move_type(move);
+        mt = move_type(m.move);
 
         if (mt == MOVE_ENPASSANT || mt == MOVE_PROMOTION) 
             cap_piece = PAWNS;
 
-        (*i).score = th->capture_history_score[atk_piece][to][cap_piece];
+        m.score = th->capture_history_score[atk_piece][to][cap_piece];
     }
 }
 
 void scoreNormalMoves(int side, int ply, Thread *th, MOVE_LIST *moveList) {
 
-    u32 move;
+    int score;
 
     u32 previousMove = ply == 0 ? NO_MOVE : th->moveStack[ply - 1].move;
 
-    int score;
-    for (std::vector<Move>::iterator i = moveList->moves.begin(); i != moveList->moves.end(); ++i)
-    {
+    for (auto &m : moveList->moves) {
 
-        move = (*i).move;
-        (*i).score = th->historyScore[side][from_sq(move)][to_sq(move)];
+        m.score = th->historyScore[side][from_sq(m.move)][to_sq(m.move)];
 
         if (    previousMove != NO_MOVE    
-            &&  move == th->counterMove[side][from_sq(previousMove)][to_sq(previousMove)]) {
+            &&  m.move == th->counterMove[side][from_sq(previousMove)][to_sq(previousMove)]) {
 
-            (*i).score += BONUS_COUNTER_MOVE;
+            m.score += BONUS_COUNTER_MOVE;
         }
     }
 }

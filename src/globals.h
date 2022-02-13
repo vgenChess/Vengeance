@@ -276,7 +276,7 @@ typedef struct {
 typedef struct {
 	
 	u32 move;
-	int16_t score;
+	int32_t score;
 } Move;
 
 typedef struct {
