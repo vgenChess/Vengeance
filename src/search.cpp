@@ -899,15 +899,15 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 					if (currentMove.move == KILLER_MOVE_1 || currentMove.move == KILLER_MOVE_2) reduce--;
 		            
-		            // adjust reduction based on historical score
-			        reduce -= currentMove.score / 20480;	
+		            reduce -= std::max(-2, std::min(2, currentMove.score / 5000));	// TODO rewrite logic				
 
+		        	int r = std::min(depth - 1, std::max(reduce, 1));	// TODO rewrite logic
 
-		        	reduce = std::min(depth - 1, std::max(reduce, 1));	// TODO rewrite logic
+		        	searchInfo.depth = newDepth - r;	
 
-		        	searchInfo.depth = newDepth - reduce;	
 
 					score = -alphabetaSearch(-alpha - 1, -alpha, th, &line, &searchInfo, mate - 1);			
+
 				} else {
 
 					score = alpha + 1;

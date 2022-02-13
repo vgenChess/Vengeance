@@ -516,7 +516,8 @@ bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
 int GetTopIdx(std::vector<Move> &moves) {
   
     int m = 0;
-    for (int i = m + 1; i < moves.size(); i++) {
+    int n = moves.size();
+    for (int i = m + 1; i < n; i++) {
 
         if (moves[i].score > moves[m].score) {
 
