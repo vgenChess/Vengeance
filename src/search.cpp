@@ -40,8 +40,7 @@ bool timeSet, stopped;
 
 int option_thread_count;
 
-std::chrono::steady_clock::time_point startTime;
-std::chrono::steady_clock::time_point stopTime;
+std::chrono::steady_clock::time_point startTime, stopTime;
 
 int timePerMove;
 int MAX_TIME_PER_SEARCH = 0;
@@ -69,13 +68,11 @@ std::vector<Stage> STAGES = {
 	STAGE_NORMAL_MOVES
 };
 
-
-int ABORT_SIGNAL;
-
 std::vector<Thread> sThreads;
 std::mutex mtx;
 
 int MAX_DEPTH = 100;
+bool ABORT_SEARCH;
 
 std::string getMoveNotation(const u32 move) {
 
@@ -147,8 +144,13 @@ void startSearch(u8 sideToMove) {
 
 	age++; // For storing hash age information
 
+	ABORT_SEARCH = false;
+
 	Threads.start_searching(); // start non-main threads
 	searchMain(sideToMove, Threads.main());          // main thread start searching
+
+	ABORT_SEARCH = true;
+
 
 	// When we reach the maximum depth, we can arrive here without a raise of
 	// Threads.stop. However, if we are pondering or in an infinite search,
@@ -180,9 +182,6 @@ int stableMoveCount = 0;
 
 void searchMain(int sideToMove, SearchThread *th) {
 	
-
-	const bool is_main_thread = th == Threads.main();
-
 	th->nodes = 0;
 	th->ttHits = 0;	
 
@@ -195,13 +194,8 @@ void searchMain(int sideToMove, SearchThread *th) {
 	minTimePerMove = timePerMove / 4;
 
 	for (int depth = 1; depth < MAX_DEPTH; depth++) {
-		
 
-		if (ABORT_SIGNAL)	
-			break;
-	
-
-		if (!is_main_thread) { 
+		if (th != Threads.main()) { 
 
 			// Mutex will automatically be unlocked when lck goes out of scope
 			std::lock_guard<std::mutex> lck {mtx}; 
@@ -231,7 +225,6 @@ void searchMain(int sideToMove, SearchThread *th) {
 
 		if (Threads.stop)
 			break;
-
 
 
 		if (th != Threads.main())
@@ -265,8 +258,7 @@ void searchMain(int sideToMove, SearchThread *th) {
 		    std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
 		    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
 
-	    	if (timeSpent > maxTimePerMove ||
-	    		timeSpent > timePerMove * scoreChangeFactor * stableMoveFactor) {
+	    	if (timeSpent > timePerMove * scoreChangeFactor * stableMoveFactor) {
 
 				Threads.stop = true;
 				break;	
@@ -314,6 +306,9 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
 
 		score = alphabetaSearch(alpha, beta, th, &pline, &searchInfo, MATE);
 
+		if (Threads.stop)
+        	break;
+		
 		if (score <= alpha)	{
 
 			beta = (alpha + beta) / 2;
@@ -340,10 +335,12 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
 		}
 
 		window += window / 4; 
-
-		if (Threads.stop) 
-			break;
 	}
+
+	
+	if (Threads.stop)
+    	return;
+
 
 	assert (score > alpha && score < beta);
 
@@ -389,7 +386,6 @@ void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> 
 		//     std::cout << th->historyScore[side][from_sq(move)][to_sq(move)] << ", ";
 		// mtx.unlock();
 	}
-
 
 	// Counter move heuristics
 	previousMove = ply == 0 ? NO_MOVE : th->moveStack[ply - 1].move;
@@ -446,8 +442,7 @@ void checkTime() {
 
     int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
 
-    if (timeNow.time_since_epoch() >= stopTime.time_since_epoch()
-    	|| timeSpent > maxTimePerMove) {
+    if (timeNow.time_since_epoch() >= stopTime.time_since_epoch()) {
 
 		Threads.stop = true;
 	}
@@ -469,16 +464,15 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 	const int ply = si->ply;
 	
-	const bool is_root_node = ply == 0;
-  	const bool is_main_thread = th == Threads.main();
+	const bool IS_ROOT_NODE = ply == 0;
+  	const bool IS_MAIN_THREAD = th == Threads.main();
 	const bool can_null_move = si->isNullMoveAllowed;
 
 
 	int depth = si->depth;
 
 
-	// Quiescense Search ----------------------------------------------------------------------------------- 
-	// under observation
+	// Quiescense Search(under observation)
 
 	if (depth <= 0 || ply >= MAX_PLY) {
 
@@ -487,38 +481,28 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 
 
-	// Check time spent ------------------------------------------------------------------------------------		
+	// Check time spent		
 
 	if (	timeSet 
-		&&  is_main_thread 
+		&&  IS_MAIN_THREAD 
 		&&  th->nodes % X_NODES == 0) {
 
 		checkTime();
 	}
-
-	// return if need to stop 
-	if (	is_main_thread 
-		&&  Threads.stop 
-		&&  !is_root_node) {
+	
+	if (IS_MAIN_THREAD && Threads.stop) {
 
 		return 0;
 	}
 
-	// return from helper threads 
-	if (	!is_root_node 
-		&&  ABORT_SIGNAL)	{
+	if (ABORT_SEARCH) {
 
-		Threads.stop = true;
-		
-		return 0;
+		return 0; 
 	}
 
-	//---------------------------------------------------------------------------------------------------
 
 
-
-
-	th->selDepth = is_root_node ? 0 : std::max(th->selDepth, ply);
+	th->selDepth = IS_ROOT_NODE ? 0 : std::max(th->selDepth, ply);
    
 	th->nodes++;
 
@@ -531,14 +515,13 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 
 
-	const bool is_pv_node = alpha != beta - 1;
+	const bool IS_PV_NODE = alpha != beta - 1;
 
 	const int num_pieces = __builtin_popcountll(th->occupied);
 
 
 	// Repetition detection
-	
-	if (!is_root_node) {
+	if (!IS_ROOT_NODE) {
 
 		for (int i = th->moves_history_counter + ply; i >= 0; i--) {
 			
@@ -575,7 +558,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 		th->ttHits++;
 
-		if (!is_pv_node) {
+		if (!IS_PV_NODE) {
 
 			if (ttDepth >= depth) {
 	            
@@ -592,10 +575,9 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	}
 
 
-	const auto in_check = isKingInCheck(side, th);
+	const bool IS_IN_CHECK = isKingInCheck(side, th);
 
-
-	if (in_check) {
+	if (IS_IN_CHECK) {
 
 		sEval = -INF;
 	} else if (ttMatch) {
@@ -613,7 +595,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 
 	bool improving = false;
-	if (in_check || ply < 2) {
+	if (IS_IN_CHECK || ply < 2) {
 
 		improving = false;
 	} else {
@@ -623,7 +605,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	
 
 
-	assert (!(!in_check && sEval == -INF));
+	assert (!(!IS_IN_CHECK && sEval == -INF));
 
 
 
@@ -632,9 +614,9 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	
 	bool canPruneOrReduce = false;
 
-	if (	!is_root_node 
-		&&  !is_pv_node 
-		&&  !in_check
+	if (	!IS_ROOT_NODE 
+		&&  !IS_PV_NODE 
+		&&  !IS_IN_CHECK
 		&&	std::abs(alpha) < WIN_SCORE_THRESHOLD
 		&&	std::abs(beta) < WIN_SCORE_THRESHOLD
 		&&	num_opp_pieces > 3) {
@@ -649,27 +631,24 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 		assert(sEval != -INF);
 		
-		if (	depth == 1 
-			&&	sEval - R_F_PRUNE_THRESHOLD >= beta) {
+		if (depth == 1 && sEval - R_F_PRUNE_THRESHOLD >= beta) {
 
 			return beta; 	
 		}		 
 
-		if (	depth == 2 
-			&&	sEval - R_EXT_F_PRUNE_THRESHOLD >= beta) {
+		if (depth == 2 && sEval - R_EXT_F_PRUNE_THRESHOLD >= beta) {
 
 			return beta;		
 		}	
 	
-		if (	depth == 3 
-			&&	sEval - R_LTD_RZR_THRESHOLD >= beta) {
+		if (depth == 3 && sEval - R_LTD_RZR_THRESHOLD >= beta) {
 
 			depth--;
 		}		
 	}
 
 
-	if (!is_root_node) {
+	if (!IS_ROOT_NODE) {
 
 		th->moveStack[ply].epFlag = th->moveStack[ply - 1].epFlag;
 		th->moveStack[ply].epSquare = th->moveStack[ply - 1].epSquare;
@@ -690,9 +669,9 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	// Null Move pruning 
 	// Check the logic for endgame 
 
-	if (	!is_root_node	
-		&&	!is_pv_node 
-		&&	!in_check 
+	if (	!IS_ROOT_NODE	
+		&&	!IS_PV_NODE 
+		&&	!IS_IN_CHECK 
 		&&	can_null_move 
 		&&	num_opp_pieces > 3
 		&&	depth > 2 
@@ -702,7 +681,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 		makeNullMove(ply, th);
 
 
-		auto r = depth > 9 ? 3 : 2;	
+		int r = depth > 9 ? 3 : 2;	
 
 	
 		searchInfo.side = opp;
@@ -735,26 +714,20 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	bool f_prune = false;
 	if (canPruneOrReduce)	{ 
 			
-		if (	depth == 1 
-			&&	sEval + F_PRUNE_THRESHOLD <= alpha) {
+		if (depth == 1 && sEval + F_PRUNE_THRESHOLD <= alpha) {
 
 			f_prune = true;  	// Futility Pruning
 		}
-		
-		else if (depth == 2 
-			&&	sEval + EXT_F_PRUNE_THRESHOLD <= alpha) {
+		else if (depth == 2 && sEval + EXT_F_PRUNE_THRESHOLD <= alpha) {
 
 			f_prune = true;		// Extended Futility Pruning	
 		}
-		
-		else if (depth == 3 
-			&&	sEval + LTD_RZR_THRESHOLD <= alpha)	{
+		else if (depth == 3 && sEval + LTD_RZR_THRESHOLD <= alpha)	{
 
 			depth--; 			// Limited Razoring		
 		}
 	}
 	
-
 
 
 	// Alternative to IID (under observation)
@@ -764,23 +737,21 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 		depth--;	
 	}
 
-	//---------------------------------------------------------------------------------------------------------------------
-
 
 
 	u8 currentMoveType;
 
-	bool isQuietMove = false, failedHigh = false, isValidMove = false;
+	bool isQuietMove = false;
 
 	int hashf = hashfALPHA;
-	int reduce = 0, extend = 0, legalMoves = 0, newDepth = 0, see_score = 0;
+	int reduce = 0, extend = 0, legalMoves = 0, newDepth = 0;
 	int score = -INF, bestScore = -INF;
 
 	u32 bestMove = NO_MOVE;
 	const u32 KILLER_MOVE_1 = th->moveStack[ply].killerMoves[0];
 	const u32 KILLER_MOVE_2 = th->moveStack[ply].killerMoves[1];
 	
-	Move currentMove, tmpMove;
+	Move currentMove;
 
 	std::vector<u32> quietMovesPlayed, captureMovesPlayed;
 	
@@ -799,42 +770,34 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 		make_move(ply, currentMove.move, th);
 
 
-		isValidMove = !isKingInCheck(side, th);
-
-
-		if (isValidMove) {
+		if (!isKingInCheck(side, th)) {
 
 			currentMoveType = move_type(currentMove.move);
 
-			isQuietMove = false;
-			if (	currentMoveType == MOVE_NORMAL 
-				||	currentMoveType == MOVE_CASTLE 
-				||	currentMoveType == MOVE_DOUBLE_PUSH) {
+			isQuietMove = currentMoveType == MOVE_NORMAL ||	currentMoveType == MOVE_CASTLE 
+				||	currentMoveType == MOVE_DOUBLE_PUSH;
 
-				isQuietMove = true;
+			if (isQuietMove) {
 
 				quietMovesPlayed.push_back(currentMove.move);
 			} else {
-
-				isQuietMove = false;
 
 				captureMovesPlayed.push_back(currentMove.move);
 			}
 
 
-			// Pruning ----------------------------------------------------------------------
+			// Pruning 
 			
 			if (	legalMoves > 0
-				&&	!is_root_node 
-				&&	!is_pv_node
-				&&	!in_check 
+				&&	!IS_ROOT_NODE 
+				&&	!IS_PV_NODE
+				&&	!IS_IN_CHECK 
 				&&	move_type(currentMove.move) != MOVE_PROMOTION) {
-
 
 				if (isQuietMove) {
 					
 					// Futility pruning
-					if (	f_prune) {
+					if (f_prune) {
 		
 						unmake_move(ply, currentMove.move, th);
 						continue;
@@ -856,31 +819,12 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 						continue;
 					}
 				}	
-	
-				else {
-
-					// Capture History Pruning
-					/*if (	depth <= CAPTURE_HISTORY_PRUNING_MAX_DEPTH
-						&&	currentMove.score < CAPTURE_PRUNING_THRESHOLD) {
-
-						unmake_move(ply, currentMove.move, th);
-						continue;
-					}*/
-
-					// Negative SEE pruning 
-					if (	th->moveList[ply].stage == PLAY_BAD_CAPTURES 
-						&&	currentMove.score < SEE_PRUNING_THRESHOLD) {
-						
-						unmake_move(ply, currentMove.move, th);
-						continue;
-					}	
-				}		
 			}
 
 
-	        // report current move via uci protocol
-	        if (	is_root_node 
-	        	&&	is_main_thread
+	        // report current move
+	        if (	IS_ROOT_NODE 
+	        	&&	IS_MAIN_THREAD
 	        	&&	th->canReportCurrMove) {	
 
 	        	reportCurrentMove(side, si->realDepth, legalMoves + 1, currentMove.move);
@@ -894,13 +838,11 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 			extend = 0;
 
+			
 
-
-			//	Extensions---------------------------------------------------------------------------------
-
-			if (	!is_root_node 
+			//	Extensions
+			if (	!IS_ROOT_NODE 
 				&&	th->moveStack[ply - 1].extend <= MAX_EXTENSION) {	
-
 
 				u8 sqCurrMove = to_sq(currentMove.move);
 				u8 pieceCurrMove = pieceType(currentMove.move);
@@ -909,16 +851,16 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 					sqCurrMove >= 8 && sqCurrMove <= 15 : 
 					sqCurrMove >= 48 && sqCurrMove <= 55;
 
-				if (	in_check 
+				if (	IS_IN_CHECK 
 					||	move_type(currentMove.move) == MOVE_PROMOTION 
-					||	(pieceCurrMove == PAWNS && is_prank)) {	// Check and promotions 
+					||	(pieceCurrMove == PAWNS && is_prank)) {	
 
 					extend = 1;
 				}
 			} 
 
+			th->moveStack[ply].extend = IS_ROOT_NODE ? 0 : th->moveStack[ply - 1].extend + extend;
 
-			th->moveStack[ply].extend = is_root_node ? 0 : th->moveStack[ply - 1].extend + extend;
 
 
 			newDepth = (depth - 1) + extend;
@@ -934,7 +876,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 			searchInfo.isNullMoveAllowed = true;
 
 
-			if (legalMoves == 0) {
+			if (legalMoves == 0) {	// Principal Variation Search
 
 				searchInfo.depth = newDepth;
 
@@ -944,33 +886,36 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 				// Late Move Reductions (Under observation)
 
 				if (	depth > 2
-					&&	legalMoves > 3) {
-						
-
+					&&	legalMoves > 3
+					&&	isQuietMove) {
+					
+			        
 					reduce = depth > 6 ? depth / 3 : 1;	
 
 
-					if (!is_pv_node) reduce++;
-					if (!improving && !in_check) reduce++; // in_check sets improving to false
-
+					if (!IS_PV_NODE) reduce++;
+					if (!improving && !IS_IN_CHECK) reduce++; // IS_IN_CHECK sets improving to false
+					if (IS_IN_CHECK && pieceType(currentMove.move) == KING) reduce++;
 
 					if (currentMove.move == KILLER_MOVE_1 || currentMove.move == KILLER_MOVE_2) reduce--;
-		            reduce -= std::max(-2, std::min(2, currentMove.score / 5000));	// TODO rewrite logic				
+		            
+		            // adjust reduction based on historical score
+			        reduce -= currentMove.score / 20480;	
 
 
-		        	int r = std::min(depth - 1, std::max(reduce, 1));	// TODO rewrite logic
+		        	reduce = std::min(depth - 1, std::max(reduce, 1));	// TODO rewrite logic
 
-		        	searchInfo.depth = newDepth - r;	
-
+		        	searchInfo.depth = newDepth - reduce;	
 
 					score = -alphabetaSearch(-alpha - 1, -alpha, th, &line, &searchInfo, mate - 1);			
-
 				} else {
 
 					score = alpha + 1;
 				}
 
-				if (score > alpha) {
+
+
+				if (score > alpha) {	// Research 
 
 					searchInfo.depth = newDepth;
 					
@@ -1009,8 +954,6 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 						hashf = hashfBETA;
 						
-						failedHigh = true;
-						
 						break;
 					} 					
 				} 
@@ -1022,7 +965,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	}
 
 
-	if (failedHigh) {
+	if (hashf == hashfBETA) { // failed high
 
 		if (isQuietMove) {
 
@@ -1041,8 +984,10 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	}
 
 
-	if (legalMoves == 0) 
-		return in_check ? -mate : 0;
+	if (legalMoves == 0) { // mate and stalemate check
+
+		return IS_IN_CHECK ? -mate : 0;
+	}
 
 
 	recordHash(age, bestMove, depth, bestScore, hashf, sEval, th);
@@ -1054,8 +999,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 
 
-
-// should limit Quiescense search explosion
+// TODO should limit Quiescense search explosion
 int quiescenseSearch(const int ply, const int depth, const int side, int alpha, int beta, 
 	SearchThread *th, std::vector<u32> *pline) {
 
@@ -1065,32 +1009,29 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 	const int opp = side ^ 1;
 
-	const bool is_main_thread = th == Threads.main();
+	const bool IS_MAIN_THREAD = th == Threads.main();
 
 	
 
-	// Check if time limit has been reached-----------------------------------------------------------------------		
+	// Check if time limit has been reached
 
 	if (	timeSet 
-		&&  is_main_thread 
+		&&  IS_MAIN_THREAD 
 		&&  th->nodes % X_NODES == 0) {
 
 		checkTime();	
 	}
 
-	// return if need to stop
-	if (is_main_thread && Threads.stop) {
+	if (IS_MAIN_THREAD && Threads.stop) {
 
 		return 0;
 	}
 
-	// return from helper threads 
-	if (ABORT_SIGNAL)	{
+	if (ABORT_SEARCH) {
 
-		Threads.stop = true;
-		
-		return 0;
+		return 0; 
 	}
+
 
 	//-----------------------------------------------------------------------------------------------------------------
 
@@ -1186,7 +1127,7 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 	
 	int hashf = hashfALPHA;
-	int score, bestScore = sEval, n, see_score;
+	int score, bestScore = sEval, n;
 
 	u32 bestMove = NO_MOVE;
 	Move currentMove, tmpMove;

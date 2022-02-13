@@ -397,28 +397,79 @@ uint16_t val_piece[8] = {
 
 bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
 
+    if (move == NO_MOVE) {
+
+        return false;
+    }
+
     u8 opponent = side ^ 1;
 
     u8 fromSq = from_sq(move);
     u8 toSq = to_sq(move);
 
-
     u8 piece = pieceType(move);
     u8 capturePiece = cPieceType(move);
-
     
     u64 pieceBB = side ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
     u64 capturePieceBB = opponent ? th->blackPieceBB[capturePiece] : th->whitePieceBB[capturePiece];
 
-
     int moveType = move_type(move);
 
+    if (moveType == MOVE_NORMAL || moveType == MOVE_DOUBLE_PUSH || moveType == MOVE_CAPTURE) {
 
-    if (moveType == MOVE_NORMAL || moveType == MOVE_DOUBLE_PUSH) {
+        u64 inBetweenStraightLineBB = inBetween(fromSq, toSq);
+        
+        if (inBetweenStraightLineBB & th->occupied) { //move is obstructed
 
-        return ((1ULL << fromSq) & pieceBB && (1ULL << toSq) & th->empty);
-    } 
-    else if (moveType == MOVE_CASTLE) {
+            if (piece == PAWNS && moveType == MOVE_DOUBLE_PUSH) 
+                return false;
+
+            if (piece == ROOKS) 
+                return false;
+        }
+
+        if (piece == BISHOPS || piece == QUEEN) {
+
+            u64 fromToBB = (1ULL << fromSq) | (1ULL < toSq); 
+            
+            u64 inBetweenDiagonalBB = Bmagic(fromSq, th->occupied) & Bmagic(toSq, th->occupied) & ~fromToBB;
+
+            if (inBetweenDiagonalBB & th->occupied) { // diagonal move is obstructed
+
+                if (piece == BISHOPS) 
+                    return false;
+            }
+
+            if (piece == QUEEN) {
+                
+                // assume queen's movement (from -> to) is obstructed
+                bool isQueenMovementObstructed = true; 
+
+                // check whether if its false
+                if (    !(inBetweenDiagonalBB & th->occupied) 
+                    ||  !(inBetweenStraightLineBB & th->occupied)) {
+
+                    isQueenMovementObstructed = false;
+                }
+
+                // if the condition is still true, return false as the move is not valid 
+                if (isQueenMovementObstructed) 
+                    return false;
+            }
+        }
+
+        // finally check for piece on their squares
+        if (moveType == MOVE_NORMAL || moveType == MOVE_DOUBLE_PUSH) {
+
+            return ((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & th->empty);
+        } 
+        else if (moveType == MOVE_CAPTURE) {
+
+            return ((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & capturePieceBB);
+        }
+    }
+
+    if (moveType == MOVE_CASTLE) { // Todo check logic
 
         u8 castleFlags = th->moveStack[ply].castleFlags;
 
@@ -440,23 +491,21 @@ bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
 
             return castleFlags & CASTLE_FLAG_BLACK_KING;
         }
-    } 
-    else if (moveType == MOVE_CAPTURE) {
-
-        return (((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & capturePieceBB));
     }
-    else if (moveType == MOVE_ENPASSANT) {
+
+    if (moveType == MOVE_ENPASSANT) {
 
         return th->moveStack[ply].epFlag && th->moveStack[ply].epSquare == toSq;
     }
-    else if (moveType == MOVE_PROMOTION) {
+    
+    if (moveType == MOVE_PROMOTION) {
 
         if (capturePiece == DUMMY) {
 
-            return ((1ULL << fromSq) & pieceBB && (1ULL << toSq) & th->empty);
+            return ((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & th->empty);
         } else {
 
-            return ((1ULL << fromSq) & pieceBB && (1ULL << toSq) & capturePieceBB);
+            return ((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & capturePieceBB);
         }
     }
 
@@ -469,7 +518,10 @@ int GetTopIdx(std::vector<Move> &moves) {
     int m = 0;
     for (int i = m + 1; i < moves.size(); i++) {
 
-        if (moves[i].score > moves[m].score) m = i;
+        if (moves[i].score > moves[m].score) {
+
+            m = i;
+        }
     }
 
     return m;
@@ -548,7 +600,11 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
             moveList->moves.clear();
 
             genPromotionsAttacks(moveList->moves, side, th);
-            scoreCaptureMoves(th, moveList);
+
+            for (auto &m : moveList->moves) {
+
+                m.score = 1000; // give equal score for promotions
+            }
             
             moveList->stage = PLAY_PROMOTION_CAPTURE_MOVES;
         }
@@ -583,8 +639,12 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
             moveList->moves.clear();
 
             genPromotionsNormal(moveList->moves, side, th);
-            scoreNormalMoves(side, ply, th, moveList);
             
+            for (auto &m : moveList->moves) {
+
+                m.score = 1000; // give equal scores for promotions
+            }
+
             moveList->stage = PLAY_PROMOTION_QUIET_MOVES;
         }
         
@@ -617,6 +677,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
             moveList->moves.clear();
             genAttacks(ply, moveList->moves, side, th);
+
             scoreCaptureMoves(th, moveList);
             
             moveList->stage = PLAY_CAPTURE_MOVES;
@@ -642,7 +703,6 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
                 int seeScore = see(m.move, side, th);
                 if (seeScore < 0) { // bad capture
 
-                    m.score = seeScore;
                     moveList->badCaptures.push_back(m);
                     
                     return getNextMove(ply, side, th, moveList);
@@ -749,6 +809,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
                 return m;
             }
+
 
             moveList->stage = STAGE_DONE;
 

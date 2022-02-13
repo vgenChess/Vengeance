@@ -40,7 +40,6 @@ const int16_t SEE_PRUNING_THRESHOLD = -550;
 
 const uint16_t Q_DELTA = 200;
 const int16_t Q_SEE_PRUNING_THRESHOLD = 0;
-
 #endif
 
 
