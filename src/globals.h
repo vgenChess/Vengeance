@@ -242,17 +242,8 @@ enum {
 	VALUE_KING = 2000
 };
 
-enum Stage {
-	
-	STAGE_HASH_MOVE,
-	STAGE_PROMOTIONS,
-	STAGE_CAPTURES,
-	STAGE_KILLER_MOVES,
-	STAGE_BAD_CAPTURES,
-	STAGE_NORMAL_MOVES
-};
 
-enum StageNew {
+enum Stage {
 
 	PLAY_HASH_MOVE,
 	GEN_PROMOTION_CAPTURE_MOVES,
@@ -328,8 +319,6 @@ typedef struct {
 	int value;
 	int eval_static;
 	u8 flags; 
-
-	u16 age;
 } HASHE;
 
 
