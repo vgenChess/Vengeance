@@ -536,11 +536,11 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	int ttDepth = NO_DEPTH;
 	int ttBound = NO_BOUND;
 	int ttValue = -INF;
-	int sEval = -INF;
+	int ttEval = -INF;
 	
 	u32 ttMove = NO_MOVE;
 	
-	if (probeHash(&sEval, &ttDepth, &ttValue, &ttBound, &ttMove, th)) {
+	if (probeHash(&ttEval, &ttDepth, &ttValue, &ttBound, &ttMove, th)) {
 
 		ttMatch = true;
 
@@ -563,34 +563,22 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	}
 
 
+	
 	const bool IS_IN_CHECK = isKingInCheck(side, th);
 
-	if (IS_IN_CHECK) {
 
-		sEval = -INF;
-	} else if (ttMatch) {
+    int sEval = IS_IN_CHECK ? -INF : (ttMatch ? ttEval : nn_eval(&nnue, th, (side == WHITE ? 0 : 1)));
+	
+	if (!ttMatch) {
 
-		if (sEval == -INF) {
-			
-			sEval = nn_eval(&nnue, th, (side == WHITE ? 0 : 1));		
-		}
-	} else {
-		
-		sEval = nn_eval(&nnue, th, (side == WHITE ? 0 : 1));			
-		
 		recordHash(NO_MOVE, NO_DEPTH, -INF, NO_BOUND, sEval, th);		
 	}
-
-
-	bool improving = false;
-	if (IS_IN_CHECK || ply < 2) {
-
-		improving = false;
-	} else {
-		
-		improving = sEval > th->moveStack[ply-2].sEval;
-	}
 	
+
+	bool improving = !IS_IN_CHECK && ply >= 2 && sEval > th->moveStack[ply-2].sEval;
+
+
+
 
 
 	assert (!(!IS_IN_CHECK && sEval == -INF));
