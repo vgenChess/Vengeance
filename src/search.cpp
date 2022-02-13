@@ -57,16 +57,6 @@ int seeVal[8] = {
     0
 };
 
-std::vector<Stage> STAGES = {
-
-	STAGE_HASH_MOVE,
-	STAGE_PROMOTIONS,
-	STAGE_CAPTURES,
-	STAGE_KILLER_MOVES,
-	STAGE_BAD_CAPTURES,
-	STAGE_NORMAL_MOVES
-};
-
 std::vector<Thread> sThreads;
 std::mutex mtx;
 
