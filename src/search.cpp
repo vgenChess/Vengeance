@@ -262,8 +262,6 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
 
 	int score = -INF;
 	int alpha = -INF, beta = INF;
-
-	int failedHighCounter = 0;
 	
 	if (th->depth > 4 && th->completedDepth > 0) {
 
@@ -281,6 +279,7 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
 
 	searchInfo.side = sideToMove;
 	searchInfo.ply = 0;
+	searchInfo.depth = th->depth;
 	searchInfo.realDepth = th->depth;
 	searchInfo.isNullMoveAllowed = false;
 
@@ -290,8 +289,6 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
 		pline.clear();
 		th->selDepth = NO_DEPTH;
 		
-		searchInfo.depth = std::max(1, th->depth - failedHighCounter);
-
 		score = alphabetaSearch(alpha, beta, th, &pline, &searchInfo, MATE);
 
 		if (Threads.stop)
@@ -301,14 +298,10 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
 
 			beta = (alpha + beta) / 2;
 			alpha = std::max(alpha - window, -INF);
-
-			failedHighCounter = 0;
 		}
 		else if (score >= beta)	{
 
 			beta = std::min(beta + window, INF);
-
-			failedHighCounter++;
 		}	
 		else {
 
