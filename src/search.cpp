@@ -352,10 +352,8 @@ void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> 
 
 	u32 move, previousMove;
 
-	// History Heuristics		
-	for (std::vector<u32>::iterator i = quietMovesPlayed.begin(); i != quietMovesPlayed.end(); ++i) {
-		
-		move = *i;
+	// History Heuristics
+	for (auto &move : quietMovesPlayed) { 
 
 		delta = (move == bestMove) ? bonus : -bonus;
 		hScore = th->historyScore[side][from_sq(move)][to_sq(move)];
@@ -380,6 +378,7 @@ void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> 
 
 void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,std::vector<u32>&captureMovesPlayed, Thread *th) {
 
+
 	int bonus = std::min(400, depth * depth), delta = 0;
 
 	int32_t chScore;
@@ -390,10 +389,8 @@ void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,std::vector
 	u8 mt;
 
 	// Capture History Heuristics	
-	for (std::vector<u32>::iterator i = captureMovesPlayed.begin(); i != captureMovesPlayed.end(); ++i) {
-		
-		move = *i;
-
+	for (auto &move : captureMovesPlayed) {	
+	
 		delta = (move == bestMove) ? bonus : -bonus;
 
 		atk_piece = pieceType(move);
@@ -404,7 +401,6 @@ void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,std::vector
 
 		if (mt == MOVE_ENPASSANT || mt == MOVE_PROMOTION) 
 			cap_piece = PAWNS;
-
 
 		chScore = th->capture_history_score[atk_piece][to][cap_piece];
 
@@ -430,7 +426,6 @@ void checkTime() {
 
 	// readInput();	
 }
-
 
 
 
