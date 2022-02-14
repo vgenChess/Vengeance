@@ -588,10 +588,13 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	th->moveList[ply].badCaptures.clear();
 
 
-	while ((currentMove = getNextMove(ply, side, th, &th->moveList[ply])).move) {
+	while (th->moveList[ply].stage != STAGE_DONE) {
 
 
-		assert (currentMove.move != NO_MOVE);
+		currentMove = getNextMove(ply, side, th, &th->moveList[ply]);
+
+		if (currentMove.move == NO_MOVE) 
+			continue;
 
 
 		make_move(ply, currentMove.move, th);
@@ -965,12 +968,15 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 	int capPiece;
 
-	while ((currentMove = getNextMove(ply, side, th, &th->moveList[ply])).move) {
-   		
-   		if (th->moveList[ply].stage > PLAY_CAPTURES) 
-   			break;
-		
+	while (th->moveList[ply].stage <= PLAY_CAPTURES) {
 
+
+		currentMove = getNextMove(ply, side, th, &th->moveList[ply]);
+
+		if (currentMove.move == NO_MOVE) 
+			continue;
+		
+		
 		capPiece = cPieceType(currentMove.move);
  		if (capPiece != DUMMY) {
 
