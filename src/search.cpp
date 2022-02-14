@@ -413,6 +413,7 @@ void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,std::vector
 	}
 }
 
+
 void checkTime() {
 
 	std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
@@ -737,8 +738,8 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 			currentMoveType = move_type(currentMove.move);
 
-			isQuietMove = currentMoveType == MOVE_NORMAL ||	currentMoveType == MOVE_CASTLE 
-				||	currentMoveType == MOVE_DOUBLE_PUSH;
+			isQuietMove = currentMoveType == MOVE_NORMAL 
+				||	currentMoveType == MOVE_CASTLE || currentMoveType == MOVE_DOUBLE_PUSH;
 
 			if (isQuietMove) {
 
