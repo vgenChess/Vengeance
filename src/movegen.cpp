@@ -576,7 +576,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
         case PLAY_HASH_MOVE : {
 
-            moveList->stage = GEN_PROMOTION_CAPTURE_MOVES;
+            moveList->stage = GEN_PROMOTIONS;
 
             u32 ttMove = th->moveStack[ply].ttMove;
 
@@ -592,62 +592,25 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
         
         // fallthrough
 
-        case GEN_PROMOTION_CAPTURE_MOVES : {
+
+        case GEN_PROMOTIONS : {
 
             moveList->moves.clear();
 
             genPromotionsAttacks(moveList->moves, side, th);
+            genPromotionsNormal(moveList->moves, side, th);
 
             for (auto &m : moveList->moves) {
 
                 m.score = 1000; // give equal score for promotions
             }
             
-            moveList->stage = PLAY_PROMOTION_CAPTURE_MOVES;
-        }
-        
-        // fallthrough
-
-        case PLAY_PROMOTION_CAPTURE_MOVES : {
-
-            if (moveList->moves.size() > 0) {
-
-                int index = GetTopIdx(moveList->moves);
-                
-                Move m = moveList->moves[index];
-                
-                moveList->moves.erase(moveList->moves.begin() + index);
-                    
-                if (m.move == th->moveStack[ply].ttMove) {
-    
-                    return getNextMove(ply, side, th, moveList);
-                }
-
-                return m;
-            }
-
-            moveList->stage = GEN_PROMOTION_QUIET_MOVES;
-        }
-        
-        //fallthrough
-
-        case GEN_PROMOTION_QUIET_MOVES : {
-        
-            moveList->moves.clear();
-
-            genPromotionsNormal(moveList->moves, side, th);
-            
-            for (auto &m : moveList->moves) {
-
-                m.score = 1000; // give equal scores for promotions
-            }
-
-            moveList->stage = PLAY_PROMOTION_QUIET_MOVES;
+            moveList->stage = PLAY_PROMOTIONS;              
         }
         
         //fallthrough 
 
-        case PLAY_PROMOTION_QUIET_MOVES : {
+        case PLAY_PROMOTIONS : {
 
             if (moveList->moves.size() > 0) {
 
@@ -665,24 +628,24 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
                 return m;
             }
 
-            moveList->stage = GEN_CAPTURE_MOVES;
+            moveList->stage = GEN_CAPTURES;
         }
         
         //fallthrough
 
-        case GEN_CAPTURE_MOVES : {
+        case GEN_CAPTURES : {
 
             moveList->moves.clear();
             genAttacks(ply, moveList->moves, side, th);
 
             scoreCaptureMoves(th, moveList);
             
-            moveList->stage = PLAY_CAPTURE_MOVES;
+            moveList->stage = PLAY_CAPTURES;
         }
         
         // fallthrough
         
-        case PLAY_CAPTURE_MOVES : {
+        case PLAY_CAPTURES : {
 
             if (moveList->moves.size() > 0) {
 
@@ -766,13 +729,13 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
                 return m;
             }
 
-            moveList->stage = GEN_QUIET_MOVES;
+            moveList->stage = GEN_QUIETS;
         }
 
 
         //fallthrough
 
-        case GEN_QUIET_MOVES : {
+        case GEN_QUIETS : {
 
             moveList->moves.clear();
 
@@ -781,12 +744,12 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
             
             scoreNormalMoves(side, ply, th, moveList);
           
-            moveList->stage = PLAY_QUIET_MOVES;
+            moveList->stage = PLAY_QUIETS;
         }
 
         //fallthrough
 
-        case PLAY_QUIET_MOVES : {
+        case PLAY_QUIETS : {
 
             if (moveList->moves.size() > 0) {
 

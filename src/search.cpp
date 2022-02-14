@@ -806,7 +806,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 			//	Extensions
 			if (	!IS_ROOT_NODE 
-				&&	th->moveStack[ply - 1].extend <= MAX_EXTENSION) {	
+				&&	th->moveStack[ply - 1].extend <= MAX_EXTENSION) { // TODO check extensions logic	
 
 				u8 sqCurrMove = to_sq(currentMove.move);
 				u8 pieceCurrMove = pieceType(currentMove.move);
@@ -1095,7 +1095,7 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 	std::vector<u32> line;
 
-	th->moveList[ply].stage = GEN_PROMOTION_CAPTURE_MOVES;
+	th->moveList[ply].stage = GEN_PROMOTIONS;
 
 	th->moveList[ply].moves.clear();
 	th->moveList[ply].badCaptures.clear();
@@ -1105,7 +1105,7 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 	while ((currentMove = getNextMove(ply, side, th, &th->moveList[ply])).move) {
    		
-   		if (th->moveList[ply].stage > PLAY_CAPTURE_MOVES) 
+   		if (th->moveList[ply].stage > PLAY_CAPTURES) 
    			break;
 		
 

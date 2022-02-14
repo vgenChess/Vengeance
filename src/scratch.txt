@@ -101,5 +101,11 @@ Bugs
     - 1R6/3q1r2/4p3/B2pP3/1K1Pn3/6p1/6k1/8 b - - 21 114 (Disconnects when near to mate score)
     - r1bqk2r/pp2bppp/4pn2/1B6/1n1P4/2N1BN2/PP3PPP/R2Q1RK1 b kq - 6 11 (Black makes an illegal move)
     - 2Rb1rk1/3n4/1pQ1p2p/3pP1p1/3P1p2/1N1q4/PP1B1PPP/6K1 b - - 1 30 (Black makes an illegal move = d3d1)
+    - 5bk1/1R6/5Br1/5K2/7P/8/8/8 w - - 7 59 (Misses king capture)
+    - 8/5pk1/4n1p1/8/1KR5/8/q7/2R5 b - - 11 114 (Black disconnects)
 
 
+
+
+Hash - done
+See - kinda done
