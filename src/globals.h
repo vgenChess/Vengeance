@@ -325,7 +325,7 @@ typedef struct {
 typedef struct {
 
 	int stage;
-
+	int seeCutoff;
 	bool isQuiescense;
 
 	std::vector<Move> moves;

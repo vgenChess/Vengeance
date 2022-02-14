@@ -4,9 +4,9 @@
 #include "see.h"
 #include "movegen.h"
 
-int pieceValue[8] = {0, 100, 300, 300, 500, 900, 2000, 0}; // TODO use tuned piece values
+int SEE_VALUE[8] = {0, 100, 300, 300, 500, 900, 2000, 0}; 
 
-u64 attacksTo(u64 occ, u8 square, u8 sideToMove, Thread *th) {
+u64 attacksTo(u64 occ, u8 square, u8 sideToMove, Thread *th) { // TODO check logic
 
 	u64 attacks = 0ULL;
 	u64 sqBitboard = 1ULL << square;
@@ -33,148 +33,99 @@ u64 attacksTo(u64 occ, u8 square, u8 sideToMove, Thread *th) {
 	/* check if a king is attacking a sq */
 	attacks |= (get_king_attacks(square) & (sideToMove ? th->blackPieceBB[KING] : th->whitePieceBB[KING]));
 
-
-
 	return attacks & occ;
 }
 
-// SEE - Static Exchange Evaluation
-int see(u32 move, u8 sideToMove, Thread *th) {
+int SEE(u32 move, u8 sideToMove, Thread *th) {
 
-	if (!th->whitePieceBB[KING] || !th->blackPieceBB[KING]) {
-		
-		return -1000;
-	} 
+	int moveType = move_type(move);	
+	if (moveType == MOVE_CASTLE || moveType == MOVE_ENPASSANT || moveType == MOVE_PROMOTION) return 100;
 
-	int frSq = from_sq(move);
-	int toSq = to_sq(move);
+	int from = from_sq(move);
+	int to = to_sq(move);
 
-	u8 aPiece = pieceType(move);
-	u8 cPiece = cPieceType(move);
+	u8 piece = pieceType(move);
+	u8 target = cPieceType(move);
 
-	int whiteKingSq = __builtin_ctzll(th->whitePieceBB[KING]);
-	int blackKingSq = __builtin_ctzll(th->blackPieceBB[KING]);
+	u64 occ = (th->occupied ^ (1ULL << from)) | (1ULL << to);
+	u64 attackers = attacksTo(occ, to, WHITE, th) | attacksTo(occ, to, BLACK, th); // TODO check logic
 
-	u64 occ = th->occupied;
+	u64 diag = 
+			th->whitePieceBB[BISHOPS] |	th->blackPieceBB[BISHOPS] 
+		|	th->whitePieceBB[QUEEN] | th->blackPieceBB[QUEEN];
 
-	int swapList[32];
-	int index = 1;
+	u64 straight = 
+			th->whitePieceBB[ROOKS] | th->blackPieceBB[ROOKS] 
+		|	th->whitePieceBB[QUEEN] | th->blackPieceBB[QUEEN];
 
-	u8 capture;
 
-	bool isEnpassant = (move_type(move) == MOVE_ENPASSANT);
+	int swapList[32], idx = 1;
 
-	// Handle en-passant
-	if (isEnpassant) {
+	swapList[0] = SEE_VALUE[target];
 
-		occ ^= (1ULL << (sideToMove ? toSq + 8 : toSq - 8));
-		capture = PAWNS;
-	} else {
 
-		capture = cPiece;
-	}
+	u8 stm = sideToMove ^ 1;
 
-	assert(capture != KING);
+	u64 stmAttackers = attackers & (stm ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 
-	swapList[0] = pieceValue[capture];
-
-	u64 fromSet = (1ULL << frSq);
-
-	occ ^= fromSet;
-
-	u64 attackers = attacksTo(occ, toSq, WHITE, th) | attacksTo(occ, toSq, BLACK, th);
-
-	const bool is_prank = (1ULL << toSq) & (sideToMove ? RANK_2 : RANK_7);
-	
-	// Handle Promotion
-	if (aPiece == PAWNS && is_prank) {
-
-		swapList[0] += pieceValue[QUEEN] - pieceValue[PAWNS];
-		capture = QUEEN;
-	} else {
-
-		capture = aPiece;
-	}
-
-	sideToMove ^= 1;
-
-	u64 sideToMoveAttackers = attackers & (sideToMove ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
-
-	u64 kingPinners = 0ULL;
-
-	// remove pinned pieces
-	kingPinners = pinners(sideToMove ? blackKingSq : whiteKingSq, sideToMove, th);
-	if (kingPinners & occ) {
-
-		sideToMoveAttackers &= ~pinned(kingPinners, sideToMove ? blackKingSq : whiteKingSq, sideToMove, th);
-	}
-
-	if (!sideToMoveAttackers) {
-
+	if (!stmAttackers)
 		return swapList[0];
-	}
 
-	assert(swapList[0] > 0);
-
-	u64 rooks = th->whitePieceBB[ROOKS] | th->blackPieceBB[ROOKS];
-	u64 bishops = th->whitePieceBB[BISHOPS] | th->blackPieceBB[BISHOPS];
-	u64 queens = th->whitePieceBB[QUEEN] | th->blackPieceBB[QUEEN];
-	
+	u64 fromSet;
 	do {
-
-		for (aPiece = PAWNS; !(sideToMoveAttackers & (sideToMove ? th->blackPieceBB[aPiece] : th->whitePieceBB[aPiece])); aPiece++) { 
-
-			assert(aPiece < KING);
-		}		
-
-		occ ^= (sideToMoveAttackers & (sideToMove ? th->blackPieceBB[aPiece] : th->whitePieceBB[aPiece]));
-
-		attackers |= ((Bmagic(toSq, occ) & (bishops | queens)) | (Rmagic(toSq, occ) & (rooks | queens))) ;
 		
-		attackers &= occ;
-
-		swapList[index] = -swapList[index - 1] + pieceValue[capture];
-
-		// Handle Promotion
-		if (aPiece == PAWNS && is_prank) {
-
-			swapList[index] += pieceValue[QUEEN] - pieceValue[PAWNS];
-			capture = QUEEN;
-		} else {
-
-			capture = aPiece;
+		for (piece = PAWNS; !(fromSet = (stmAttackers & stm ? th->blackPieceBB[piece] : th->whitePieceBB[piece])); piece++) {
+			assert(piece < KING);
 		}
 
-		index++;
+		assert(fromSet > 0);
 
-		sideToMove ^= 1;
+		fromSet = fromSet & -fromSet; // take single bit
+		occ &= fromSet;
 
-		sideToMoveAttackers = attackers & (sideToMove ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]); 
 
- 		// remove pinned pieces
-		kingPinners = pinners(sideToMove ? blackKingSq : whiteKingSq, sideToMove, th);
-		if (kingPinners & occ) {
-
-			sideToMoveAttackers &= ~pinned(kingPinners, sideToMove ? blackKingSq : whiteKingSq, sideToMove, th);
+		// check for X-ray attacks through the vacated square
+		
+		if (piece == PAWNS || piece == BISHOPS || piece == QUEEN) {
+			attackers |= Bmagic(to, occ) & diag;
 		}
+	    if (piece == ROOKS || piece == QUEEN) {
+	    	attackers |= Rmagic(to, occ) & straight;
+	    }
+		
+		attackers &= occ; // remove pieces that have already attacked 
+
+
+		assert(idx < 32);
+
+		swapList[idx] = -swapList[idx - 1] + SEE_VALUE[target];
+
+		target = piece;
+		
+		idx++;
+
+		stm ^= 1;
+
+		stmAttackers = attackers & (stm ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]); 
 
 		// Stop after a king capture
-		if (aPiece == KING && sideToMoveAttackers) {
+		if (piece == KING && stmAttackers) {
 
-			swapList[index++] = pieceValue[KING];
+			assert(idx < 32);
+
+			swapList[idx++] = SEE_VALUE[KING];
 
 			break;
 		}
-	} while (sideToMoveAttackers);
+	} while (stmAttackers);
 
-	while (--index) {
+	while (--idx) {
 
-		swapList[index-1] = std::min(-swapList[index], swapList[index-1]);
+		swapList[idx-1] = std::min(-swapList[idx], swapList[idx-1]);
 	}
 
 	return swapList[0];
 }
-
 
 
 void debugSEE(char ch, int square) {
@@ -240,11 +191,9 @@ void debugSEE(char ch, int square) {
 		return;
 	}
 
-	int value = see(move, side, &initThread);
+	int value = SEE(move, side, &initThread);
 
 	std::cout << "See score = " << value << std::endl;
 }
-
-
 
 

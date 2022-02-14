@@ -8,5 +8,6 @@
 #include "thread.h"
 
 int see(u32 move, u8 side, Thread *th);
-
+int SEE(u32 move, u8 sideToMove, Thread *th);
+int newSEE(u32 move, u8 sideToMove, Thread *th);
 #endif
