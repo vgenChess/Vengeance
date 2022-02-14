@@ -719,7 +719,6 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 	std::vector<u32> quietMovesPlayed, captureMovesPlayed;
 	
-	th->moveList[ply].isQuiescense = false;
 	th->moveList[ply].stage = PLAY_HASH_MOVE;
 	th->moveList[ply].moves.clear();
 	th->moveList[ply].badCaptures.clear();
@@ -1095,7 +1094,6 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 	std::vector<u32> line;
 
-	th->moveList[ply].isQuiescense = true;
 	th->moveList[ply].stage = GEN_PROMOTION_CAPTURE_MOVES;
 
 	th->moveList[ply].moves.clear();

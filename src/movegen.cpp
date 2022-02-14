@@ -732,7 +732,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
         case PLAY_KILLER_MOVE_2 : {
 
-            moveList->stage = GEN_QUIET_MOVES;
+            moveList->stage = PLAY_BAD_CAPTURES;
 
             u32 killerMove2 = th->moveStack[ply].killerMoves[1];
 
@@ -744,45 +744,6 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
                
                 return m;           
             }
-        }
-        
-        //fallthrough
-
-        case GEN_QUIET_MOVES : {
-
-            moveList->moves.clear();
-
-            genCastlingMoves(ply, moveList->moves, side, th);
-            generatePushes(side, moveList->moves, th);
-            
-            scoreNormalMoves(side, ply, th, moveList);
-          
-            moveList->stage = PLAY_QUIET_MOVES;
-        }
-        
-        //fallthrough
-
-        case PLAY_QUIET_MOVES : {
-
-            if (moveList->moves.size() > 0) {
-
-                int index = GetTopIdx(moveList->moves);
-                    
-                Move m = moveList->moves[index];
-
-                moveList->moves.erase(moveList->moves.begin() + index);
-
-                if (    m.move == th->moveStack[ply].ttMove 
-                    ||  m.move == th->moveStack[ply].killerMoves[0] 
-                    ||  m.move == th->moveStack[ply].killerMoves[1]) {
-                  
-                    return getNextMove(ply, side, th, moveList);
-                }
-
-                return m;
-            }
-
-            moveList->stage = PLAY_BAD_CAPTURES;
         }
         
         //fallthrough
@@ -805,6 +766,45 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
                 return m;
             }
 
+            moveList->stage = GEN_QUIET_MOVES;
+        }
+
+
+        //fallthrough
+
+        case GEN_QUIET_MOVES : {
+
+            moveList->moves.clear();
+
+            genCastlingMoves(ply, moveList->moves, side, th);
+            generatePushes(side, moveList->moves, th);
+            
+            scoreNormalMoves(side, ply, th, moveList);
+          
+            moveList->stage = PLAY_QUIET_MOVES;
+        }
+
+        //fallthrough
+
+        case PLAY_QUIET_MOVES : {
+
+            if (moveList->moves.size() > 0) {
+
+                int index = GetTopIdx(moveList->moves);
+                    
+                Move m = moveList->moves[index];
+
+                moveList->moves.erase(moveList->moves.begin() + index);
+
+                if (    m.move == th->moveStack[ply].ttMove 
+                    ||  m.move == th->moveStack[ply].killerMoves[0] 
+                    ||  m.move == th->moveStack[ply].killerMoves[1]) {
+                  
+                    return getNextMove(ply, side, th, moveList);
+                }
+
+                return m;
+            }
 
             moveList->stage = STAGE_DONE;
 

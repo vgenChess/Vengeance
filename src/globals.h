@@ -254,9 +254,9 @@ enum Stage {
 	PLAY_CAPTURE_MOVES,
 	PLAY_KILLER_MOVE_1,
 	PLAY_KILLER_MOVE_2,
+	PLAY_BAD_CAPTURES,
 	GEN_QUIET_MOVES,
 	PLAY_QUIET_MOVES,
-	PLAY_BAD_CAPTURES,
 	STAGE_DONE
 };
 
@@ -325,12 +325,9 @@ typedef struct {
 typedef struct {
 
 	int stage;
-	int seeCutoff;
-	bool isQuiescense;
 
 	std::vector<Move> moves;
 	std::vector<Move> badCaptures;
-
 } MOVE_LIST;
 
 
