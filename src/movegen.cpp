@@ -829,14 +829,3 @@ u32 createMove(u32 promotion_type, u32 castleDir, u32 move_type, u32 side,
             |   to);
 }
 
-/* Extract data from a move structure */
-#define promType(move)           (move & 0x3000000) >> 24
-#define castleDir(move)        (move & 0xC00000) >> 22
-#define move_type(move)         (move & 0x380000) >> 19
-#define colorType(move)        (move & 0x40000) >> 18
-#define cPieceType(move)      (move & 0x38000) >> 15
-#define pieceType(move)        (move & 0x7000) >> 12
-#define from_sq(move)              (move & 0xFC0) >> 6
-#define to_sq(move)                move & 0x3F
-
-

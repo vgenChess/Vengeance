@@ -86,6 +86,7 @@ typedef uint64_t 	u64;
 #define MOVE_PROMOTION 		5
 
 
+/* Extract data from a move structure */
 #define promType(move)		(move & 0x3000000) >> 24
 #define castleDir(move)		(move & 0xC00000) >> 22
 #define move_type(move)     (move & 0x380000) >> 19
