@@ -221,6 +221,12 @@ struct  alignas(64)  NnueAccumulator  {
  int16_t*  operator[](Color  perspective)  { return  v[perspective]; }
 };*/
 
+
+
+
+
+
+
 enum {
 
 	DUMMY = 0,
@@ -316,7 +322,7 @@ typedef struct {
     u32 bestMove;
 	int depth;
 	int value;
-	int eval_static;
+	int sEval;
 	u8 flags; 
 } HASHE;
 

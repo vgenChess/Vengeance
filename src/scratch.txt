@@ -103,7 +103,7 @@ Bugs
     - 2Rb1rk1/3n4/1pQ1p2p/3pP1p1/3P1p2/1N1q4/PP1B1PPP/6K1 b - - 1 30 (Black makes an illegal move = d3d1)
     - 5bk1/1R6/5Br1/5K2/7P/8/8/8 w - - 7 59 (Misses king capture)
     - 8/5pk1/4n1p1/8/1KR5/8/q7/2R5 b - - 11 114 (Black disconnects)
-
+    - 6k1/4n1p1/4pp2/7P/3P4/3Q1P2/1r1B4/q1R1K3 b - - 13 77 (Black makes an illegal move: a1g1)
 
 
 

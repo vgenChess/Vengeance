@@ -381,59 +381,38 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	}
 
 
+
 	// Transposition Table lookup
-
-	bool ttMatch = false;
-
-	int ttDepth = NO_DEPTH;
-	int ttBound = NO_BOUND;
-	int ttValue = -INF;
-	int ttEval = -INF;
 	
-	u32 ttMove = NO_MOVE;
+	HASHE *tt = &hashTable[th->hashKey % HASH_TABLE_SIZE];
 	
-	if (probeHash(&ttEval, &ttDepth, &ttValue, &ttBound, &ttMove, th)) {
+	bool ttMatch = probeHashNew(tt, th);
+	int ttScore = ttMatch ? tt->value : INF;
+	u32 ttMove =  ttMatch ? tt->bestMove : NO_MOVE;
 
-		ttMatch = true;
+	if (ttMatch) th->ttHits++;
 
-		th->ttHits++;
-
-		if (!IS_PV_NODE) {
-
-			if (ttDepth >= depth) {
-	            
-		        if (ttBound == hashfEXACT)	
-		        	return ttValue;
-		        
-		        if ((ttBound == hashfALPHA) && (ttValue <= alpha))	
-		        	return alpha;
-		        
-		        if ((ttBound == hashfBETA) && (ttValue >= beta))	
-		        	return beta;
-			}
-		}
+	if (!IS_PV_NODE && ttMatch && tt->depth >= depth && ttScore != INF) {
+		
+		if (	tt->flags == hashfEXACT 
+			||	(tt->flags == hashfBETA && ttScore >= beta)
+			||	(tt->flags == hashfALPHA && ttScore <= alpha)) return ttScore;
 	}
 
 
-	
+
 	const bool IS_IN_CHECK = isKingInCheck(side, th);
 
-
-    int sEval = IS_IN_CHECK ? -INF : (ttMatch ? ttEval : nn_eval(&nnue, th, (side == WHITE ? 0 : 1)));
+    int sEval = IS_IN_CHECK ? INF : (ttMatch ? tt->sEval : nn_eval(&nnue, th, (side == WHITE ? 0 : 1)));
 	
-	if (!ttMatch) {
-
-		recordHash(NO_MOVE, NO_DEPTH, -INF, NO_BOUND, sEval, th);		
-	}
+	if (!ttMatch) recordHash(NO_MOVE, NO_DEPTH, INF, NO_BOUND, sEval, th);		
 	
-
 	bool improving = !IS_IN_CHECK && ply >= 2 && sEval > th->moveStack[ply-2].sEval;
 
 
 
 
-
-	assert (!(!IS_IN_CHECK && sEval == -INF));
+	assert (!(!IS_IN_CHECK && sEval == INF));
 
 
 
@@ -455,24 +434,18 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 	// Reverse Futility Pruning (Under observation)
 
-	if (canPruneOrReduce)	{ 
+	if (canPruneOrReduce) { 
 
-		assert(sEval != -INF);
+		assert(sEval != INF);
 		
-		if (depth == 1 && sEval - R_F_PRUNE_THRESHOLD >= beta) {
-
+		if (depth == 1 && sEval - R_F_PRUNE_THRESHOLD >= beta)
 			return beta; 	
-		}		 
-
-		if (depth == 2 && sEval - R_EXT_F_PRUNE_THRESHOLD >= beta) {
-
-			return beta;		
-		}	
 	
-		if (depth == 3 && sEval - R_LTD_RZR_THRESHOLD >= beta) {
-
+		if (depth == 2 && sEval - R_EXT_F_PRUNE_THRESHOLD >= beta) 
+			return beta;		
+	
+		if (depth == 3 && sEval - R_LTD_RZR_THRESHOLD >= beta)
 			depth--;
-		}		
 	}
 
 
@@ -524,15 +497,11 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 		unmakeNullMove(ply, th);
 
 
-		if (score >= beta) {
-
+		if (score >= beta)
 			return beta;
-		}	
-
-		else if (std::abs(score) >= WIN_SCORE_THRESHOLD) {	// Mate Threat extension
-
+	
+		if (std::abs(score) >= WIN_SCORE_THRESHOLD)	// Mate Threat extension
 			depth++;
-		}
 	}
 
 
@@ -542,28 +511,23 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	bool f_prune = false;
 	if (canPruneOrReduce)	{ 
 			
-		if (depth == 1 && sEval + F_PRUNE_THRESHOLD <= alpha) {
-
+		if (depth == 1 && sEval + F_PRUNE_THRESHOLD <= alpha)
 			f_prune = true;  	// Futility Pruning
-		}
-		else if (depth == 2 && sEval + EXT_F_PRUNE_THRESHOLD <= alpha) {
-
+		
+		else if (depth == 2 && sEval + EXT_F_PRUNE_THRESHOLD <= alpha)
 			f_prune = true;		// Extended Futility Pruning	
-		}
-		else if (depth == 3 && sEval + LTD_RZR_THRESHOLD <= alpha)	{
-
+		
+		else if (depth == 3 && sEval + LTD_RZR_THRESHOLD <= alpha)	
 			depth--; 			// Limited Razoring		
-		}
 	}
 	
 
 
 	// Alternative to IID (under observation)
 
-	if (depth >= 4 && !ttMove) {
-
+	if (depth >= 4 && !ttMove) 
 		depth--;	
-	}
+	
 
 
 
@@ -833,6 +797,7 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 	SearchThread *th, std::vector<u32> *pline) {
 
 
+	assert (alpha < beta);
 	assert (ply != 0);
 
 
@@ -840,26 +805,13 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 	const bool IS_MAIN_THREAD = th == Threads.main();
 
-	
 
 	// Check if time limit has been reached
+	if (timeSet && IS_MAIN_THREAD && th->nodes % X_NODES == 0) checkTime();	
+	
+	if (IS_MAIN_THREAD && Threads.stop) return 0;
 
-	if (	timeSet 
-		&&  IS_MAIN_THREAD 
-		&&  th->nodes % X_NODES == 0) {
-
-		checkTime();	
-	}
-
-	if (IS_MAIN_THREAD && Threads.stop) {
-
-		return 0;
-	}
-
-	if (ABORT_SEARCH) {
-
-		return 0; 
-	}
+	if (ABORT_SEARCH) return 0; 
 
 
 
@@ -873,7 +825,7 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 	// Repetition detection
 	for (int i = th->moves_history_counter + ply; i >= 0; i--) {
-		
+
 		if (th->movesHistory[i].hashKey == th->hashKey) {
 
 			if (	num_pieces > 22)	return -50;
@@ -885,60 +837,61 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 	th->movesHistory[th->moves_history_counter + ply + 1].hashKey = th->hashKey;
 
 
-	int ttDepth = NO_DEPTH;
-	int ttBound = NO_BOUND;
-	int ttValue = -INF;
-	int sEval = -INF;
 
-	u32 ttMove = NO_MOVE;
 
-	
-	if (probeHash(&sEval, &ttDepth, &ttValue, &ttBound, &ttMove, th)) {
+	HASHE *tt = &hashTable[th->hashKey % HASH_TABLE_SIZE];
+
+	bool ttMatch = probeHashNew(tt, th);  
+	int ttScore = INF;
+
+	if (ttMatch) { // no depth check required since its 0 in quiescense search
 
 		th->ttHits++;
+
+		ttScore = tt->value;
+
+	  	if (	ttScore != INF 
+	  		&&	(tt->flags == hashfEXACT 
+			||	(tt->flags == hashfBETA && ttScore >= beta)
+			||	(tt->flags == hashfALPHA && ttScore <= alpha))) {
+
+	  		return ttScore;	
+	  	}
+	}
+
+
+
+
+	const bool IS_IN_CHECK = isKingInCheck(side, th);
+
+
+	u32 bestMove = NO_MOVE;
+	int bestScore = -MATE + ply;
+	int sEval;
+
+	// pull cached eval if it exists
+	int eval = sEval = IS_IN_CHECK ? INF : (ttMatch ? tt->sEval : nn_eval(&nnue, th, (side == WHITE ? 0 : 1)));
 	
-		if (ttDepth >= depth) {
-            
-	        if (	ttBound == hashfEXACT) 	{
-	            return ttValue;
-	        }
-	        
-	        if (	ttBound == hashfALPHA && ttValue <= alpha)  {
-	            return alpha;
-	        }
-	        
-	        if (	ttBound == hashfBETA && ttValue >= beta)    {
-	            return beta;
-	        }
+	if (!ttMatch) recordHash(NO_MOVE, NO_DEPTH, INF, NO_BOUND, eval, th);		
+	
+
+	if (!IS_IN_CHECK) {
+
+		if (eval >= beta) {
+			
+			recordHash(NO_MOVE, 0, eval, hashfBETA, eval, th);		
+	
+			return eval;
 		}
+
+		if (eval > alpha) alpha = eval;
+
+		bestScore = eval;
 	}
 
 
-	if (sEval == -INF) { 
-	
-		sEval = nn_eval(&nnue, th, (side == WHITE ? 0 : 1));			
-	}
 
 
-	assert (sEval != -INF);
-
-
-	if (ply >= MAX_PLY)	{
-
-		return sEval;
-	}
-
-	if (sEval >= beta)	{
-
-		recordHash(NO_MOVE, NO_DEPTH, sEval, hashfBETA, sEval, th);		
-
-		return sEval;
-	}
-	
-	if (sEval > alpha)	{
-
-		alpha = sEval;
-	}
 
 	
 	th->moveStack[ply].epFlag = th->moveStack[ply - 1].epFlag;
@@ -946,22 +899,18 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 	th->moveStack[ply].castleFlags = th->moveStack[ply - 1].castleFlags;
 
 
-	const auto Q_FUTILITY_BASE = sEval + Q_DELTA;
+	const int Q_FUTILITY_BASE = sEval + Q_DELTA;
 
-	const auto num_opp_pieces = __builtin_popcountll(opp ? 
-		th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
+	const int num_opp_pieces = __builtin_popcountll(opp ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 
 	
 	int hashf = hashfALPHA;
-	int score, bestScore = sEval, n;
-
-	u32 bestMove = NO_MOVE;
-	Move currentMove, tmpMove;
+	
+	Move currentMove;
 
 	std::vector<u32> line;
 
 	th->moveList[ply].stage = GEN_PROMOTIONS;
-
 	th->moveList[ply].moves.clear();
 	th->moveList[ply].badCaptures.clear();
 
@@ -969,7 +918,6 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 	int capPiece;
 
 	while (th->moveList[ply].stage <= PLAY_CAPTURES) {
-
 
 		currentMove = getNextMove(ply, side, th, &th->moveList[ply]);
 
@@ -981,24 +929,17 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
  		if (capPiece != DUMMY) {
 
 			// Delta pruning
-	 		if (	num_opp_pieces > 3
-	 			&&	Q_FUTILITY_BASE + seeVal[capPiece] <= alpha) {
-
+	 		if (num_opp_pieces > 3 && Q_FUTILITY_BASE + seeVal[capPiece] <= alpha) 
 	 			continue;
-	 		} 
  		}
 				
 
-		assert (currentMove.move != NO_MOVE);
-
-
 		make_move(ply, currentMove.move, th);
-
 
 		if (!isKingInCheck(side, th)) {
 
 
-			score = -quiescenseSearch(ply + 1, depth - 1, opp, -beta, -alpha, th, &line);
+			int score = -quiescenseSearch(ply + 1, depth - 1, opp, -beta, -alpha, th, &line);
 
 
 			unmake_move(ply, currentMove.move, th);
@@ -1036,7 +977,7 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 	}
 
 
-	recordHash(bestMove, depth, bestScore, hashf, sEval, th);
+	recordHash(bestMove, 0, bestScore, hashf, sEval, th);
 
 
 	return bestScore;

@@ -13,6 +13,8 @@ void recordPawnHash(int score, Thread *th);
 bool probeEval(int *eval, Thread *th);
 void recordEval(int eval, Thread *th);
 
+bool probeHashNew(HASHE *tt, Thread *th);
+
 int hashfull();
 
 #endif
