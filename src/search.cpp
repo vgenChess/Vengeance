@@ -359,11 +359,9 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 			
 			if (th->movesHistory[i].hashKey == th->hashKey) {
 
-				if (num_pieces > 22)	
-					return -50;
+				if (num_pieces > 22) return -50;
 				
-				if (num_pieces > 12)	
-					return -25;	// middlegame
+				if (num_pieces > 12) return -25;	// middlegame
 					     					
 				return   0;	// endgame
 			}
@@ -400,9 +398,9 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 	
 	if (!ttMatch) recordHash(NO_MOVE, NO_DEPTH, VAL_UNKNOWN, NO_BOUND, sEval, th);		
 	
-	bool improving = !IS_IN_CHECK && ply >= 2 && sEval > th->moveStack[ply-2].sEval;
+	bool improving = !IS_IN_CHECK && ply >= 2 && sEval > th->moveStack[ply - 2].sEval;
 
-
+	
 
 
 	assert (!(!IS_IN_CHECK && sEval == VAL_UNKNOWN));

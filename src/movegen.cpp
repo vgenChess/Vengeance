@@ -672,7 +672,8 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
             u32 killerMove1 = th->moveStack[ply].killerMoves[0];
 
-            if (isValidMove(side, ply, killerMove1, th)) {
+            if (    killerMove1 != th->moveStack[ply].ttMove
+                &&  isValidMove(side, ply, killerMove1, th)) {
                     
                 Move m;
 
@@ -690,7 +691,8 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
             u32 killerMove2 = th->moveStack[ply].killerMoves[1];
 
-            if (isValidMove(side, ply, killerMove2, th)) {
+            if (    killerMove2 != th->moveStack[ply].ttMove
+                &&  isValidMove(side, ply, killerMove2, th)) {
                     
                 Move m;
 
