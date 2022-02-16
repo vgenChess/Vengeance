@@ -809,14 +809,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 u32 createMove(u32 promotion_type, u32 castleDir, u32 move_type, u32 side,
                u32 c_piece, u32 piece, u32 from, u32 to) {
     
-    return (    0ULL 
-            |   promotion_type << 24 
-            |   castleDir << 22
-            |   move_type << 19 
-            |   side << 18 
-            |   c_piece << 15
-            |   piece << 12 
-            |   from << 6 
-            |   to);
+    return (0ULL | promotion_type << 24 | castleDir << 22 | move_type << 19 
+        | side << 18 | c_piece << 15 | piece << 12 | from << 6 | to);
 }
 

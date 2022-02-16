@@ -42,7 +42,7 @@ std::string getMoveNotation(const u32 move) {
 
 void reportBestMove() {
 
-	u32 bestMove = Threads.main()->pvLine[Threads.main()->depth].line[0];
+	u32 bestMove = Threads.main()->pvLine[Threads.main()->completedDepth].line[0];
 
 	std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
 }
