@@ -46,16 +46,7 @@ int timePerMove;
 int MAX_TIME_PER_SEARCH = 0;
 int MIN_TIME_PER_SEARCH = 0;
 
-int seeVal[8] = { 
-    0, 
-    VALUE_PAWN, 
-    VALUE_KNIGHT, 
-    VALUE_BISHOP, 
-    VALUE_ROOK,	
-    VALUE_QUEEN, 
-    VALUE_KING, 
-    0
-};
+int seeVal[8] = { 0, VALUE_PAWN, VALUE_KNIGHT, VALUE_BISHOP, VALUE_ROOK, VALUE_QUEEN, VALUE_KING, 0};
 
 std::mutex mtx;
 
@@ -601,14 +592,14 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 
 					// Late move pruning
 					if (	depth <= LMP_MAX_DEPTH 
-						&&  legalMoves >= LMP_BASE * depth) {
+						&&	legalMoves >= LMP_BASE * depth) {
 
 						unmake_move(ply, currentMove.move, th);
 						continue;
 					}
 
 					// History pruning
-					if (	depth <= HISTORY_PRUNING_MAX_DEPTH
+					if (	depth <= HISTORY_PRUNING_MAX_DEPTH 
 						&&	currentMove.score < HISTORY_PRUNING_THRESHOLD) {
 
 						unmake_move(ply, currentMove.move, th);
