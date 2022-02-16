@@ -197,7 +197,7 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
 	int score = -MATE;
 	int alpha = -MATE, beta = MATE;
 	
-	/*if (th->depth > 4 && th->completedDepth > 0) {
+	if (th->depth > 4 && th->completedDepth > 0) {
 
 		window = AP_WINDOW;
 
@@ -206,7 +206,7 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
   		alpha = std::max(-MATE, scoreKnown - window);
 	  	beta  = std::min( MATE, scoreKnown + window);	
 	}
- 	*/
+ 	
 
 	std::vector<u32> pline;
 
@@ -695,7 +695,7 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 
 					if (currentMove.move == KILLER_MOVE_1 || currentMove.move == KILLER_MOVE_2) reduce--;
 		            
-		            reduce -= std::max(-2, std::min(2, currentMove.score / 5000));	// TODO	 rewrite logic				
+		            reduce -= std::max(-2, std::min(2, currentMove.score / 5000));	// TODO	rewrite logic				
 
 		        	int r = std::min(depth - 1, std::max(reduce, 1));	// TODO rewrite logic
 
@@ -945,7 +945,6 @@ int quiescenseSearch(const int ply, const int side, int alpha, int beta, SearchT
 					pline->push_back(bestMove);
 					std::copy(line.begin(), line.end(), back_inserter(*pline));
 					line.clear();
-
 
 					if (score >= beta) {
 
