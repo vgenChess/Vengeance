@@ -3,14 +3,15 @@
 #define CONSTANTS 
 
 const int INF = 	50000;
+const int VAL_UNKNOWN = 30000;
 const int MATE = 	25000;
 
 const uint16_t WIN_SCORE_THRESHOLD = 9000;
 
 const int8_t NO_STAGE = -1;
-const uint8_t NO_DEPTH = 0;
+const int8_t NO_DEPTH = -127;
 const uint8_t NO_BOUND = 50;
-const uint8_t AP_WINDOW = 16;
+const uint8_t AP_WINDOW = 10;
 
 const uint16_t PV_DISPLAY_INTERVAL = 2500;
 const uint16_t X_NODES = 1024;

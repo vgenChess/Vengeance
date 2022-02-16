@@ -397,11 +397,9 @@ uint16_t val_piece[8] = {
 
 bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
 
-    if (move == NO_MOVE) {
-
-        return false;
-    }
-
+    
+    if (move == NO_MOVE) return false;
+    
     u8 opponent = side ^ 1;
 
     u8 fromSq = from_sq(move);
@@ -417,45 +415,32 @@ bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
 
     if (moveType == MOVE_NORMAL || moveType == MOVE_DOUBLE_PUSH || moveType == MOVE_CAPTURE) {
 
-        u64 inBetweenStraightLineBB = inBetween(fromSq, toSq);
-        
-        if (inBetweenStraightLineBB & th->occupied) { //move is obstructed
+        if (moveType == MOVE_DOUBLE_PUSH) {
 
-            if (piece == PAWNS && moveType == MOVE_DOUBLE_PUSH) 
-                return false;
-
-            if (piece == ROOKS) 
-                return false;
+            u64 inBetweenStraightLineBB = inBetween(fromSq, toSq);
+            
+            if (inBetweenStraightLineBB & th->occupied) return false;            
         }
 
-        if (piece == BISHOPS || piece == QUEEN) {
+        if (piece == ROOKS) {
 
-            u64 fromToBB = (1ULL << fromSq) | (1ULL < toSq); 
-            
-            u64 inBetweenDiagonalBB = Bmagic(fromSq, th->occupied) & Bmagic(toSq, th->occupied) & ~fromToBB;
+            u64 rAttacks = Rmagic(fromSq, th->occupied);
 
-            if (inBetweenDiagonalBB & th->occupied) { // diagonal move is obstructed
+            if (!(rAttacks & (1ULL << toSq))) return false;
+        }
 
-                if (piece == BISHOPS) 
-                    return false;
-            }
+        if (piece == BISHOPS) {
 
-            if (piece == QUEEN) {
-                
-                // assume queen's movement (from -> to) is obstructed
-                bool isQueenMovementObstructed = true; 
+            u64 bAttacks = Bmagic(fromSq , th->occupied);
 
-                // check whether if its false
-                if (    !(inBetweenDiagonalBB & th->occupied) 
-                    ||  !(inBetweenStraightLineBB & th->occupied)) {
+            if (!(bAttacks & (1ULL << toSq))) return false;
+        }
 
-                    isQueenMovementObstructed = false;
-                }
+        if (piece == QUEEN) {
 
-                // if the condition is still true, return false as the move is not valid 
-                if (isQueenMovementObstructed) 
-                    return false;
-            }
+            u64 qAttacks = Qmagic(fromSq, th->occupied);
+
+            if (!(qAttacks & (1ULL << toSq))) return false;
         }
 
         // finally check for piece on their squares
@@ -470,6 +455,12 @@ bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
     }
 
     if (moveType == MOVE_CASTLE) { // Todo check logic
+
+
+        u64 inBetweenStraightLineBB = inBetween(fromSq, toSq);
+        
+        if (inBetweenStraightLineBB & th->occupied) return false;            
+   
 
         u8 castleFlags = th->moveStack[ply].castleFlags;
 

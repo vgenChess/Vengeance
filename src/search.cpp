@@ -192,19 +192,21 @@ void searchMain(int sideToMove, SearchThread *th) {
 
 void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
 
-	int window = AP_WINDOW;
+	int window = MATE;
 
-	int score = -INF;
-	int alpha = -INF, beta = INF;
+	int score = -MATE;
+	int alpha = -MATE, beta = MATE;
 	
-	if (th->depth > 4 && th->completedDepth > 0) {
+	/*if (th->depth > 4 && th->completedDepth > 0) {
+
+		window = AP_WINDOW;
 
 		int scoreKnown = th->pvLine.at(th->completedDepth).score;
 
-  		alpha = std::max(-INF, scoreKnown - window);
-	  	beta  = std::min( INF, scoreKnown + window);	
+  		alpha = std::max(-MATE, scoreKnown - window);
+	  	beta  = std::min( MATE, scoreKnown + window);	
 	}
- 	
+ 	*/
 
 	std::vector<u32> pline;
 
@@ -231,11 +233,11 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
 		if (score <= alpha)	{
 
 			beta = (alpha + beta) / 2;
-			alpha = std::max(alpha - window, -INF);
+			alpha = std::max(alpha - window, -MATE);
 		}
 		else if (score >= beta)	{
 
-			beta = std::min(beta + window, INF);
+			beta = std::min(beta + window, MATE);
 		}	
 		else {
 
@@ -249,7 +251,7 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
 			break;
 		}
 
-		window += window / 4; 
+		window = window + window / 2; 
 	}
 
 	
@@ -293,14 +295,21 @@ void checkTime() {
 }
 
 
-int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pline, SearchInfo *si, int mate) {
+int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u32> *pline, SearchInfo *si, int mate) {
+
+
+	// if (alpha >= beta) {
+
+	// 	std::cout<<"realDepth=" << si->realDepth << ", depth=" << si->depth << ", ply =" << si->ply << "\n";
+	// 	std::cout<<alpha<<","<<beta<<std::endl;
+	// }
 
 
 	assert(alpha < beta); 
 
 
 	const u8 side = si->side;
-	const u8 opp = side ^ 1;
+	const u8 OPP = side ^ 1;
 
 	const int ply = si->ply;
 	
@@ -316,29 +325,21 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 	if (depth <= 0 || ply >= MAX_PLY) {
 
-		return quiescenseSearch(ply, depth, side, alpha, beta, th, pline);
-	}  
-
+		return quiescenseSearch(ply, side, alpha, beta, th, pline);
+	}
+	
 
 
 	// Check time spent		
 
 	if (	timeSet 
 		&&  IS_MAIN_THREAD 
-		&&  th->nodes % X_NODES == 0) {
-
-		checkTime();
-	}
+		&&  th->nodes % X_NODES == 0) checkTime();
 	
-	if (IS_MAIN_THREAD && Threads.stop) {
+	if (IS_MAIN_THREAD && Threads.stop) return 0;
 
-		return 0;
-	}
+	if (ABORT_SEARCH) return 0; 
 
-	if (ABORT_SEARCH) {
-
-		return 0; 
-	}
 
 
 
@@ -386,13 +387,13 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 	
 	HASHE *tt = &hashTable[th->hashKey % HASH_TABLE_SIZE];
 	
-	bool ttMatch = probeHashNew(tt, th);
-	int ttScore = ttMatch ? tt->value : INF;
+	bool ttMatch = probeHash(tt, th);
+	int ttScore = ttMatch ? tt->value : VAL_UNKNOWN;
 	u32 ttMove =  ttMatch ? tt->bestMove : NO_MOVE;
 
 	if (ttMatch) th->ttHits++;
 
-	if (!IS_PV_NODE && ttMatch && tt->depth >= depth && ttScore != INF) {
+	if (!IS_ROOT_NODE && !IS_PV_NODE && ttMatch && tt->depth >= depth && ttScore != VAL_UNKNOWN) {
 		
 		if (	tt->flags == hashfEXACT 
 			||	(tt->flags == hashfBETA && ttScore >= beta)
@@ -401,23 +402,24 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 
 
+
 	const bool IS_IN_CHECK = isKingInCheck(side, th);
 
-    int sEval = IS_IN_CHECK ? INF : (ttMatch ? tt->sEval : nn_eval(&nnue, th, (side == WHITE ? 0 : 1)));
+    int sEval = IS_IN_CHECK ? VAL_UNKNOWN : (ttMatch ? tt->sEval : nn_eval(&nnue, th, (side == WHITE ? 0 : 1)));
 	
-	if (!ttMatch) recordHash(NO_MOVE, NO_DEPTH, INF, NO_BOUND, sEval, th);		
+	if (!ttMatch) recordHash(NO_MOVE, NO_DEPTH, VAL_UNKNOWN, NO_BOUND, sEval, th);		
 	
 	bool improving = !IS_IN_CHECK && ply >= 2 && sEval > th->moveStack[ply-2].sEval;
 
 
 
 
-	assert (!(!IS_IN_CHECK && sEval == INF));
+	assert (!(!IS_IN_CHECK && sEval == VAL_UNKNOWN));
 
 
 
 	const auto num_opp_pieces = __builtin_popcountll(
-		opp ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
+		OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 	
 	bool canPruneOrReduce = false;
 
@@ -436,7 +438,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 	if (canPruneOrReduce) { 
 
-		assert(sEval != INF);
+		assert(sEval != VAL_UNKNOWN);
 		
 		if (depth == 1 && sEval - R_F_PRUNE_THRESHOLD >= beta)
 			return beta; 	
@@ -485,13 +487,13 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 		int r = depth > 9 ? 3 : 2;	
 
 	
-		searchInfo.side = opp;
+		searchInfo.side = OPP;
 		searchInfo.ply = ply + 1;
 		searchInfo.depth = depth - r;
 		searchInfo.isNullMoveAllowed = false;
 		
 
-		int score = -alphabetaSearch(alpha, beta, th, &line, &searchInfo, mate - 1);
+		int score = -alphabetaSearch(-beta, -beta + 1, th, &line, &searchInfo, mate - 1);
 
 
 		unmakeNullMove(ply, th);
@@ -537,7 +539,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 	int hashf = hashfALPHA;
 	int reduce = 0, extend = 0, legalMoves = 0, newDepth = 0;
-	int score = -INF, bestScore = -INF;
+	int score = -MATE, bestScore = -MATE;
 
 	u32 bestMove = NO_MOVE;
 	const u32 KILLER_MOVE_1 = th->moveStack[ply].killerMoves[0];
@@ -554,7 +556,6 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 	while (th->moveList[ply].stage != STAGE_DONE) {
 
-
 		currentMove = getNextMove(ply, side, th, &th->moveList[ply]);
 
 		if (currentMove.move == NO_MOVE) 
@@ -568,8 +569,8 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 			currentMoveType = move_type(currentMove.move);
 
-			isQuietMove = currentMoveType == MOVE_NORMAL 
-				||	currentMoveType == MOVE_CASTLE || currentMoveType == MOVE_DOUBLE_PUSH;
+			isQuietMove = currentMoveType == MOVE_NORMAL ||	currentMoveType == MOVE_CASTLE 
+				|| currentMoveType == MOVE_DOUBLE_PUSH;
 
 			if (isQuietMove) {
 
@@ -666,7 +667,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 
 
-			searchInfo.side = opp;
+			searchInfo.side = OPP;
 			searchInfo.ply = ply + 1;
 			searchInfo.isNullMoveAllowed = true;
 
@@ -694,7 +695,7 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 					if (currentMove.move == KILLER_MOVE_1 || currentMove.move == KILLER_MOVE_2) reduce--;
 		            
-		            reduce -= std::max(-2, std::min(2, currentMove.score / 5000));	// TODO rewrite logic				
+		            reduce -= std::max(-2, std::min(2, currentMove.score / 5000));	// TODO	 rewrite logic				
 
 		        	int r = std::min(depth - 1, std::max(reduce, 1));	// TODO rewrite logic
 
@@ -707,8 +708,6 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 					score = alpha + 1;
 				}
-
-
 
 				if (score > alpha) {	// Research 
 
@@ -789,19 +788,18 @@ int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pli
 
 
 	return bestScore;
-}
+}	
 
 
 // TODO should limit Quiescense search explosion
-int quiescenseSearch(const int ply, const int depth, const int side, int alpha, int beta, 
-	SearchThread *th, std::vector<u32> *pline) {
+int quiescenseSearch(const int ply, const int side, int alpha, int beta, SearchThread *th, std::vector<u32> *pline) {
 
 
 	assert (alpha < beta);
-	assert (ply != 0);
+	assert (ply > 0);
 
 
-	const int opp = side ^ 1;
+	const int OPP = side ^ 1;
 
 	const bool IS_MAIN_THREAD = th == Threads.main();
 
@@ -838,11 +836,15 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 
 
+	if (ply >= MAX_PLY - 1) 
+		return nn_eval(&nnue, th, (side == WHITE ? 0 : 1));
+
+
 
 	HASHE *tt = &hashTable[th->hashKey % HASH_TABLE_SIZE];
 
-	bool ttMatch = probeHashNew(tt, th);  
-	int ttScore = INF;
+	bool ttMatch = probeHash(tt, th);  
+	int ttScore = VAL_UNKNOWN;
 
 	if (ttMatch) { // no depth check required since its 0 in quiescense search
 
@@ -850,7 +852,7 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 		ttScore = tt->value;
 
-	  	if (	ttScore != INF 
+	  	if (	ttScore != VAL_UNKNOWN 
 	  		&&	(tt->flags == hashfEXACT 
 			||	(tt->flags == hashfBETA && ttScore >= beta)
 			||	(tt->flags == hashfALPHA && ttScore <= alpha))) {
@@ -861,36 +863,20 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 
 
-
-	const bool IS_IN_CHECK = isKingInCheck(side, th);
-
-
 	u32 bestMove = NO_MOVE;
-	int bestScore = -MATE + ply;
+	int bestScore = -MATE;
 	int sEval;
 
 	// pull cached eval if it exists
-	int eval = sEval = IS_IN_CHECK ? INF : (ttMatch ? tt->sEval : nn_eval(&nnue, th, (side == WHITE ? 0 : 1)));
+	int eval = sEval = (ttMatch && tt->sEval != VAL_UNKNOWN) ? tt->sEval : nn_eval(&nnue, th, (side == WHITE ? 0 : 1));
 	
-	if (!ttMatch) recordHash(NO_MOVE, NO_DEPTH, INF, NO_BOUND, eval, th);		
+	if (!ttMatch) recordHash(NO_MOVE, NO_DEPTH, VAL_UNKNOWN, NO_BOUND, eval, th);		
 	
 
-	if (!IS_IN_CHECK) {
+	bestScore = eval;
+	alpha = std::max(alpha, eval);
 
-		if (eval >= beta) {
-			
-			recordHash(NO_MOVE, 0, eval, hashfBETA, eval, th);		
-	
-			return eval;
-		}
-
-		if (eval > alpha) alpha = eval;
-
-		bestScore = eval;
-	}
-
-
-
+	if (alpha >= beta) return eval;	
 
 
 	
@@ -901,7 +887,7 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 	const int Q_FUTILITY_BASE = sEval + Q_DELTA;
 
-	const int num_opp_pieces = __builtin_popcountll(opp ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
+	const int num_opp_pieces = __builtin_popcountll(OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 
 	
 	int hashf = hashfALPHA;
@@ -915,7 +901,7 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 	th->moveList[ply].badCaptures.clear();
 
 
-	int capPiece;
+	int capPiece, legalMoves = 0;
 
 	while (th->moveList[ply].stage <= PLAY_CAPTURES) {
 
@@ -926,11 +912,10 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 		
 		
 		capPiece = cPieceType(currentMove.move);
- 		if (capPiece != DUMMY) {
+ 		if (capPiece != DUMMY && legalMoves > 0) {
 
 			// Delta pruning
-	 		if (num_opp_pieces > 3 && Q_FUTILITY_BASE + seeVal[capPiece] <= alpha) 
-	 			continue;
+	 		if (num_opp_pieces > 3 && Q_FUTILITY_BASE + seeVal[capPiece] <= alpha) continue;
  		}
 				
 
@@ -938,8 +923,9 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 
 		if (!isKingInCheck(side, th)) {
 
+			legalMoves++;
 
-			int score = -quiescenseSearch(ply + 1, depth - 1, opp, -beta, -alpha, th, &line);
+			int score = -quiescenseSearch(ply + 1, OPP, -beta, -alpha, th, &line);
 
 
 			unmake_move(ply, currentMove.move, th);
@@ -954,7 +940,6 @@ int quiescenseSearch(const int ply, const int depth, const int side, int alpha, 
 					
 					alpha = score;
 					hashf = hashfEXACT;
-
 
 					pline->clear();
 					pline->push_back(bestMove);

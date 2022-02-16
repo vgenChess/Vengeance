@@ -1,5 +1,6 @@
 #include "hash.h"
 
+
 bool probePawnHash(int *score, Thread *th) {
 
     u64 key = th->pawnsHashKey;
@@ -42,28 +43,7 @@ void recordEval(int eval, Thread *th) {
 }
 
 
-bool probeHash(int *sEval, int *ttDepth, int *ttValue, int *ttBound, u32 *ttMove, Thread *th) {
-    
-    HASHE *phashe = &hashTable[th->hashKey % HASH_TABLE_SIZE];
-    
-    u32 dataKey = phashe->bestMove ^ phashe->value ^ phashe->depth ^ phashe->flags ^ phashe->sEval;
-    
-    bool isValidHash = (phashe->key ^ dataKey) == th->hashKey; 
-
-    if (isValidHash) {
-
-        *ttDepth = phashe->depth;
-        *ttValue = phashe->value;
-        *ttBound = phashe->flags; 
-
-        *sEval = phashe->sEval;
-		*ttMove = phashe->bestMove;
-    }
-
-    return isValidHash;
-}
-
-bool probeHashNew(HASHE *tt, Thread *th) {
+bool probeHash(HASHE *tt, Thread *th) {
     
     u32 dataKey = tt->bestMove ^ tt->value ^ tt->depth ^ tt->flags ^ tt->sEval;
     
@@ -72,13 +52,11 @@ bool probeHashNew(HASHE *tt, Thread *th) {
 
 
 void recordHash(u32 bestMove, int depth, int value, int hashf, int sEval, Thread *th) {
-   
     
-    HASHE *phashe = &hashTable[th->hashKey % HASH_TABLE_SIZE];
 
+    HASHE *phashe = &hashTable[th->hashKey % HASH_TABLE_SIZE];
     
     u32 dataKey = phashe->bestMove ^ phashe->value ^ phashe->depth ^ phashe->flags ^ phashe->sEval;
-    
     
     bool isValidHash = (phashe->key ^ dataKey) == th->hashKey; 
 

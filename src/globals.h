@@ -366,8 +366,6 @@ extern u64 KEY_EP_F_FILE;
 extern u64 KEY_EP_G_FILE;
 extern u64 KEY_EP_H_FILE;
 
-extern int VAL_UNKNOWN;
-
 // zobrist keys
 
 extern u64 zobrist[8][2][64];

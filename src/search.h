@@ -46,10 +46,9 @@ void display(u8 sideToMove, int depth, int selDepth, int score, std::vector<u32>
 void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> &quietMovesPlayed, Thread *th);
 void updateCaptureHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> &captureMovesPlayed, Thread *th);
 
-int alphabetaSearch(int alpha, int beta, SearchThread *th, std::vector<u32> *pline, SearchInfo *si, int mate);
+int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u32> *pline, SearchInfo *si, int mate);
 
-int quiescenseSearch(const int ply, const int depth, const int side, int alpha, int beta, 
-	SearchThread *th, std::vector<u32> *pline);
+int quiescenseSearch(const int ply, const int side, int alpha, int beta, SearchThread *th, std::vector<u32> *pline);
 
 void getMoveList(int ply, int side, std::vector<Move> &moves, u8 stage, Thread *th);
 
