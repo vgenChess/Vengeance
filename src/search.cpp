@@ -497,7 +497,6 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 
 
 
-	//(Under observation)
 
 	bool f_prune = false;
 	if (canPruneOrReduce)	{ 
@@ -514,23 +513,23 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 	
 
 
-	// Alternative to IID (under observation)
 
+	// Alternative to IID
 	if (depth >= 4 && !ttMove) 
 		depth--;	
 	
 
 
 
-	u8 currentMoveType;
-
 	bool isQuietMove = false;
 
+	int currentMoveType;
 	int hashf = hashfALPHA;
-	int reduce = 0, extend = 0, legalMoves = 0, newDepth = 0;
+	int reduce = 0, extend = 0, movesPlayed = 0, newDepth = 0;
 	int score = -MATE, bestScore = -MATE;
 
 	u32 bestMove = NO_MOVE, previousMove = ply == 0 ? NO_MOVE : th->moveStack[ply - 1].move;
+
 	const u32 KILLER_MOVE_1 = th->moveStack[ply].killerMoves[0];
 	const u32 KILLER_MOVE_2 = th->moveStack[ply].killerMoves[1];
 	
@@ -545,18 +544,25 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 	th->moveList[ply].moves.clear();
 	th->moveList[ply].badCaptures.clear();
 
-	while (th->moveList[ply].stage != STAGE_DONE) {
+
+	while (true) {
 
 		currentMove = getNextMove(ply, side, th, &th->moveList[ply]);
 
-		if (currentMove.move == NO_MOVE) 
-			continue;
+		if (th->moveList[ply].stage == STAGE_DONE) break;
+
+
+		assert(currentMove.move != NO_MOVE);
 
 
 		make_move(ply, currentMove.move, th);
 
 
 		if (!isKingInCheck(side, th)) {
+
+
+			movesPlayed++;
+
 
 			currentMoveType = move_type(currentMove.move);
 
@@ -574,8 +580,7 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 
 
 			// Pruning 
-			
-			if (	legalMoves > 0
+			if (	movesPlayed > 1
 				&&	!IS_ROOT_NODE 
 				&&	!IS_PV_NODE
 				&&	!IS_IN_CHECK 
@@ -594,7 +599,7 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 
 					// Late move pruning
 					if (	depth <= LMP_MAX_DEPTH 
-						&&	legalMoves >= LMP_BASE * depth) {
+						&&	movesPlayed >= LMP_BASE * depth) {
 
 						th->moveList[ply].skipQuiets = true;
 
@@ -621,7 +626,7 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 	        	&&	IS_MAIN_THREAD
 	        	&&	th->canReportCurrMove) {	
 
-	        	reportCurrentMove(side, si->realDepth, legalMoves + 1, currentMove.move);
+	        	reportCurrentMove(side, si->realDepth, movesPlayed, currentMove.move);
 	        }
 
 
@@ -670,7 +675,7 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 			searchInfo.isNullMoveAllowed = true;
 
 
-			if (legalMoves == 0) {	// Principal Variation Search
+			if (movesPlayed <= 1) {	// Principal Variation Search
 
 				searchInfo.depth = newDepth;
 
@@ -680,7 +685,7 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 				// Late Move Reductions (Under observation)
 
 				if (	depth > 2
-					&&	legalMoves > 3
+					&&	movesPlayed > 3
 					&&	isQuietMove) {
 					
 			        
@@ -722,8 +727,6 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 
 
 			unmake_move(ply, currentMove.move, th);
-
-			legalMoves++;
 
 
 			if (score > bestScore) {
@@ -776,7 +779,7 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 	}
 
 
-	if (legalMoves == 0) { // mate and stalemate check
+	if (movesPlayed == 0) { // mate and stalemate check
 
 		return IS_IN_CHECK ? -mate : 0;
 	}
@@ -883,7 +886,7 @@ int quiescenseSearch(const int ply, const int side, int alpha, int beta, SearchT
 	th->moveStack[ply].castleFlags = th->moveStack[ply - 1].castleFlags;
 
 
-	const int Q_FUTILITY_BASE = eval + Q_DELTA; // ( eval = Under observation)
+	const int Q_FUTILITY_BASE = sEval + Q_DELTA; 
 
 	const int num_opp_pieces = __builtin_popcountll(OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 
@@ -901,30 +904,42 @@ int quiescenseSearch(const int ply, const int side, int alpha, int beta, SearchT
 	th->moveList[ply].moves.clear();
 	th->moveList[ply].badCaptures.clear();
 
-	int capPiece, legalMoves = 0;
+	int capPiece, movesPlayed = 0;
 
 
-	while (th->moveList[ply].stage < PLAY_BAD_CAPTURES) {
+	while (true) {
 
 		currentMove = getNextMove(ply, side, th, &th->moveList[ply]);
 
-		if (currentMove.move == NO_MOVE) 
-			continue;
-		
-		
-		capPiece = cPieceType(currentMove.move);
- 		if (capPiece != DUMMY && legalMoves > 0) {
+		if (th->moveList[ply].stage >= PLAY_BAD_CAPTURES) break;
 
-			// Delta pruning
-	 		if (num_opp_pieces > 3 && Q_FUTILITY_BASE + seeVal[capPiece] <= alpha) continue;
- 		}
-				
+		assert(currentMove.move != NO_MOVE);
 
 		make_move(ply, currentMove.move, th);
 
+		
+
 		if (!isKingInCheck(side, th)) {
 
-			legalMoves++;
+
+			movesPlayed++;
+
+			capPiece = cPieceType(currentMove.move);
+
+	 		// Pruning
+	 		if (	movesPlayed > 1
+	 			&&	capPiece != DUMMY
+	 			&&	move_type(currentMove.move) != MOVE_PROMOTION) {
+
+				// Delta pruning
+		 		if (num_opp_pieces > 3 && Q_FUTILITY_BASE + seeVal[capPiece] <= alpha) {
+
+					unmake_move(ply, currentMove.move, th);
+
+		 			continue;
+		 		}
+	 		}
+
 
 			int score = -quiescenseSearch(ply + 1, OPP, -beta, -alpha, th, &line);
 
