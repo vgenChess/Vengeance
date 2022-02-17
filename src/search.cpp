@@ -395,6 +395,7 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 	const bool IS_IN_CHECK = isKingInCheck(side, th);
 
     int sEval = IS_IN_CHECK ? VAL_UNKNOWN : (ttMatch ? tt->sEval : nn_eval(&nnue, th, (side == WHITE ? 0 : 1)));
+    // int sEval = IS_IN_CHECK ? VAL_UNKNOWN : (ttMatch ? tt->sEval : fullEval(side, th));
 	
 	if (!ttMatch) recordHash(NO_MOVE, NO_DEPTH, VAL_UNKNOWN, NO_BOUND, sEval, th);		
 	
@@ -837,8 +838,10 @@ int quiescenseSearch(const int ply, const int side, int alpha, int beta, SearchT
 
 
 
-	if (ply >= MAX_PLY - 1) 
+	if (ply >= MAX_PLY - 1) {
+		// return fullEval(side, th);
 		return nn_eval(&nnue, th, (side == WHITE ? 0 : 1));
+	}
 
 
 
@@ -863,13 +866,13 @@ int quiescenseSearch(const int ply, const int side, int alpha, int beta, SearchT
 	}
 
 
-
 	u32 bestMove = NO_MOVE;
 	int bestScore = -MATE;
 	int sEval;
 
 	// pull cached eval if it exists
 	int eval = sEval = (ttMatch && tt->sEval != VAL_UNKNOWN) ? tt->sEval : nn_eval(&nnue, th, (side == WHITE ? 0 : 1));
+	// int eval = sEval = (ttMatch && tt->sEval != VAL_UNKNOWN) ? tt->sEval : fullEval(side, th);
 	
 	if (!ttMatch) recordHash(NO_MOVE, NO_DEPTH, VAL_UNKNOWN, NO_BOUND, eval, th);		
 	
@@ -917,7 +920,7 @@ int quiescenseSearch(const int ply, const int side, int alpha, int beta, SearchT
 
 		make_move(ply, currentMove.move, th);
 
-		
+
 
 		if (!isKingInCheck(side, th)) {
 
