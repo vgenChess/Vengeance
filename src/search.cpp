@@ -709,7 +709,6 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 	        	int r = std::min(depth - 1, std::max(reduce, 1));	// TODO rewrite logic
 
 
-
 	        	searchInfo.depth = newDepth - r;	
 
 				score = -alphabetaSearch(-alpha - 1, -alpha, th, &line, &searchInfo, mate - 1);			
