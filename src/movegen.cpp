@@ -456,29 +456,40 @@ bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
 
     if (moveType == MOVE_CASTLE) { // Todo check logic
 
-
-        u64 inBetweenStraightLineBB = inBetween(fromSq, toSq);
-        
-        if (inBetweenStraightLineBB & th->occupied) return false;            
-   
-
         u8 castleFlags = th->moveStack[ply].castleFlags;
 
         u8 castleDirection = castleDir(move);
     
         if (castleDirection == WHITE_CASTLE_QUEEN_SIDE) {
-            
+
+            u64 inBetweenStraightLineBB = inBetween(4, 0);
+        
+            if (inBetweenStraightLineBB & th->occupied) return false;            
+        
             return castleFlags & CASTLE_FLAG_WHITE_QUEEN;
         } 
         else if (castleDirection == WHITE_CASTLE_KING_SIDE) {
 
+            u64 inBetweenStraightLineBB = inBetween(4, 7);
+        
+            if (inBetweenStraightLineBB & th->occupied) return false;            
+        
             return castleFlags & CASTLE_FLAG_WHITE_KING;
         }
         else if (castleDirection == BLACK_CASTLE_QUEEN_SIDE) {
-
+            
+            u64 inBetweenStraightLineBB = inBetween(60, 56);
+            
+            if (inBetweenStraightLineBB & th->occupied) return false;            
+        
             return castleFlags & CASTLE_FLAG_BLACK_QUEEN;
         }
         else if (castleDirection == BLACK_CASTLE_KING_SIDE) {
+
+            u64 inBetweenStraightLineBB = inBetween(60, 63);
+        
+            if (inBetweenStraightLineBB & th->occupied) return false;            
+        
 
             return castleFlags & CASTLE_FLAG_BLACK_KING;
         }
@@ -504,7 +515,7 @@ bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
 }
 
 
-int GetTopIdx(std::vector<Move> &moves) {
+int getTopIndex(std::vector<Move> &moves) {
   
     int m = 0;
     int n = moves.size();
@@ -599,7 +610,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
             if (moveList->moves.size() > 0) {
 
-                int index = GetTopIdx(moveList->moves);
+                int index = getTopIndex(moveList->moves);
                 
                 Move m = moveList->moves[index];
 
@@ -705,7 +716,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
             if (moveList->moves.size() > 0) {
 
-                int index = GetTopIdx(moveList->moves);
+                int index = getTopIndex(moveList->moves);
                 
                 Move m = moveList->moves[index];
                 
@@ -729,7 +740,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
             if (moveList->badCaptures.size() > 0) {
 
-                int index = GetTopIdx(moveList->badCaptures);
+                int index = getTopIndex(moveList->badCaptures);
                     
                 Move m = moveList->badCaptures[index];
 
@@ -766,7 +777,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
             if (    !moveList->skipQuiets
                 &&  moveList->moves.size() > 0) {
 
-                int index = GetTopIdx(moveList->moves);
+                int index = getTopIndex(moveList->moves);
                     
                 Move m = moveList->moves[index];
 
@@ -800,7 +811,6 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
             return noMove;
     }
-
 
     Move noMove;
     noMove.move = NO_MOVE;
