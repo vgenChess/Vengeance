@@ -417,30 +417,32 @@ bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
 
         if (moveType == MOVE_DOUBLE_PUSH) {
 
-            u64 inBetweenStraightLineBB = inBetween(fromSq, toSq);
-            
-            if (inBetweenStraightLineBB & th->occupied) return false; // pawn's path is blocked       
+            if (inBetween(fromSq, toSq) & th->occupied) 
+                return false; // pawn's path is blocked       
         }
 
         if (piece == ROOKS) {
 
             u64 rAttacks = Rmagic(fromSq, th->occupied);
 
-            if (!(rAttacks & (1ULL << toSq))) return false; // rook's path is blocked
+            if (!(rAttacks & (1ULL << toSq))) 
+                return false; // rook's path is blocked
         }
 
         if (piece == BISHOPS) {
 
             u64 bAttacks = Bmagic(fromSq , th->occupied);
 
-            if (!(bAttacks & (1ULL << toSq))) return false; // bishop's path is blocked
+            if (!(bAttacks & (1ULL << toSq))) 
+                return false; // bishop's path is blocked
         }
 
         if (piece == QUEEN) {
 
             u64 qAttacks = Qmagic(fromSq, th->occupied);
 
-            if (!(qAttacks & (1ULL << toSq))) return false; // queen's path is blocked
+            if (!(qAttacks & (1ULL << toSq))) 
+                return false; // queen's path is blocked
         }
 
         // finally check for pieces on their squares

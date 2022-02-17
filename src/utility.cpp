@@ -189,47 +189,48 @@ void clearAllBitBoards(Thread *th) {
 bool isKingInCheck(u8 side, Thread *th) {
     
     const u8 opponent = side ^ 1;      
-    const int square = __builtin_ctzll(side ? th->blackPieceBB[KING] : th->whitePieceBB[KING]);
-    
+    const int kingSq = __builtin_ctzll(side ? th->blackPieceBB[KING] : th->whitePieceBB[KING]);
+    u64 attacks;
+
     // pawn attacks
-    if (side) {
-
-        if((((index_bb[square] >> 7) & NOT_A_FILE) | ((index_bb[square] >> 9) & NOT_H_FILE)) & th->whitePieceBB[PAWNS]) {
-            
-            return true;
-        }
-    } else {
-        
-        if((((index_bb[square] << 7) & NOT_H_FILE) | ((index_bb[square] << 9) & NOT_A_FILE)) & th->blackPieceBB[PAWNS]) {
-
-            return true;
-        }
-    }
+    attacks = opponent ?
+        bPawnWestAttacks(th->blackPieceBB[PAWNS]) | bPawnEastAttacks(th->blackPieceBB[PAWNS]): 
+        wPawnWestAttacks(th->whitePieceBB[PAWNS]) | wPawnEastAttacks(th->whitePieceBB[PAWNS]);
+    
+    if (attacks & (1ULL << kingSq)) 
+        return true;
     
     // knight attacks
-    u64 attacks = get_knight_attacks(square);
-    if (attacks & (opponent ? th->blackPieceBB[KNIGHTS] : th->whitePieceBB[KNIGHTS]))    return true;
+    attacks = get_knight_attacks(kingSq);
+    if (attacks & (opponent ? th->blackPieceBB[KNIGHTS] : th->whitePieceBB[KNIGHTS])) 
+        return true;
 
     // bishop and queen attacks
-    attacks = Bmagic(square, th->occupied);
-    if (attacks & (opponent ? th->blackPieceBB[BISHOPS] : th->whitePieceBB[BISHOPS])) return true;
-    if (attacks & (opponent ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN])) return true;
+    attacks = Bmagic(kingSq, th->occupied);
+    if (attacks & (opponent ? th->blackPieceBB[BISHOPS] : th->whitePieceBB[BISHOPS])) 
+        return true;
+
+    if (attacks & (opponent ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN])) 
+        return true;
     
     // rook and queen attacks
-    attacks = Rmagic(square, th->occupied);
-    if (attacks & (opponent ? th->blackPieceBB[ROOKS] : th->whitePieceBB[ROOKS])) return true;
-    if (attacks & (opponent ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN])) return true;
+    attacks = Rmagic(kingSq, th->occupied);
+    if (attacks & (opponent ? th->blackPieceBB[ROOKS] : th->whitePieceBB[ROOKS])) 
+        return true;
+    
+    if (attacks & (opponent ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN])) 
+        return true;
 
     // king attacks
-    attacks = get_king_attacks(square);
-    if (attacks & (opponent ? th->blackPieceBB[KING] : th->whitePieceBB[KING]))  return true;	
-
+    attacks = get_king_attacks(kingSq);
+    if (attacks & (opponent ? th->blackPieceBB[KING] : th->whitePieceBB[KING])) 
+        return true;	
 
     return false;
 }
 
 
-/* function to check if a square is attacked */
+/* function to check if a kingSq is attacked */
 
 bool isSqAttacked(u8 sq, u8 side, Thread *th) {
     
@@ -253,7 +254,7 @@ bool isSqAttacked(u8 sq, u8 side, Thread *th) {
         return true;
     }
     
-    /* check if a bishop is attacking a square */
+    /* check if a bishop is attacking a kingSq */
     
     attacks = Bmagic(sq, th->occupied);
     
@@ -262,7 +263,7 @@ bool isSqAttacked(u8 sq, u8 side, Thread *th) {
         return true;
     }
     
-    /* check if a knight is attacking a square */
+    /* check if a knight is attacking a kingSq */
     
     attacks = get_knight_attacks(sq);
     
@@ -271,7 +272,7 @@ bool isSqAttacked(u8 sq, u8 side, Thread *th) {
         return true;
     }
     
-    /* check if a rook is attacking a square */
+    /* check if a rook is attacking a kingSq */
     
     attacks = Rmagic(sq, th->occupied);
     
@@ -280,7 +281,7 @@ bool isSqAttacked(u8 sq, u8 side, Thread *th) {
         return true;
     }
     
-    /* check if a pawn is attacking a square */
+    /* check if a pawn is attacking a kingSq */
     
     if (side == WHITE) {
         
@@ -1047,7 +1048,7 @@ u64 inBetweenOnTheFly(u8 sq1, u8 sq2) {
    line += 2 * ((   (rank  &  7) - 1) >> 58); /* b1g1 if same rank */
    line += (((rank - file) & 15) - 1) & b2g7; /* b2g7 if same diagonal */
    line += (((rank + file) & 15) - 1) & h1b7; /* h1b7 if same antidiag */
-   line *= btwn & -btwn; /* mul acts like shift by smaller square */
+   line *= btwn & -btwn; /* mul acts like shift by smaller kingSq */
    return line & btwn;   /* return the bits on that line in-between */
 }
 
