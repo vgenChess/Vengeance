@@ -253,13 +253,13 @@ enum {
 enum Stage {
 
 	PLAY_HASH_MOVE,
-	GEN_PROMOTIONS,
-	PLAY_PROMOTIONS,
 	GEN_CAPTURES,
 	PLAY_CAPTURES,
 	PLAY_KILLER_MOVE_1,
 	PLAY_KILLER_MOVE_2,
 	PLAY_COUNTER_MOVE,
+	GEN_PROMOTIONS,
+	PLAY_PROMOTIONS,
 	PLAY_BAD_CAPTURES,
 	GEN_QUIETS,
 	PLAY_QUIETS,
@@ -331,6 +331,7 @@ typedef struct {
 
 typedef struct {
 
+	bool skipQuiets;
 	int stage;
 	u32 ttMove, counterMove;
 

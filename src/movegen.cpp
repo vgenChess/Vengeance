@@ -568,7 +568,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
         case PLAY_HASH_MOVE : {
 
-            moveList->stage = GEN_PROMOTIONS;
+            moveList->stage = GEN_CAPTURES;
 
             if (isValidMove(side, ply, moveList->ttMove, th)) {
                     
@@ -580,46 +580,6 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
             }
         }
         
-        // fallthrough
-
-
-        case GEN_PROMOTIONS : {
-
-            moveList->moves.clear();
-
-            genPromotionsAttacks(moveList->moves, side, th);
-            genPromotionsNormal(moveList->moves, side, th);
-
-            for (auto &m : moveList->moves) {
-
-                m.score = 1000; // give equal score for promotions
-            }
-            
-            moveList->stage = PLAY_PROMOTIONS;              
-        }
-        
-        //fallthrough 
-
-        case PLAY_PROMOTIONS : {
-
-            if (moveList->moves.size() > 0) {
-
-                int index = GetTopIdx(moveList->moves);
-                
-                Move m = moveList->moves[index];
-                
-                moveList->moves.erase(moveList->moves.begin() + index);
-                    
-                if (m.move == moveList->ttMove) {
-    
-                    return getNextMove(ply, side, th, moveList);
-                }
-
-                return m;
-            }
-
-            moveList->stage = GEN_CAPTURES;
-        }
         
         //fallthrough
 
@@ -671,7 +631,8 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
             u32 killerMove1 = th->moveStack[ply].killerMoves[0];
 
-            if (    killerMove1 != moveList->ttMove
+            if (    !moveList->skipQuiets
+                &&  killerMove1 != moveList->ttMove
                 &&  isValidMove(side, ply, killerMove1, th)) {
                     
                 Move m;
@@ -690,7 +651,8 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
             u32 killerMove2 = th->moveStack[ply].killerMoves[1];
 
-            if (    killerMove2 != moveList->ttMove
+            if (    !moveList->skipQuiets    
+                &&  killerMove2 != moveList->ttMove
                 &&  isValidMove(side, ply, killerMove2, th)) {
                     
                 Move m;
@@ -701,13 +663,15 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
             }
         }
 
+
         // fallthrough
-        
+
         case PLAY_COUNTER_MOVE : {
 
-            moveList->stage = PLAY_BAD_CAPTURES;
+            moveList->stage = GEN_PROMOTIONS;
 
-            if (isValidMove(side, ply, moveList->counterMove, th)) {
+            if (    !moveList->skipQuiets
+                &&  isValidMove(side, ply, moveList->counterMove, th)) {
 
                 Move m;
 
@@ -716,7 +680,49 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
                 return m;
             }           
         }
+
+
+         // fallthrough
+        // ignore skipQuiets for promotions 
+        case GEN_PROMOTIONS : {
+
+            moveList->moves.clear();
+
+            genPromotionsAttacks(moveList->moves, side, th);
+            genPromotionsNormal(moveList->moves, side, th);
+
+            for (auto &m : moveList->moves) {
+
+                m.score = 1000; // give equal score for promotions
+            }
+            
+            moveList->stage = PLAY_PROMOTIONS;              
+        }
         
+        //fallthrough 
+
+        case PLAY_PROMOTIONS : {
+
+            if (moveList->moves.size() > 0) {
+
+                int index = GetTopIdx(moveList->moves);
+                
+                Move m = moveList->moves[index];
+                
+                moveList->moves.erase(moveList->moves.begin() + index);
+                    
+                if (m.move == moveList->ttMove) {
+    
+                    return getNextMove(ply, side, th, moveList);
+                }
+
+                return m;
+            }
+
+            moveList->stage = PLAY_BAD_CAPTURES;
+        }
+
+
         //fallthrough
 
         case PLAY_BAD_CAPTURES : {
@@ -738,15 +744,18 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
         //fallthrough
 
-        case GEN_QUIETS : {
+        case GEN_QUIETS : { // generate all non-capture moves excluding promotions
 
-            moveList->moves.clear();
+            if (!moveList->skipQuiets) {
 
-            genCastlingMoves(ply, moveList->moves, side, th);
-            generatePushes(side, moveList->moves, th);
-            
-            scoreNormalMoves(side, ply, th, moveList);
-          
+                moveList->moves.clear();
+
+                genCastlingMoves(ply, moveList->moves, side, th);
+                generatePushes(side, moveList->moves, th);
+                
+                scoreNormalMoves(side, ply, th, moveList);                 
+            }
+
             moveList->stage = PLAY_QUIETS;
         }
 
@@ -754,7 +763,8 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
         case PLAY_QUIETS : {
 
-            if (moveList->moves.size() > 0) {
+            if (    !moveList->skipQuiets
+                &&  moveList->moves.size() > 0) {
 
                 int index = GetTopIdx(moveList->moves);
                     
@@ -772,6 +782,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
                 return m;
             }
+
 
             moveList->stage = STAGE_DONE;
 

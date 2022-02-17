@@ -538,12 +538,12 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 
 	std::vector<u32> quietMovesPlayed, captureMovesPlayed;
 	
+	th->moveList[ply].skipQuiets = false;
 	th->moveList[ply].stage = PLAY_HASH_MOVE;
 	th->moveList[ply].ttMove = ttMove;
 	th->moveList[ply].counterMove = previousMove == NO_MOVE ? NO_MOVE : th->counterMove[side][from_sq(previousMove)][to_sq(previousMove)];
 	th->moveList[ply].moves.clear();
 	th->moveList[ply].badCaptures.clear();
-
 
 	while (th->moveList[ply].stage != STAGE_DONE) {
 
@@ -568,7 +568,7 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 				quietMovesPlayed.push_back(currentMove.move);
 			} else {
 
-				if (currentMoveType != MOVE_PROMOTION)	// promotion is high in the move order, no need to score it
+				if (currentMoveType != MOVE_PROMOTION)	// all promotions are scored equal with a default value during move ordering
 					captureMovesPlayed.push_back(currentMove.move);
 			}
 
@@ -585,7 +585,9 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 					
 					// Futility pruning
 					if (f_prune) {
-		
+						
+						th->moveList[ply].skipQuiets = true;
+
 						unmake_move(ply, currentMove.move, th);
 						continue;
 					}
@@ -593,6 +595,8 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 					// Late move pruning
 					if (	depth <= LMP_MAX_DEPTH 
 						&&	legalMoves >= LMP_BASE * depth) {
+
+						th->moveList[ply].skipQuiets = true;
 
 						unmake_move(ply, currentMove.move, th);
 						continue;
@@ -607,6 +611,9 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 					}
 				}	
 			}
+
+
+
 
 
 	        // report current move
@@ -887,16 +894,17 @@ int quiescenseSearch(const int ply, const int side, int alpha, int beta, SearchT
 
 	std::vector<u32> line;
 
-	th->moveList[ply].stage = GEN_PROMOTIONS;
+	th->moveList[ply].skipQuiets = true;
+	th->moveList[ply].stage = GEN_CAPTURES;
 	th->moveList[ply].ttMove = NO_MOVE;
 	th->moveList[ply].counterMove = NO_MOVE;
 	th->moveList[ply].moves.clear();
 	th->moveList[ply].badCaptures.clear();
 
-
 	int capPiece, legalMoves = 0;
 
-	while (th->moveList[ply].stage <= PLAY_CAPTURES) {
+
+	while (th->moveList[ply].stage < PLAY_BAD_CAPTURES) {
 
 		currentMove = getNextMove(ply, side, th, &th->moveList[ply]);
 
