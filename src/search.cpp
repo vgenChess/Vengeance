@@ -400,7 +400,7 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 	
 	bool improving = !IS_IN_CHECK && ply >= 2 && sEval > th->moveStack[ply - 2].sEval;
 
-	
+
 
 
 	assert (!(!IS_IN_CHECK && sEval == VAL_UNKNOWN));
@@ -874,7 +874,7 @@ int quiescenseSearch(const int ply, const int side, int alpha, int beta, SearchT
 	th->moveStack[ply].castleFlags = th->moveStack[ply - 1].castleFlags;
 
 
-	const int Q_FUTILITY_BASE = sEval + Q_DELTA;
+	const int Q_FUTILITY_BASE = eval + Q_DELTA; // ( eval = Under observation)
 
 	const int num_opp_pieces = __builtin_popcountll(OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 

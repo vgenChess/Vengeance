@@ -687,7 +687,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
         case PLAY_KILLER_MOVE_2 : {
 
-            moveList->stage = PLAY_BAD_CAPTURES;
+            moveList->stage = PLAY_COUNTER_MOVE;
 
             u32 killerMove2 = th->moveStack[ply].killerMoves[1];
 
@@ -699,6 +699,28 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
                 m.move = killerMove2;
                
                 return m;           
+            }
+        }
+
+        case PLAY_COUNTER_MOVE : {
+
+            moveList->stage = PLAY_BAD_CAPTURES;
+
+            u32 previousMove = ply == 0 ? NO_MOVE : th->moveStack[ply - 1].move;
+
+            if (previousMove != NO_MOVE) {
+
+                u32 counterMove = th->counterMove[side][from_sq(previousMove)][to_sq(previousMove)];
+
+                if (    counterMove != NO_MOVE 
+                    &&  isValidMove(side, ply, counterMove, th)) {
+
+                    Move m;
+
+                    m.move = counterMove;
+
+                    return m;
+                }           
             }
         }
         

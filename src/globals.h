@@ -259,6 +259,7 @@ enum Stage {
 	PLAY_CAPTURES,
 	PLAY_KILLER_MOVE_1,
 	PLAY_KILLER_MOVE_2,
+	PLAY_COUNTER_MOVE,
 	PLAY_BAD_CAPTURES,
 	GEN_QUIETS,
 	PLAY_QUIETS,
@@ -285,17 +286,18 @@ typedef struct {
 } Move;
 
 typedef struct {
-      
+	
+	u8 extend;
+
     u8 castleFlags;
 	u8 epFlag;
 	u8 epSquare;
+
 	u32 move;
 	u32 ttMove;
     u32 killerMoves[2];
 
     int sEval; 
-
-    u8 extend;
 } MOVE_STACK;
 
 typedef struct {
