@@ -530,7 +530,7 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 	int reduce = 0, extend = 0, legalMoves = 0, newDepth = 0;
 	int score = -MATE, bestScore = -MATE;
 
-	u32 bestMove = NO_MOVE;
+	u32 bestMove = NO_MOVE, previousMove = ply == 0 ? NO_MOVE : th->moveStack[ply - 1].move;
 	const u32 KILLER_MOVE_1 = th->moveStack[ply].killerMoves[0];
 	const u32 KILLER_MOVE_2 = th->moveStack[ply].killerMoves[1];
 	
@@ -539,6 +539,8 @@ int alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u
 	std::vector<u32> quietMovesPlayed, captureMovesPlayed;
 	
 	th->moveList[ply].stage = PLAY_HASH_MOVE;
+	th->moveList[ply].ttMove = ttMove;
+	th->moveList[ply].counterMove = previousMove == NO_MOVE ? NO_MOVE : th->counterMove[side][from_sq(previousMove)][to_sq(previousMove)];
 	th->moveList[ply].moves.clear();
 	th->moveList[ply].badCaptures.clear();
 
@@ -886,6 +888,8 @@ int quiescenseSearch(const int ply, const int side, int alpha, int beta, SearchT
 	std::vector<u32> line;
 
 	th->moveList[ply].stage = GEN_PROMOTIONS;
+	th->moveList[ply].ttMove = NO_MOVE;
+	th->moveList[ply].counterMove = NO_MOVE;
 	th->moveList[ply].moves.clear();
 	th->moveList[ply].badCaptures.clear();
 

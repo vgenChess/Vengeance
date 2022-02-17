@@ -443,7 +443,7 @@ bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
             if (!(qAttacks & (1ULL << toSq))) return false;
         }
 
-        // finally check for piece on their squares
+        // finally check for pieces on their squares
         if (moveType == MOVE_NORMAL || moveType == MOVE_DOUBLE_PUSH) {
 
             return ((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & th->empty);
@@ -563,19 +563,18 @@ void scoreNormalMoves(int side, int ply, Thread *th, MOVE_LIST *moveList) {
 Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
 
+
     switch (moveList->stage) {
 
         case PLAY_HASH_MOVE : {
 
             moveList->stage = GEN_PROMOTIONS;
 
-            u32 ttMove = th->moveStack[ply].ttMove;
-
-            if (isValidMove(side, ply, ttMove, th)) {
+            if (isValidMove(side, ply, moveList->ttMove, th)) {
                     
                 Move m;
 
-                m.move = ttMove;
+                m.move = moveList->ttMove;
                 
                 return m;           
             }
@@ -611,7 +610,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
                 
                 moveList->moves.erase(moveList->moves.begin() + index);
                     
-                if (m.move == th->moveStack[ply].ttMove) {
+                if (m.move == moveList->ttMove) {
     
                     return getNextMove(ply, side, th, moveList);
                 }
@@ -646,7 +645,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
                 moveList->moves.erase(moveList->moves.begin() + index);
                 
-                if (m.move == th->moveStack[ply].ttMove) {
+                if (m.move == moveList->ttMove) {
     
                     return getNextMove(ply, side, th, moveList);
                 }
@@ -672,7 +671,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
             u32 killerMove1 = th->moveStack[ply].killerMoves[0];
 
-            if (    killerMove1 != th->moveStack[ply].ttMove
+            if (    killerMove1 != moveList->ttMove
                 &&  isValidMove(side, ply, killerMove1, th)) {
                     
                 Move m;
@@ -691,7 +690,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
             u32 killerMove2 = th->moveStack[ply].killerMoves[1];
 
-            if (    killerMove2 != th->moveStack[ply].ttMove
+            if (    killerMove2 != moveList->ttMove
                 &&  isValidMove(side, ply, killerMove2, th)) {
                     
                 Move m;
@@ -702,26 +701,20 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
             }
         }
 
+        // fallthrough
+        
         case PLAY_COUNTER_MOVE : {
 
             moveList->stage = PLAY_BAD_CAPTURES;
 
-            u32 previousMove = ply == 0 ? NO_MOVE : th->moveStack[ply - 1].move;
+            if (isValidMove(side, ply, moveList->counterMove, th)) {
 
-            if (previousMove != NO_MOVE) {
+                Move m;
 
-                u32 counterMove = th->counterMove[side][from_sq(previousMove)][to_sq(previousMove)];
+                m.move = moveList->counterMove;
 
-                if (    counterMove != NO_MOVE 
-                    &&  isValidMove(side, ply, counterMove, th)) {
-
-                    Move m;
-
-                    m.move = counterMove;
-
-                    return m;
-                }           
-            }
+                return m;
+            }           
         }
         
         //fallthrough
@@ -736,12 +729,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
                 moveList->badCaptures.erase(moveList->badCaptures.begin() + index);
 
-                if (m.move == th->moveStack[ply].ttMove) {
-                  
-                    return getNextMove(ply, side, th, moveList);
-                }
-
-                return m;
+                return m.move == moveList->ttMove ? getNextMove(ply, side, th, moveList) : m;
             }
 
             moveList->stage = GEN_QUIETS;
@@ -774,7 +762,8 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
                 moveList->moves.erase(moveList->moves.begin() + index);
 
-                if (    m.move == th->moveStack[ply].ttMove 
+                if (    m.move == moveList->ttMove 
+                    ||  m.move == moveList->counterMove
                     ||  m.move == th->moveStack[ply].killerMoves[0] 
                     ||  m.move == th->moveStack[ply].killerMoves[1]) {
                   

@@ -332,6 +332,7 @@ typedef struct {
 typedef struct {
 
 	int stage;
+	u32 ttMove, counterMove;
 
 	std::vector<Move> moves;
 	std::vector<Move> badCaptures;
