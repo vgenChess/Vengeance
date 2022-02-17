@@ -419,28 +419,28 @@ bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
 
             u64 inBetweenStraightLineBB = inBetween(fromSq, toSq);
             
-            if (inBetweenStraightLineBB & th->occupied) return false;            
+            if (inBetweenStraightLineBB & th->occupied) return false; // pawn's path is blocked       
         }
 
         if (piece == ROOKS) {
 
             u64 rAttacks = Rmagic(fromSq, th->occupied);
 
-            if (!(rAttacks & (1ULL << toSq))) return false;
+            if (!(rAttacks & (1ULL << toSq))) return false; // rook's path is blocked
         }
 
         if (piece == BISHOPS) {
 
             u64 bAttacks = Bmagic(fromSq , th->occupied);
 
-            if (!(bAttacks & (1ULL << toSq))) return false;
+            if (!(bAttacks & (1ULL << toSq))) return false; // bishop's path is blocked
         }
 
         if (piece == QUEEN) {
 
             u64 qAttacks = Qmagic(fromSq, th->occupied);
 
-            if (!(qAttacks & (1ULL << toSq))) return false;
+            if (!(qAttacks & (1ULL << toSq))) return false; // queen's path is blocked
         }
 
         // finally check for pieces on their squares
@@ -454,7 +454,7 @@ bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
         }
     }
 
-    if (moveType == MOVE_CASTLE) { // Todo check logic
+    if (moveType == MOVE_CASTLE) { 
 
         u8 castleFlags = th->moveStack[ply].castleFlags;
 
@@ -462,35 +462,30 @@ bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
     
         if (castleDirection == WHITE_CASTLE_QUEEN_SIDE) {
 
-            u64 inBetweenStraightLineBB = inBetween(4, 0);
-        
-            if (inBetweenStraightLineBB & th->occupied) return false;            
+            if (inBetween(4, 0) & th->occupied) 
+                return false;            
         
             return castleFlags & CASTLE_FLAG_WHITE_QUEEN;
         } 
         else if (castleDirection == WHITE_CASTLE_KING_SIDE) {
 
-            u64 inBetweenStraightLineBB = inBetween(4, 7);
-        
-            if (inBetweenStraightLineBB & th->occupied) return false;            
+            if (inBetween(4, 7) & th->occupied) 
+                return false;            
         
             return castleFlags & CASTLE_FLAG_WHITE_KING;
         }
         else if (castleDirection == BLACK_CASTLE_QUEEN_SIDE) {
             
-            u64 inBetweenStraightLineBB = inBetween(60, 56);
-            
-            if (inBetweenStraightLineBB & th->occupied) return false;            
+            if (inBetween(60, 56) & th->occupied) 
+                return false;            
         
             return castleFlags & CASTLE_FLAG_BLACK_QUEEN;
         }
         else if (castleDirection == BLACK_CASTLE_KING_SIDE) {
 
-            u64 inBetweenStraightLineBB = inBetween(60, 63);
+            if (inBetween(60, 63) & th->occupied) 
+                return false;            
         
-            if (inBetweenStraightLineBB & th->occupied) return false;            
-        
-
             return castleFlags & CASTLE_FLAG_BLACK_KING;
         }
     }
