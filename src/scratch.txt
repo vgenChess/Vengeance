@@ -59,4 +59,4 @@ Bugs
     - 8/8/3K4/8/4k3/8/8/5q2 b - - 5 83 (Black disconnects)
     - r3k2r/p4ppp/2Qpbq2/2p5/4P3/PNb5/1PP2PPP/R1B2RK1 b kq - 0 16 (Black makes an illegal move: e8g8)
     - 7k/2p5/1p1p4/3P4/p6p/P6P/1r3rB1/6K1 b - - 13 57 (Search explosion during checkmate search)
-    
+    - 5k2/6p1/3KPp1p/5b1P/5N2/8/8/8 b - - 3 65 (Misses promotion assisted by opponent and loses after returning a normal value)

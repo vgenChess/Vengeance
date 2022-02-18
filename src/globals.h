@@ -36,8 +36,6 @@ typedef uint64_t 	u64;
 
 #define C64(constantU64) constantU64
 
-#define MAX_MOVES 256
-
 #define WHITE 0
 #define BLACK 1
 

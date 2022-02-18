@@ -224,17 +224,14 @@ void UciLoop() {
 
     do {
 
-
         if (!getline(cin, cmd)) // Block here waiting for input or EOF 
             cmd = "quit";
 
-
         istringstream is(cmd);
-
 
         token.clear(); // Avoid a stale if getline() returns empty or blank line
         is >> skipws >> token;
-
+        
 
         if (token == "uci") {
          
