@@ -27,6 +27,7 @@
 #include "thread.h"
 #include "tuner.h"
 #include "cerebrum.h"
+#include "ucireport.h"
 
 #define NAME "V0.9"
 #define START_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -166,19 +167,14 @@ u8 parsePosition (std::string str, Thread *th) {
                 }
 
                 if (moveStr == str1) {
-
+    
                     make_move(0, move.move, th);
                     
-
                     initThread.moves_history_counter++;
                     initThread.movesHistory[initThread.moves_history_counter].hashKey = initThread.hashKey;
-    
 
-                    if (sideToMove) 
-                        sideToMove = WHITE;
-                    else 
-                        sideToMove = BLACK;
-                    
+                    sideToMove ^= 1;
+    
                     break;
                 }
             }
@@ -267,8 +263,59 @@ void UciLoop() {
         else if (token == "position") {
             
             initThread.clear();
+            initThread.initMembers();
 
-            initThread.side = parsePosition(cmd, &initThread);
+            initThread.moves_history_counter = 0;
+            initThread.movesHistory[0].hashKey = initThread.hashKey;
+            initThread.movesHistory[0].fiftyMovesCounter = 0;
+
+            u8 sideToMove = WHITE;
+
+            is>>token;
+
+            if (token == "startpos") {
+
+                is>>token;
+
+                parseFen(START_FEN, &initThread);
+
+                std::vector<Move> moves;
+
+                while (is>>token) {
+
+                    moves.clear();
+                    genMoves(0, moves, sideToMove, &initThread);
+                    
+                    for (Move m : moves) {
+
+                        if (getMoveNotation(m.move) == token) {
+
+                            make_move(0, m.move, &initThread);
+                            
+                            initThread.moves_history_counter++;
+                            initThread.movesHistory[initThread.moves_history_counter].hashKey = initThread.hashKey;
+
+                            sideToMove ^= 1;
+                            
+                            break;
+                        }
+                    }
+                }
+            } else if (token == "fen") {
+                
+                const std::string str_fen = "fen";
+                std::string tempStr;
+                
+                int pos = cmd.find(str_fen);
+
+                tempStr = cmd.substr(pos + 1 + str_fen.length());
+
+                std::cout << tempStr << "\n";
+
+                sideToMove = parseFen(tempStr, &initThread);
+            }
+
+            initThread.side = sideToMove;
         } 
 
         else if (token == "isready") {
@@ -327,7 +374,16 @@ void UciLoop() {
 
 
             // if (depthCurrent == -1) {
+    // const std::string str_fen = "fen";
+                // std::string tempStr;
+                
+                // int pos = str.find(str_fen);
 
+                // tempStr = str.substr(pos + 1 + str_fen.length());
+
+                // std::cout << tempStr << "\n";
+
+            
             //     depthCurrent = MAX_DEPTH;
             // }
             

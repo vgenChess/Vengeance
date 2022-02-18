@@ -30,8 +30,6 @@ Speculations
 
 TODO
     - Use std::fill command to clear move ordering tables
-    - Move ordering (Counter move heuristics, Follow up move, Counter move etc)
-    - Stockfish's move ordering techniques (movepick.h)
     - Evaluation Terms to add (Outpost, Knight outpost)
     - Rewrite logic for copy/paste code
     - Add tempo for eval and tuning
@@ -44,9 +42,6 @@ Needs investigation
 
 DONE (under observation)
     - Store pv in quiescense 
-    - Hash table implemention check
-            Enhancement to Hash table
-            - If you use the "replace if deeper or same depth" scheme, your table might eventually fill up with outdated deep nodes.  The solution to this is either to clear the table each time you move, or add a "sequence" field to your element, so the replacement scheme becomes, "replace if same depth, deeper, or the element pertains to an ancient search"
     - Add 50 moves rule
     
 Bugs

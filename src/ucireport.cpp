@@ -9,11 +9,10 @@
 
 std::string getMoveNotation(const u32 move) {
 
-	char str[10];
-	str[0] = '\0';
+	std::string str;
 
-	strcat(str, algebricPos(from_sq(move)));
-	strcat(str, algebricPos(to_sq(move)));
+	str += algebricPos(from_sq(move));
+	str += algebricPos(to_sq(move));
 
     if (move_type(move) == MOVE_PROMOTION) {
 
@@ -21,23 +20,23 @@ std::string getMoveNotation(const u32 move) {
 
         if  (pt == PROMOTE_TO_ROOK) {
                 
-            strcat(str, "r");
+	    	str += 'r';
         }
         else if (pt == PROMOTE_TO_BISHOP) {
                 
-            strcat(str, "b");
+	    	str += 'b';
         }   
         else if (pt == PROMOTE_TO_KNIGHT) {
                 
-            strcat(str, "n");
+	    	str += 'n';
         } 
         else {
                 
-            strcat(str, "q");
+	    	str += 'q';
         }
     }
 
-    return std::string(str);
+    return str;
 }
 
 void reportBestMove() {

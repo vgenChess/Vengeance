@@ -12,7 +12,7 @@ void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> 
 
 	int32_t hScore;
 
-	u32 move, previousMove;
+	u32 previousMove;
 
 	// History Heuristics
 	for (auto &move : quietMovesPlayed) { 
@@ -46,8 +46,7 @@ void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,std::vector
 	int32_t chScore;
 
 	uint16_t atk_piece, to, cap_piece;
-	u32 move, previousMove;
-
+	
 	u8 mt;
 
 	// Capture History Heuristics	

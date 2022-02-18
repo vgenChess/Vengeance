@@ -41,6 +41,7 @@ class Thread {
 		NnueAccumulator accumulator;
  		
 		explicit Thread();
+		void initMembers();
 		void clear();
 };
 

@@ -8,7 +8,6 @@
 Thread initThread;
 SearchThreadPool Threads; // Global object
 
-
 void SearchThreadPool::set(size_t requested) {
 
 	if (size() > 0)   // destroy any existing thread(s)
@@ -103,21 +102,13 @@ uint64_t SearchThreadPool::getTotalTTHits() const {
 
 
 
-
-
-
-
-
-
-
 Thread::Thread() {
 
 	this->moveList = std::vector<MOVE_LIST> (MAX_PLY);
-
 	this->pvLine = std::vector<PV> (MAX_PLY);
-	this->moveStack = std::vector<MOVE_STACK> (MAX_PLY);
-	this->undoMoveStack = std::vector<UNDO_MOVE_STACK> (MAX_PLY);
-	this->movesHistory = std::vector<MOVES_HISTORY> (MAX_PLY);
+	this->moveStack = std::vector<MOVE_STACK> (MAX_PLY + 4);
+	this->undoMoveStack = std::vector<UNDO_MOVE_STACK> (MAX_PLY + 4);
+	this->movesHistory = std::vector<MOVES_HISTORY> (8192);
 	this->pawnHashTable = std::vector<PAWNS_HASH> (PAWN_HASH_TABLE_SIZE);
 	this->evalHashTable = std::vector<EVAL_HASH> (EVAL_HASH_TABLE_SIZE);
 
@@ -141,10 +132,39 @@ Thread::Thread() {
 	this->empty = 0;
 }
 
+void Thread::initMembers() {
+
+	this->moveList = std::vector<MOVE_LIST> (MAX_PLY);
+	this->pvLine = std::vector<PV> (MAX_PLY);
+	this->moveStack = std::vector<MOVE_STACK> (MAX_PLY + 4);
+	this->undoMoveStack = std::vector<UNDO_MOVE_STACK> (MAX_PLY + 4);
+	this->movesHistory = std::vector<MOVES_HISTORY> (8192);
+	this->pawnHashTable = std::vector<PAWNS_HASH> (PAWN_HASH_TABLE_SIZE);
+	this->evalHashTable = std::vector<EVAL_HASH> (EVAL_HASH_TABLE_SIZE);
+
+	for (int i = 0; i < 2; ++i) {
+		for (int j = 0; j < 64; ++j) {
+			for (int k = 0; k < 64; ++k) {
+
+				this->historyScore[i][j][k] = 0;
+				this->counterMove[i][j][k] = 0;
+			}
+		}
+	}
+
+	for (int i = 0; i < MAX_PIECES; ++i) {
+		
+		this->whitePieceBB[i] = 0;
+		this->blackPieceBB[i] = 0;
+	}
+
+	this->occupied = 0;
+	this->empty = 0;	
+}
+
 void Thread::clear() {
 
 	this->moveList.clear();
-
 	this->pvLine.clear();
 	this->moveStack.clear();
 	this->undoMoveStack.clear();
@@ -264,7 +284,6 @@ void SearchThread::idle_loop() {
 
 void SearchThread::init() {
 
-
 	this->side = initThread.side;
 
 	pvLine.clear();
@@ -273,16 +292,16 @@ void SearchThread::init() {
 	movesHistory.clear();
 
 	pvLine = std::vector<PV> (MAX_PLY);
-	moveStack = std::vector<MOVE_STACK> (MAX_PLY);
-	undoMoveStack = std::vector<UNDO_MOVE_STACK> (MAX_PLY);
-	movesHistory = std::vector<MOVES_HISTORY> (MAX_PLY);
+	moveStack = std::vector<MOVE_STACK> (MAX_PLY + 4);
+	undoMoveStack = std::vector<UNDO_MOVE_STACK> (MAX_PLY + 4);
+	movesHistory = std::vector<MOVES_HISTORY> (8192);
 
 	//TODO use one line code to copy all the init struct to other struct, like memcopy etc
 	moveStack[0].castleFlags = initThread.moveStack[0].castleFlags;
 	moveStack[0].epFlag = initThread.moveStack[0].epFlag;
 	moveStack[0].epSquare = initThread.moveStack[0].epSquare;
 
-	for (int i = 0; i < MAX_PLY; i++) {
+	for (int i = 0; i < 8192; i++) {
 
 		movesHistory[i].hashKey = initThread.movesHistory[i].hashKey;
 		movesHistory[i].fiftyMovesCounter = initThread.movesHistory[i].fiftyMovesCounter;
@@ -301,9 +320,6 @@ void SearchThread::init() {
 
 	hashKey = initThread.hashKey;
 	pawnsHashKey = initThread.pawnsHashKey;
-
-    //memcpy(&accumulator, &initThread.accumulator,
-    //	sizeof(initThread.accumulator));
 
 	nn_inputs_upd_all(&nnue, this); 
 }

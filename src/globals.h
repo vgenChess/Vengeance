@@ -62,7 +62,8 @@ typedef uint64_t 	u64;
 #define FLIP_TB(sq) ((sq)^0x38) // Flip top-to-bottom (A8==A1, A7==A2 etc.)
 #define NUMBER_OF_TBLS  12
 
-#define MAX_PLY 256
+#define MAX_PLY 128
+#define MAX_MOVES 256
 
 #define CASTLE_FLAG_WHITE_KING		2
 #define CASTLE_FLAG_WHITE_QUEEN		1

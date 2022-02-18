@@ -108,17 +108,17 @@ void make_move(int ply, u32 move, Thread *th) {
 			nn_inputs_upd_all(&nnue, th);
 	 	 }	else {
 		
-			if (	piece > 0) {
+			if (piece > 0) {
           
 				nn_inputs_mov_piece(&nnue, th, piece - 1,
 					(sideToMove== WHITE ? 0 : 1), fromSq, toSq);
      		}	   
      	
-			if (	mtype==MOVE_CAPTURE && c_piece > 0)	{
+			if (mtype==MOVE_CAPTURE && c_piece > 0)	{
        
-   	  	     nn_inputs_del_piece(&nnue, th, c_piece - 1, 	
+   	  	    	nn_inputs_del_piece(&nnue, th, c_piece - 1, 	
 		 	 		(sideToMove == WHITE ? 1 : 0), toSq);
-   	  	}
+   	  		}
  		}
 	}
 

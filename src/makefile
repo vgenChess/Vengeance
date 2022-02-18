@@ -26,7 +26,12 @@ avx2:
 	$(CC) $(CFLAGS) $(SRC) $(AVX2) -o $(EXE)
 	#(RFLAGS results in a seg fault)
 
+avx2d:
+	$(CC) $(CFLAGS) $(SRC) $(AVX2) -g -D DEBUG -o $(EXE)	
+
 all: avx2
+
+debug: avx2d
 
 clean:
 	rm -rf $(EXE)  $(OBJECTS) 
