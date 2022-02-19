@@ -1,4 +1,4 @@
-#include "globals.h"
+#include "functions.h"
 
 int pawnPSQT[64] = {
 

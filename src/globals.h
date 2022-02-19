@@ -84,18 +84,6 @@ typedef uint64_t 	u64;
 #define MOVE_CASTLE 		4
 #define MOVE_PROMOTION 		5
 
-
-/* Extract data from a move structure */
-#define promType(move)		(move & 0x3000000) >> 24
-#define castleDir(move)		(move & 0xC00000) >> 22
-#define move_type(move)     (move & 0x380000) >> 19
-#define colorType(move)     (move & 0x40000) >> 18
-#define cPieceType(move)    (move & 0x38000) >> 15
-#define pieceType(move)     (move & 0x7000) >> 12
-#define from_sq(move)       (move & 0xFC0) >> 6
-#define to_sq(move)          move & 0x3F
-
-
 #define RANK_1 0x00000000000000FFU
 #define RANK_2 0x000000000000FF00U
 #define RANK_3 0x0000000000FF0000U
@@ -167,8 +155,6 @@ typedef uint64_t 	u64;
 #define NN_RELU_MIN 0.0f
 #define NN_RELU_MAX 1.0f
 
-
-
 /****************************************************************************/
 /** TYPE DEFINITIONS                                                       **/
 /****************************************************************************/
@@ -219,11 +205,6 @@ struct  alignas(64)  NnueAccumulator  {
  int16_t  v[2][NN_SIZE]; 
  int16_t*  operator[](Color  perspective)  { return  v[perspective]; }
 };*/
-
-
-
-
-
 
 
 enum {
@@ -399,6 +380,7 @@ extern u64 arrInBetween[64][64];
 
 
 
+
 // Eval weights
 
 extern int weight_pawn;
@@ -454,7 +436,6 @@ extern int bishopPSQT[64];
 extern int rookPSQT[64];
 extern int queenPSQT[64];
 extern int kingPSQT[64];
-
 
 
 extern int weight_center_control;

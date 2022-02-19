@@ -25,7 +25,6 @@
 #include "movegen.h"
 #include "make_unmake.h"
 #include "utility.h"
-#include "vtime.h"
 #include "nonslidingmoves.h"
 #include "magicmoves.h"
 #include "hash.h"

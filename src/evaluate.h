@@ -353,12 +353,6 @@ inline int count_1s_max_15(u64 b) {
   return int(v);
 }
 
-#define MakeScore(mg, eg) ((int)((unsigned int)(eg) << 16) + (mg))
-#define ScoreMG(s) ((int16_t)((uint16_t)((unsigned)((s)))))
-#define ScoreEG(s) ((int16_t)((uint16_t)((unsigned)((s) + 0x8000) >> 16)))
-
-#define S(mg, eg) (MakeScore((mg), (eg)))
-
 int evaluateNNUE(u8 side, Thread *th);
 
 

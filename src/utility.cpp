@@ -19,7 +19,7 @@
 #include "make_unmake.h"
 #include "movegen.h"
 #include "perft.h"
-#include "vtime.h"
+#include "functions.h"
 
 u64 arrInBetween[64][64];
 
@@ -850,9 +850,6 @@ void checkUp() {
 
         return;
     }
-
-
-    readInput();
 }
 
 

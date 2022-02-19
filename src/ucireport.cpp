@@ -6,6 +6,7 @@
 #include "ucireport.h"
 #include "utility.h"
 #include "thread.h"
+#include "functions.h"
 
 std::string algebricSq[64] = {
 

@@ -19,7 +19,6 @@
 #include "make_unmake.h"
 #include "fen.h"
 #include "movegen.h"
-#include "vtime.h"
 #include "search.h"
 #include "perft.h"
 #include "hash.h"

@@ -26,6 +26,7 @@
 #include "NnueEval.h"
 #include "cerebrum.h"
 #include "fen.h"
+#include "functions.h"
 
 NN_Network nnue;
 

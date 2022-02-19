@@ -2,6 +2,7 @@
 #define weights_h 
 
 #include "evaluate.h"
+#include "functions.h" 
 
 int 
 

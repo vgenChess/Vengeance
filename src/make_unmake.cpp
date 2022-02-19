@@ -14,6 +14,7 @@
 #include "hash.h"
 #include "thread.h"
 #include "cerebrum.h"
+#include "functions.h"
 
 
 u64 KEY_SIDE_TO_MOVE;

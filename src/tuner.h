@@ -9,9 +9,6 @@
 #define NTERMS 481 + 2 + 2 + 1 + 10	+ 1 + 1 + 1 + 1   		
 #define KPRECISION 10
 
-#define MIN(A, B) ((A) < (B) ? (A) : (B))
-#define MAX(A, B) ((A) > (B) ? (A) : (B))
-
 enum { NORMAL, SAFETY };
 enum { MG, EG };
 

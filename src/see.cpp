@@ -3,6 +3,7 @@
 
 #include "see.h"
 #include "movegen.h"
+#include "functions.h"
 
 int SEE_VALUE[8] = {0, 100, 300, 300, 500, 900, 2000, 0}; 
 

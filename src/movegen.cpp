@@ -17,6 +17,7 @@
 #include "search.h"
 #include "see.h"
 #include "constants.h"
+#include "functions.h"
 
 typedef unsigned char u8;
 

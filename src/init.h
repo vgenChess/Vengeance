@@ -70,31 +70,6 @@ void initPawnZobristKeys() {
 }
 
 
-
-// void init_piece_bb() {
-    
-//     /* default positions of pieces on board */
-    
-//     whitePieceBB[KING] = 0x0000000000000010U;
-//     whitePieceBB[QUEEN] = 0x0000000000000008U;
-//     whitePieceBB[BISHOPS] = 0x0000000000000024U;
-//     whitePieceBB[KNIGHTS] = 0x0000000000000042U;
-//     whitePieceBB[ROOKS] = 0x0000000000000081U;
-//     whitePieceBB[PAWNS] = 0x000000000000FF00U;
-//     whitePieceBB[PIECES] = 0x000000000000FFFFU;
-    
-//     blackPieceBB[KING] = 0x1000000000000000U;
-//     blackPieceBB[QUEEN] = 0x0800000000000000U;
-//     blackPieceBB[BISHOPS] = 0x2400000000000000U;
-//     blackPieceBB[KNIGHTS] = 0x4200000000000000U;
-//     blackPieceBB[ROOKS] = 0x8100000000000000U;
-//     blackPieceBB[PAWNS] = 0x00FF000000000000U;
-//     blackPieceBB[PIECES] = 0xFFFF000000000000U;
-    
-//     occupied = 0xFFFF00000000FFFFU;
-//     empty = 0x0000FFFFFFFF0000U;
-// }
-
 void init_index_bb() {
     
     index_bb[0] = 0x0000000000000001U;

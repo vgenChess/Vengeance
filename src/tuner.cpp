@@ -20,6 +20,7 @@
 #include "make_unmake.h"
 #include "utility.h"
 #include "fen.h"
+#include "functions.h"
 
 
 #define MAXEPOCHS      1000000000
