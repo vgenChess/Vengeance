@@ -15,7 +15,5 @@
 #include "thread.h"
 
 void UciLoop(void);
-u8 addFileNumber(char ch);
-u8 parsePosition (std::string str, Thread *th);
 
 #endif /* uci_h */

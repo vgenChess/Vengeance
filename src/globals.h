@@ -286,7 +286,7 @@ typedef struct {
 
 typedef struct {
 	
-	u8 extend;
+	float extension;
 
     u8 castleFlags;
 	u8 epFlag;

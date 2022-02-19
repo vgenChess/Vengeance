@@ -33,160 +33,11 @@
 #define START_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 bool quit;
-
-int option_hash_size;
 bool NNUE = false;
 
+int option_hash_size;
+
 int totalTimeLeft;
-
-u8 addFileNumber(char ch) {
-    
-    switch (ch) {
-
-        case 'a':
-            return 0;
-        case 'b':
-            return 1;
-        case 'c':
-            return 2;
-        case 'd':
-            return 3;
-        case 'e':
-            return 4;
-        case 'f':
-            return 5;
-        case 'g':
-            return 6;
-        case 'h':
-            return 7;
-    }
-    
-    return 0;
-}
-
-
-// e2e4
-u8 parsePosition (std::string str, Thread *th) {
-  
-    u8 sideToMove = WHITE;
-
-    const std::string str_fen = "fen";
-    const std::string str_startpos = "startpos";
-    const std::string str_moves = "moves";
-
-    std::string tempStr;
-
-
-    if (str.find(str_fen) != std::string::npos) {
-
-        int pos = str.find(str_fen);
-
-        tempStr = str.substr(pos + 1 + str_fen.length());
-
-        std::cout << tempStr << "\n";
-
-        sideToMove = parseFen(tempStr, th);
-    } else if (str.find(str_startpos) != std::string::npos) {
-
-        sideToMove = parseFen(START_FEN, th);
-    }
-
-
-	//nn_inputs_upd_all(&nn, th); 
-
-
-    initThread.moves_history_counter = 0;
-    initThread.movesHistory[0].hashKey = initThread.hashKey;
-    initThread.movesHistory[0].fiftyMovesCounter = 0;
-
-
-    if (str.find(str_moves) != std::string::npos) {
-
-        Move move;
-
-        int pos = str.find(str_moves);
-
-        tempStr = str.substr(pos + 1 + str_moves.length());
-
-        std::vector <std::string> tokens1; 
-
-        split(tempStr, tokens1, ' ');
-
-        std::vector<Move> moves;
-
-        std::string moveStr;
-
-        for (std::vector<std::string>::iterator i = tokens1.begin(); i != tokens1.end(); ++i) {
-            
-            moveStr = *i;
-
-            moves.clear();
-            genMoves(0, moves, sideToMove, th);
-            
-            for (std::vector<Move>::iterator j = moves.begin(); j != moves.end(); ++j) {     
-
-                move = *j;
-        
-                char str1[10];
-                str1[0] = '\0';
-
-                strcat(str1, algebricPos(from_sq(move.move)));
-                strcat(str1, algebricPos(to_sq(move.move)));
-
-
-                if (move_type(move.move) == MOVE_PROMOTION) {
-
-
-                    switch (promType(move.move)) {
-
-                        case PROMOTE_TO_ROOK:
-
-                            strcat(str1, "r");
-
-                            // sideToMove ? strcat(str1, "r") : strcat(str1, "R");
-                            break;
-                        case PROMOTE_TO_BISHOP:
-
-                            strcat(str1, "b");
-                  
-                            // sideToMove ? strcat(str1, "b") : strcat(str1, "B");
-                            break;
-                        case PROMOTE_TO_KNIGHT:
-
-                            strcat(str1, "n");
-                  
-                            // sideToMove ? strcat(str1, "n") : strcat(str1, "N");
-                            break;
-                        default:
-
-                            strcat(str1, "q");
-                  
-                            // sideToMove ? strcat(str1, "q") : strcat(str1, "Q");
-                            break;
-                    }
-                }
-
-                if (moveStr == str1) {
-    
-                    make_move(0, move.move, th);
-                    
-                    initThread.moves_history_counter++;
-                    initThread.movesHistory[initThread.moves_history_counter].hashKey = initThread.hashKey;
-
-                    sideToMove ^= 1;
-    
-                    break;
-                }
-            }
-        }
-    }
-
-
-    // print_board(th->occupied, th);
-
-
-    return sideToMove;
-}
 
 void setOption(std::string &line) {
 
@@ -207,16 +58,13 @@ void setOption(std::string &line) {
     } 
 }
 
-
-using namespace std;
-
-
 void UciLoop() {
 
-    std::string startLine = "position startpos";
-	
 	initThread.isInit = true;
-    initThread.side = parsePosition(startLine, &initThread);
+
+    initThread.clear();
+    initThread.initMembers();
+    parseFen(START_FEN, &initThread);
     
     quit = false;
     
@@ -224,14 +72,14 @@ void UciLoop() {
 
     do {
 
-        if (!getline(cin, cmd)) // Block here waiting for input or EOF 
+        if (!getline(std::cin, cmd)) // Block here waiting for input or EOF 
             cmd = "quit";
 
-        istringstream is(cmd);
+        std::istringstream is(cmd);
 
         token.clear(); // Avoid a stale if getline() returns empty or blank line
-        is >> skipws >> token;
-        
+        is >> std::skipws >> token;
+
 
         if (token == "uci") {
          
@@ -307,8 +155,6 @@ void UciLoop() {
 
                 tempStr = cmd.substr(pos + 1 + str_fen.length());
 
-                std::cout << tempStr << "\n";
-
                 sideToMove = parseFen(tempStr, &initThread);
             }
 
@@ -367,9 +213,6 @@ void UciLoop() {
             } 
             
 
-
-
-
             // if (depthCurrent == -1) {
     // const std::string str_fen = "fen";
                 // std::string tempStr;
@@ -401,6 +244,8 @@ void UciLoop() {
         
             break;
         } 
+
+
 
         // Debugging commands
 

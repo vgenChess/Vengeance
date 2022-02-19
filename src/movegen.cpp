@@ -396,9 +396,9 @@ uint16_t val_piece[8] = {
 
 
 bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
-
     
-    if (move == NO_MOVE) return false;
+    if (move == NO_MOVE) 
+        return false;
     
     u8 opponent = side ^ 1;
 
@@ -415,48 +415,25 @@ bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
 
     if (moveType == MOVE_NORMAL || moveType == MOVE_DOUBLE_PUSH || moveType == MOVE_CAPTURE) {
 
-        if (moveType == MOVE_DOUBLE_PUSH) {
+        if (moveType == MOVE_DOUBLE_PUSH && inBetween(fromSq, toSq) & th->occupied) 
+            return false; // pawn's path is blocked       
 
-            if (inBetween(fromSq, toSq) & th->occupied) 
-                return false; // pawn's path is blocked       
-        }
+        if (piece == ROOKS && !(Rmagic(fromSq, th->occupied) & (1ULL << toSq))) 
+            return false; // rook's path is blocked
 
-        if (piece == ROOKS) {
+        if (piece == BISHOPS && !(Bmagic(fromSq , th->occupied) & (1ULL << toSq))) 
+            return false; // bishop's path is blocked
 
-            u64 rAttacks = Rmagic(fromSq, th->occupied);
-
-            if (!(rAttacks & (1ULL << toSq))) 
-                return false; // rook's path is blocked
-        }
-
-        if (piece == BISHOPS) {
-
-            u64 bAttacks = Bmagic(fromSq , th->occupied);
-
-            if (!(bAttacks & (1ULL << toSq))) 
-                return false; // bishop's path is blocked
-        }
-
-        if (piece == QUEEN) {
-
-            u64 qAttacks = Qmagic(fromSq, th->occupied);
-
-            if (!(qAttacks & (1ULL << toSq))) 
-                return false; // queen's path is blocked
-        }
+        if (piece == QUEEN && !(Qmagic(fromSq, th->occupied) & (1ULL << toSq))) 
+            return false; // queen's path is blocked
 
         // finally check for pieces on their squares
-        if (moveType == MOVE_NORMAL || moveType == MOVE_DOUBLE_PUSH) {
-
-            return ((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & th->empty);
-        } 
-        else if (moveType == MOVE_CAPTURE) {
-
-            return ((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & capturePieceBB);
-        }
+        return moveType == MOVE_CAPTURE ? 
+            ((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & capturePieceBB) :
+            ((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & th->empty);
     }
 
-    if (moveType == MOVE_CASTLE) { 
+    if (moveType == MOVE_CASTLE && !isKingInCheck(side, th)) { 
 
         u8 castleFlags = th->moveStack[ply].castleFlags;
 
@@ -499,13 +476,9 @@ bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
     
     if (moveType == MOVE_PROMOTION) {
 
-        if (capturePiece == DUMMY) {
-
-            return ((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & th->empty);
-        } else {
-
-            return ((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & capturePieceBB);
-        }
+        return capturePiece == DUMMY ? 
+            ((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & th->empty) :
+            ((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & capturePieceBB);
     }
 
     return false;
@@ -561,7 +534,7 @@ void scoreNormalMoves(int side, int ply, Thread *th, MOVE_LIST *moveList) {
         if (    previousMove != NO_MOVE    
             &&  m.move == th->counterMove[side][from_sq(previousMove)][to_sq(previousMove)]) {
 
-            m.score += BONUS_COUNTER_MOVE;
+            m.score += VALUI16_COUNTER_MOVE_BONUS; // TODO check logic
         }
     }
 }

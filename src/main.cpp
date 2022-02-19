@@ -25,6 +25,7 @@
 #include "uci.h"
 #include "NnueEval.h"
 #include "cerebrum.h"
+#include "fen.h"
 
 NN_Network nnue;
 
@@ -107,11 +108,9 @@ static void runBenchmark(int argc, char **argv) {
     for (int i = 0; strcmp(Benchmarks[i], ""); i++) {
 
         time = std::chrono::steady_clock::now();
-
-        std::string posStr = "position fen " + std::string(Benchmarks[i]);
-
+        
         initThread.clear();
-        initThread.side = parsePosition(posStr, &initThread);
+        initThread.side = parseFen(Benchmarks[i], &initThread);
 
         Threads.start_thinking();
 
