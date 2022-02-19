@@ -35,6 +35,7 @@
 #include "cerebrum.h"
 #include "history.h"
 #include "ucireport.h"
+#include "functions.h"
 
 bool timeSet, stopped;
 
@@ -164,13 +165,18 @@ void searchMain(int sideToMove, SearchThread *th) {
 
 		    float stableMoveFactor = 1.25 - stableMoveCount * 0.05;
 
+		    
+		    u32 bestMove = th->pvLine.at(th->completedDepth).line[0];
+
+		    uint64_t bestMoveNodes = SearchThread::bestMoveNodes[from_sq(bestMove)][to_sq(bestMove)];
+			double pctNodesNotBest = 1.0 - (double)bestMoveNodes / th->nodes;
+			double nodeCountFactor = fmax(0.5, pctNodesNotBest * 2 + 0.4);
 
 		    // Check for time 
-
 		    std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
 		    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
 
-	    	if (timeSpent > timePerMove * scoreChangeFactor * stableMoveFactor) {
+	    	if (timeSpent > timePerMove * scoreChangeFactor * stableMoveFactor * nodeCountFactor) {
 
 				Threads.stop = true;
 				break;	
@@ -298,12 +304,12 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 	assert(alpha < beta); 
 
 
-	const u8 side = si->side;
-	const u8 OPP = side ^ 1;
+	const uint8_t SIDE = si->side;
+	const uint8_t OPP = SIDE ^ 1;
 
-	const int ply = si->ply;
+	const int32_t PLY = si->ply;
 	
-	const bool IS_ROOT_NODE = ply == 0;
+	const bool IS_ROOT_NODE = PLY == 0;
   	const bool IS_MAIN_THREAD = th == Threads.main();
 	const bool can_null_move = si->isNullMoveAllowed;
 
@@ -313,9 +319,9 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 
 	// Quiescense Search(under observation)
 
-	if (depth <= 0 || ply >= MAX_PLY) {
+	if (depth <= 0 || PLY >= MAX_PLY) {
 
-		return quiescenseSearch(ply, side, alpha, beta, th, pline);
+		return quiescenseSearch(PLY, SIDE, alpha, beta, th, pline);
 	}
 	
 
@@ -333,7 +339,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 
 
 
-	th->selDepth = IS_ROOT_NODE ? 0 : std::max(th->selDepth, ply);
+	th->selDepth = IS_ROOT_NODE ? 0 : std::max(th->selDepth, PLY);
    
 	th->nodes++;
 
@@ -341,20 +347,20 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 
 	
 	//http://www.talkchess.com/forum3/viewtopic.php?t=63090
-	th->moveStack[ply + 1].killerMoves[0] = NO_MOVE;
-	th->moveStack[ply + 1].killerMoves[1] = NO_MOVE;
+	th->moveStack[PLY + 1].killerMoves[0] = NO_MOVE;
+	th->moveStack[PLY + 1].killerMoves[1] = NO_MOVE;
 
 
 
 	const bool IS_PV_NODE = alpha != beta - 1;
 
-	const int16_t VALI16_ALL_PIECES = __builtin_popcountll(th->occupied);
+	const int16_t VALI16_ALL_PIECES = POPCOUNT(th->occupied);
 
 
 	// Repetition detection
 	if (!IS_ROOT_NODE) {
 
-		for (int i = th->moves_history_counter + ply; i >= 0; i--) {
+		for (int i = th->moves_history_counter + PLY; i >= 0; i--) {
 			
 			if (th->movesHistory[i].hashKey == th->hashKey) {
 
@@ -366,7 +372,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 			}
 		}
 
-		th->movesHistory[th->moves_history_counter + ply + 1].hashKey = th->hashKey;
+		th->movesHistory[th->moves_history_counter + PLY + 1].hashKey = th->hashKey;
 	}
 
 
@@ -390,16 +396,14 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 
 
 
+	const bool IS_IN_CHECK = isKingInCheck(SIDE, th);
 
-	const bool IS_IN_CHECK = isKingInCheck(side, th);
-
-    int32_t sEval = IS_IN_CHECK ? VALI32_UNKNOWN : (ttMatch ? tt->sEval : nn_eval(&nnue, th, (side == WHITE ? 0 : 1)));
-    // int32_t sEval = IS_IN_CHECK ? VALI32_UNKNOWN : (ttMatch ? tt->sEval : fullEval(side, th));
+    int32_t sEval = IS_IN_CHECK ? VALI32_UNKNOWN : (ttMatch ? tt->sEval : nn_eval(&nnue, th, SIDE));
+    // int32_t sEval = IS_IN_CHECK ? VALI32_UNKNOWN : (ttMatch ? tt->sEval : fullEval(SIDE, th));
 	
 	if (!ttMatch) recordHash(NO_MOVE, VALI16_NO_DEPTH, VALI32_UNKNOWN, VALUI8_NO_BOUND, sEval, th);		
 	
-	bool improving = !IS_IN_CHECK && ply >= 2 && sEval > th->moveStack[ply - 2].sEval;
-
+	bool improving = !IS_IN_CHECK && PLY >= 2 && sEval > th->moveStack[PLY - 2].sEval;
 
 
 
@@ -407,20 +411,14 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 
 
 	const int16_t VALI16_OPP_PIECES = 
-		__builtin_popcountll(OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
+		POPCOUNT(OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 	
-	bool canPruneOrReduce = false;
-
-	if (	!IS_ROOT_NODE 
-		&&  !IS_PV_NODE 
-		&&  !IS_IN_CHECK
+	bool canPruneOrReduce = 
+			!IS_ROOT_NODE && !IS_PV_NODE && !IS_IN_CHECK 
 		&&	std::abs(alpha) < VALUI16_WIN_SCORE
-		&&	std::abs(beta) < VALUI16_WIN_SCORE
-		&&	VALI16_OPP_PIECES > 3) {
+		&&	std::abs(beta) < VALUI16_WIN_SCORE 
+		&&	VALI16_OPP_PIECES > 3;
 
-		canPruneOrReduce = true;	
-	}	
-	
 
 	// Reverse Futility Pruning (Under observation)
 
@@ -441,13 +439,13 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 
 	if (!IS_ROOT_NODE) {
 
-		th->moveStack[ply].epFlag = th->moveStack[ply - 1].epFlag;
-		th->moveStack[ply].epSquare = th->moveStack[ply - 1].epSquare;
-		th->moveStack[ply].castleFlags = th->moveStack[ply - 1].castleFlags;
+		th->moveStack[PLY].epFlag = th->moveStack[PLY - 1].epFlag;
+		th->moveStack[PLY].epSquare = th->moveStack[PLY - 1].epSquare;
+		th->moveStack[PLY].castleFlags = th->moveStack[PLY - 1].castleFlags;
 	}
 
-	th->moveStack[ply].ttMove = ttMove;
-	th->moveStack[ply].sEval = sEval;
+	th->moveStack[PLY].ttMove = ttMove;
+	th->moveStack[PLY].sEval = sEval;
 
 
 	std::vector<u32> line;
@@ -457,9 +455,9 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 
 
 	bool mateThreat = false;
+	
 	// Null Move pruning 
 	// Check the logic for endgame 
-
 	if (	!IS_ROOT_NODE	
 		&&	!IS_PV_NODE 
 		&&	!IS_IN_CHECK 
@@ -469,14 +467,14 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 		&&	sEval >= beta) { 
 
 
-		makeNullMove(ply, th);
+		makeNullMove(PLY, th);
 
 
 		int r = depth > 9 ? 3 : 2;	
 
 	
 		searchInfo.side = OPP;
-		searchInfo.ply = ply + 1;
+		searchInfo.ply = PLY + 1;
 		searchInfo.depth = depth - r;
 		searchInfo.isNullMoveAllowed = false;
 		
@@ -484,30 +482,30 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 		int score = -alphabetaSearch(-beta, -beta + 1, th, &line, &searchInfo, mate - 1);
 
 
-		unmakeNullMove(ply, th);
+		unmakeNullMove(PLY, th);
 
 
 		if (score >= beta)
 			return beta;
 	
-		if (std::abs(score) >= VALUI16_WIN_SCORE)	// Mate threat extension
+		if (std::abs(score) >= VALUI16_WIN_SCORE) // Mate threat extension	
 			mateThreat = true;
 	}
 
 
 
 
-	bool f_prune = false;
+	bool fPrune = false;
 	if (canPruneOrReduce)	{ 
 			
-		if (depth == 1 && sEval + VALUI16_FPRUNE <= alpha)
-			f_prune = true;  	// Futility Pruning
+		if (depth == 1 && sEval + VALUI16_FPRUNE <= alpha) // Futility Pruning
+			fPrune = true;  	
 		
-		else if (depth == 2 && sEval + VALUI16_EXT_FPRUNE <= alpha)
-			f_prune = true;		// Extended Futility Pruning	
+		else if (depth == 2 && sEval + VALUI16_EXT_FPRUNE <= alpha) // Extended Futility Pruning
+			fPrune = true;			
 		
-		else if (depth == 3 && sEval + VALUI16_LTD_RAZOR <= alpha)	
-			depth--; 			// Limited Razoring		
+		else if (depth == 3 && sEval + VALUI16_LTD_RAZOR <= alpha) // Limited Razoring
+			depth--; 					
 	}
 	
 
@@ -521,46 +519,49 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 
 
 	bool isQuietMove = false;
-
-	int currentMoveType;
-	int hashf = hashfALPHA;
-	int reduce = 0, extend = 0, movesPlayed = 0, newDepth = 0;
-	int score = -VALI32_MATE, bestScore = -VALI32_MATE;
-
-	u32 bestMove = NO_MOVE, previousMove = ply == 0 ? NO_MOVE : th->moveStack[ply - 1].move;
-
-	const u32 KILLER_MOVE_1 = th->moveStack[ply].killerMoves[0];
-	const u32 KILLER_MOVE_2 = th->moveStack[ply].killerMoves[1];
 	
+	int8_t hashf = hashfALPHA;
+	int16_t currentMoveType, currentMoveFromSq, currentMoveToSq;
+	int32_t reduce = 0, extend = 0, movesPlayed = 0, newDepth = 0;
+	int32_t score = -VALI32_MATE, bestScore = -VALI32_MATE;
+
+	u32 bestMove = NO_MOVE, previousMove = PLY == 0 ? NO_MOVE : th->moveStack[PLY - 1].move;
+
+	const u32 KILLER_MOVE_1 = th->moveStack[PLY].killerMoves[0];
+	const u32 KILLER_MOVE_2 = th->moveStack[PLY].killerMoves[1];
+
+	uint64_t startingNodeCount = 0;
+
 	Move currentMove;
 
 	std::vector<u32> quietMovesPlayed, captureMovesPlayed;
 	
-	th->moveList[ply].skipQuiets = false;
-	th->moveList[ply].stage = PLAY_HASH_MOVE;
-	th->moveList[ply].ttMove = ttMove;
-	th->moveList[ply].counterMove = previousMove == NO_MOVE ? NO_MOVE : th->counterMove[side][from_sq(previousMove)][to_sq(previousMove)];
-	th->moveList[ply].moves.clear();
-	th->moveList[ply].badCaptures.clear();
+	th->moveList[PLY].skipQuiets = false;
+	th->moveList[PLY].stage = PLAY_HASH_MOVE;
+	th->moveList[PLY].ttMove = ttMove;
+	th->moveList[PLY].counterMove = previousMove == NO_MOVE ? NO_MOVE : th->counterMove[SIDE][from_sq(previousMove)][to_sq(previousMove)];
+	th->moveList[PLY].moves.clear();
+	th->moveList[PLY].badCaptures.clear();
 
 	while (true) {
 
 
-		currentMove = getNextMove(ply, side, th, &th->moveList[ply]);
+		currentMove = getNextMove(PLY, SIDE, th, &th->moveList[PLY]);
 
-
-		if (th->moveList[ply].stage == STAGE_DONE) break;
-
+		if (th->moveList[PLY].stage == STAGE_DONE) break;
 
 		assert(currentMove.move != NO_MOVE);
 
 
-		make_move(ply, currentMove.move, th);
+		startingNodeCount = th->nodes;
 
 
-		if (isKingInCheck(side, th)) {
+		make_move(PLY, currentMove.move, th);
+
+
+		if (isKingInCheck(SIDE, th)) {
 			
-			unmake_move(ply, currentMove.move, th);
+			unmake_move(PLY, currentMove.move, th);
 			continue;
 		}
 
@@ -569,8 +570,11 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 
 
 		currentMoveType = move_type(currentMove.move);
+		currentMoveToSq = to_sq(currentMove.move);
+		currentMoveFromSq = from_sq(currentMove.move);
 
-		isQuietMove = currentMoveType == MOVE_NORMAL ||	currentMoveType == MOVE_CASTLE 
+
+		isQuietMove = currentMoveType == MOVE_NORMAL || currentMoveType == MOVE_CASTLE 
 			|| currentMoveType == MOVE_DOUBLE_PUSH;
 
 		if (isQuietMove) {
@@ -594,11 +598,11 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 			if (isQuietMove) {
 				
 				// Futility pruning
-				if (f_prune) {
+				if (fPrune) {
 					
-					th->moveList[ply].skipQuiets = true;
+					th->moveList[PLY].skipQuiets = true;
 
-					unmake_move(ply, currentMove.move, th);
+					unmake_move(PLY, currentMove.move, th);
 					continue;
 				}
 
@@ -606,9 +610,9 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 				if (	depth <= VALUI8_LMP_DEPTH 
 					&&	movesPlayed >= VALUI8_LMP_BASE * depth) {
 
-					th->moveList[ply].skipQuiets = true;
+					th->moveList[PLY].skipQuiets = true;
 
-					unmake_move(ply, currentMove.move, th);
+					unmake_move(PLY, currentMove.move, th);
 					continue;
 				}
 
@@ -616,7 +620,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 				if (	depth <= VALUI8_HISTORY_PRUNING_DEPTH 
 					&&	currentMove.score < VALI16_HISTORY_PRUNING) {
 
-					unmake_move(ply, currentMove.move, th);
+					unmake_move(PLY, currentMove.move, th);
 					continue;
 				}
 			}	
@@ -629,20 +633,19 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
         	&&	IS_MAIN_THREAD
         	&&	th->canReportCurrMove) {	
 
-        	reportCurrentMove(side, si->realDepth, movesPlayed, currentMove.move);
+        	reportCurrentMove(SIDE, si->realDepth, movesPlayed, currentMove.move);
         }
 
 
 
-        th->moveStack[ply].move = currentMove.move;
+        th->moveStack[PLY].move = currentMove.move;
 
         extend = 0;
-		float extension = IS_ROOT_NODE ? 0 : th->moveStack[ply - 1].extension;
+		float extension = IS_ROOT_NODE ? 0 : th->moveStack[PLY - 1].extension;
 
 		//	Extensions
 		if (!IS_ROOT_NODE) { // TODO check extensions logic	
 
-			int16_t toSqCurrentMove = to_sq(currentMove.move);
 			int16_t pieceCurrMove = pieceType(currentMove.move);
 
 			if (IS_IN_CHECK) 
@@ -654,18 +657,17 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 			if (currentMoveType == MOVE_PROMOTION) 
 				extension += VALF_EXT_PROMOTION;	// Promotion extension
 			
-			bool isPrank = side ? 
-				toSqCurrentMove >= 8 && toSqCurrentMove <= 15 : 
-				toSqCurrentMove >= 48 && toSqCurrentMove <= 55;
+			bool isPrank = SIDE ? 
+				currentMoveToSq >= 8 && currentMoveToSq <= 15 : 
+				currentMoveToSq >= 48 && currentMoveToSq <= 55;
 			if (pieceCurrMove == PAWNS && isPrank) 
 				extension += VALF_EXT_PRANK;  // Pawn push extension
 
 			int16_t prevMoveType = move_type(previousMove);
 			if (previousMove != NO_MOVE && (prevMoveType == MOVE_CAPTURE || prevMoveType == MOVE_ENPASSANT)) {
 
-				int16_t toSqPreviousMove = to_sq(previousMove);
-
-				if (toSqCurrentMove == toSqPreviousMove)
+				int16_t prevMoveToSq = to_sq(previousMove);
+				if (currentMoveToSq == prevMoveToSq)
 					extension += VALF_EXT_RECAPTURE; // Recapture extension
 			}
 
@@ -678,7 +680,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 			}
 		} 
 
-		th->moveStack[ply].extension = extension;		
+		th->moveStack[PLY].extension = extension;		
 	 
 
 		newDepth = (depth - 1) + extend;
@@ -688,7 +690,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 
 
 		searchInfo.side = OPP;
-		searchInfo.ply = ply + 1;
+		searchInfo.ply = PLY + 1;
 		searchInfo.isNullMoveAllowed = true;
 
 
@@ -743,7 +745,11 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 		}
 
 
-		unmake_move(ply, currentMove.move, th);
+		unmake_move(PLY, currentMove.move, th);
+
+
+		if (IS_ROOT_NODE) 
+			SearchThread::bestMoveNodes[currentMoveFromSq][currentMoveToSq] += th->nodes - startingNodeCount;
 
 
 		if (score > bestScore) {
@@ -780,14 +786,14 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 			if (	bestMove != KILLER_MOVE_1 
 				&&  bestMove != KILLER_MOVE_2) {
 
-				th->moveStack[ply].killerMoves[1] = KILLER_MOVE_1;
-				th->moveStack[ply].killerMoves[0] = bestMove;
+				th->moveStack[PLY].killerMoves[1] = KILLER_MOVE_1;
+				th->moveStack[PLY].killerMoves[0] = bestMove;
 			}							
 
-			updateHistory(ply, side, depth, bestMove, quietMovesPlayed, th);			
+			updateHistory(PLY, SIDE, depth, bestMove, quietMovesPlayed, th);			
 		} else {
 
-			updateCaptureHistory(ply, side, depth, bestMove, captureMovesPlayed, th);
+			updateCaptureHistory(PLY, SIDE, depth, bestMove, captureMovesPlayed, th);
 		}
 	}
 
@@ -832,7 +838,7 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 
 
 
-	const int16_t VALI16_ALL_PIECES = __builtin_popcountll(th->occupied);
+	const int16_t VALI16_ALL_PIECES = POPCOUNT(th->occupied);
 
 
 	// Repetition detection
@@ -852,7 +858,7 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 
 	if (ply >= MAX_PLY - 1) {
 		// return fullEval(side, th);
-		return nn_eval(&nnue, th, (side == WHITE ? 0 : 1));
+		return nn_eval(&nnue, th, side);
 	}
 
 
@@ -883,7 +889,7 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 	int sEval;
 
 	// pull cached eval if it exists
-	int eval = sEval = (ttMatch && tt->sEval != VALI32_UNKNOWN) ? tt->sEval : nn_eval(&nnue, th, (side == WHITE ? 0 : 1));
+	int eval = sEval = (ttMatch && tt->sEval != VALI32_UNKNOWN) ? tt->sEval : nn_eval(&nnue, th, side);
 	// int eval = sEval = (ttMatch && tt->sEval != VALI32_UNKNOWN) ? tt->sEval : fullEval(side, th);
 	
 	if (!ttMatch) recordHash(NO_MOVE, VALI16_NO_DEPTH, VALI32_UNKNOWN, VALUI8_NO_BOUND, eval, th);		
@@ -903,8 +909,8 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 
 	const int32_t Q_FUTILITY_BASE = sEval + VALUI16_Q_DELTA; 
 
-	const int16_t VALI16_OPP_PIECES = __builtin_popcountll(
-		OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
+	const int16_t VALI16_OPP_PIECES = 
+		POPCOUNT(OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 
 	
 	int32_t hashf = hashfALPHA;

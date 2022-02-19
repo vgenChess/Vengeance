@@ -8,6 +8,8 @@
 Thread initThread;
 SearchThreadPool Threads; // Global object
 
+uint64_t Thread::bestMoveNodes[64][64];
+
 void SearchThreadPool::set(size_t requested) {
 
 	if (size() > 0)   // destroy any existing thread(s)
@@ -193,11 +195,24 @@ void Thread::clear() {
 		}
 	}
 
+
+	if (this == Threads.main()) {
+
+		for (int j = 0; j < 64; ++j) {
+			for (int k = 0; k < 64; ++k) {
+
+				this->bestMoveNodes[j][k] = 0;
+			}
+		}
+	}
+
+
 	for (int i = 0; i < MAX_PIECES; ++i) {
 
 		this->whitePieceBB[i] = 0;
 		this->blackPieceBB[i] = 0;
 	}
+
 
 	this->occupied = 0;
 	this->empty = 0;	

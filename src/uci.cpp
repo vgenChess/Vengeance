@@ -203,18 +203,25 @@ void UciLoop() {
                 inc = initThread.side ? binc : winc;         
             }   
 
-            if (timeSet) {
-                
-                stopTime = startTime + std::chrono::milliseconds((int)(time * 0.75));
 
-                timePerMove = (time / (movestogo + 2)) + inc; 
+            if (timeSet) {                
+
+                // stopTime = startTime + std::chrono::milliseconds((int)(time * 0.75));
+
+                // timePerMove = (time / (movestogo + 2)) + inc; 
+        
+                int total = fmax(1, time + movestogo * inc);
+
+                timePerMove = fmin(time * 0.9, (0.9 * total) / fmax(1, movestogo / 2.5));
 
                 totalTimeLeft = time;    
-            } 
             
-
+                stopTime = startTime + std::chrono::milliseconds((int)fmin(time * 0.75, timePerMove * 5.5));
+            } 
+          
             // if (depthCurrent == -1) {
-    // const std::string str_fen = "fen";
+            
+                // const std::string str_fen = "fen";
                 // std::string tempStr;
                 
                 // int pos = str.find(str_fen);
@@ -223,8 +230,7 @@ void UciLoop() {
 
                 // std::cout << tempStr << "\n";
 
-            
-            //     depthCurrent = MAX_DEPTH;
+                // depthCurrent = MAX_DEPTH;
             // }
             
             // depth = depthCurrent;
