@@ -348,7 +348,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 
 	const bool IS_PV_NODE = alpha != beta - 1;
 
-	const int num_pieces = __builtin_popcountll(th->occupied);
+	const int16_t VALI16_ALL_PIECES = __builtin_popcountll(th->occupied);
 
 
 	// Repetition detection
@@ -358,11 +358,11 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 			
 			if (th->movesHistory[i].hashKey == th->hashKey) {
 
-				if (num_pieces > 22) return -50;
+				if (VALI16_ALL_PIECES > 22) return -50;
 				
-				if (num_pieces > 12) return -25;	// middlegame
+				if (VALI16_ALL_PIECES > 12) return -25;	// middlegame
 					     					
-				return   0;	// endgame
+											return   0;	// endgame
 			}
 		}
 
@@ -377,7 +377,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 	
 	bool ttMatch = probeHash(tt, th);
 	int32_t ttScore = ttMatch ? tt->value : VALI32_UNKNOWN;
-	int32_t ttMove =  ttMatch ? tt->bestMove : NO_MOVE;
+	u32 ttMove =  ttMatch ? tt->bestMove : NO_MOVE;
 
 	if (ttMatch) th->ttHits++;
 
@@ -393,8 +393,8 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 
 	const bool IS_IN_CHECK = isKingInCheck(side, th);
 
-    int sEval = IS_IN_CHECK ? VALI32_UNKNOWN : (ttMatch ? tt->sEval : nn_eval(&nnue, th, (side == WHITE ? 0 : 1)));
-    // int sEval = IS_IN_CHECK ? VALI32_UNKNOWN : (ttMatch ? tt->sEval : fullEval(side, th));
+    int32_t sEval = IS_IN_CHECK ? VALI32_UNKNOWN : (ttMatch ? tt->sEval : nn_eval(&nnue, th, (side == WHITE ? 0 : 1)));
+    // int32_t sEval = IS_IN_CHECK ? VALI32_UNKNOWN : (ttMatch ? tt->sEval : fullEval(side, th));
 	
 	if (!ttMatch) recordHash(NO_MOVE, VALI16_NO_DEPTH, VALI32_UNKNOWN, VALUI8_NO_BOUND, sEval, th);		
 	
@@ -406,9 +406,8 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 	assert (!(!IS_IN_CHECK && sEval == VALI32_UNKNOWN));
 
 
-
-	const auto num_opp_pieces = __builtin_popcountll(
-		OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
+	const int16_t VALI16_OPP_PIECES = 
+		__builtin_popcountll(OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 	
 	bool canPruneOrReduce = false;
 
@@ -417,7 +416,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 		&&  !IS_IN_CHECK
 		&&	std::abs(alpha) < VALUI16_WIN_SCORE
 		&&	std::abs(beta) < VALUI16_WIN_SCORE
-		&&	num_opp_pieces > 3) {
+		&&	VALI16_OPP_PIECES > 3) {
 
 		canPruneOrReduce = true;	
 	}	
@@ -465,7 +464,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 		&&	!IS_PV_NODE 
 		&&	!IS_IN_CHECK 
 		&&	can_null_move 
-		&&	num_opp_pieces > 3
+		&&	VALI16_OPP_PIECES > 3
 		&&	depth > 2 
 		&&	sEval >= beta) { 
 
@@ -833,7 +832,7 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 
 
 
-	const int16_t num_pieces = __builtin_popcountll(th->occupied);
+	const int16_t VALI16_ALL_PIECES = __builtin_popcountll(th->occupied);
 
 
 	// Repetition detection
@@ -841,9 +840,9 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 
 		if (th->movesHistory[i].hashKey == th->hashKey) {
 
-			if (	num_pieces > 22)	return -50;
-			if (	num_pieces > 12)	return -25;	// middlegame
-				     					return   0;	// endgame
+			if (	VALI16_ALL_PIECES > 22)	return -50;
+			if (	VALI16_ALL_PIECES > 12)	return -25;	// middlegame
+				     				 		return   0;	// endgame
 		}
 	}
 
@@ -904,7 +903,8 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 
 	const int32_t Q_FUTILITY_BASE = sEval + VALUI16_Q_DELTA; 
 
-	const int16_t num_opp_pieces = __builtin_popcountll(OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
+	const int16_t VALI16_OPP_PIECES = __builtin_popcountll(
+		OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 
 	
 	int32_t hashf = hashfALPHA;
@@ -951,7 +951,7 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
  			&&	move_type(currentMove.move) != MOVE_PROMOTION) {
 
 			// Delta pruning
-	 		if (num_opp_pieces > 3 && Q_FUTILITY_BASE + seeVal[capPiece] <= alpha) {
+	 		if (VALI16_OPP_PIECES > 3 && Q_FUTILITY_BASE + seeVal[capPiece] <= alpha) {
 
 				unmake_move(ply, currentMove.move, th);
 
