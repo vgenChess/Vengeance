@@ -59,7 +59,7 @@ void startSearch(u8 sideToMove) {
 	ABORT_SEARCH = false;
 
 	Threads.start_searching(); // start non-main threads
-	searchMain(sideToMove, Threads.main());          // main thread start searching
+	searchMain(sideToMove, Threads.main()); // main thread start searching
 
 	ABORT_SEARCH = true;
 
@@ -145,20 +145,20 @@ void searchMain(int sideToMove, SearchThread *th) {
 
  		if (timeSet && th->completedDepth >= 4) {
 
-
-		    int scoreDiff = th->pvLine.at(th->completedDepth-3).score - th->pvLine.at(th->completedDepth).score;
+		    int scoreDiff = th->pvLine.at(th->completedDepth-3).score 
+		    	- th->pvLine.at(th->completedDepth).score;
 		    
 		    float scoreChangeFactor = fmax(0.5, fmin(1.5, 0.1 + scoreDiff * 0.05));
 
+		    assert(th->pvLine.at(th->completedDepth).line.size() > 0 
+		    	&& th->pvLine.at(th->completedDepth-1).line.size() > 0);
 
-		    assert(th->pvLine.at(th->completedDepth).line.size() > 0 && th->pvLine.at(th->completedDepth-1).line.size() > 0);
-
-		    if (th->pvLine.at(th->completedDepth).line.at(0) == th->pvLine.at(th->completedDepth-1).line.at(0)) {
+		    if (th->pvLine.at(th->completedDepth).line.at(0) 
+		    	== th->pvLine.at(th->completedDepth-1).line.at(0)) {
 				
 				stableMoveCount = std::min(10, stableMoveCount + 1);
-		    }
-			else {
-				
+		    } else {
+
 				stableMoveCount = 0;
 			}
 
@@ -171,11 +171,12 @@ void searchMain(int sideToMove, SearchThread *th) {
 			double pctNodesNotBest = 1.0 - (double)bestMoveNodes / th->nodes;
 			double nodeCountFactor = fmax(0.5, pctNodesNotBest * 2 + 0.4);
 
+
 		    // Check for time 
 		    std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
 		    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
 
-	    	if (timeSpent > timePerMove * scoreChangeFactor * stableMoveFactor * nodeCountFactor) {
+	    	if (timeSpent > (timePerMove * scoreChangeFactor * stableMoveFactor * nodeCountFactor)) {
 
 				Threads.stop = true;
 				break;	
@@ -279,14 +280,10 @@ void checkTime() {
 
 	std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
 
-    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
-
     if (timeNow.time_since_epoch() >= stopTime.time_since_epoch()) {
 
 		Threads.stop = true;
-	}
-
-	// readInput();	
+	}	
 }
 
 
@@ -397,8 +394,8 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 
 	const bool IS_IN_CHECK = isKingInCheck(SIDE, th);
 
-    int32_t sEval = IS_IN_CHECK ? VALI32_UNKNOWN : (ttMatch ? tt->sEval : nn_eval(&nnue, th, SIDE));
-    // int32_t sEval = IS_IN_CHECK ? VALI32_UNKNOWN : (ttMatch ? tt->sEval : fullEval(SIDE, th));
+    // int32_t sEval = IS_IN_CHECK ? VALI32_UNKNOWN : (ttMatch ? tt->sEval : nn_eval(&nnue, th, SIDE));
+    int32_t sEval = IS_IN_CHECK ? VALI32_UNKNOWN : (ttMatch ? tt->sEval : fullEval(SIDE, th));
 	
 	if (!ttMatch) recordHash(NO_MOVE, VALI16_NO_DEPTH, VALI32_UNKNOWN, VALUI8_NO_BOUND, sEval, th);		
 	
@@ -538,7 +535,8 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 	th->moveList[PLY].skipQuiets = false;
 	th->moveList[PLY].stage = PLAY_HASH_MOVE;
 	th->moveList[PLY].ttMove = ttMove;
-	th->moveList[PLY].counterMove = previousMove == NO_MOVE ? NO_MOVE : th->counterMove[SIDE][from_sq(previousMove)][to_sq(previousMove)];
+	th->moveList[PLY].counterMove = previousMove == NO_MOVE ? 
+		NO_MOVE : th->counterMove[SIDE][from_sq(previousMove)][to_sq(previousMove)];
 	th->moveList[PLY].moves.clear();
 	th->moveList[PLY].badCaptures.clear();
 
@@ -648,26 +646,26 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vect
 			int16_t pieceCurrMove = pieceType(currentMove.move);
 
 			if (IS_IN_CHECK) 
-				extension += VALF_EXT_CHECK;	// Check extension
+				extension += VALF_CHECK_EXT;	// Check extension
 
 			if (mateThreat)
-				extension += VALF_EXT_MATE_THREAT; // Mate threat extension
+				extension += VALF_MATE_THREAT_EXT; // Mate threat extension
 		
 			if (currentMoveType == MOVE_PROMOTION) 
-				extension += VALF_EXT_PROMOTION;	// Promotion extension
+				extension += VALF_PROMOTION_EXT;	// Promotion extension
 			
 			bool isPrank = SIDE ? 
 				currentMoveToSq >= 8 && currentMoveToSq <= 15 : 
 				currentMoveToSq >= 48 && currentMoveToSq <= 55;
 			if (pieceCurrMove == PAWNS && isPrank) 
-				extension += VALF_EXT_PRANK;  // Pawn push extension
+				extension += VALF_PRANK_EXT;  // Pawn push extension
 
 			int16_t prevMoveType = move_type(previousMove);
 			if (previousMove != NO_MOVE && (prevMoveType == MOVE_CAPTURE || prevMoveType == MOVE_ENPASSANT)) {
 
 				int16_t prevMoveToSq = to_sq(previousMove);
 				if (currentMoveToSq == prevMoveToSq)
-					extension += VALF_EXT_RECAPTURE; // Recapture extension
+					extension += VALF_RECAPTURE_EXT; // Recapture extension
 			}
 
 			if (extension >= VALF_ONE_PLY) {
@@ -856,8 +854,8 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 
 
 	if (ply >= MAX_PLY - 1) {
-		// return fullEval(side, th);
-		return nn_eval(&nnue, th, side);
+		return fullEval(side, th);
+		// return nn_eval(&nnue, th, side);
 	}
 
 
@@ -888,8 +886,8 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 	int sEval;
 
 	// pull cached eval if it exists
-	int eval = sEval = (ttMatch && tt->sEval != VALI32_UNKNOWN) ? tt->sEval : nn_eval(&nnue, th, side);
-	// int eval = sEval = (ttMatch && tt->sEval != VALI32_UNKNOWN) ? tt->sEval : fullEval(side, th);
+	// int eval = sEval = (ttMatch && tt->sEval != VALI32_UNKNOWN) ? tt->sEval : nn_eval(&nnue, th, side);
+	int eval = sEval = (ttMatch && tt->sEval != VALI32_UNKNOWN) ? tt->sEval : fullEval(side, th);
 	
 	if (!ttMatch) recordHash(NO_MOVE, VALI16_NO_DEPTH, VALI32_UNKNOWN, VALUI8_NO_BOUND, eval, th);		
 	

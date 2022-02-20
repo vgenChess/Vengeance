@@ -1,6 +1,9 @@
 
 https://lczero.org/dev/wiki/testing-guide/
 
+Debugging
+    valgrind --leak-check=yes -v ./Vengeance
+
 ucinewgame
 setoption name Hash value 120
 setoption name Threads value 4
@@ -12,18 +15,17 @@ r7/8/4k3/8/2K2p2/5p1p/8/8 b - - 9 74 // Makes illegal move
 5rk1/4P3/6p1/7p/ppQ1P3/q2r3P/PR4P1/K7 b - - 1 41 // horizon effect (is losing but returns normal results)
 7k/8/3pr1Pp/p1n2K1N/1pPb3P/1P2p3/6B1/4R3 b - - 1 59 // horizon effect (especially with NNUE)
 6N1/7k/3p1N1p/p1P1r3/1p1b2KP/1P2p3/6n1/8 b - - 1 64 // horizon effect
-
 2rr2k1/2b2p1p/p5p1/4p1q1/1QNpP3/1P1P3P/1PP1KPP1/R3R3 b - - 0 27 //  Is losing, but returns normal results
 r2qkb1r/pp3ppp/2nppn2/2p5/2P1P3/1P3N2/P2PQPPP/RNB2RK1 w kq - 1 9 // current move report is lagging
 r2qkb1r/pp3ppp/2nppn2/2p5/2P1P3/1P3N2/P2PQPPP/RNB2RK1 w kq - 1 9 // Took very long to move
-
 5k2/5ppp/1pN5/p2P3P/3K1P2/2rB3P/8/8 b - - 2 37 // Rook blindly captures piece which is defended by the opponent king
 
 
 Priority
     - Node explosion control
-    - Extensions control
-
+    - Better endgame detection for null move etc
+    - Endgame crash reproduction and fix
+    
 Speculations
     - Agressive Reductions will work with good move ordering
     - Average move ordering should use less agressive reductions to avoid skipping good moves
@@ -33,15 +35,14 @@ TODO
     - Evaluation Terms to add (Outpost, Knight outpost)
     - Rewrite logic for copy/paste code
     - Add tempo for eval and tuning
-    - Better endgame detection for null move etc
 
 Needs investigation
     - reduce search explosion for higher depths
-    - Delay reporting to the Uci during initial seconds 
+    - delay reporting to the uci during initial seconds 
     - material imbalance evaluation
+    - quiescense explosion
 
 DONE (under observation)
-    - Store pv in quiescense 
     - Add 50 moves rule
     
 Bugs

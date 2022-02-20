@@ -1,6 +1,5 @@
-
-#ifndef CONSTANTS
-#define CONSTANTS 
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
 
 const uint8_t VALUI8_NO_BOUND = 50;
 const uint8_t VALUI8_AP_WINDOW = 10;
@@ -30,15 +29,14 @@ const int16_t VALI16_QSEE_PRUNING = 0;
 
 const int32_t VALI32_INF = 50000;
 const int32_t VALI32_UNKNOWN = 30000;
-const int32_t VALI32_MATE = 	25000;
+const int32_t VALI32_MATE = 25000;
 
 const float VALF_ONE_PLY = 1.0;
-const float VALF_EXT_CHECK = 0.5;
-const float VALF_EXT_MATE_THREAT = 0.5;
-const float VALF_EXT_RECAPTURE = 0.5;
-const float VALF_EXT_PRANK = 0.75;
-const float VALF_EXT_PROMOTION = 0.75;
-
+const float VALF_CHECK_EXT = 0.5;
+const float VALF_MATE_THREAT_EXT = 0.5;
+const float VALF_RECAPTURE_EXT = 0.5;
+const float VALF_PRANK_EXT = 0.75;
+const float VALF_PROMOTION_EXT = 0.75;
 
 #endif
 

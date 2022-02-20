@@ -185,46 +185,121 @@ void clearAllBitBoards(Thread *th) {
     th->blackPieceBB[PIECES] &= 0;
 }
 
+u64 getAttacks(const u8 stm, Thread *th) {
+
+    u64 attacks = 0ULL, b;
+
+    attacks |= stm ?
+        bPawnWestAttacks(th->blackPieceBB[PAWNS]) | bPawnEastAttacks(th->blackPieceBB[PAWNS]): 
+        wPawnWestAttacks(th->whitePieceBB[PAWNS]) | wPawnEastAttacks(th->whitePieceBB[PAWNS]);
+
+    b = stm ? th->blackPieceBB[KNIGHTS] : th->whitePieceBB[KNIGHTS];
+    while(b) {
+        
+        attacks |= get_knight_attacks(GET_POSITION(b));
+        POP_POSITION(b);
+    }
+
+    b = stm ? th->blackPieceBB[BISHOPS] : th->whitePieceBB[BISHOPS];
+    while(b) {
+
+        attacks |= Bmagic(GET_POSITION(b), th->occupied);
+        POP_POSITION(b);
+    }
+
+    b = stm ? th->blackPieceBB[ROOKS] : th->whitePieceBB[ROOKS];
+    while(b) {
+        
+        attacks |= Rmagic(GET_POSITION(b), th->occupied);
+        POP_POSITION(b);
+    }
+    
+    b = stm ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN];
+    while(b) {
+        
+        attacks |= Qmagic(GET_POSITION(b), th->occupied);
+        POP_POSITION(b);
+    }  
+
+    int kingSq = GET_POSITION(stm ? th->blackPieceBB[KING] : th->whitePieceBB[KING]);
+
+    attacks |= get_king_attacks(kingSq);
+
+    return attacks;
+} 
 
 bool isKingInCheck(u8 side, Thread *th) {
     
     const u8 opponent = side ^ 1;      
-    const int kingSq = __builtin_ctzll(side ? th->blackPieceBB[KING] : th->whitePieceBB[KING]);
-    u64 attacks;
+    const int kingSq = GET_POSITION(side ? th->blackPieceBB[KING] : th->whitePieceBB[KING]);
+    
+    // Staggered check to return early saving time
 
-    // pawn attacks
-    attacks = opponent ?
+    u64 oppAttacks = 0ULL, b;
+
+    oppAttacks = opponent ?
         bPawnWestAttacks(th->blackPieceBB[PAWNS]) | bPawnEastAttacks(th->blackPieceBB[PAWNS]): 
         wPawnWestAttacks(th->whitePieceBB[PAWNS]) | wPawnEastAttacks(th->whitePieceBB[PAWNS]);
-    
-    if (attacks & (1ULL << kingSq)) 
-        return true;
-    
-    // knight attacks
-    attacks = get_knight_attacks(kingSq);
-    if (attacks & (opponent ? th->blackPieceBB[KNIGHTS] : th->whitePieceBB[KNIGHTS])) 
-        return true;
 
-    // bishop and queen attacks
-    attacks = Bmagic(kingSq, th->occupied);
-    if (attacks & (opponent ? th->blackPieceBB[BISHOPS] : th->whitePieceBB[BISHOPS])) 
-        return true;
-
-    if (attacks & (opponent ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN])) 
-        return true;
+    if (oppAttacks & (1ULL << kingSq)) return true;        
     
-    // rook and queen attacks
-    attacks = Rmagic(kingSq, th->occupied);
-    if (attacks & (opponent ? th->blackPieceBB[ROOKS] : th->whitePieceBB[ROOKS])) 
-        return true;
-    
-    if (attacks & (opponent ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN])) 
-        return true;
 
-    // king attacks
-    attacks = get_king_attacks(kingSq);
-    if (attacks & (opponent ? th->blackPieceBB[KING] : th->whitePieceBB[KING])) 
-        return true;	
+    oppAttacks = 0ULL;        
+    
+    b = opponent ? th->blackPieceBB[KNIGHTS] : th->whitePieceBB[KNIGHTS];
+    while(b) {
+        
+        oppAttacks |= get_knight_attacks(GET_POSITION(b));
+        POP_POSITION(b);
+    }
+
+    if (oppAttacks & (1ULL << kingSq)) return true;        
+    
+
+    oppAttacks = 0ULL;        
+    
+    b = opponent ? th->blackPieceBB[BISHOPS] : th->whitePieceBB[BISHOPS];
+    while(b) {
+
+        oppAttacks |= Bmagic(GET_POSITION(b), th->occupied);
+        POP_POSITION(b);
+    }
+    
+    if (oppAttacks & (1ULL << kingSq)) return true;        
+    
+
+    oppAttacks = 0ULL;        
+    
+    b = opponent ? th->blackPieceBB[ROOKS] : th->whitePieceBB[ROOKS];
+    while(b) {
+        
+        oppAttacks |= Rmagic(GET_POSITION(b), th->occupied);
+        POP_POSITION(b);
+    }
+    
+    if (oppAttacks & (1ULL << kingSq)) return true;        
+    
+
+    oppAttacks = 0ULL;        
+    
+    b = opponent ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN];
+    while(b) {
+        
+        oppAttacks |= Qmagic(GET_POSITION(b), th->occupied);
+        POP_POSITION(b);
+    }  
+
+    if (oppAttacks & (1ULL << kingSq)) return true;        
+    
+
+    oppAttacks = 0ULL;        
+
+    int oppKingSq = GET_POSITION(opponent ? th->blackPieceBB[KING] : th->whitePieceBB[KING]);
+
+    oppAttacks = get_king_attacks(oppKingSq);
+
+    if (oppAttacks & (1ULL << kingSq)) return true;
+
 
     return false;
 }
@@ -866,8 +941,8 @@ void initHashKey(Thread *th) {
             bitboard = side ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
             while (bitboard) {
                 
-                sq = __builtin_ctzll(bitboard);
-                bitboard &= bitboard - 1;
+                sq = GET_POSITION(bitboard);
+                POP_POSITION(bitboard);
                     
                 assert(sq >= 0 && sq < 64);    
 
@@ -891,8 +966,8 @@ void initPawnHashKey(u8 side, Thread *th) {
     u8 sq;
     while(bitboard) {
 
-        sq = bitScanForward(bitboard);
-        bitboard &= bitboard - 1;
+        sq = GET_POSITION(bitboard);
+        POP_POSITION(bitboard);
 
         th->pawnsHashKey ^= pawnZobristKey[sq];
     }
@@ -1084,17 +1159,17 @@ u64 pinnedPieces(u8 kingSq, u8 side, Thread *th) {
         & (side ^ 1 ? th->blackPieceBB[ROOKS] | th->blackPieceBB[QUEEN] : th->whitePieceBB[ROOKS] | th->whitePieceBB[QUEEN]);
     while ( pinner ) {
 
-        int sq  = bitScanForward(pinner);
+        int sq  = GET_POSITION(pinner);
         pinned |= inBetween(sq, kingSq) & (side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
-        pinner &= pinner - 1;
+        POP_POSITION(pinner);
     }
     
     pinner = xrayBishopAttacks(th->occupied, (side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]), kingSq) 
         & (side ^ 1 ? th->blackPieceBB[BISHOPS] | th->blackPieceBB[QUEEN] : th->whitePieceBB[BISHOPS] | th->whitePieceBB[QUEEN]);
     while ( pinner ) {
-        int sq  = bitScanForward(pinner);
+        int sq  = GET_POSITION(pinner);
         pinned |= inBetween(sq, kingSq) & (side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
-        pinner &= pinner - 1;
+        POP_POSITION(pinner);
     }
 
     return pinned;
@@ -1106,11 +1181,11 @@ u64 pinned(u64 pinners, u8 kingSq, u8 side, Thread *th) {
     
     while ( pinners ) {
 
-        int sq  = bitScanForward(pinners);
+        int sq  = GET_POSITION(pinners);
 
         pinned |= inBetween(sq, kingSq) & (side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 
-        pinners &= pinners - 1;
+        POP_POSITION(pinners);
     }
 
     return pinned;

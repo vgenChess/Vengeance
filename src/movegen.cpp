@@ -395,7 +395,6 @@ uint16_t val_piece[8] = {
     0
 };
 
-
 bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
     
     if (move == NO_MOVE) 
@@ -434,7 +433,7 @@ bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
             ((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & th->empty);
     }
 
-    if (moveType == MOVE_CASTLE && !isKingInCheck(side, th)) { 
+    if (moveType == MOVE_CASTLE) { 
 
         u8 castleFlags = th->moveStack[ply].castleFlags;
 
@@ -442,31 +441,68 @@ bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
     
         if (castleDirection == WHITE_CASTLE_QUEEN_SIDE) {
 
-            if (inBetween(4, 0) & th->occupied) 
-                return false;            
-        
-            return castleFlags & CASTLE_FLAG_WHITE_QUEEN;
+            if (castleFlags & CASTLE_FLAG_WHITE_QUEEN) {
+                
+                u64 oppAttacks = getAttacks(opponent, th);
+
+                u64 wq_sqs = th->empty & WQ_SIDE_SQS;
+                if (    wq_sqs == WQ_SIDE_SQS 
+                    &&  !(      oppAttacks & (1ULL << 2) 
+                            ||  oppAttacks & (1ULL << 3)
+                            ||  oppAttacks & (1ULL << 4))) { 
+                    
+                    return true;
+                }
+            }
         } 
         else if (castleDirection == WHITE_CASTLE_KING_SIDE) {
+            
+            if (castleFlags & CASTLE_FLAG_WHITE_KING) {
+                
+                u64 oppAttacks = getAttacks(opponent, th);
+       
+                u64 wk_sqs = th->empty & WK_SIDE_SQS;
+                if (    wk_sqs == WK_SIDE_SQS 
+                    &&  !(      oppAttacks & (1ULL << 4) 
+                            ||  oppAttacks & (1ULL << 5)
+                            ||  oppAttacks & (1ULL << 6))) {
 
-            if (inBetween(4, 7) & th->occupied) 
-                return false;            
-        
-            return castleFlags & CASTLE_FLAG_WHITE_KING;
+                    return true;
+                }
+            }        
         }
         else if (castleDirection == BLACK_CASTLE_QUEEN_SIDE) {
             
-            if (inBetween(60, 56) & th->occupied) 
-                return false;            
+            if (castleFlags & CASTLE_FLAG_BLACK_QUEEN) {
         
-            return castleFlags & CASTLE_FLAG_BLACK_QUEEN;
+                u64 oppAttacks = getAttacks(opponent, th);
+    
+                u64 bq_sqs = th->empty & BQ_SIDE_SQS;
+                if (    bq_sqs == BQ_SIDE_SQS 
+                    &&  !(      oppAttacks & (1ULL << 58) 
+                            ||  oppAttacks & (1ULL << 59)
+                            ||  oppAttacks & (1ULL << 60))) {
+                    
+                    return true;
+                }
+
+            }
         }
         else if (castleDirection == BLACK_CASTLE_KING_SIDE) {
 
-            if (inBetween(60, 63) & th->occupied) 
-                return false;            
+            if (castleFlags & CASTLE_FLAG_BLACK_KING) {
+    
+                u64 oppAttacks = getAttacks(opponent, th);
         
-            return castleFlags & CASTLE_FLAG_BLACK_KING;
+                u64 bk_sqs = th->empty & BK_SIDE_SQS; 
+                if (    bk_sqs == BK_SIDE_SQS 
+                    && !(       oppAttacks & (1ULL << 60) 
+                            ||  oppAttacks & (1ULL << 61)
+                            ||  oppAttacks & (1ULL << 62))) {
+                    
+                    return true;
+                }
+            }
         }
     }
 

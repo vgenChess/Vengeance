@@ -1,8 +1,9 @@
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
-
-#define POPCOUNT(a) __builtin_popcountll(a)
+#define POPCOUNT(pieces) __builtin_popcountll(pieces)
+#define GET_POSITION(pieces) __builtin_ctzll(pieces)
+#define POP_POSITION(pieces) pieces &= pieces - 1
 
 /* Extract data from a move structure */
 #define promType(move)		(move & 0x3000000) >> 24

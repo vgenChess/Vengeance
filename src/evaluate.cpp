@@ -22,6 +22,7 @@
 #include "nonslidingmoves.h"
 #include "tuner.h"
 #include "weights.h"
+#include "functions.h"
 
 #define MIDGAME 1
 #define ENDGAME 2
@@ -90,7 +91,7 @@ void initEvalInfo(EvalInfo *info, Thread *th) {
 			attacks = 0ULL;
 			while (b) {
 
-				sq = __builtin_ctzll(b);
+				sq = GET_POSITION(b);
 				b &= b - 1;
 
 				assert(sq >= 0 && sq <= 63);
@@ -112,8 +113,8 @@ void initEvalInfo(EvalInfo *info, Thread *th) {
 		}
 	}
 
-	info->kingSq[WHITE] = __builtin_ctzll(th->whitePieceBB[KING]);	
-	info->kingSq[BLACK] = __builtin_ctzll(th->blackPieceBB[KING]);	
+	info->kingSq[WHITE] = GET_POSITION(th->whitePieceBB[KING]);	
+	info->kingSq[BLACK] = GET_POSITION(th->blackPieceBB[KING]);	
 
 	
 	info->kingZoneBB[WHITE] = info->kingAttacks[WHITE] | (info->kingAttacks[WHITE] >> 8);
@@ -146,17 +147,17 @@ int fullEval(u8 sideToMove, Thread *th) {
 	}	
 	
 
-	int nWhitePawns = __builtin_popcountll(th->whitePieceBB[PAWNS]);
-	int nWhiteKnights = __builtin_popcountll(th->whitePieceBB[KNIGHTS]);
-	int nWhiteBishops = __builtin_popcountll(th->whitePieceBB[BISHOPS]);
-	int nWhiteRooks = __builtin_popcountll(th->whitePieceBB[ROOKS]);
-	int nWhiteQueen = __builtin_popcountll(th->whitePieceBB[QUEEN]);
+	int nWhitePawns = POPCOUNT(th->whitePieceBB[PAWNS]);
+	int nWhiteKnights = POPCOUNT(th->whitePieceBB[KNIGHTS]);
+	int nWhiteBishops = POPCOUNT(th->whitePieceBB[BISHOPS]);
+	int nWhiteRooks = POPCOUNT(th->whitePieceBB[ROOKS]);
+	int nWhiteQueen = POPCOUNT(th->whitePieceBB[QUEEN]);
 
-	int nBlackPawns = __builtin_popcountll(th->blackPieceBB[PAWNS]);
-	int nBlackKnights = __builtin_popcountll(th->blackPieceBB[KNIGHTS]);
-	int nBlackBishops = __builtin_popcountll(th->blackPieceBB[BISHOPS]);
-	int nBlackRooks = __builtin_popcountll(th->blackPieceBB[ROOKS]);
-	int nBlackQueen = __builtin_popcountll(th->blackPieceBB[QUEEN]);
+	int nBlackPawns = POPCOUNT(th->blackPieceBB[PAWNS]);
+	int nBlackKnights = POPCOUNT(th->blackPieceBB[KNIGHTS]);
+	int nBlackBishops = POPCOUNT(th->blackPieceBB[BISHOPS]);
+	int nBlackRooks = POPCOUNT(th->blackPieceBB[ROOKS]);
+	int nBlackQueen = POPCOUNT(th->blackPieceBB[QUEEN]);
 
 	if (TUNE) {	
 		
@@ -240,7 +241,7 @@ int pawnsEval(u8 sideToMove, EvalInfo *evalInfo, Thread *th) {
 		u64 bitboard = sideToMove ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 		while (bitboard) {
 
-			int sq = __builtin_ctzll(bitboard);
+			int sq = GET_POSITION(bitboard);
 			bitboard &= bitboard - 1; 
 
 			T->pawnPSQT[sideToMove][sideToMove ? Mirror64[sq] : sq] = 1; 
@@ -270,7 +271,7 @@ int pawnsEval(u8 sideToMove, EvalInfo *evalInfo, Thread *th) {
 		th->blackPieceBB[PAWNS] & evalInfo->pawnsAttacks[BLACK]
 		: th->whitePieceBB[PAWNS] & evalInfo->pawnsAttacks[WHITE];
 
-	int nDefendedPawns = __builtin_popcountll(defendedPawns);
+	int nDefendedPawns = POPCOUNT(defendedPawns);
 	score += nDefendedPawns * weight_defended_pawn;
 
 	if (TUNE)	T->defendedPawns[sideToMove] = nDefendedPawns;
@@ -287,7 +288,7 @@ int pawnsEval(u8 sideToMove, EvalInfo *evalInfo, Thread *th) {
 		: wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
 	while (passedPawns) {
 		
-		sq = __builtin_ctzll(passedPawns);
+		sq = GET_POSITION(passedPawns);
 		passedPawns &= passedPawns - 1;
 
 		assert(sq >= 0 && sq <= 63);
@@ -328,7 +329,7 @@ int knightsEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
 	while (knightsBB) {
 
-		sq = __builtin_ctzll(knightsBB);
+		sq = GET_POSITION(knightsBB);
 		knightsBB &= knightsBB - 1;
 
 		assert(sq >= 0 && sq <= 63);
@@ -344,7 +345,7 @@ int knightsEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
             u64 bb = (attacksBB & evalInfo->kingAttacks[opponent]);
             if (bb)	
-           		evalInfo->kingAdjacentZoneAttacksCount[opponent] += __builtin_popcountll(bb);
+           		evalInfo->kingAdjacentZoneAttacksCount[opponent] += POPCOUNT(bb);
 		}
 
 		// undefended
@@ -368,7 +369,7 @@ int knightsEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 			& ~(side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]) 
 			& ~(evalInfo->pawnsAttacks[opponent]);
 
-		mobilityCount = __builtin_popcountll(mobilityBB);
+		mobilityCount = POPCOUNT(mobilityBB);
 
 		score += arr_weight_knight_mobility[mobilityCount];
 
@@ -397,7 +398,7 @@ int bishopsEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
 	u64 bishopBB = side ? th->blackPieceBB[BISHOPS] : th->whitePieceBB[BISHOPS];
 	
-	const int nBishops = __builtin_popcountll(bishopBB);
+	const int nBishops = POPCOUNT(bishopBB);
 	
 	if (nBishops == 2) {	// This should be equal to 2 and not greater or equal to 
 							// since we want to capture the weight for exactly 2 bishops
@@ -410,7 +411,7 @@ int bishopsEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
 	while (bishopBB) {
 	
-		sq = __builtin_ctzll(bishopBB);
+		sq = GET_POSITION(bishopBB);
 
 		bishopBB &= bishopBB - 1;
 
@@ -429,7 +430,7 @@ int bishopsEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
             u64 bb = (attacksBB & evalInfo->kingAttacks[opponent]);
             if (bb)	
-           		evalInfo->kingAdjacentZoneAttacksCount[opponent] += __builtin_popcountll(bb);
+           		evalInfo->kingAdjacentZoneAttacksCount[opponent] += POPCOUNT(bb);
 		}
 	
 
@@ -442,7 +443,7 @@ int bishopsEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
 		
 
-		int count = __builtin_popcountll(evalInfo->bishopsAttacks[side] 
+		int count = POPCOUNT(evalInfo->bishopsAttacks[side] 
 			& (side ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS]));
 		
 		if (count > 0) {
@@ -456,7 +457,7 @@ int bishopsEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
 		u64 mobilityBB = attacksBB & ~(side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 
-		mobilityCount = __builtin_popcountll(mobilityBB);
+		mobilityCount = POPCOUNT(mobilityBB);
 
 
 		score += arr_weight_bishop_mobility[mobilityCount];
@@ -497,7 +498,7 @@ int rooksEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
 	while (rooksBB) {
 
-		sq = __builtin_ctzll(rooksBB);
+		sq = GET_POSITION(rooksBB);
 		rooksBB &= rooksBB - 1;
 
 		assert(sq >= 0 && sq <= 63);
@@ -542,14 +543,14 @@ int rooksEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
             u64 bb = (attacksBB & evalInfo->kingAttacks[opponent]);
             if (bb)	
-           		evalInfo->kingAdjacentZoneAttacksCount[opponent] += __builtin_popcountll(bb);
+           		evalInfo->kingAdjacentZoneAttacksCount[opponent] += POPCOUNT(bb);
 		}
 	
 
 		u64 mobilityBB = attacksBB & 
 			~(side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 
-		mobilityCount = __builtin_popcountll(mobilityBB);
+		mobilityCount = POPCOUNT(mobilityBB);
 
 		score += arr_weight_rook_mobility[mobilityCount];
 
@@ -648,15 +649,14 @@ int queenEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 	int sq = -1;
 	int mobilityCount = 0;
 
-	const int pieceCount = 
-		__builtin_popcountll(th->whitePieceBB[PIECES] | th->blackPieceBB[PIECES]);
+	const int pieceCount = POPCOUNT(th->whitePieceBB[PIECES] | th->blackPieceBB[PIECES]);
 
 	u64 attacksBB = 0ULL, mobilityBB = 0ULL; 	
 	u64 queenBB = side ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN];
 
 	while (queenBB) {
 
-		sq = __builtin_ctzll(queenBB);
+		sq = GET_POSITION(queenBB);
 		queenBB &= queenBB - 1;
 
 		assert(sq >= 0 && sq <= 63);
@@ -672,7 +672,7 @@ int queenEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
 			u64 underdevelopedPiecesBB = (side ? RANK_8 : RANK_1) & minorPiecesBB; 
 
-			int count = __builtin_popcountll(underdevelopedPiecesBB);
+			int count = POPCOUNT(underdevelopedPiecesBB);
 			
 			score += count * weight_queen_underdeveloped_pieces;
 			
@@ -691,13 +691,13 @@ int queenEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
             u64 bb = (attacksBB & evalInfo->kingAttacks[opponent]);
             if (bb)	
-           		evalInfo->kingAdjacentZoneAttacksCount[opponent] += __builtin_popcountll(bb);
+           		evalInfo->kingAdjacentZoneAttacksCount[opponent] += POPCOUNT(bb);
 		}
 
 
 		mobilityBB = attacksBB & ~(side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 
-		mobilityCount = __builtin_popcountll(mobilityBB);
+		mobilityCount = POPCOUNT(mobilityBB);
 
 
 		score += arr_weight_queen_mobility[mobilityCount];
@@ -734,14 +734,14 @@ int queenEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 // 	if (TUNE)	T->kingPSQT[us][us ? Mirror64[kingSq] : kingSq] = 1; 			
 
 // 	// TODO logic needs rechecking (many pawns or just three pawns)
-// 	const int nPawnsShield = __builtin_popcountll(shieldBB & friendlyPawns);
+// 	const int nPawnsShield = POPCOUNT(shieldBB & friendlyPawns);
 // 	score += nPawnsShield * weight_king_pawn_shield;
 
 // 	// check for enemy pawns storm
 // 	// add another rank resulting in 3x3 area above king for enemy pawns storm
 // 	u64 enemyPawnStormArea = shieldBB | (us ? shieldBB >> 8 : shieldBB << 8);
 	
-// 	const int nEnemyPawnsStorm = __builtin_popcountll(enemyPawnStormArea & enemyPawns);
+// 	const int nEnemyPawnsStorm = POPCOUNT(enemyPawnStormArea & enemyPawns);
 // 	score += nEnemyPawnsStorm * weight_king_enemy_pawn_storm;
 
 // 	if (TUNE) {
@@ -869,7 +869,7 @@ int kingEval(u8 us, EvalInfo *evalInfo, Thread *th) {
 	if (TUNE)	T->kingPSQT[us][us ? Mirror64[kingSq] : kingSq] = 1; 			
 
 
-	const int nPawnsShield = __builtin_popcountll(evalInfo->kingZoneBB[us] & friendlyPawns);
+	const int nPawnsShield = POPCOUNT(evalInfo->kingZoneBB[us] & friendlyPawns);
 	score += nPawnsShield * weight_king_pawn_shield;
 
 	if (TUNE) 	T->kingPawnShield[us] = nPawnsShield;
@@ -878,13 +878,13 @@ int kingEval(u8 us, EvalInfo *evalInfo, Thread *th) {
 	const u64 enemyPawnStormArea = evalInfo->kingZoneBB[us] | 
 		(us ? evalInfo->kingZoneBB[us] >> 8 : evalInfo->kingZoneBB[us] << 8);
 
-	const int nEnemyPawnsStorm = __builtin_popcountll(enemyPawnStormArea & enemyPawns);
+	const int nEnemyPawnsStorm = POPCOUNT(enemyPawnStormArea & enemyPawns);
 	score += nEnemyPawnsStorm * weight_king_enemy_pawn_storm;
 
 	if (TUNE)	T->kingEnemyPawnStorm[us] = nEnemyPawnsStorm;
 	
 
-	const int queenCount = __builtin_popcountll(opponent ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN]);
+	const int queenCount = POPCOUNT(opponent ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN]);
 
 	if (queenCount >= 1 
 		&& evalInfo->kingAttackersCount[us] >= 2
@@ -915,7 +915,7 @@ int kingEval(u8 us, EvalInfo *evalInfo, Thread *th) {
 
 			b &= attackedByOthers;
 
-			count = __builtin_popcountll(b);
+			count = POPCOUNT(b);
 
 	        safetyScore += weight_queen_safe_contact_check * count;
 
@@ -935,7 +935,7 @@ int kingEval(u8 us, EvalInfo *evalInfo, Thread *th) {
 
 			b &= attackedByOthers;
 
-			count = __builtin_popcountll(b);
+			count = POPCOUNT(b);
 
 	        safetyScore += weight_rook_safe_contact_check * count;
 			
@@ -948,7 +948,7 @@ int kingEval(u8 us, EvalInfo *evalInfo, Thread *th) {
 		b2 = b & evalInfo->queensAttacks[opponent];
 		if(b2) {
 		
-			count = __builtin_popcountll(b);
+			count = POPCOUNT(b);
 			
 			safetyScore += weight_queen_check * count;
 			
@@ -962,7 +962,7 @@ int kingEval(u8 us, EvalInfo *evalInfo, Thread *th) {
 		b2 = b & evalInfo->rooksAttacks[opponent];
 		if(b2) {
 			
-			count = __builtin_popcountll(b);
+			count = POPCOUNT(b);
 	
 			safetyScore += weight_rook_check * count;
 
@@ -976,7 +976,7 @@ int kingEval(u8 us, EvalInfo *evalInfo, Thread *th) {
 	    b2 = b & evalInfo->bishopsAttacks[opponent];
 	    if(b2) {
 
-			count = __builtin_popcountll(b);
+			count = POPCOUNT(b);
 
 		  	safetyScore += weight_bishop_check * count;
 
@@ -989,7 +989,7 @@ int kingEval(u8 us, EvalInfo *evalInfo, Thread *th) {
 	    b2 = b & evalInfo->knightsAttacks[opponent];
 	    if(b2) {
 
-			count = __builtin_popcountll(b);
+			count = POPCOUNT(b);
 
 	    	safetyScore += weight_knight_check * count;
 	  		
@@ -1019,12 +1019,8 @@ int kingEval(u8 us, EvalInfo *evalInfo, Thread *th) {
 		T->queenAttack[us] = 0;
     }
 
-
-
 	return score;
 }
-
-
 
 
 int PSQTScore(u8 sideToMove, Thread *th) {
@@ -1036,7 +1032,7 @@ int PSQTScore(u8 sideToMove, Thread *th) {
 		u64 bitboard = sideToMove ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
 		while (bitboard) {
 
-			const int sq = __builtin_ctzll(bitboard); 
+			const int sq = GET_POSITION(bitboard); 
 			bitboard &= bitboard - 1; 
 
 			score += sideToMove ? BLACK_PSQT[piece][sq] : WHITE_PSQT[piece][sq];
@@ -1078,7 +1074,7 @@ int evalBoard(u8 side, Thread *th, EvalInfo *evalInfo) {
 
 	int score = 0;
 
-	int nCenterControl = __builtin_popcountll(CENTER & evalInfo->attacks[side]);
+	int nCenterControl = POPCOUNT(CENTER & evalInfo->attacks[side]);
 
 	score += nCenterControl * weight_center_control;
 
@@ -1099,13 +1095,13 @@ int numOfPawnHoles(u8 side, Thread *th) {
 	u64 holes = ~frontAttackSpans & EXTENDED_CENTER
 		& (side ? (RANK_5 | RANK_6) : (RANK_3 | RANK_4)); 
 
-	return __builtin_popcountll(holes);
+	return POPCOUNT(holes);
 }
 
 	
 int isolatedPawns(u8 side, Thread *th) {
 
-	return __builtin_popcountll(isolanis(side ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS]));
+	return POPCOUNT(isolanis(side ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS]));
 }
 
 int numOfDoublePawns(u8 side, Thread *th) {
@@ -1114,25 +1110,25 @@ int numOfDoublePawns(u8 side, Thread *th) {
 
 	u64 doublePawnsBB = side ? bPawnsInfrontOwn(pawnsBB) : wPawnsInfrontOwn(pawnsBB); 
 
-	return __builtin_popcountll(doublePawnsBB);
+	return POPCOUNT(doublePawnsBB);
 }
 
 int countBackWardPawns(u8 side, Thread *th) {
 
-	return side ? __builtin_popcountll(bBackward(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS])) : 
-		__builtin_popcountll(wBackward(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]));
+	return side ? POPCOUNT(bBackward(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS])) : 
+		POPCOUNT(wBackward(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]));
 }
 
 int countPassedPawns(u8 side, Thread *th) {
 
-	return side ? __builtin_popcountll(bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS])) : 
-		__builtin_popcountll(wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]));
+	return side ? POPCOUNT(bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS])) : 
+		POPCOUNT(wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]));
 }
 
 int countDefendedPawns(u8 side, Thread *th) {
 
-	return side ? __builtin_popcountll(bPawnDefendedFromWest(th->blackPieceBB[PAWNS])) + __builtin_popcountll(bPawnDefendedFromEast(th->blackPieceBB[PAWNS])) : 
-		__builtin_popcountll(wPawnDefendedFromWest(th->whitePieceBB[PAWNS])) + __builtin_popcountll(wPawnDefendedFromEast(th->whitePieceBB[PAWNS]));
+	return side ? POPCOUNT(bPawnDefendedFromWest(th->blackPieceBB[PAWNS])) + POPCOUNT(bPawnDefendedFromEast(th->blackPieceBB[PAWNS])) : 
+		POPCOUNT(wPawnDefendedFromWest(th->whitePieceBB[PAWNS])) + POPCOUNT(wPawnDefendedFromEast(th->whitePieceBB[PAWNS]));
 }
 
 // pawns with at least one pawn in front on the same file
@@ -1219,91 +1215,12 @@ u64 isolanis(u64 pawns) {
          & noNeighborOnWestFile(pawns);
 }
 
-
 u64 openFiles(u64 wpanws, u64 bpawns) {
  
    return ~fileFill(wpanws) & ~fileFill(bpawns);
 }
 
 u64 halfOpenOrOpenFile(u64 gen) {return ~fileFill(gen);}
-
-
-/**
-* Evaluation subroutine suitable for chess engines.
-* -------------------------------------------------
-* Piece codes are
-*     wking=1, wqueen=2, wrook=3, wbishop= 4, wknight= 5, wpawn= 6,
-*     bking=7, bqueen=8, brook=9, bbishop=10, bknight=11, bpawn=12,
-* Squares are
-*     A1=0, B1=1 ... H8=63
-* Input format:
-*     piece[0] is white king, square[0] is its location
-*     piece[1] is black king, square[1] is its location
-*     ..
-*     piece[x], square[x] can be in any order
-*     ..
-*     piece[n+1] is set to 0 to represent end of array
-* Returns
-*   Score relative to side to move in approximate centi-pawns
-*/
-
-
-int vgenPieceCodes[16] = {0, KING, QUEEN, ROOKS, BISHOPS, KNIGHTS, PAWNS,
-		KING, QUEEN, ROOKS, BISHOPS, KNIGHTS, PAWNS, 0, 0, 0};
-
-/**
- * Evaluate current position on board according to pieces value and pieces position according to the NNUE
- * @return score of the current board
- */
-int evaluateNNUE(u8 side, Thread *th) {
-
-    u64 bitboard;
-
-    int piece, square;
-
-    // arrays and fields for stockfish nnue evaluation
-    int pieces[33];
-    int squares[33];
-    int index = 2;
-
-    for (int pieceType = 1; pieceType <= 12; pieceType++) {
-        
-        // init piece bitboard copy
-        bitboard = pieceType <= 6 ? th->whitePieceBB[vgenPieceCodes[pieceType]]
-        	: th->blackPieceBB[vgenPieceCodes[pieceType]];
-
-        while (bitboard) {
-            // getting piece and location
-            piece = pieceType;
-            square = __builtin_ctzll(bitboard);
-    		// removing piece
-            bitboard &= bitboard - 1;
-        
-            if (piece == 1) {
-                // handeling white king nnue
-                pieces[0] = piece;
-                squares[0] = square;
-            } else if (piece == 7) {
-                // handeling black king nnue
-                pieces[1] = piece;
-                squares[1] = square;
-            } else {
-                // converting rest of the pieces to converted squares for nnue evaluation
-                pieces[index] = piece;
-                squares[index] = square;
-                index++;
-            }
-        }
-    }
-
-    // set final zero on both nnue array
-    pieces[index] = 0;
-    squares[index] = 0;
-
-    // evaluating with NNUE
-    return evaluateNNUE(side, pieces, squares);
-}
-
 
 
 
