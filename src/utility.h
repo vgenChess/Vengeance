@@ -55,6 +55,7 @@ void initPawnHashKey(u8 side, Thread *th);
 void initMovesHistoryTable(Thread *th);
 
 u64 getAttacks(const u8 stm, Thread *th);
+bool isPositionDraw(Thread *th);
 
 u64 soutOne (u64 b);
 u64 nortOne (u64 b);

@@ -375,6 +375,10 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, SearchInf
 		}
 
 		th->movesHistory[th->moves_history_counter + PLY + 1].hashKey = th->hashKey;
+
+
+		// Check for drawish endgame
+		if (isPositionDraw(th)) return 0;
 	}
 
 
