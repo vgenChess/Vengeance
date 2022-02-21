@@ -526,7 +526,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, SearchInf
 	int32_t reduce = 0, extend = 0, movesPlayed = 0, newDepth = 0;
 	int32_t score = -VALI32_MATE, bestScore = -VALI32_MATE;
 
-	u32 bestMove = NO_MOVE, previousMove = PLY == 0 ? NO_MOVE : th->moveStack[PLY - 1].move;
+	u32 bestMove = NO_MOVE, previousMove = IS_ROOT_NODE ? NO_MOVE : th->moveStack[PLY - 1].move;
 
 	const u32 KILLER_MOVE_1 = th->moveStack[PLY].killerMoves[0];
 	const u32 KILLER_MOVE_2 = th->moveStack[PLY].killerMoves[1];
