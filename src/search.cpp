@@ -212,7 +212,7 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
 	searchInfo.ply = 0;
 	searchInfo.realDepth = th->depth;
 	searchInfo.isNullMoveAllowed = false;
-	searchInfo.pline = line;
+	searchInfo.pline = line;		
 
 	int16_t failHighCount = 0;
 	while (true) {
@@ -221,7 +221,7 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
 		th->selDepth = VALI16_NO_DEPTH;	
 		searchInfo.pline.clear();
 		
-		score = alphabetaSearch(alpha, beta, th, &searchInfo);
+		score = alphabetaSearch(alpha, beta, VALI32_MATE, th, &searchInfo);
 
 		if (Threads.stop)
         	break;
@@ -292,11 +292,10 @@ void checkTime() {
 }
 
 
-int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, SearchInfo *si) {
+int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread *th, SearchInfo *si) {
 
 
 	// if (alpha >= beta) {
-
 	// 	std::cout<<"realDepth=" << si->realDepth << ", depth=" << si->depth << ", ply =" << si->ply << "\n";
 	// 	std::cout<<alpha<<","<<beta<<std::endl;
 	// }
@@ -405,18 +404,42 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, SearchInf
 
 
 	const bool IS_IN_CHECK = isKingInCheck(SIDE, th);
+    bool improving = false;
 
-    int32_t sEval = IS_IN_CHECK ? VALI32_UNKNOWN : (ttMatch ? tt->sEval : fullEval(SIDE, th));
-	
-	if (!ttMatch) recordHash(NO_MOVE, VALI16_NO_DEPTH, VALI32_UNKNOWN, VALUI8_NO_BOUND, sEval, th);		
-	
-	bool improving = !IS_IN_CHECK && PLY >= 2 && sEval > th->moveStack[PLY - 2].sEval;
+	int32_t sEval = VALI32_UNKNOWN;
 
+	if (IS_IN_CHECK) {
+        
+        sEval = VALI32_UNKNOWN;
+        improving = false;
+    } else if (ttMatch) {
+        
+        sEval = tt->sEval;
+        if (sEval == VALI32_UNKNOWN)
+            sEval = fullEval(SIDE, th); // Do not save sEval to the TT since it can overwrite the previous hash entry
+    } else {
 
+        sEval = fullEval(SIDE, th);
+
+        recordHash(NO_MOVE, VALI16_NO_DEPTH, VALI32_UNKNOWN, VALUI8_NO_BOUND, sEval, th);		
+    }
+
+    if (PLY > 1 && !IS_IN_CHECK) {
+
+    	if (th->moveStack[PLY - 2].sEval != VALI32_UNKNOWN) {
+
+    		improving = sEval > th->moveStack[PLY - 2].sEval;
+    	} else if (PLY > 3 && th->moveStack[PLY - 4].sEval != VALI32_UNKNOWN){
+
+    		improving = sEval > th->moveStack[PLY - 4].sEval;
+    	} else {
+
+    		improving = false;
+    	}
+    }
 
 	const int16_t VALI16_OPP_PIECES = POPCOUNT(
-		OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
-	
+		OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);	
 
 	// Reverse Futility Pruning (Under observation)
 	if (	!IS_ROOT_NODE 
@@ -479,7 +502,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, SearchInf
 		searchInfo.isNullMoveAllowed = false;
 		
 		searchInfo.pline.clear();
-		int score = -alphabetaSearch(-beta, -beta + 1, th, &searchInfo);
+		int score = -alphabetaSearch(-beta, -beta + 1, mate - 1, th, &searchInfo);
 
 
 		unmakeNullMove(PLY, th);
@@ -501,6 +524,8 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, SearchInf
 		&&	std::abs(beta) < VALUI16_WIN_SCORE 
 		&&	VALI16_OPP_PIECES > 3)	{ 
 			
+		assert(sEval != VALI32_UNKNOWN);
+
 		if (depth == 1 && sEval + VALUI16_FPRUNE <= alpha) // Futility Pruning
 			fPrune = true;  	
 		
@@ -512,7 +537,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, SearchInf
 	}
 	
 
-
+	
 
 	// Alternative to IID
 	if (depth >= 4 && !ttMove) 
@@ -704,7 +729,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, SearchInf
 			searchInfo.depth = newDepth;
 			searchInfo.pline.clear();
 
-			score = -alphabetaSearch(-beta, -alpha, th, &searchInfo);
+			score = -alphabetaSearch(-beta, -alpha, mate - 1, th, &searchInfo);
 		} else {
 			
 			// Late Move Reductions (Under observation)
@@ -731,7 +756,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, SearchInf
 	        	searchInfo.depth = newDepth - r;	
 				searchInfo.pline.clear();
 				
-				score = -alphabetaSearch(-alpha - 1, -alpha, th, &searchInfo);			
+				score = -alphabetaSearch(-alpha - 1, -alpha, mate - 1, th, &searchInfo);			
 
 			} else {
 
@@ -743,11 +768,11 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, SearchInf
 				searchInfo.depth = newDepth;
 				searchInfo.pline.clear();
 
-				score = -alphabetaSearch(-alpha - 1, -alpha, th, &searchInfo);					
+				score = -alphabetaSearch(-alpha - 1, -alpha, mate - 1, th, &searchInfo);					
 		
 				if (score > alpha && score < beta) {
 
-					score = -alphabetaSearch(-beta, -alpha, th, &searchInfo);					
+					score = -alphabetaSearch(-beta, -alpha, mate - 1, th, &searchInfo);					
 				}
 			}
 		}
@@ -808,7 +833,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, SearchInf
 
 	if (movesPlayed == 0) { // Mate and stalemate check
 
-		return IS_IN_CHECK ? -VALI32_MATE + PLY : 0;
+		return IS_IN_CHECK ? -mate : 0;
 	}
 
 
