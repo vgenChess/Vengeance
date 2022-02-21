@@ -34,7 +34,6 @@ static void runBenchmark(int argc, char **argv);
 
 int main(int argc, char **argv) {
     
-    // init_piece_bb();     //TODO cleanup
     init_index_bb();
     init_king_attacks();
     init_knight_attacks();
@@ -45,20 +44,13 @@ int main(int argc, char **argv) {
 	init_inbetween_bb(); 
     initPSQT();
     initHashTable(16);      // default hash size = 16 megabytes
-    
-    // initNNUE("nn.bin");
-    
     nn_load(&nnue, NN_FILE) ;
-
-    int nProcessors = omp_get_max_threads();
-    omp_set_num_threads(nProcessors);
+    omp_set_num_threads(omp_get_max_threads());
 
 
     option_thread_count = 1;
     
 
-    // initThreads(); 
-  
     timeSet = false;
     stopped = false;
     

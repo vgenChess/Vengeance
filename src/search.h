@@ -24,6 +24,8 @@ class SearchInfo {
 		
 		bool isNullMoveAllowed;	 
 
+		std::vector<u32> pline;
+
 		SearchInfo() {
 			
 			side = WHITE;
@@ -31,11 +33,13 @@ class SearchInfo {
 			depth = 0;
 		
 			isNullMoveAllowed = false;
+
+			pline.clear();
 		}
 };
 
 
-void initThreads();
+void initLMRTable();
 
 void startSearch(u8 sideToMove);
 void searchMain(int side, SearchThread *thread);
@@ -46,7 +50,7 @@ void display(u8 sideToMove, int depth, int selDepth, int score, std::vector<u32>
 void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> &quietMovesPlayed, Thread *th);
 void updateCaptureHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> &captureMovesPlayed, Thread *th);
 
-int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, std::vector<u32> *pline, SearchInfo *si, int32_t mate);
+int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, SearchInfo *si);
 
 int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, SearchThread *th, std::vector<u32> *pline);
 
