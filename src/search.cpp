@@ -537,7 +537,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 	}
 	
 
-	
+
 
 	// Alternative to IID
 	if (depth >= 4 && !ttMove) 
@@ -918,13 +918,20 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 
 
 	u32 bestMove = NO_MOVE;
-	int bestScore = -VALI32_MATE;
-	int sEval;
+	int32_t eval, sEval, bestScore = -VALI32_MATE;
+	
+	if (ttMatch) {
+        
+        eval = sEval = tt->sEval;
+        if (sEval == VALI32_UNKNOWN)
+            eval = sEval = fullEval(side, th); // Do not save sEval to the TT since it can overwrite the previous hash entry
+    } else {
 
-	int eval = sEval = (ttMatch && tt->sEval != VALI32_UNKNOWN) ? tt->sEval : fullEval(side, th);
-	
-	if (!ttMatch) recordHash(NO_MOVE, VALI16_NO_DEPTH, VALI32_UNKNOWN, VALUI8_NO_BOUND, eval, th);		
-	
+        eval = sEval = fullEval(side, th);
+
+        recordHash(NO_MOVE, VALI16_NO_DEPTH, VALI32_UNKNOWN, VALUI8_NO_BOUND, sEval, th);		
+    }
+
 
 	bestScore = eval;
 	alpha = std::max(alpha, eval);
