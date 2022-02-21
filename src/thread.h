@@ -40,8 +40,6 @@ public:
 
 	u64 hashKey, pawnsHashKey;
 	
-	NnueAccumulator accumulator;
-		
 	explicit Thread();
 
 	void initMembers();

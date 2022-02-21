@@ -15,31 +15,29 @@ extern std::vector<Thread> sThreads;
 
 class SearchInfo {
 
-	public:
+public:
 		
-		u8 side;
-		int ply;
-		int depth;
-		int realDepth;
+	u8 side;
+	int ply;
+	int depth;
+	int realDepth;
+	
+	bool isNullMoveAllowed;	 
+
+	std::vector<u32> pline;
+
+	SearchInfo() {
 		
-		bool isNullMoveAllowed;	 
+		side = WHITE;
+		ply = 0;
+		depth = 0;
+	
+		isNullMoveAllowed = false;
 
-		std::vector<u32> pline;
-
-		SearchInfo() {
-			
-			side = WHITE;
-			ply = 0;
-			depth = 0;
-		
-			isNullMoveAllowed = false;
-
-			pline.clear();
-		}
+		pline.clear();
+	}
 };
 
-
-void initLMRTable();
 
 void startSearch(u8 sideToMove);
 void searchMain(int side, SearchThread *thread);

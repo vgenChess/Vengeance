@@ -13,7 +13,6 @@
 #include "utility.h"
 #include "hash.h"
 #include "thread.h"
-#include "cerebrum.h"
 #include "functions.h"
 
 
@@ -95,33 +94,6 @@ void make_move(int ply, u32 move, Thread *th) {
 	// making any move will make the ep move invalid
 	th->moveStack[ply].epFlag = 0;
 
-
-
-	if (!th->isInit) {
-
-		memcpy(&th->undoMoveStack[ply].accumulator,
-			&th->accumulator, sizeof(th->accumulator));
- 
-		if (	piece == KING 
-			||	mtype == MOVE_PROMOTION 
-			||	mtype == MOVE_ENPASSANT) {
- 
-			nn_inputs_upd_all(&nnue, th);
-	 	 }	else {
-		
-			if (piece > 0) {
-          
-				nn_inputs_mov_piece(&nnue, th, piece - 1,
-					(sideToMove== WHITE ? 0 : 1), fromSq, toSq);
-     		}	   
-     	
-			if (mtype==MOVE_CAPTURE && c_piece > 0)	{
-       
-   	  	    	nn_inputs_del_piece(&nnue, th, c_piece - 1, 	
-		 	 		(sideToMove == WHITE ? 1 : 0), toSq);
-   	  		}
- 		}
-	}
 
 
 	switch (mtype) {
@@ -598,10 +570,6 @@ void make_move(int ply, u32 move, Thread *th) {
 
 void unmake_move(int ply, u32 move, Thread *th) {
  
-	if (!th->isInit)
-		memcpy(&th->accumulator, &th->undoMoveStack[ply].accumulator,
-			sizeof(th->undoMoveStack[ply].accumulator));
- 
 	u8 castleDirection = castleDir(move);
 
 	const u8 sideToMove = colorType(move);
@@ -811,14 +779,9 @@ void unmake_move(int ply, u32 move, Thread *th) {
 
 void makeNullMove(int ply, Thread *th) { // Needs investigation
 	
-	if (!th->isInit)
-    	memcpy(&th->undoMoveStack[ply].accumulator, &th->accumulator, sizeof(th->accumulator));
- 
- 
 	const int mhCounter = th->moves_history_counter + ply; // Needs investigation 
 
 	th->undoMoveStack[ply].fiftyMovesCounter = th->movesHistory[mhCounter].fiftyMovesCounter;
-
 
 	th->undoMoveStack[ply].castleFlags = th->moveStack[ply].castleFlags;
 	th->undoMoveStack[ply].epFlag = th->moveStack[ply].epFlag;
@@ -837,10 +800,6 @@ void makeNullMove(int ply, Thread *th) { // Needs investigation
 
 void unmakeNullMove(int ply, Thread *th) {
 	
-	if (!th->isInit)
-    	memcpy(&th->accumulator, &th->undoMoveStack[ply].accumulator, sizeof(th->undoMoveStack[ply].accumulator));
-
-
 	th->moveStack[ply].castleFlags = th->undoMoveStack[ply].castleFlags;
 	th->moveStack[ply].epFlag = th->undoMoveStack[ply].epFlag;
 	th->moveStack[ply].epSquare = th->undoMoveStack[ply].epSquare;

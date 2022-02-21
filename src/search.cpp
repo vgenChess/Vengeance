@@ -31,7 +31,6 @@
 #include "thread.h"
 #include "see.h"
 #include "constants.h"
-#include "cerebrum.h"
 #include "history.h"
 #include "ucireport.h"
 #include "functions.h"
@@ -403,7 +402,6 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, SearchInf
 
 	const bool IS_IN_CHECK = isKingInCheck(SIDE, th);
 
-    // int32_t sEval = IS_IN_CHECK ? VALI32_UNKNOWN : (ttMatch ? tt->sEval : nn_eval(&nnue, th, SIDE));
     int32_t sEval = IS_IN_CHECK ? VALI32_UNKNOWN : (ttMatch ? tt->sEval : fullEval(SIDE, th));
 	
 	if (!ttMatch) recordHash(NO_MOVE, VALI16_NO_DEPTH, VALI32_UNKNOWN, VALUI8_NO_BOUND, sEval, th);		
@@ -863,8 +861,8 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 
 
 	if (ply >= MAX_PLY - 1) {
+	
 		return fullEval(side, th);
-		// return nn_eval(&nnue, th, side);
 	}
 
 
@@ -894,8 +892,6 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 	int bestScore = -VALI32_MATE;
 	int sEval;
 
-	// pull cached eval if it exists
-	// int eval = sEval = (ttMatch && tt->sEval != VALI32_UNKNOWN) ? tt->sEval : nn_eval(&nnue, th, side);
 	int eval = sEval = (ttMatch && tt->sEval != VALI32_UNKNOWN) ? tt->sEval : fullEval(side, th);
 	
 	if (!ttMatch) recordHash(NO_MOVE, VALI16_NO_DEPTH, VALI32_UNKNOWN, VALUI8_NO_BOUND, eval, th);		

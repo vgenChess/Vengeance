@@ -23,12 +23,8 @@
 #include "evaluate.h"
 #include "search.h"
 #include "uci.h"
-#include "NnueEval.h"
-#include "cerebrum.h"
 #include "fen.h"
 #include "functions.h"
-
-NN_Network nnue;
 
 static void runBenchmark(int argc, char **argv);
 
@@ -44,7 +40,6 @@ int main(int argc, char **argv) {
 	init_inbetween_bb(); 
     initPSQT();
     initHashTable(16);      // default hash size = 16 megabytes
-    nn_load(&nnue, NN_FILE) ;
     omp_set_num_threads(omp_get_max_threads());
 
 

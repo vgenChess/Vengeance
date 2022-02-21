@@ -13,6 +13,7 @@
 #include <vector>
 #include <thread>
 #include <sstream>
+#include <cmath>
 
 #include "uci.h"
 #include "utility.h"
@@ -25,7 +26,6 @@
 #include "evaluate.h"
 #include "thread.h"
 #include "tuner.h"
-#include "cerebrum.h"
 #include "ucireport.h"
 
 #define NAME "V0.9"

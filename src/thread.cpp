@@ -3,7 +3,6 @@
 #include "thread.h"
 #include "search.h"
 #include "constants.h"
-#include "cerebrum.h"
 
 Thread initThread;
 SearchThreadPool Threads; // Global object
@@ -330,8 +329,6 @@ void SearchThread::init() {
 
 	hashKey = initThread.hashKey;
 	pawnsHashKey = initThread.pawnsHashKey;
-
-	nn_inputs_upd_all(&nnue, this); 
 }
 
 void SearchThread::search() {
