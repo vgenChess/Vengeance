@@ -211,14 +211,15 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
 
 	searchInfo.side = sideToMove;
 	searchInfo.ply = 0;
-	searchInfo.depth = th->depth;
 	searchInfo.realDepth = th->depth;
 	searchInfo.isNullMoveAllowed = false;
 	searchInfo.pline = line;
 
+	int16_t failHighCount = 0;
 	while (true) {
-
-		th->selDepth = VALI16_NO_DEPTH;
+		
+		searchInfo.depth = std::max( 1, searchInfo.realDepth - failHighCount);
+		th->selDepth = VALI16_NO_DEPTH;	
 		searchInfo.pline.clear();
 		
 		score = alphabetaSearch(alpha, beta, th, &searchInfo);
@@ -229,11 +230,15 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
 		if (score <= alpha)	{
 
 			beta = (alpha + beta) / 2;
-			alpha = std::max(alpha - window, -VALI32_MATE);
+			alpha = std::max(score - window, -VALI32_MATE);
+			
+			failHighCount = 0;
 		}
 		else if (score >= beta)	{
 
-			beta = std::min(beta + window, VALI32_MATE);
+			beta = std::min(score + window, VALI32_MATE);
+			
+			if (std::abs(score) < VALUI16_WIN_SCORE) failHighCount++;
 		}	
 		else {
 
@@ -248,7 +253,7 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
 			break;
 		}
 
-		window = window + window / 2; 
+		window += window / 4; 
 	}
 
 	
@@ -703,7 +708,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, SearchThread *th, SearchInf
 			// Late Move Reductions (Under observation)
 
 			if (	depth > 2
-				&&	movesPlayed > 4
+				&&	movesPlayed > 3
 				&&	isQuietMove) {
 				
 		        
