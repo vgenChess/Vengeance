@@ -9,9 +9,7 @@
 #include "thread.h"
 #include "evaluate.h"
 
-
 extern std::vector<Thread> sThreads;	
-
 
 class SearchInfo {
 
@@ -39,22 +37,19 @@ public:
 };
 
 
-void startSearch(u8 sideToMove);
-void searchMain(int side, SearchThread *thread);
-void aspirationWindowSearch(u8 sideToMove, SearchThread *th);
+void startSearch(u8 side);
+void iterativeDeepeningSearch(int side, SearchThread *thread);
+void aspirationWindowSearch(u8 side, SearchThread *th);
 
-void display(u8 sideToMove, int depth, int selDepth, int score, std::vector<u32> pvLine);
+int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread *th, SearchInfo *si);
+int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, SearchThread *th, std::vector<u32> *pline);
 
 void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> &quietMovesPlayed, Thread *th);
 void updateCaptureHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> &captureMovesPlayed, Thread *th);
 
-int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread *th, SearchInfo *si);
-
-int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, SearchThread *th, std::vector<u32> *pline);
-
 void getMoveList(int ply, int side, std::vector<Move> &moves, u8 stage, Thread *th);
 
-u64 attacksTo(u64 occupied, u8 square, u8 sideToMove, Thread *th);
+u64 attacksTo(u64 occupied, u8 square, u8 side, Thread *th);
 
 void debugSEE(char ch, int sq);
 

@@ -822,24 +822,21 @@ void writeEvalToFile() {
 		
 		while (getline(newfile, tp)) {
 
+			// std::string fen = tp.substr(0, tp.find(";"));
 
-			std::string fen = tp.substr(0, tp.find(";"));
+			// if (fen.length() <= 0) continue;
 
-
-
-			if (fen.length() <= 0) continue;
-
-			int score = evaluateFENNNUE(&fen[0]);
+			// int score = evaluateFENNNUE(&fen[0]);
 
 			// u8 side = parseFen(const_cast<char *>(fen.c_str()), &th);
 
 			// int score = evaluateNNUE(side, &th);
 
-			foutput<<fen << " " << "{" << score << "}" << "\n"; 
+			// foutput<<fen << " " << "{" << score << "}" << "\n"; 
 			
-			count++;
+			// count++;
 
-			if (count % 10000 == 0) std::cout << count << " eval for entries written" << std::endl;	
+			// if (count % 10000 == 0) std::cout << count << " eval for entries written" << std::endl;	
 		}
 	}
 

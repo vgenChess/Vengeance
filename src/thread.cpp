@@ -9,99 +9,6 @@ SearchThreadPool Threads; // Global object
 
 uint64_t Thread::bestMoveNodes[64][64];
 
-void SearchThreadPool::set(size_t requested) {
-
-	if (size() > 0)   // destroy any existing thread(s)
-	{
-		main()->wait_for_search_finished();
-
-		while (size() > 0)
-			delete back(), pop_back();
-	}
-
-	if (requested > 0)   // create new thread(s)
-	{
-		push_back(new SearchThread(0));
-
-		while (size() < requested)
-			push_back(new SearchThread(size()));		
-
-		clear();
-
-		// Reallocate the hash with the new threadpool size
-		// TT.resize(size_t(Options["Hash"]));
-
-		// Init thread number dependent search params.
-		// Search::init();
-	}
-}
-
-/// ThreadPool::clear() sets threadPool data to initial values
-
-void SearchThreadPool::clear() {
-
-	for (SearchThread* th : *this)
-		th->clear();
-}
-
-/// ThreadPool::start_thinking() wakes up main thread waiting in idle_loop() and
-/// returns immediately. Main thread will wake up other threads and start the search.
-
-void SearchThreadPool::start_thinking() {
-
-	main()->wait_for_search_finished();
-
-	stop = false;
-
-	for (SearchThread* th : *this) {
-
-		th->init();
-	}
-
-	main()->start_searching();
-}
-
-/// Start non-main threads
-
-void SearchThreadPool::start_searching() {
-
-    for (SearchThread* th : *this)
-        if (th != front()) 
-            th->start_searching();
-}
-
-/// Wait for non-main threads
-
-void SearchThreadPool::wait_for_search_finished() const {
-
-    for (SearchThread* th : *this)
-        if (th != front())
-            th->wait_for_search_finished();
-}
-
-uint64_t SearchThreadPool::getTotalNodes() const {
-
-	uint64_t sum = 0;
-	for (SearchThread* thread : *this) {
-
-		sum += thread->nodes;
-	}
-
-	return sum;
-}
-
-uint64_t SearchThreadPool::getTotalTTHits() const {
-
-	uint64_t sum = 0;
-	for (SearchThread* thread : *this) {
-
-		sum += thread->ttHits;
-	}
-
-	return sum;
-}
-
-
 
 Thread::Thread() {
 
@@ -178,7 +85,7 @@ void Thread::clear() {
 		for (int j = 0; j < 64; ++j) {
 			for (int k = 0; k < 8; ++k) {
 
-				this->capture_history_score[i][j][k] = 0;
+				this->captureHistoryScore[i][j][k] = 0;
 			}
 		}
 	}
@@ -216,8 +123,6 @@ void Thread::clear() {
 	this->occupied = 0;
 	this->empty = 0;	
 }
-
-
 
 
 /// Thread constructor launches the thread and waits until it goes to sleep
@@ -336,11 +241,101 @@ void SearchThread::search() {
 	if (this == Threads.main()) {
 
 		startSearch(this->side);
-	}
-	else {
+	} else {
 
-		searchMain(this->side, this);
+		iterativeDeepeningSearch(this->side, this);
 	}
 }
 
 
+void SearchThreadPool::set(size_t requested) {
+
+	if (size() > 0)   // destroy any existing thread(s)
+	{
+		main()->wait_for_search_finished();
+
+		while (size() > 0)
+			delete back(), pop_back();
+	}
+
+	if (requested > 0)   // create new thread(s)
+	{
+		push_back(new SearchThread(0));
+
+		while (size() < requested)
+			push_back(new SearchThread(size()));		
+
+		clear();
+
+		// Reallocate the hash with the new threadpool size
+		// TT.resize(size_t(Options["Hash"]));
+
+		// Init thread number dependent search params.
+		// Search::init();
+	}
+}
+
+/// ThreadPool::clear() sets threadPool data to initial values
+
+void SearchThreadPool::clear() {
+
+	for (SearchThread* th : *this)
+		th->clear();
+}
+
+/// ThreadPool::start_thinking() wakes up main thread waiting in idle_loop() and
+/// returns immediately. Main thread will wake up other threads and start the search.
+
+void SearchThreadPool::start_thinking() {
+
+	main()->wait_for_search_finished();
+
+	stop = false;
+
+	for (SearchThread* th : *this) {
+
+		th->init();
+	}
+
+	main()->start_searching();
+}
+
+/// Start non-main threads
+
+void SearchThreadPool::start_searching() {
+
+    for (SearchThread* th : *this)
+        if (th != front()) 
+            th->start_searching();
+}
+
+/// Wait for non-main threads
+
+void SearchThreadPool::wait_for_search_finished() const {
+
+    for (SearchThread* th : *this)
+        if (th != front())
+            th->wait_for_search_finished();
+}
+
+uint64_t SearchThreadPool::getTotalNodes() const {
+
+	uint64_t sum = 0;
+	for (SearchThread* thread : *this) {
+
+		sum += thread->nodes;
+	}
+
+	return sum;
+}
+
+uint64_t SearchThreadPool::getTotalTTHits() const {
+
+	uint64_t sum = 0;
+	for (SearchThread* thread : *this) {
+
+		sum += thread->ttHits;
+	}
+
+	return sum;
+}

@@ -52,16 +52,15 @@ std::mutex mtx;
 int MAX_DEPTH = 100;
 bool ABORT_SEARCH;
 
-void startSearch(u8 sideToMove) {
+void startSearch(u8 side) {
 
 
 	ABORT_SEARCH = false;
 
 	Threads.start_searching(); // start non-main threads
-	searchMain(sideToMove, Threads.main()); // main thread start searching
+	iterativeDeepeningSearch(side, Threads.main()); // main thread start searching
 
 	ABORT_SEARCH = true;
-
 
 	// When we reach the maximum depth, we can arrive here without a raise of
 	// Threads.stop. However, if we are pondering or in an infinite search,
@@ -86,12 +85,11 @@ void startSearch(u8 sideToMove) {
 	timeSet = false;
 	stopped = false;
 }
-
-
-int maxTimePerMove = 0, minTimePerMove = 0; 
+	
+ 
 int stableMoveCount = 0;
 
-void searchMain(int sideToMove, SearchThread *th) {
+void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
 	
 	th->nodes = 0;
 	th->ttHits = 0;	
@@ -100,9 +98,6 @@ void searchMain(int sideToMove, SearchThread *th) {
 	th->completedDepth = VALI16_NO_DEPTH;
 
 	stableMoveCount = 0;
-
-	maxTimePerMove = 4 * timePerMove;
-	minTimePerMove = timePerMove / 4;
 
 	for (int depth = 1; depth < MAX_DEPTH; depth++) {
 
@@ -170,7 +165,6 @@ void searchMain(int sideToMove, SearchThread *th) {
 			double pctNodesNotBest = 1.0 - (double)bestMoveNodes / th->nodes;
 			double nodeCountFactor = fmax(0.5, pctNodesNotBest * 2 + 0.4);
 
-
 		    // Check for time 
 		    std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
 		    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
@@ -185,7 +179,7 @@ void searchMain(int sideToMove, SearchThread *th) {
 }
 
 
-void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
+void aspirationWindowSearch(u8 side, SearchThread *th) {
 
 	int32_t window = VALI32_MATE;
 
@@ -208,7 +202,7 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
 
 	SearchInfo searchInfo;
 
-	searchInfo.side = sideToMove;
+	searchInfo.side = side;
 	searchInfo.ply = 0;
 	searchInfo.realDepth = th->depth;
 	searchInfo.isNullMoveAllowed = false;
@@ -266,16 +260,14 @@ void aspirationWindowSearch(u8 sideToMove, SearchThread *th) {
 	if (th != Threads.main()) 
 		return;
 
-
-	display(sideToMove, th->completedDepth, th->selDepth,
-		th->pvLine[th->completedDepth].score, th->pvLine[th->completedDepth].line);
+	reportPV(th);
 
 	if (!th->canReportCurrMove) {
 
-		int interval = std::chrono::duration_cast<std::chrono::seconds>(
+		int interval = std::chrono::duration_cast<std::chrono::milliseconds>(
 		    std::chrono::steady_clock::now() - startTime).count();    	
 
-		if (interval > 3) 
+		if (interval > 3000) 
 			th->canReportCurrMove = true;
 	}
 }
@@ -352,34 +344,26 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 	th->moveStack[PLY + 1].killerMoves[1] = NO_MOVE;
 
 
-
 	const bool IS_PV_NODE = alpha != beta - 1;
 
 	const int16_t VALI16_ALL_PIECES = POPCOUNT(th->occupied);
 
 
-	// Repetition detection
 	if (!IS_ROOT_NODE) {
 
-		for (int i = th->moves_history_counter + PLY; i >= 0; i--) {
-			
-			if (th->movesHistory[i].hashKey == th->hashKey) {
+		// Repetition detection
+		if (isRepetition(PLY, th)) {
 
-				if (VALI16_ALL_PIECES > 22) return -50;
-				
-				if (VALI16_ALL_PIECES > 12) return -25;	// middlegame
-					     					
-											return   0;	// endgame
-			}
+			if (VALI16_ALL_PIECES > 22)	return -50;
+			if (VALI16_ALL_PIECES > 12)	return -25;	// middlegame
+									 	return   0;	// endgame
 		}
 
 		th->movesHistory[th->moves_history_counter + PLY + 1].hashKey = th->hashKey;
 
-
 		// Check for drawish endgame
 		if (isPositionDraw(th)) return 0;
 	}
-
 
 
 	// Transposition Table lookup
@@ -424,24 +408,26 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
         recordHash(NO_MOVE, VALI16_NO_DEPTH, VALI32_UNKNOWN, VALUI8_NO_BOUND, sEval, th);		
     }
 
-    if (PLY > 1 && !IS_IN_CHECK) {
+    // TODO check logic
+    if (!IS_IN_CHECK) {
 
-    	if (th->moveStack[PLY - 2].sEval != VALI32_UNKNOWN) {
+    	if (PLY > 1 && th->moveStack[PLY - 2].sEval != VALI32_UNKNOWN) {
 
-    		improving = sEval > th->moveStack[PLY - 2].sEval;
+    		improving = sEval > th->moveStack[PLY - 2].sEval ? true : false;
     	} else if (PLY > 3 && th->moveStack[PLY - 4].sEval != VALI32_UNKNOWN){
 
-    		improving = sEval > th->moveStack[PLY - 4].sEval;
+    		improving = sEval > th->moveStack[PLY - 4].sEval ? true : false;
     	} else {
 
     		improving = false;
     	}
     }
 
+
 	const int16_t VALI16_OPP_PIECES = POPCOUNT(
 		OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);	
 
-	// Reverse Futility Pruning (Under observation)
+	// Reverse Futility Pruning
 	if (	!IS_ROOT_NODE 
 		&&	!IS_PV_NODE 
 		&&	!IS_IN_CHECK 
@@ -451,13 +437,13 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 
 		assert(sEval != VALI32_UNKNOWN);
 		
-		if (depth == 1 && sEval - VALUI16_RVRFPRUNE >= beta)
+		if (depth == 1 && sEval - VALUI16_RVRFPRUNE >= beta) 
 			return beta; 	
 	
 		if (depth == 2 && sEval - VALUI16_EXT_RVRFPRUNE >= beta) 
 			return beta;		
 	
-		if (depth == 3 && sEval - VALUI16_LTD_RVRRAZOR >= beta)
+		if (depth == 3 && sEval - VALUI16_LTD_RVRRAZOR >= beta) 
 			depth--;
 	}
 
@@ -662,7 +648,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
         	&&	IS_MAIN_THREAD
         	&&	th->canReportCurrMove) {	
 
-        	reportCurrentMove(SIDE, si->realDepth, movesPlayed, currentMove.move);
+        	reportCurrentMove(si->realDepth, movesPlayed, currentMove.move);
         }
 
 
@@ -672,7 +658,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
         extend = 0;
 		float extension = IS_ROOT_NODE ? 0 : th->moveStack[PLY - 1].extension;
 
-		//	Extensions
+		//	Fractional Extensions
 		if (!IS_ROOT_NODE) { // TODO check extensions logic	
 
 			int16_t pieceCurrMove = pieceType(currentMove.move);
@@ -865,34 +851,26 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 	if (ABORT_SEARCH) return 0; 
 
 
-
 	th->selDepth = std::max(th->selDepth, ply);
 	th->nodes++;
 
 
-
 	const int16_t VALI16_ALL_PIECES = POPCOUNT(th->occupied);
 
-
 	// Repetition detection
-	for (int i = th->moves_history_counter + ply; i >= 0; i--) {
+	if (isRepetition(ply, th)) {
 
-		if (th->movesHistory[i].hashKey == th->hashKey) {
-
-			if (	VALI16_ALL_PIECES > 22)	return -50;
-			if (	VALI16_ALL_PIECES > 12)	return -25;	// middlegame
-				     				 		return   0;	// endgame
-		}
+		if (VALI16_ALL_PIECES > 22)	return -50;
+		if (VALI16_ALL_PIECES > 12)	return -25;	// middlegame
+								 	return   0;	// endgame
 	}
 
 	th->movesHistory[th->moves_history_counter + ply + 1].hashKey = th->hashKey;
 
+	// Check for drawish endgame
+	if (isPositionDraw(th)) return 0;
 
-
-	if (ply >= MAX_PLY - 1) {
-	
-		return fullEval(side, th);
-	}
+	if (ply >= MAX_PLY - 1) return fullEval(side, th);
 
 
 
@@ -918,25 +896,25 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 
 
 	u32 bestMove = NO_MOVE;
-	int32_t eval, sEval, bestScore = -VALI32_MATE;
+	int32_t sEval, bestScore = -VALI32_MATE;
 	
 	if (ttMatch) {
         
-        eval = sEval = tt->sEval;
+        sEval = tt->sEval;
         if (sEval == VALI32_UNKNOWN)
-            eval = sEval = fullEval(side, th); // Do not save sEval to the TT since it can overwrite the previous hash entry
+            sEval = fullEval(side, th); // Do not save sEval to the TT since it can overwrite the previous hash entry
     } else {
 
-        eval = sEval = fullEval(side, th);
+        sEval = fullEval(side, th);
 
         recordHash(NO_MOVE, VALI16_NO_DEPTH, VALI32_UNKNOWN, VALUI8_NO_BOUND, sEval, th);		
     }
 
 
-	bestScore = eval;
-	alpha = std::max(alpha, eval);
+	bestScore = sEval;
+	alpha = std::max(alpha, sEval);
 
-	if (alpha >= beta) return eval;	
+	if (alpha >= beta) return sEval;	
 
 
 	
@@ -965,13 +943,14 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 	th->moveList[ply].badCaptures.clear();
 
 	int16_t capPiece, movesPlayed = 0; 
-	int32_t  score = -VALI32_MATE;
+	int32_t score = -VALI32_MATE;
 
 	while (true) {
 
 		currentMove = getNextMove(ply, side, th, &th->moveList[ply]);
 
-		if (th->moveList[ply].stage >= PLAY_BAD_CAPTURES) break;
+		if (th->moveList[ply].stage >= PLAY_BAD_CAPTURES) 
+			break;
 
 		assert(currentMove.move != NO_MOVE);
 

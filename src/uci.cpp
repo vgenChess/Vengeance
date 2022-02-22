@@ -87,14 +87,10 @@ void UciLoop() {
             std::cout << "option name Hash type spin default 16 min 2 max 131072\n";
             std::cout << "option name Threads type spin default 1 min 1 max 2048\n";
             std::cout << "uciok\n";
-        }
-        
-        else if (token == "setoption") {
+        } else if (token == "setoption") {
             
             setOption(cmd);
-        } 
-
-        else if (token == "ucinewgame") {
+        } else if (token == "ucinewgame") {
 
             clearHashTable();
 
@@ -102,9 +98,7 @@ void UciLoop() {
                 thread->clear();
 
             initThread.clear();
-        } 
-
-        else if (token == "position") {
+        } else if (token == "position") {
             
             initThread.clear();
             initThread.initMembers();
@@ -158,14 +152,10 @@ void UciLoop() {
             }
 
             initThread.side = sideToMove;
-        } 
-
-        else if (token == "isready") {
+        } else if (token == "isready") {
 
             std::cout << "readyok\n";
-        } 
-
-        else if (token == "go") {
+        } else if (token == "go") {
 
             startTime = std::chrono::steady_clock::now();
 
@@ -249,6 +239,8 @@ void UciLoop() {
         
             break;
         } 
+
+
 
 
 

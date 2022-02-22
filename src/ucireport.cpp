@@ -50,14 +50,19 @@ void reportBestMove() {
 	std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
 }
 
-void reportCurrentMove(int side, int depth, int currentMoveNumber, u32 move) {
+void reportCurrentMove(int depth, int currentMoveNumber, u32 move) {
 
 	std::cout << "info depth " << depth << " currmove ";
 
 	std::cout << getMoveNotation(move) << " currmovenumber " << currentMoveNumber << std::endl;
 }
+	
+void reportPV(SearchThread *th) {
 
-void display(u8 sideToMove, int depth, int selDepth, int score, std::vector<u32> pvLine) {
+	int depth = th->completedDepth;
+	int selDepth = th->selDepth;
+	int score = th->pvLine[th->completedDepth].score;
+	std::vector<u32> pvLine = th->pvLine[th->completedDepth].line;
 
 	std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
     int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
@@ -67,10 +72,8 @@ void display(u8 sideToMove, int depth, int selDepth, int score, std::vector<u32>
 				/*<< " hashfull " << hashfull()*/ << " tbhits " << Threads.getTotalTTHits() 
 				<< " score cp " << score << " pv";
 
-	for (std::vector<u32>::iterator i = pvLine.begin(); i != pvLine.end(); ++i) {
-		
-		std::cout << " " << getMoveNotation(*i);
-	}
-
+	for (u32 move : pvLine)	
+		std::cout << " " << getMoveNotation(move);
+	
 	std::cout << "\n";
 }

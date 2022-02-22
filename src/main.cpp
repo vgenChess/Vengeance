@@ -25,6 +25,7 @@
 #include "uci.h"
 #include "fen.h"
 #include "functions.h"
+#include "ucireport.h"
 
 static void runBenchmark(int argc, char **argv);
 
@@ -40,40 +41,34 @@ int main(int argc, char **argv) {
 	init_inbetween_bb(); 
     initPSQT();
     initHashTable(16);      // default hash size = 16 megabytes
-    omp_set_num_threads(omp_get_max_threads());
+    Threads.set(1);         // default threads size = 1
+    omp_set_num_threads(omp_get_max_threads()); // for tuning
 
-
-    option_thread_count = 1;
-    
 
     timeSet = false;
     stopped = false;
     
-    
-    bool bench = argc > 1 && strcmp(argv[1], "bench") == 0;
+    bool isBenchmark = argc > 1 && strcmp(argv[1], "bench") == 0;
 
-    if (bench) {
-
-        Threads.set(1);
+    if (isBenchmark) {
     
         runBenchmark(argc, argv);
     } else {
-
-        Threads.set(option_thread_count);
     
         UciLoop();
     }
     
+
     if (sizeof(hashTable) > 0) {
 
         delete[] hashTable; 
     }
 
-
 	return 0;
 }
 
-    
+
+// TODO check logic and refactor
 static void runBenchmark(int argc, char **argv) {
       
     static const char *Benchmarks[] = {
@@ -119,44 +114,12 @@ static void runBenchmark(int argc, char **argv) {
     }
 
     printf("\n===============================================================================\n");
-    u32 bestMove;
+
     for (int i = 0; strcmp(Benchmarks[i], ""); i++) {
-
-        bestMove = bestMoves[i];
-
-        // Convert moves to typical UCI notation
-        char str[10];
-        str[0] = '\0';
-
-        strcat(str, algebricPos(from_sq(bestMove)));
-        strcat(str, algebricPos(to_sq(bestMove)));
-
-        if (move_type(bestMove) == MOVE_PROMOTION) {
-
-            switch (promType(bestMove)) {
-
-                case PROMOTE_TO_ROOK:
-                    strcat(str, "r");
-                    // sideToMove ? strcat(str, "r") : strcat(str, "R");
-                    break;
-                case PROMOTE_TO_BISHOP:
-                    strcat(str, "b");
-                    // sideToMove ? strcat(str, "b") : strcat(str, "B");
-                    break;
-                case PROMOTE_TO_KNIGHT:
-                    strcat(str, "n");
-                    // sideToMove ? strcat(str, "n") : strcat(str, "N");
-                    break;
-                default:
-                    strcat(str, "q");
-                    // sideToMove ? strcat(str, "q") : strcat(str, "Q");
-                    break;
-            }
-        }
 
         // Log all collected information for the current position
         printf("[# %2d] %5d cp  Best:%6s %12d nodes %12d nps\n", i + 1, scores[i],
-            str, (int)nodes[i], (int)(1000.0f * nodes[i] / (times[i] + 1)));
+            getMoveNotation(bestMoves[i]).c_str(), (int)nodes[i], (int)(1000.0f * nodes[i] / (times[i] + 1)));
     }
 
     printf("===============================================================================\n");

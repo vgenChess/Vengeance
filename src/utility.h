@@ -36,8 +36,6 @@ u64 flipVertical(u64 x);
 
 char* algebricPos(u8 sq);
 
-// u64 rand64(void);
-
 void clearAllBitBoards(Thread *th);
 
 void checkUp(void);
@@ -54,8 +52,10 @@ void initHashKey(Thread *th);
 void initPawnHashKey(u8 side, Thread *th);
 void initMovesHistoryTable(Thread *th);
 
-u64 getAttacks(const u8 stm, Thread *th);
+bool isRepetition(const int ply, Thread *th);
 bool isPositionDraw(Thread *th);
+
+u64 getAttacks(const u8 stm, Thread *th);
 
 u64 soutOne (u64 b);
 u64 nortOne (u64 b);

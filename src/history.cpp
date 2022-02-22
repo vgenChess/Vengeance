@@ -5,13 +5,10 @@
 #include "globals.h"
 #include "functions.h"
 
-
 void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> &quietMovesPlayed, Thread *th) {
 
-
-	int bonus = std::min(400, depth * depth), delta = 0;
-
 	int32_t hScore;
+	int32_t bonus = std::min(400, depth * depth), delta = 0;
 
 	u32 previousMove;
 
@@ -38,13 +35,11 @@ void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> 
 	}
 }
 
-
 void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,std::vector<u32>&captureMovesPlayed, Thread *th) {
 
+	int32_t bonus = std::min(400, depth * depth), delta = 0;
 
-	int bonus = std::min(400, depth * depth), delta = 0;
-
-	int32_t chScore;
+	int32_t score;
 
 	uint16_t atk_piece, to, cap_piece;
 	
@@ -64,13 +59,13 @@ void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,std::vector
 		if (mt == MOVE_ENPASSANT || mt == MOVE_PROMOTION) 
 			cap_piece = PAWNS;
 
-		chScore = th->capture_history_score[atk_piece][to][cap_piece];
+		score = th->captureHistoryScore[atk_piece][to][cap_piece];
 
-		th->capture_history_score[atk_piece][to][cap_piece] += 32 * delta - chScore * std::abs(delta) / 512;
+		th->captureHistoryScore[atk_piece][to][cap_piece] += 32 * delta - score * std::abs(delta) / 512;
 
 		// mtx.lock();
-		// if (th->capture_history_score[atk_piece][to][cap_piece] > 1000)
-		//     std::cout << th->capture_history_score[atk_piece][to][cap_piece] << ", ";
+		// if (th->captureHistoryScore[atk_piece][to][cap_piece] > 1000)
+		//     std::cout << th->captureHistoryScore[atk_piece][to][cap_piece] << ", ";
 		// mtx.unlock();
 	}
 }

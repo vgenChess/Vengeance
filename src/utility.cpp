@@ -23,12 +23,6 @@
 
 u64 arrInBetween[64][64];
 
-// u64 rand64() {
-    
-//     return rand() ^ ((u64)rand() << 15) ^ ((u64)rand() << 30) ^
-//     		((u64) rand() << 45) ^ ((u64)rand() << 60);
-// }
-
 void print_bb(u64 board) {
     
     printf(" \n ---------- ");
@@ -302,6 +296,21 @@ bool isKingInCheck(u8 side, Thread *th) {
 
 
     return false;
+}
+
+bool isRepetition(const int ply, Thread *th) {
+
+    bool flag = false;
+    for (int i = th->moves_history_counter + ply; i >= 0; i--) {
+
+        if (th->movesHistory[i].hashKey == th->hashKey) {
+
+            flag = true;
+            break;
+        }
+    }
+
+    return flag;
 }
 
 //TODO check logic, under observation

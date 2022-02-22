@@ -12,8 +12,6 @@
 #include "globals.h"
 #include "thread.h"
 
-#include "NnueEval.h"
-
 class EvalInfo {
 	
 	public:

@@ -21,16 +21,21 @@ public:
 
 	uint16_t moves_history_counter;
 	
-	int32_t capture_history_score[8][64][8]; // [piece][to][c_piece]
 	int32_t historyScore[2][64][64];
+	int32_t captureHistoryScore[8][64][8]; // [piece][to][c_piece]
+
 	u32 counterMove[2][64][64];
 	
 	std::vector<MOVE_LIST> moveList;
-
 	std::vector<PV> pvLine;
+
 	std::vector<MOVE_STACK> moveStack;
 	std::vector<UNDO_MOVE_STACK> undoMoveStack;
+	
+	// record of moves played
 	std::vector<MOVES_HISTORY> movesHistory;
+
+	// cache for evaluation
 	std::vector<PAWNS_HASH> pawnHashTable;
 	std::vector<EVAL_HASH> evalHashTable;
 
@@ -76,7 +81,7 @@ public:
 
 struct SearchThreadPool : public std::vector<SearchThread*> {
 
-	std::atomic_bool stop, increaseDepth;
+	std::atomic_bool stop;
 
 	void set(size_t);
 	void clear();

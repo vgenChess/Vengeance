@@ -485,7 +485,6 @@ bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
                     
                     return true;
                 }
-
             }
         }
         else if (castleDirection == BLACK_CASTLE_KING_SIDE) {
@@ -540,21 +539,21 @@ int getTopIndex(std::vector<Move> &moves) {
 
 void scoreCaptureMoves(Thread *th, MOVE_LIST *moveList) {
 
-    int atk_piece, to, cap_piece, mt;
+    int piece, to, target, mt;
     u32 move;
 
     for (auto &m : moveList->moves) {
 
-        atk_piece = pieceType(m.move);
+        piece = pieceType(m.move);
         to = to_sq(m.move);
-        cap_piece = cPieceType(m.move);
+        target = cPieceType(m.move);
 
         mt = move_type(m.move);
 
         if (mt == MOVE_ENPASSANT || mt == MOVE_PROMOTION) 
-            cap_piece = PAWNS;
+            target = PAWNS;
 
-        m.score = th->capture_history_score[atk_piece][to][cap_piece];
+        m.score = th->captureHistoryScore[piece][to][target];
     }
 }
 
@@ -577,9 +576,7 @@ void scoreNormalMoves(int side, int ply, Thread *th, MOVE_LIST *moveList) {
 }
 
 
-
 Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
-
 
 
     switch (moveList->stage) {
