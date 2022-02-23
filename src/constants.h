@@ -31,7 +31,7 @@ const int32_t VALI32_INF = 50000;
 const int32_t VALI32_UNKNOWN = 30000;
 const int32_t VALI32_MATE = 25000;
 
-const float VALF_ONE_PLY = 1.0;
+const float VALF_ONE_PLY = 1.25;
 const float VALF_CHECK_EXT = 0.5;
 const float VALF_MATE_THREAT_EXT = 0.5;
 const float VALF_RECAPTURE_EXT = 0.5;
