@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
 
 // TODO check logic and refactor
 static void runBenchmark(int argc, char **argv) {
-      
+
     static const char *Benchmarks[] = {
         #include "bench.csv"
         ""

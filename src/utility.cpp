@@ -317,7 +317,7 @@ bool isRepetition(const int ply, Thread *th) {
 bool isPositionDraw(Thread *th) {
 
     if (POPCOUNT(th->occupied) > 4) return false;
-
+    
     if ((   th->whitePieceBB[KING] 
         |   th->blackPieceBB[KING]) == th->occupied)    return true; //kk
 

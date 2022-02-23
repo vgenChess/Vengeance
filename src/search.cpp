@@ -176,6 +176,8 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
 			}
 		}
 	} 
+
+	Threads.stop = true;
 }
 
 

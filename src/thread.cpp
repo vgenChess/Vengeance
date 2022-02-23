@@ -9,7 +9,6 @@ SearchThreadPool Threads; // Global object
 
 uint64_t Thread::bestMoveNodes[64][64];
 
-
 Thread::Thread() {
 
 	this->moveList = std::vector<MOVE_LIST> (MAX_MOVES);
@@ -339,3 +338,30 @@ uint64_t SearchThreadPool::getTotalTTHits() const {
 
 	return sum;
 }
+
+
+// void idleLoop() {
+
+// 	for (;;) {
+	
+// 		// Wait until main() sends data
+// 		std::unique_lock<std::mutex> lk(m);
+// 		cv.wait(lk, []{return ready;});
+// 	}
+
+// 	while (true) {
+
+// 		std::unique_lock<std::mutex> lk(mutex);
+// 		searching = false;
+
+// 		cv.notify_one(); // Wake up anyone waiting for search finished
+// 		cv.wait(lk, [&]{ return searching; });
+
+// 		if (exit)
+// 			return;
+
+// 		lk.unlock();
+
+// 		search();
+// 	}
+// }
