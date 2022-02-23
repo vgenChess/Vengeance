@@ -38,8 +38,6 @@ char* algebricPos(u8 sq);
 
 void clearAllBitBoards(Thread *th);
 
-void checkUp(void);
-
 void initHashTable(int size);
 
 void clearHashTable(void);

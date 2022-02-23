@@ -970,29 +970,6 @@ int divide(u8 depth, u8 sideToMove, Thread *th) {
     return 0;
 }
 
-void checkUp() {    
-    
-
-    std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
-
-    if (timeSet && timeNow.time_since_epoch() > stopTime.time_since_epoch()) {
-        
-        stopped = true;
-
-        return;
-    }
-
-    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
-
-    if (timeSet && timeSpent >= 0.8 * totalTimeLeft) {
-
-        stopped = true;
-
-        return;
-    }
-}
-
-
 void initHashKey(Thread *th) {
 	
     int sq;

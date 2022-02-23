@@ -286,7 +286,6 @@ extern int option_thread_count;
 extern bool timeSet;
 extern bool stopped;
 
-extern int totalTimeLeft;
 extern int timePerMove;
 
 extern std::chrono::steady_clock::time_point startTime;

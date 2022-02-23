@@ -36,7 +36,7 @@ bool NNUE = false;
 
 int option_hash_size;
 
-int totalTimeLeft;
+int MOVE_OVERHEAD = 300;
 
 void setOption(std::string &line) {
 
@@ -161,39 +161,60 @@ void UciLoop() {
 
             timeSet = false;
 
-            uint32_t wtime = 0, btime = 0, movetime = 0, time = 0, nodes = 0;
-            uint16_t winc = 0, binc = 0, movestogo = 0, depthCurrent = 0, inc = 0;
+            int32_t time = -1, moveTime = -1, nodes = 0;
+            int32_t inc = 0, movesToGo = -1, depthCurrent = 0;
 
             while (is >> token) {
 
-                     if (token == "wtime")     is >> wtime;
-                else if (token == "btime")     is >> btime;
-                else if (token == "winc")      is >> winc;
-                else if (token == "binc")      is >> binc;
-                else if (token == "movestogo") is >> movestogo;
+                     if (token == "wtime" && initThread.side == WHITE)     is >> time;
+                else if (token == "btime" && initThread.side == BLACK)     is >> time;
+                else if (token == "winc"  && initThread.side == WHITE)     is >> inc;
+                else if (token == "binc"  && initThread.side == BLACK)     is >> inc;
+                else if (token == "movestogo") is >> movesToGo;
                 else if (token == "depth")     is >> depthCurrent;
                 else if (token == "nodes")     is >> nodes;
-                else if (token == "movetime")  {
-                    
-                    is >> movetime;      
-
-                    timeSet = true;
-
-                    time = movetime;
-                    movestogo = 1;                   
-                }
+                else if (token == "movetime")  is >> moveTime;                    
+            
             }
                 
-            if (wtime > 0 || btime > 0) {
+        // "movetime" is essentially making a move with 1 to go for TC
+          if (moveTime != -1) {
+            
+            timeSet = true;
 
-                timeSet = true;
+            timePerMove = moveTime;
 
-                time = initThread.side ? btime : wtime;
-                inc = initThread.side ? binc : winc;         
-            }   
+            stopTime = startTime + std::chrono::milliseconds(moveTime);
+          } else {
+
+            if (time != -1) {
+            
+              timeSet = true;
+
+              if (movesToGo == -1) {
+
+                int total = (int)fmax(1, time + 50 * inc - MOVE_OVERHEAD);
+
+                timePerMove = (int)fmin(time * 0.33, total / 20.0);
+              } else {
+                
+                int total = (int)fmax(1, time + movesToGo * inc - MOVE_OVERHEAD);
+
+                timePerMove = (int)fmin(time * 0.9, (0.9 * total) / fmax(1, movesToGo / 2.5));
+              }
+
+                stopTime = startTime + std::chrono::milliseconds((int)fmin(time * 0.75, timePerMove * 5.5));           
+            } else {
+
+              // no time control
+                timeSet = false;
+            }
+          }
 
 
-            if (timeSet) {                
+
+
+          /*  if (timeSet) {                
 
                 // stopTime = startTime + std::chrono::milliseconds((int)(time * 0.75));
 
@@ -207,7 +228,7 @@ void UciLoop() {
             
                 stopTime = startTime + std::chrono::milliseconds((int)fmin(time * 0.75, timePerMove * 5.5));
             } 
-          
+          */
             // if (depthCurrent == -1) {
             
                 // const std::string str_fen = "fen";
