@@ -111,44 +111,49 @@ void UciLoop() {
 
             is>>token;
 
+            std::string fen;
+
             if (token == "startpos") {
 
+                fen = START_FEN;
                 is>>token;
+            } else if (token == "fen") {
+                while (is >> token && token != "moves")
+                    fen += token + " ";
+                
+                // const std::string str_fen = "fen";
+                // std::string tempStr;
+                
+                // int pos = cmd.find(str_fen);
 
-                parseFen(START_FEN, &initThread);
+                // tempStr = cmd.substr(pos + 1 + str_fen.length());
 
-                std::vector<Move> moves;
+                // sideToMove = parseFen(tempStr, &initThread);
+            }
 
-                while (is>>token) {
+            sideToMove = parseFen(fen, &initThread);
 
-                    moves.clear();
-                    genMoves(0, moves, sideToMove, &initThread);
-                    
-                    for (Move m : moves) {
+            std::vector<Move> moves;
 
-                        if (getMoveNotation(m.move) == token) {
+            while (is>>token) {
 
-                            make_move(0, m.move, &initThread);
-                            
-                            initThread.moves_history_counter++;
-                            initThread.movesHistory[initThread.moves_history_counter].hashKey = initThread.hashKey;
+                moves.clear();
+                genMoves(0, moves, sideToMove, &initThread);
+                
+                for (Move m : moves) {
 
-                            sideToMove ^= 1;
-                            
-                            break;
-                        }
+                    if (getMoveNotation(m.move) == token) {
+
+                        make_move(0, m.move, &initThread);
+                        
+                        initThread.moves_history_counter++;
+                        initThread.movesHistory[initThread.moves_history_counter].hashKey = initThread.hashKey;
+
+                        sideToMove ^= 1;
+                        
+                        break;
                     }
                 }
-            } else if (token == "fen") {
-                
-                const std::string str_fen = "fen";
-                std::string tempStr;
-                
-                int pos = cmd.find(str_fen);
-
-                tempStr = cmd.substr(pos + 1 + str_fen.length());
-
-                sideToMove = parseFen(tempStr, &initThread);
             }
 
             initThread.side = sideToMove;
