@@ -5,7 +5,7 @@ const uint8_t VALUI8_NO_BOUND = 50;
 const uint8_t VALUI8_AP_WINDOW = 20;
 const uint8_t VALUI8_MAX_EXTENSION = 10;
 const uint8_t VALUI8_LMP_BASE = 4;
-const uint8_t VALUI8_LMP_DEPTH = 6; 
+const uint8_t VALUI8_LMP_DEPTH = 8; 
 const uint8_t VALUI8_HISTORY_PRUNING_DEPTH = 1;
 const uint8_t VALUI8_CAPTURE_HISTORY_PRUNING_DEPTH = 1;
 
