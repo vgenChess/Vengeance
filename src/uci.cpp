@@ -113,6 +113,7 @@ void UciLoop() {
 
             std::string fen;
 
+            //TODO refactor logic
             if (token == "startpos") {
 
                 fen = START_FEN;
@@ -171,7 +172,9 @@ void UciLoop() {
                 else if (token == "nodes")      is >> nodes;
                 else if (token == "movetime")   is >> moveTime;                    
             }
-                
+            
+
+            //TODO refactor logic    
             // "movetime" is essentially making a move with 1 to go for TC
             if (moveTime != -1) {
                 

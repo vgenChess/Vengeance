@@ -52,6 +52,8 @@ std::mutex mtx;
 int MAX_DEPTH = 100;
 bool ABORT_SEARCH;
 
+
+//TODO refactor logic
 void startSearch(u8 side) {
 
 
@@ -137,6 +139,7 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
 			continue;
 
 
+        //TODO refactor logic
  		if (timeSet && th->completedDepth >= 4) {
 
 		    int scoreDiff = th->pvLine.at(th->completedDepth-3).score 
