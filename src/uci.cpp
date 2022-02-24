@@ -118,17 +118,9 @@ void UciLoop() {
                 fen = START_FEN;
                 is>>token;
             } else if (token == "fen") {
+
                 while (is >> token && token != "moves")
                     fen += token + " ";
-                
-                // const std::string str_fen = "fen";
-                // std::string tempStr;
-                
-                // int pos = cmd.find(str_fen);
-
-                // tempStr = cmd.substr(pos + 1 + str_fen.length());
-
-                // sideToMove = parseFen(tempStr, &initThread);
             }
 
             sideToMove = parseFen(fen, &initThread);
@@ -166,8 +158,7 @@ void UciLoop() {
 
             timeSet = false;
 
-            int32_t time = -1, moveTime = -1, nodes = 0;
-            int32_t inc = 0, movesToGo = -1, depthCurrent = 0;
+            int32_t time = -1, moveTime = -1, nodes = 0, inc = 0, movesToGo = -1, depthCurrent = 0;
 
             while (is >> token) {
 
@@ -175,81 +166,45 @@ void UciLoop() {
                 else if (token == "btime" && initThread.side == BLACK)     is >> time;
                 else if (token == "winc"  && initThread.side == WHITE)     is >> inc;
                 else if (token == "binc"  && initThread.side == BLACK)     is >> inc;
-                else if (token == "movestogo") is >> movesToGo;
-                else if (token == "depth")     is >> depthCurrent;
-                else if (token == "nodes")     is >> nodes;
-                else if (token == "movetime")  is >> moveTime;                    
-            
+                else if (token == "movestogo")  is >> movesToGo;
+                else if (token == "depth")      is >> depthCurrent;
+                else if (token == "nodes")      is >> nodes;
+                else if (token == "movetime")   is >> moveTime;                    
             }
                 
-        // "movetime" is essentially making a move with 1 to go for TC
-          if (moveTime != -1) {
-            
-            timeSet = true;
-
-            timePerMove = moveTime;
-
-            stopTime = startTime + std::chrono::milliseconds(moveTime);
-          } else {
-
-            if (time != -1) {
-            
-              timeSet = true;
-
-              if (movesToGo == -1) {
-
-                int total = (int)fmax(1, time + 50 * inc - MOVE_OVERHEAD);
-
-                timePerMove = (int)fmin(time * 0.33, total / 20.0);
-              } else {
+            // "movetime" is essentially making a move with 1 to go for TC
+            if (moveTime != -1) {
                 
-                int total = (int)fmax(1, time + movesToGo * inc - MOVE_OVERHEAD);
+                timeSet = true;
 
-                timePerMove = (int)fmin(time * 0.9, (0.9 * total) / fmax(1, movesToGo / 2.5));
-              }
+                timePerMove = moveTime;
 
-                stopTime = startTime + std::chrono::milliseconds((int)fmin(time * 0.75, timePerMove * 5.5));           
+                stopTime = startTime + std::chrono::milliseconds(moveTime);
             } else {
 
-              // no time control
-                timeSet = false;
-            }
-          }
-
-
-
-
-          /*  if (timeSet) {                
-
-                // stopTime = startTime + std::chrono::milliseconds((int)(time * 0.75));
-
-                // timePerMove = (time / (movestogo + 2)) + inc; 
-        
-                int total = fmax(1, time + movestogo * inc);
-
-                timePerMove = fmin(time * 0.9, (0.9 * total) / fmax(1, movestogo / 2.5));
-
-                totalTimeLeft = time;    
-            
-                stopTime = startTime + std::chrono::milliseconds((int)fmin(time * 0.75, timePerMove * 5.5));
-            } 
-          */
-            // if (depthCurrent == -1) {
-            
-                // const std::string str_fen = "fen";
-                // std::string tempStr;
+                if (time != -1) {
                 
-                // int pos = str.find(str_fen);
+                    timeSet = true;
 
-                // tempStr = str.substr(pos + 1 + str_fen.length());
+                    if (movesToGo == -1) {
 
-                // std::cout << tempStr << "\n";
+                        int total = (int)fmax(1, time + 50 * inc - MOVE_OVERHEAD);
 
-                // depthCurrent = MAX_DEPTH;
-            // }
-            
-            // depth = depthCurrent;
+                        timePerMove = (int)fmin(time * 0.33, total / 20.0);
+                    } else {
+                    
+                        int total = (int)fmax(1, time + movesToGo * inc - MOVE_OVERHEAD);
 
+                        timePerMove = (int)fmin(time * 0.9, (0.9 * total) / fmax(1, movesToGo / 2.5));
+                    }
+
+                    stopTime = startTime + std::chrono::milliseconds((int)fmin(time * 0.75, timePerMove * 5.5));           
+                } else {
+
+                    // no time control
+                    timeSet = false;
+                }
+            }
 
             Threads.start_thinking();
         } 
