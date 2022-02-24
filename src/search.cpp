@@ -654,7 +654,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
         }
 
 
-
+        
         th->moveStack[PLY].move = currentMove.move;
 
         extend = 0;
@@ -665,36 +665,48 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 
 			int16_t pieceCurrMove = pieceType(currentMove.move);
 
-			if (IS_IN_CHECK) 
-				extension += VALF_CHECK_EXT;	// Check extension
+			if (IS_IN_CHECK) {
 
-			if (mateThreat)
+				extension += VALF_CHECK_EXT;	// Check extension
+			}
+
+			if (mateThreat) {
+
 				extension += VALF_MATE_THREAT_EXT; // Mate threat extension
+			}
 		
-			if (currentMoveType == MOVE_PROMOTION) 
+			if (currentMoveType == MOVE_PROMOTION) {
+
 				extension += VALF_PROMOTION_EXT;	// Promotion extension
+			}
 			
 			bool isPrank = SIDE ? 
 				currentMoveToSq >= 8 && currentMoveToSq <= 15 : 
 				currentMoveToSq >= 48 && currentMoveToSq <= 55;
 			
-			if (pieceCurrMove == PAWNS && isPrank) 
+			if (pieceCurrMove == PAWNS && isPrank) {
+
 				extension += VALF_PRANK_EXT;  // Pawn push extension
+			}
 
 			int16_t prevMoveType = move_type(previousMove);
-			if (previousMove != NO_MOVE && (prevMoveType == MOVE_CAPTURE || prevMoveType == MOVE_ENPASSANT)) {
+			if (previousMove != NO_MOVE && prevMoveType == MOVE_CAPTURE) {
 
 				int16_t prevMoveToSq = to_sq(previousMove);
-				if (currentMoveToSq == prevMoveToSq)
+				if (currentMoveToSq == prevMoveToSq) {
+
 					extension += VALF_RECAPTURE_EXT; // Recapture extension
+				}
 			}
 
 			if (extension >= VALF_ONE_PLY) {
 
 				extend = 1;
 				extension -= VALF_ONE_PLY;
-				if (extension >= VALF_ONE_PLY) 
+				if (extension >= VALF_ONE_PLY) {
+
 					extension = 3 * VALF_ONE_PLY / 4;
+				}
 			}
 		} 
 
