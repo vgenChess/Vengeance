@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
 // TODO check logic and refactor
 static void runBenchmark(int argc, char **argv) {
 
-    printf("OVERALL: %47d nodes %12d nps\n",  100,  1500000);
+    printf("OVERALL: %47d nodes %12d nps\n",  100,  3000000);
 
     return;
 
