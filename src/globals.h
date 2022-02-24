@@ -186,8 +186,6 @@ typedef struct {
 
 typedef struct {
 	
-	float extension;
-
     u8 castleFlags;
 	u8 epFlag;
 	u8 epSquare;
@@ -196,7 +194,9 @@ typedef struct {
 	u32 ttMove;
     u32 killerMoves[2];
 
-    int sEval; 
+    int sEval;
+
+    float extension; 
 } MOVE_STACK;
 
 typedef struct {

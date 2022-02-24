@@ -39,6 +39,7 @@ Needs investigation
     - delay reporting to the uci during initial seconds 
     - material imbalance evaluation
     - quiescense explosion
+    - Time related disconnection
 
 DONE (under observation)
     - Add 50 moves rule
