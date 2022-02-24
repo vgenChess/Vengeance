@@ -395,6 +395,14 @@ uint16_t val_piece[8] = {
     0
 };
 
+Move getNoMove() {
+
+    Move noMove;
+    noMove.move = NO_MOVE;
+
+    return noMove;
+}
+
 bool isValidMove(const u8 side, const int ply, const u32 move, Thread *th) {
     
     if (move == NO_MOVE) 
@@ -798,28 +806,17 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
                 return m;
             }
 
-
             moveList->stage = STAGE_DONE;
 
-
-            Move noMove;
-            noMove.move = NO_MOVE;
-
-            return noMove;
+            return getNoMove();
         }
 
         case STAGE_DONE:
 
-            Move noMove;
-            noMove.move = NO_MOVE;
-
-            return noMove;
+            return getNoMove();
     }
 
-    Move noMove;
-    noMove.move = NO_MOVE;
-
-    return noMove;
+    return getNoMove();
 }
 
 
