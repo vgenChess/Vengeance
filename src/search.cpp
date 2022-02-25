@@ -415,7 +415,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 
 	if (!IS_IN_CHECK) {
 
-		improving = ply >= 2 ? sEval > th->moveStack[PLY - 2].sEval : true;
+		improving = PLY >= 2 ? sEval > th->moveStack[PLY - 2].sEval : true;
 	}
 
 
