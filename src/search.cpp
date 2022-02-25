@@ -743,20 +743,20 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 				
 		        
 				reduce = depth > 6 ? depth / 3 : 1;	
-
+				
 
 				if (!IS_PV_NODE) reduce++;
 				if (!improving && !IS_IN_CHECK) reduce++; // IS_IN_CHECK sets improving to false
 				if (IS_IN_CHECK && pieceType(currentMove.move) == KING) reduce++;
 
-				if (currentMove.move == KILLER_MOVE_1 || currentMove.move == KILLER_MOVE_2) reduce--;
+				if (th->moveList[PLY].stage < GEN_QUIETS) reduce--; // reduce less for killer and counter moves
 	            
 	            reduce -= std::max(-2, std::min(2, currentMove.score / 5000));	// TODO	rewrite logic				
 
-	        	int r = std::min(depth - 1, std::max(reduce, 1));	// TODO rewrite logic
 
+	        	reduce = std::min(depth - 1, std::max(reduce, 1));
 
-	        	searchInfo.depth = newDepth - r;	
+	        	searchInfo.depth = newDepth - reduce;	
 				searchInfo.pline.clear();
 				
 				score = -alphabetaSearch(-alpha - 1, -alpha, mate - 1, th, &searchInfo);			
