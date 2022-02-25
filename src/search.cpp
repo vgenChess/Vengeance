@@ -413,20 +413,11 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
         recordHash(NO_MOVE, VALI16_NO_DEPTH, VALI32_UNKNOWN, VALUI8_NO_BOUND, sEval, th);		
     }
 
-    // TODO check logic
-    if (!IS_IN_CHECK) {
+	if (!IS_IN_CHECK) {
 
-    	if (PLY > 1 && th->moveStack[PLY - 2].sEval != VALI32_UNKNOWN) {
+		improving = ply >= 2 ? sEval > th->moveStack[PLY - 2].sEval : true;
+	}
 
-    		improving = sEval > th->moveStack[PLY - 2].sEval ? true : false;
-    	} else if (PLY > 3 && th->moveStack[PLY - 4].sEval != VALI32_UNKNOWN){
-
-    		improving = sEval > th->moveStack[PLY - 4].sEval ? true : false;
-    	} else {
-
-    		improving = false;
-    	}
-    }
 
 
 	const int16_t VALI16_OPP_PIECES = POPCOUNT(
