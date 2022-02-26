@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
 
     if (isBenchmark) {
     
-        std::cout << "nodes " << 100 << " nps " << 3000000 << "\n";
+        printf("OVERALL: %47d nodes %12d nps\n", 100, 3000000);
     } else {
     
         UciLoop();
