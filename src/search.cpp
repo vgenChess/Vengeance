@@ -52,6 +52,18 @@ std::mutex mtx;
 int MAX_DEPTH = 100;
 bool ABORT_SEARCH;
 
+int LMR[64][64];
+
+void initLMR() {
+
+	float a = 1, b = 2;
+    for (int depth = 1; depth < 64; depth++) {
+    	for (int moves = 1; moves < 64; moves++) {
+
+        	LMR[depth][moves] = a + log(depth) * log(moves) / b;
+    	}
+    }
+}
 
 //TODO refactor logic
 void startSearch(u8 side) {
@@ -728,12 +740,10 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 			// Late Move Reductions (Under observation)
 
 			if (	depth > 2
-				&&	movesPlayed > 3
+				&&	movesPlayed > 1
 				&&	isQuietMove) {
 				
-		        
-				reduce = depth > 6 ? depth / 3 : 1;	
-				
+		        reduce = LMR[std::min(depth, 63)][std::min(movesPlayed, 63)];
 
 				if (!IS_PV_NODE) reduce++;
 				if (!improving && !IS_IN_CHECK) reduce++; // IS_IN_CHECK sets improving to false
