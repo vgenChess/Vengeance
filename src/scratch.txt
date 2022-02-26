@@ -8,6 +8,9 @@ ucinewgame
 setoption name Hash value 120
 setoption name Threads value 4
 
+Stuff blocking release
+    - TODO logic 
+    - Eval refactor and tuning
 
 Priority
     - Node explosion control
