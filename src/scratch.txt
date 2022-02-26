@@ -8,25 +8,10 @@ ucinewgame
 setoption name Hash value 120
 setoption name Threads value 4
 
-4rr1k/1pp5/8/p7/P2P2N1/3n4/1P1B1N2/R4K2 b - - 4 33 // very large scores
-r4r2/1pp3k1/3p2np/p3p2q/P2PP1Q1/2P1bN1B/1P1N2K1/R1B5 b - - 6 23 // returns large score
-1r6/Q1p2pkp/3b1qp1/3P4/3p4/3P1BP1/Pr2RPKP/R7 b - - 3 22 // alternating pv and scores (about 50 centipawns diff)
-r7/8/4k3/8/2K2p2/5p1p/8/8 b - - 9 74 // Makes illegal move
-5rk1/4P3/6p1/7p/ppQ1P3/q2r3P/PR4P1/K7 b - - 1 41 // horizon effect (is losing but returns normal results)
-7k/8/3pr1Pp/p1n2K1N/1pPb3P/1P2p3/6B1/4R3 b - - 1 59 // horizon effect (especially with NNUE)
-6N1/7k/3p1N1p/p1P1r3/1p1b2KP/1P2p3/6n1/8 b - - 1 64 // horizon effect
-2rr2k1/2b2p1p/p5p1/4p1q1/1QNpP3/1P1P3P/1PP1KPP1/R3R3 b - - 0 27 //  Is losing, but returns normal results
-r2qkb1r/pp3ppp/2nppn2/2p5/2P1P3/1P3N2/P2PQPPP/RNB2RK1 w kq - 1 9 // current move report is lagging
-r2qkb1r/pp3ppp/2nppn2/2p5/2P1P3/1P3N2/P2PQPPP/RNB2RK1 w kq - 1 9 // Took very long to move
-5k2/5ppp/1pN5/p2P3P/3K1P2/2rB3P/8/8 b - - 2 37 // Rook blindly captures piece which is defended by the opponent king
 
 Priority
     - Node explosion control
     - Better endgame detection for null move etc
-    
-Speculations
-    - Agressive Reductions will work with good move ordering
-    - Average move ordering should use less agressive reductions to avoid skipping good moves
 
 TODO
     - Use std::fill command to clear move ordering tables
@@ -63,3 +48,15 @@ Bugs
     - 5k2/6p1/3KPp1p/5b1P/5N2/8/8/8 b - - 3 65 (Misses promotion assisted by opponent and loses after returning a normal value)
     - 1Q6/8/8/8/2K5/k7/8/8 w - - 4 74 (Gets stuck during mate finding)
     - 8/6P1/7K/8/6kp/8/2b5/8 b - - 0 90 (Returns zero for a winning position)
+
+    4rr1k/1pp5/8/p7/P2P2N1/3n4/1P1B1N2/R4K2 b - - 4 33 // very large scores
+    r4r2/1pp3k1/3p2np/p3p2q/P2PP1Q1/2P1bN1B/1P1N2K1/R1B5 b - - 6 23 // returns large score
+    1r6/Q1p2pkp/3b1qp1/3P4/3p4/3P1BP1/Pr2RPKP/R7 b - - 3 22 // alternating pv and scores (about 50 centipawns diff)
+    r7/8/4k3/8/2K2p2/5p1p/8/8 b - - 9 74 // Makes illegal move
+    5rk1/4P3/6p1/7p/ppQ1P3/q2r3P/PR4P1/K7 b - - 1 41 // horizon effect (is losing but returns normal results)
+    7k/8/3pr1Pp/p1n2K1N/1pPb3P/1P2p3/6B1/4R3 b - - 1 59 // horizon effect (especially with NNUE)
+    6N1/7k/3p1N1p/p1P1r3/1p1b2KP/1P2p3/6n1/8 b - - 1 64 // horizon effect
+    2rr2k1/2b2p1p/p5p1/4p1q1/1QNpP3/1P1P3P/1PP1KPP1/R3R3 b - - 0 27 //  Is losing, but returns normal results
+    r2qkb1r/pp3ppp/2nppn2/2p5/2P1P3/1P3N2/P2PQPPP/RNB2RK1 w kq - 1 9 // current move report is lagging
+    r2qkb1r/pp3ppp/2nppn2/2p5/2P1P3/1P3N2/P2PQPPP/RNB2RK1 w kq - 1 9 // Took very long to move
+    5k2/5ppp/1pN5/p2P3P/3K1P2/2rB3P/8/8 b - - 2 37 // Rook blindly captures piece which is defended by the opponent king
