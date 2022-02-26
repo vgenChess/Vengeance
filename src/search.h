@@ -36,6 +36,7 @@ public:
 	}
 };
 
+void initLMR();
 
 void startSearch(u8 side);
 void iterativeDeepeningSearch(int side, SearchThread *thread);

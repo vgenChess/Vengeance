@@ -29,6 +29,8 @@
 
 int main(int argc, char **argv) {
     
+    initLMR();
+
     init_index_bb();
     init_king_attacks();
     init_knight_attacks();
