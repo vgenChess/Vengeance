@@ -591,11 +591,10 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 		if (isQuietMove) {
 
 			quietMovesPlayed.push_back(currentMove.move);
-		} else {
+		} else if (currentMoveType != MOVE_PROMOTION) { 
+			// all promotions are scored equal and ordered differently from capture moves
 			
-			// all promotions are scored equal with a default value during move ordering
-			if (currentMoveType != MOVE_PROMOTION)	
-				captureMovesPlayed.push_back(currentMove.move);
+			captureMovesPlayed.push_back(currentMove.move);
 		}
 
 
