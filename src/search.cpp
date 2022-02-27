@@ -154,7 +154,7 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
 		if (timeSet && th->completedDepth >= 4) {
 
 			// score change
-			int32_t prevScore = th->pvLine.at(th->completedDepth-1).score;
+			int32_t prevScore = th->pvLine.at(th->completedDepth-3).score;
  			int32_t currentScore = th->pvLine.at(th->completedDepth).score;
 
  			int scoreDiff = currentScore - prevScore;
