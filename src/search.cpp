@@ -162,7 +162,6 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
  				MAX(0.5, MIN(1.5, ((prevScore - currentScore) * 0.05))) : 0.5;
 
 
-
 			// best move change 			
  			assert(th->pvLine.at(th->completedDepth).line.size() > 0 
 		    	&& th->pvLine.at(th->completedDepth-1).line.size() > 0);
@@ -178,7 +177,7 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
 
 
 			// ratio of the size of the subtree 
-			u32 bestMove = th->pvLine.at(th->completedDepth).line[0];
+			/*u32 bestMove = th->pvLine.at(th->completedDepth).line[0];
 
 		    uint64_t subtreeSize = SearchThread::bestMoveNodes[from_sq(bestMove)][to_sq(bestMove)];
 			float x = subtreeSize / th->nodes;
@@ -190,7 +189,9 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
 			// win factor
 			float winFactor = currentScore >= VALUI16_WIN_SCORE ? 0.5 : 1;
 
+*/
 
+ 			float nodeCountFactor = 1, winFactor = 1;
 
 		    // Check for time 
 		    std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
