@@ -244,7 +244,7 @@ void aspirationWindowSearch(u8 side, SearchThread *th) {
 		th->selDepth = VALI16_NO_DEPTH;	
 		searchInfo.pline.clear();
 		
-		score = alphabetaSearch(alpha, beta, VALI32_MATE, th, main&searchInfo);
+		score = alphabetaSearch(alpha, beta, VALI32_MATE, th, &searchInfo);
 
 		if (Threads.stop)
         	break;
@@ -303,7 +303,7 @@ void aspirationWindowSearch(u8 side, SearchThread *th) {
 
 
 void checkTime() {
-main
+
 	std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
 
     if (timeNow.time_since_epoch() >= stopTime.time_since_epoch()) {
