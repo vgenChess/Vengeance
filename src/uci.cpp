@@ -198,7 +198,7 @@ void UciLoop() {
                     
                         int total = (int)fmax(1, time + movesToGo * inc - MOVE_OVERHEAD);
 
-                        timePerMove = (int)fmin(time * 0.9, (0.9 * total) / fmax(1, movesToGo / 2.5));
+                        timePerMove = total / (movesToGo + 1);
                     }
 
                     stopTime = startTime + std::chrono::milliseconds((int)fmin(time * 0.75, timePerMove * 5.5));           

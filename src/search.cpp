@@ -153,14 +153,13 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
 
 		if (timeSet && th->completedDepth >= 4) {
 
-
 			// score change
 			int32_t prevScore = th->pvLine.at(th->completedDepth-3).score;
  			int32_t currentScore = th->pvLine.at(th->completedDepth).score;
 
- 			float scoreChangeFactor = prevScore > currentScore ? 
+			float scoreChangeFactor = prevScore > currentScore ? 
  				fmax(0.5, fmin(1.5, ((prevScore - currentScore) * 0.05))) : 0.5;
-
+			
 
 			// best move change 			
  			assert(th->pvLine.at(th->completedDepth).line.size() > 0 
@@ -173,18 +172,24 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
  			stableMoveCount = std::min(10, stableMoveCount);
 
  			float stableMoveFactor =  1.25 - stableMoveCount * 0.05;
+ 			
 
+ 			// branching factor
+ 			uint64_t currentMoveNodes = Thread::nodeCount[from_sq(currentMove)][to_sq(currentMove)];
+ 			float branchingRatio = currentMoveNodes / th->nodes;
+ 			
+ 			float branchFactor = fmax(0.5, fmin(1.5, (1 - branchingRatio) * 2));
 
+			
 			// win factor
 			float winFactor = currentScore >= VALUI16_WIN_SCORE ? 0.5 : 1;
 			
-
-
+		    
 		    // Check for time 
 		    std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
 		    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
 
-	    	if (timeSpent > (timePerMove * scoreChangeFactor * stableMoveFactor * winFactor)) {
+	    	if (timeSpent > (timePerMove * scoreChangeFactor * stableMoveFactor * branchFactor * winFactor)) {
 
 				Threads.stop = true;
 				break;	
@@ -225,10 +230,11 @@ void aspirationWindowSearch(u8 side, SearchThread *th) {
 	searchInfo.isNullMoveAllowed = false;
 	searchInfo.pline = line;		
 
-	int16_t failHighCount = 0;
+	int failHighCounter = 0;
+
 	while (true) {
 		
-		searchInfo.depth = std::max( 1, searchInfo.realDepth - failHighCount);
+		searchInfo.depth = std::max(1, th->depth - failHighCounter);
 		th->selDepth = VALI16_NO_DEPTH;	
 		searchInfo.pline.clear();
 		
@@ -236,19 +242,20 @@ void aspirationWindowSearch(u8 side, SearchThread *th) {
 
 		if (Threads.stop)
         	break;
-		
+
 		if (score <= alpha)	{
 
 			beta = (alpha + beta) / 2;
-			alpha = std::max(score - window, -VALI32_MATE);
-			
-			failHighCount = 0;
+			alpha = std::max(alpha - window, -VALI32_MATE);
+
+			failHighCounter = 0;
 		}
 		else if (score >= beta)	{
 
-			beta = std::min(score + window, VALI32_MATE);
+			beta = std::min(beta + window, VALI32_MATE);
 			
-			if (std::abs(score) < VALUI16_WIN_SCORE) failHighCount++;
+			if (std::abs(score) < VALUI16_WIN_SCORE)
+				failHighCounter++;
 		}	
 		else {
 
@@ -552,6 +559,8 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 	const u32 KILLER_MOVE_1 = th->moveStack[PLY].killerMoves[0];
 	const u32 KILLER_MOVE_2 = th->moveStack[PLY].killerMoves[1];
 
+	uint64_t startingNodeCount = 0;
+
 	Move currentMove;
 
 	std::vector<u32> quietMovesPlayed, captureMovesPlayed;
@@ -583,6 +592,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 			continue;
 		}
 
+		startingNodeCount = th->nodes;
 
 		movesPlayed++;
 
@@ -777,6 +787,12 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 
 
 		unmake_move(PLY, currentMove.move, th);
+
+
+		if (IS_ROOT_NODE && IS_MAIN_THREAD) {
+
+			Thread::nodeCount[currentMoveFromSq][currentMoveToSq] += th->nodes - startingNodeCount;
+		}
 
 
 		if (score > bestScore) {
