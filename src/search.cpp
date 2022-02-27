@@ -153,13 +153,14 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
 
 		if (timeSet && th->completedDepth >= 4) {
 
+
 			// score change
 			int32_t prevScore = th->pvLine.at(th->completedDepth-3).score;
  			int32_t currentScore = th->pvLine.at(th->completedDepth).score;
 
- 			int scoreDiff = currentScore - prevScore;
+ 			float scoreChangeFactor = prevScore > currentScore ? 
+ 				MAX(0.5, MIN(1.5, ((prevScore - currentScore) * 0.05))) : 0.5;
 
- 			float scoreChangeFactor = scoreDiff < 0 ? MAX(0.5, MIN(1.5, (scoreDiff * 0.05))) : 0.5;
 
 
 			// best move change 			
@@ -177,16 +178,18 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
 
 
 			// ratio of the size of the subtree 
-			// u32 bestMove = th->pvLine.at(th->completedDepth).line[0];
+			u32 bestMove = th->pvLine.at(th->completedDepth).line[0];
 
-		 //    uint64_t subtreeSize = SearchThread::bestMoveNodes[from_sq(bestMove)][to_sq(bestMove)];
-			// float x = subtreeSize / th->nodes;
+		    uint64_t subtreeSize = SearchThread::bestMoveNodes[from_sq(bestMove)][to_sq(bestMove)];
+			float x = subtreeSize / th->nodes;
 			
-			// float nodeCountFactor = MAX(0.5, MIN(2, (1 - x) * 2));
- 			float nodeCountFactor = 1;
+			float nodeCountFactor = MAX(0.5, MIN(2, (1 - x) * 2));
+
+
 
 			// win factor
 			float winFactor = currentScore >= VALUI16_WIN_SCORE ? 0.5 : 1;
+
 
 
 		    // Check for time 
