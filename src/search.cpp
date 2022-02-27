@@ -151,40 +151,48 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
 			continue;
 
 
-        //TODO refactor logic
- 		if (timeSet && th->completedDepth >= 4) {
+		if (timeSet && th->completedDepth >= 4) {
 
-		    int scoreDiff = th->pvLine.at(th->completedDepth-3).score 
-		    	- th->pvLine.at(th->completedDepth).score;
-		    
-		    float scoreChangeFactor = fmax(0.5, fmin(1.5, 0.1 + scoreDiff * 0.05));
+			// score change
+			int32_t prevScore = th->pvLine.at(th->completedDepth-1).score;
+ 			int32_t currentScore = th->pvLine.at(th->completedDepth).score;
 
-		    assert(th->pvLine.at(th->completedDepth).line.size() > 0 
+ 			int scoreDiff = currentScore - prevScore;
+
+ 			float scoreChangeFactor = scoreDiff < 0 ? MAX(0.7, MIN(1.5, (scoreDiff * 0.05))) : 0.7;
+
+
+			// best move change 			
+ 			assert(th->pvLine.at(th->completedDepth).line.size() > 0 
 		    	&& th->pvLine.at(th->completedDepth-1).line.size() > 0);
 
-		    if (th->pvLine.at(th->completedDepth).line.at(0) 
-		    	== th->pvLine.at(th->completedDepth-1).line.at(0)) {
-				
-				stableMoveCount = std::min(10, stableMoveCount + 1);
-		    } else {
-
-				stableMoveCount = 0;
-			}
-
-		    float stableMoveFactor = 1.25 - stableMoveCount * 0.05;
-
+ 			u32 previousMove = th->pvLine.at(th->completedDepth-1).line.at(0);
+ 			u32 currentMove = th->pvLine.at(th->completedDepth).line.at(0);
 		    
-		    u32 bestMove = th->pvLine.at(th->completedDepth).line[0];
+ 			stableMoveCount = previousMove == currentMove ? stableMoveCount + 1 : 0;
 
-		    uint64_t bestMoveNodes = SearchThread::bestMoveNodes[from_sq(bestMove)][to_sq(bestMove)];
-			double pctNodesNotBest = 1.0 - (double)bestMoveNodes / th->nodes;
-			double nodeCountFactor = fmax(0.5, pctNodesNotBest * 2 + 0.4);
+ 			float stableMoveFactor =  MAX(0.7, 1 - stableMoveCount * 0.05);
+
+
+
+			// ratio of the size of the subtree 
+			u32 bestMove = th->pvLine.at(th->completedDepth).line[0];
+
+		    uint64_t subtreeSize = SearchThread::bestMoveNodes[from_sq(bestMove)][to_sq(bestMove)];
+			float x = subtreeSize / th->nodes;
+			
+			float nodeCountFactor = MAX(0.5, MIN(2, (1 - x) * 2));
+
+
+			// win factor
+			float winFactor = currentScore >= VALUI16_WIN_SCORE ? 0.5 : 1;
+
 
 		    // Check for time 
 		    std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
 		    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
 
-	    	if (timeSpent > (timePerMove * scoreChangeFactor * stableMoveFactor * nodeCountFactor)) {
+	    	if (timeSpent > (timePerMove * scoreChangeFactor * stableMoveFactor * nodeCountFactor * winFactor)) {
 
 				Threads.stop = true;
 				break;	
