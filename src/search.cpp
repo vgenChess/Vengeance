@@ -177,13 +177,13 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
 
 
 			// ratio of the size of the subtree 
-			u32 bestMove = th->pvLine.at(th->completedDepth).line[0];
+			// u32 bestMove = th->pvLine.at(th->completedDepth).line[0];
 
-		    uint64_t subtreeSize = SearchThread::bestMoveNodes[from_sq(bestMove)][to_sq(bestMove)];
-			float x = subtreeSize / th->nodes;
+		 //    uint64_t subtreeSize = SearchThread::bestMoveNodes[from_sq(bestMove)][to_sq(bestMove)];
+			// float x = subtreeSize / th->nodes;
 			
-			float nodeCountFactor = MAX(0.5, MIN(2, (1 - x) * 2));
-
+			// float nodeCountFactor = MAX(0.5, MIN(2, (1 - x) * 2));
+ 			float nodeCountFactor = 1;
 
 			// win factor
 			float winFactor = currentScore >= VALUI16_WIN_SCORE ? 0.5 : 1;
@@ -241,7 +241,7 @@ void aspirationWindowSearch(u8 side, SearchThread *th) {
 		th->selDepth = VALI16_NO_DEPTH;	
 		searchInfo.pline.clear();
 		
-		score = alphabetaSearch(alpha, beta, VALI32_MATE, th, &searchInfo);
+		score = alphabetaSearch(alpha, beta, VALI32_MATE, th, main&searchInfo);
 
 		if (Threads.stop)
         	break;
@@ -300,7 +300,7 @@ void aspirationWindowSearch(u8 side, SearchThread *th) {
 
 
 void checkTime() {
-
+main
 	std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
 
     if (timeNow.time_since_epoch() >= stopTime.time_since_epoch()) {
