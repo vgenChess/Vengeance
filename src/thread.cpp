@@ -7,8 +7,6 @@
 Thread initThread;
 SearchThreadPool Threads; // Global object
 
-uint64_t Thread::bestMoveNodes[64][64];
-
 Thread::Thread() {
 
 	this->moveList = std::vector<MOVE_LIST> (MAX_MOVES);
@@ -99,18 +97,6 @@ void Thread::clear() {
 			}
 		}
 	}
-
-
-	if (this == Threads.main()) {
-
-		for (int j = 0; j < 64; ++j) {
-			for (int k = 0; k < 64; ++k) {
-
-				this->bestMoveNodes[j][k] = 0;
-			}
-		}
-	}
-
 
 	for (int i = 0; i < MAX_PIECES; ++i) {
 

@@ -175,22 +175,6 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
  			float stableMoveFactor =  1.25 - stableMoveCount * 0.05;
 
 
-
-
-
- 			float nodeCountFactor = 1;
-
-
-			// ratio of the size of the subtree 
-			/*u32 bestMove = th->pvLine.at(th->completedDepth).line[0];
-
-		    uint64_t subtreeSize = SearchThread::bestMoveNodes[from_sq(bestMove)][to_sq(bestMove)];
-			float x = subtreeSize / th->nodes;
-			
-			float nodeCountFactor = MAX(0.5, MIN(2, (1 - x) * 2));
-			*/
-
-
 			// win factor
 			float winFactor = currentScore >= VALUI16_WIN_SCORE ? 0.5 : 1;
 			
@@ -200,7 +184,7 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
 		    std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
 		    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
 
-	    	if (timeSpent > (timePerMove * scoreChangeFactor * stableMoveFactor * nodeCountFactor * winFactor)) {
+	    	if (timeSpent > (timePerMove * scoreChangeFactor * stableMoveFactor * winFactor)) {
 
 				Threads.stop = true;
 				break;	
@@ -568,8 +552,6 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 	const u32 KILLER_MOVE_1 = th->moveStack[PLY].killerMoves[0];
 	const u32 KILLER_MOVE_2 = th->moveStack[PLY].killerMoves[1];
 
-	uint64_t startingNodeCount = 0;
-
 	Move currentMove;
 
 	std::vector<u32> quietMovesPlayed, captureMovesPlayed;
@@ -590,9 +572,6 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 		if (th->moveList[PLY].stage == STAGE_DONE) break;
 
 		assert(currentMove.move != NO_MOVE);
-
-
-		startingNodeCount = th->nodes;
 
 
 		make_move(PLY, currentMove.move, th);
@@ -798,10 +777,6 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 
 
 		unmake_move(PLY, currentMove.move, th);
-
-
-		if (IS_ROOT_NODE) 
-			SearchThread::bestMoveNodes[currentMoveFromSq][currentMoveToSq] += th->nodes - startingNodeCount;
 
 
 		if (score > bestScore) {
