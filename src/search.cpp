@@ -56,7 +56,7 @@ int LMR[64][64];
 
 void initLMR() {
 
-	float a = 0.1, b = 1.75;
+	float a = 0.1, b = 2;
     for (int depth = 1; depth < 64; depth++) {
     	for (int moves = 1; moves < 64; moves++) {
 
