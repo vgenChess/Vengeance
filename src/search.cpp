@@ -783,23 +783,26 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 		if (score > bestScore) {
 
 			bestScore = score;
+			bestMove = currentMove.move;
 
 			if (score > alpha) {
 
-				bestMove = currentMove.move;
-
-				si->pline.clear();
-				si->pline.push_back(bestMove);
-
-				std::copy(searchInfo.pline.begin(), searchInfo.pline.end(), back_inserter(si->pline));
-				searchInfo.pline.clear();
-
 				alpha = score;
 				hashf = hashfEXACT;
+				
+				// record the moves for the PV			
+				si->pline.clear();
+				si->pline.push_back(bestMove);
+				std::copy(searchInfo.pline.begin(), searchInfo.pline.end(), back_inserter(si->pline));
+				searchInfo.pline.clear();
 
 				if (score >= beta) {
 
 					hashf = hashfBETA;
+					
+					// Fail high
+					// No further moves need to be searched, since one refutation is already sufficient 
+					// to avoid the move that led to this node or position. 
 					break;
 				}
 			}
