@@ -222,7 +222,8 @@ void aspirationWindowSearch(u8 side, SearchThread *th) {
 	searchInfo.ply = 0;
 	searchInfo.realDepth = th->depth;
 	searchInfo.isNullMoveAllowed = false;
-	searchInfo.pline = line;		
+	searchInfo.pline = line;
+	searchInfo.skipMove = NO_MOVE;		
 
 	int failHighCounter = 0;
 
@@ -321,7 +322,8 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 	
 	const bool IS_ROOT_NODE = PLY == 0;
   	const bool IS_MAIN_THREAD = th == Threads.main();
-	const bool can_null_move = si->isNullMoveAllowed;
+  	const bool IS_SINGULAR_SEARCH = si->skipMove != NO_MOVE;
+	const bool CAN_NULL_MOVE = si->isNullMoveAllowed;
 
 
 	int depth = si->depth;
@@ -386,7 +388,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 
 	// Transposition Table lookup
 	
-	HASHE *tt = &hashTable[th->hashKey % HASH_TABLE_SIZE];
+	HASHE *tt = IS_SINGULAR_SEARCH ? NULL : &hashTable[th->hashKey % HASH_TABLE_SIZE];
 	
 	bool ttMatch = probeHash(tt, th);
 	int32_t ttScore = ttMatch ? tt->value : VALI32_UNKNOWN;
@@ -405,12 +407,23 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 	}
 
 
+
+	// Alternative to IID
+	if (depth >= 4 && !ttMove && !IS_SINGULAR_SEARCH) 
+		depth--;	
+
+
+
+
 	const bool IS_IN_CHECK = isKingInCheck(SIDE, th);
     bool improving = false;
 
 	int32_t sEval = VALI32_UNKNOWN;
 
-	if (IS_IN_CHECK) {
+	if (IS_SINGULAR_SEARCH) {
+
+		sEval = th->moveStack[PLY].sEval;
+	} else if (IS_IN_CHECK) {
         
         sEval = VALI32_UNKNOWN;
         improving = false;
@@ -426,6 +439,8 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
         recordHash(NO_MOVE, VALI16_NO_DEPTH, VALI32_UNKNOWN, VALUI8_NO_BOUND, sEval, th);		
     }
 
+
+
 	if (!IS_IN_CHECK) {
 
 		improving = PLY >= 2 ? sEval > th->moveStack[PLY - 2].sEval : true;
@@ -440,6 +455,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 	if (	!IS_ROOT_NODE 
 		&&	!IS_PV_NODE 
 		&&	!IS_IN_CHECK 
+		&&	!IS_SINGULAR_SEARCH
 		&&	std::abs(alpha) < VALUI16_WIN_SCORE
 		&&	std::abs(beta) < VALUI16_WIN_SCORE 
 		&&	VALI16_OPP_PIECES > 3) { 
@@ -479,8 +495,9 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 	if (	!IS_ROOT_NODE 
 		&&	!IS_PV_NODE 
 		&&	!IS_IN_CHECK 
+		&&	!IS_SINGULAR_SEARCH
 		&&	VALI16_OPP_PIECES > 3 // Check the logic for endgame
-		&&	can_null_move 
+		&&	CAN_NULL_MOVE 
 		&&	depth > 2 
 		&&	sEval >= beta) { 
 
@@ -515,6 +532,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 	if (	!IS_ROOT_NODE 
 		&&	!IS_PV_NODE 
 		&&	!IS_IN_CHECK 
+		&&	!IS_SINGULAR_SEARCH
 		&&	std::abs(alpha) < VALUI16_WIN_SCORE
 		&&	std::abs(beta) < VALUI16_WIN_SCORE 
 		&&	VALI16_OPP_PIECES > 3)	{ 
@@ -532,13 +550,40 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 	}
 	
 
+	bool ttMoveIsSingular = false;
+
+	// Singular search
+	if (	!IS_ROOT_NODE
+		&&	!IS_SINGULAR_SEARCH
+		&&  depth >= 7
+		&&  ttMatch
+		&&  ttMove != NO_MOVE 
+		&&  std::abs(ttScore) < VALUI16_WIN_SCORE
+		&&  tt->flags == hashfBETA
+		&&  tt->depth >= depth - 3) {
 
 
-	// Alternative to IID
-	if (depth >= 4 && !ttMove) 
-		depth--;	
-	
+		int sBeta = ttScore - 4 * depth;
+		int sDepth = depth / 2 - 1;
 
+		searchInfo.skipMove = ttMove;
+		searchInfo.side = SIDE;
+		searchInfo.ply = PLY;
+		searchInfo.depth = sDepth;
+		searchInfo.pline.clear();
+
+		int32_t score = alphabetaSearch(sBeta - 1, sBeta, mate, th, &searchInfo);
+
+		searchInfo.skipMove = NO_MOVE;
+
+		if (score < sBeta) {
+			
+			ttMoveIsSingular = true;
+		} else if (sBeta >= beta) { // TODO check logic
+
+			return sBeta;
+		}
+	}
 
 
 	bool isQuietMove = false;
@@ -567,24 +612,30 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 
 	while (true) {
 
-
+		// fetch next psuedo-legal move
 		currentMove = getNextMove(PLY, SIDE, th, &th->moveList[PLY]);
 
-		if (th->moveList[PLY].stage == STAGE_DONE) break;
+		if (th->moveList[PLY].stage == STAGE_DONE) 
+			break;
 
+		// check if move generator returns a valid psuedo-legal move
 		assert(currentMove.move != NO_MOVE);
 
+		// skip the move if its in a singular search and the current move is singular
+		if (IS_SINGULAR_SEARCH && currentMove.move == si->skipMove) 
+			continue;
 
+		// make the move
 		make_move(PLY, currentMove.move, th);
 
-
+		// check if psuedo-legal move is valid
 		if (isKingInCheck(SIDE, th)) {
 			
 			unmake_move(PLY, currentMove.move, th);
 			continue;
 		}
 
-
+		// psuedo legal move is valid, increment number of moves played
 		movesPlayed++;
 
 
@@ -606,7 +657,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 		}
 
 
-		// Pruning 
+		// Prune moves based on conditions met
 		if (	movesPlayed > 1
 			&&	!IS_ROOT_NODE 
 			&&	!IS_PV_NODE
@@ -646,7 +697,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 
 
 
-        // report current move
+        // report current move being searched
         if (	IS_ROOT_NODE 
         	&&	IS_MAIN_THREAD
         	&&	th->canReportCurrMove) {	
@@ -665,6 +716,11 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 		if (!IS_ROOT_NODE) { // TODO check extensions logic	
 
 			int16_t pieceCurrMove = pieceType(currentMove.move);
+
+			if (currentMove.move == ttMove && ttMoveIsSingular) { // Singular extension
+
+				extension += VALF_SINGULAR_EXT;
+			}
 
 			if (IS_IN_CHECK) {
 
@@ -832,7 +888,8 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 	}
 
 
-	recordHash(bestMove, depth, bestScore, hashf, sEval, th);
+	if (!IS_SINGULAR_SEARCH)
+		recordHash(bestMove, depth, bestScore, hashf, sEval, th);
 
 
 	return bestScore;
