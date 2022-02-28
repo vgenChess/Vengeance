@@ -783,50 +783,45 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 		if (score > bestScore) {
 
 			bestScore = score;
-			bestMove = currentMove.move;
-			
+
 			if (score > alpha) {
+
+				bestMove = currentMove.move;
+
+				si->pline.clear();
+				si->pline.push_back(bestMove);
+
+				std::copy(searchInfo.pline.begin(), searchInfo.pline.end(), back_inserter(si->pline));
+				searchInfo.pline.clear();
 
 				alpha = score;
 				hashf = hashfEXACT;
 
-				si->pline.clear();
-				si->pline.push_back(bestMove);
-				
-				std::copy(searchInfo.pline.begin(), searchInfo.pline.end(), back_inserter(si->pline));
-				searchInfo.pline.clear();
-
 				if (score >= beta) {
 
-					// search failed high
-				
 					hashf = hashfBETA;
-
-					if (isQuietMove) {
-
-						// update killers
-					
-						if (bestMove != KILLER_MOVE_1 && bestMove != KILLER_MOVE_2) {
-
-							th->moveStack[PLY].killerMoves[1] = KILLER_MOVE_1;
-							th->moveStack[PLY].killerMoves[0] = bestMove;
-						}							
-					} 
-
-					// break out of the move loop since search failed high
 					break;
-				} 					
-			} 
+				}
+			}
 		}
 	}
 
 
 	if (hashf == hashfBETA) {
-		
-		// since search failed high update moves history
 
-		updateHistory(PLY, SIDE, depth, bestMove, quietMovesPlayed, th);			
-	
+		if (isQuietMove) {
+
+			// update killers
+		
+			if (bestMove != KILLER_MOVE_1 && bestMove != KILLER_MOVE_2) {
+
+				th->moveStack[PLY].killerMoves[1] = KILLER_MOVE_1;
+				th->moveStack[PLY].killerMoves[0] = bestMove;
+			}
+
+			updateHistory(PLY, SIDE, depth, bestMove, quietMovesPlayed, th);				
+		} 
+
 		updateCaptureHistory(PLY, SIDE, depth, bestMove, captureMovesPlayed, th);
 	}
 
