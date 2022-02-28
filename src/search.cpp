@@ -798,8 +798,22 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 
 				if (score >= beta) {
 
+					// search failed high
+				
 					hashf = hashfBETA;
+
+					if (isQuietMove) {
+
+						// update killers
 					
+						if (bestMove != KILLER_MOVE_1 && bestMove != KILLER_MOVE_2) {
+
+							th->moveStack[PLY].killerMoves[1] = KILLER_MOVE_1;
+							th->moveStack[PLY].killerMoves[0] = bestMove;
+						}							
+					} 
+
+					// break out of the move loop since search failed high
 					break;
 				} 					
 			} 
@@ -807,22 +821,13 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 	}
 
 
-	if (hashf == hashfBETA) { // failed high
+	if (hashf == hashfBETA) {
+		
+		// since search failed high update moves history
 
-		if (isQuietMove) {
-
-			if (	bestMove != KILLER_MOVE_1 
-				&&  bestMove != KILLER_MOVE_2) {
-
-				th->moveStack[PLY].killerMoves[1] = KILLER_MOVE_1;
-				th->moveStack[PLY].killerMoves[0] = bestMove;
-			}							
-
-			updateHistory(PLY, SIDE, depth, bestMove, quietMovesPlayed, th);			
-		} else {
-
-			updateCaptureHistory(PLY, SIDE, depth, bestMove, captureMovesPlayed, th);
-		}
+		updateHistory(PLY, SIDE, depth, bestMove, quietMovesPlayed, th);			
+	
+		updateCaptureHistory(PLY, SIDE, depth, bestMove, captureMovesPlayed, th);
 	}
 
 
