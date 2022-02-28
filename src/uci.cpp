@@ -157,6 +157,8 @@ void UciLoop() {
 
             startTime = std::chrono::steady_clock::now();
 
+            timeSet = false;
+
             int32_t time = -1, moveTime = -1, nodes = 0, inc = 0, movesToGo = -1, depthCurrent = 0;
 
             while (is >> token) {
@@ -169,22 +171,44 @@ void UciLoop() {
                 else if (token == "depth")      is >> depthCurrent;
                 else if (token == "nodes")      is >> nodes;
                 else if (token == "movetime")   is >> moveTime;                    
-            } 
+            }
+            
 
+            //TODO refactor logic    
+            // "movetime" is essentially making a move with 1 to go for TC
             if (moveTime != -1) {
                 
+                timeSet = true;
+
                 timePerMove = moveTime;
 
                 stopTime = startTime + std::chrono::milliseconds(moveTime);
             } else {
 
-                timePerMove = (time - MOVE_OVERHEAD) / ((movesToGo == -1 ? 50 : movesToGo) + 5) + inc; 
+                if (time != -1) {
+                
+                    timeSet = true;
 
-                stopTime = startTime + std::chrono::milliseconds((int)(time * 0.75));           
+                    if (movesToGo == -1) {
+
+                        int total = (int)fmax(1, time + 50 * inc - MOVE_OVERHEAD);
+
+                        timePerMove = (int)fmin(time * 0.33, total / 20.0);
+                    } else {
+                    
+                        int total = (int)fmax(1, time + movesToGo * inc - MOVE_OVERHEAD);
+
+                        timePerMove = total / (movesToGo + 1);
+                    }
+
+                    stopTime = startTime + std::chrono::milliseconds((int)fmin(time * 0.75, timePerMove * 5.5));           
+                } else {
+
+                    // no time control
+                    timeSet = false;
+                }
             }
 
-            timeSet = (time != -1 || moveTime != -1) ? true : false;
-            
             Threads.start_thinking();
         } 
 
