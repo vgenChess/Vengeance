@@ -27,6 +27,7 @@
 #include "thread.h"
 #include "tuner.h"
 #include "ucireport.h"
+#include "functions.h"
 
 #define NAME "V0.9"
 #define START_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -174,8 +175,6 @@ void UciLoop() {
             }
             
 
-            //TODO refactor logic    
-            // "movetime" is essentially making a move with 1 to go for TC
             if (moveTime != -1) {
                 
                 timeSet = true;
@@ -191,20 +190,19 @@ void UciLoop() {
 
                     if (movesToGo == -1) {
 
-                        int total = (int)fmax(1, time + 50 * inc - MOVE_OVERHEAD);
+                        int total = MAX(1, time + 50 * inc - MOVE_OVERHEAD);
 
-                        timePerMove = (int)fmin(time * 0.33, total / 20.0);
+                        timePerMove = MIN(time * 0.33, total / 20.0);
                     } else {
                     
-                        int total = (int)fmax(1, time + movesToGo * inc - MOVE_OVERHEAD);
+                        int total = MAX(1, time + movesToGo * inc - MOVE_OVERHEAD);
 
-                        timePerMove = total / (movesToGo + 1);
+                        timePerMove = total / movesToGo;
                     }
 
-                    stopTime = startTime + std::chrono::milliseconds((int)fmin(time * 0.75, timePerMove * 5.5));           
+                    stopTime = startTime + std::chrono::milliseconds((int)MIN(time * 0.75, timePerMove * 5.5));           
                 } else {
 
-                    // no time control
                     timeSet = false;
                 }
             }
