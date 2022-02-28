@@ -7,8 +7,6 @@
 Thread initThread;
 SearchThreadPool Threads; // Global object
 
-uint64_t Thread::nodeCount[64][64];
-
 Thread::Thread() {
 
 	this->moveList = std::vector<MOVE_LIST> (MAX_MOVES);
@@ -109,18 +107,6 @@ void Thread::clear() {
 
 	this->occupied = 0;
 	this->empty = 0;	
-
-	
-	if (this == Threads.main())
-	{
-		for (int i = 0; i < 64; ++i)
-		{
-			for (int j = 0; j < 64; ++j)
-			{
-				Thread::nodeCount[i][j] = 0;			
-			}
-		}
-	}
 }
 
 
@@ -233,17 +219,6 @@ void SearchThread::init() {
 
 	hashKey = initThread.hashKey;
 	pawnsHashKey = initThread.pawnsHashKey;
-
-	if (this == Threads.main())
-	{
-		for (int i = 0; i < 64; ++i)
-		{
-			for (int j = 0; j < 64; ++j)
-			{
-				Thread::nodeCount[i][j] = 0;			
-			}
-		}
-	}
 }
 
 void SearchThread::search() {

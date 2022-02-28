@@ -13,8 +13,6 @@ class Thread {
 	
 public:
 
-	static uint64_t nodeCount[64][64];
-
 	bool isInit = false;
 
 	u8 side;
