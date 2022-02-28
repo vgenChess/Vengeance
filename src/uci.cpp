@@ -190,17 +190,17 @@ void UciLoop() {
 
                     if (movesToGo == -1) {
 
-                        int total = MAX(1, time + 50 * inc - MOVE_OVERHEAD);
+                        int total = (int)fmax(1, time + 50 * inc - MOVE_OVERHEAD);
 
-                        timePerMove = MIN(time * 0.33, total / 20.0);
+                        timePerMove = (int)fmin(time * 0.33, total / 20.0);
                     } else {
                     
-                        int total = MAX(1, time + movesToGo * inc - MOVE_OVERHEAD);
+                        int total = (int)fmax(1, time + movesToGo * inc - MOVE_OVERHEAD);
 
                         timePerMove = total / movesToGo;
                     }
 
-                    stopTime = startTime + std::chrono::milliseconds((int)MIN(time * 0.75, timePerMove * 5.5));           
+                    stopTime = startTime + std::chrono::milliseconds((int)fmin(time * 0.75, timePerMove * 5.5));           
                 } else {
 
                     timeSet = false;

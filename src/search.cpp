@@ -159,7 +159,7 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
  			int32_t currentScore = th->pvLine.at(th->completedDepth).score;
 
 			float scoreChangeFactor = prevScore > currentScore ? 
- 				MAX(0.5, MIN(1.5, ((prevScore - currentScore) * 0.05))) : 0.5;
+ 				fmax(0.5, fmin(1.5, ((prevScore - currentScore) * 0.05))) : 0.5;
 			
 
 			// best move change 			
@@ -170,7 +170,7 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
  			u32 currentMove = th->pvLine.at(th->completedDepth).line.at(0);
 		    
  			stableMoveCount = previousMove == currentMove ? stableMoveCount + 1 : 0;
- 			stableMoveCount = MIN(10, stableMoveCount);
+ 			stableMoveCount = std::min(10, stableMoveCount);
 
  			float stableMoveFactor =  1.25 - stableMoveCount * 0.05;
 
