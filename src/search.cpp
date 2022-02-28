@@ -240,13 +240,13 @@ void aspirationWindowSearch(u8 side, SearchThread *th) {
 		if (score <= alpha)	{
 
 			beta = (alpha + beta) / 2;
-			alpha = std::max(alpha - window, -VALI32_MATE);
+			alpha = std::max(score - window, -VALI32_MATE);
 
 			failHighCounter = 0;
 		}
 		else if (score >= beta)	{
 
-			beta = std::min(beta + window, VALI32_MATE);
+			beta = std::min(score + window, VALI32_MATE);
 			
 			if (std::abs(score) < VALUI16_WIN_SCORE)
 				failHighCounter++;
