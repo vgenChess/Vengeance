@@ -324,30 +324,3 @@ uint64_t SearchThreadPool::getTotalTTHits() const {
 
 	return sum;
 }
-
-
-// void idleLoop() {
-
-// 	for (;;) {
-	
-// 		// Wait until main() sends data
-// 		std::unique_lock<std::mutex> lk(m);
-// 		cv.wait(lk, []{return ready;});
-// 	}
-
-// 	while (true) {
-
-// 		std::unique_lock<std::mutex> lk(mutex);
-// 		searching = false;
-
-// 		cv.notify_one(); // Wake up anyone waiting for search finished
-// 		cv.wait(lk, [&]{ return searching; });
-
-// 		if (exit)
-// 			return;
-
-// 		lk.unlock();
-
-// 		search();
-// 	}
-// }
