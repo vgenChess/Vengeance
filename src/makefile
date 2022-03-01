@@ -29,9 +29,14 @@ avx2:
 avx2d:
 	$(CC) $(CFLAGS) $(SRC) $(AVX2) -g -D DEBUG -o $(EXE)	
 
+avx2t:
+	$(CC) $(CFLAGS) $(SRC) $(AVX2) -g -D TUNE -o $(EXE)	
+
 all: avx2
 
 debug: avx2d
+
+tune: avx2t
 
 clean:
 	rm -rf $(EXE)  $(OBJECTS) 

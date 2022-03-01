@@ -51,18 +51,12 @@ void startTuner();
 double sigmoid(double score);
 double sigmoid(double k, double e);
 
-std::vector<double> localOptimize(std::vector<double> &initialGuess);
-void calculateParamHistoryList(std::vector<double> historyParams);
-int optimiseConstant(int constant, int pos, double current_mea, int max_iter, int step, 
-	std::vector<double> weightList, bool isOptimisingScalingConstant, bool &improved);
-
 double averageEvaluationError();
 
 void loadWeights(TVector params, TVector cparams);
 void displayWeights(TVector params, TVector cparams);
 
 void initCoefficients();
-void loadCoefficients(TraceCoefficients *T, TVector coeffs, TArray type);
 
 void optimise(TVector params, TVector cparams);
 

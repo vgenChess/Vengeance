@@ -27,9 +27,6 @@
 #define MIDGAME 1
 #define ENDGAME 2
 
-// uncomment for tuning eval 
-//#define TUNE
-
 TraceCoefficients *T;
 
 int Mirror64[64] = {
@@ -231,14 +228,13 @@ int32_t evaluateSide(int side, Thread *th) {
 		score += pawnsScore;
 	#endif
 
-
 	score += PSQTScore(side, th) 
 		+ knightsEval(side, th) 
 		+ bishopsEval(side, th) 
 		+ rooksEval(side, th) 
 		+ queenEval(side, th) 
-		+ kingEval(side, th); 
-		// + evalBoard(side, th); 
+		+ kingEval(side, th) 
+		+ evalBoard(side, th); 
 	
 	return score;
 }

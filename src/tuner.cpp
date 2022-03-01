@@ -37,267 +37,186 @@ struct Score {
 	double eg;
 };
 
+class LoadCoeff {
+
+public:
+	int8_t type[NTERMS];
+	int8_t coeffs[2][NTERMS];
+};	
+
 int seePieceVal[8] = { 0, 100, 300, 300, 500, 900, 2000, 0 };
 
-int scaling_constant = 575;
-
-double K = 1.13;
-
-std::vector<bool> paramHistoryList;
-std::vector<std::thread> threads;
-std::vector<Thread> tunerThreads;
 std::vector<Data> dataList;
-
 
 double sigmoid(double K, double E) {
     return 1.0 / (1.0 + exp(-K * E / 400.0));
 }
 
 
-void loadWeights(TVector params, TVector cparams) {
-	
-	TVector weights = {0};
-
-    // Combine updated and current parameters
-    for (int j = 0; j < NTERMS; j++) {
-
-        weights[MG][j] = round(params[MG][j] + cparams[MG][j]);
-        weights[EG][j] = round(params[EG][j] + cparams[EG][j]);
-    }
-
-	int count = 0;
-
-	weight_pawn = MakeScore(weights[MG][count], weights[EG][count++]);
-	weight_knight = MakeScore(weights[MG][count], weights[EG][count++]);
-	weight_bishop = MakeScore(weights[MG][count], weights[EG][count++]);
-	weight_rook = MakeScore(weights[MG][count], weights[EG][count++]);
-	weight_queen = MakeScore(weights[MG][count], weights[EG][count++]);
-	
-	weight_isolated_pawn = MakeScore(weights[MG][count], weights[EG][count++]);
-	weight_backward_pawn = MakeScore(weights[MG][count], weights[EG][count++]);
-	weight_double_pawn = MakeScore(weights[MG][count], weights[EG][count++]);
-	weight_defended_pawn = MakeScore(weights[MG][count], weights[EG][count++]);
-
-    for(int i = 0; i < 8; i++) {
-
-    	arr_weight_passed_pawn[i] = MakeScore(weights[MG][count], weights[EG][count++]);
-    }
-
-    for(int i = 0; i < 8; i++) {
-    	
-    	arr_weight_defended_passed_pawn[i] = MakeScore(weights[MG][count], weights[EG][count++]);
-    }
-
-
-    weight_bishop_pair = MakeScore(weights[MG][count], weights[EG][count++]);
-
-	
-	weight_rook_half_open_file = MakeScore(weights[MG][count], weights[EG][count++]);
-	weight_rook_open_file = MakeScore(weights[MG][count], weights[EG][count++]);
-	weight_rook_enemy_queen_same_file = MakeScore(weights[MG][count], weights[EG][count++]);
-	weight_rook_supporting_friendly_rook = MakeScore(weights[MG][count], weights[EG][count++]);
-
-	
-	weight_queen_underdeveloped_pieces = MakeScore(weights[MG][count], weights[EG][count++]);
-
-
-	weight_king_pawn_shield = MakeScore(weights[MG][count], weights[EG][count++]);
-	weight_king_enemy_pawn_storm = MakeScore(weights[MG][count], weights[EG][count++]);
-
-    for (int i = 0; i < 16; i++) {
-    	
-    	arr_weight_knight_mobility[i] = MakeScore(weights[MG][count], weights[EG][count++]);    
-    }
-
-    for (int i = 0; i < 16; i++) {
-    	
-    	arr_weight_bishop_mobility[i] = MakeScore(weights[MG][count], weights[EG][count++]);    
-    }
-
-    for (int i = 0; i < 16; i++) {
-    	
-    	arr_weight_rook_mobility[i] = MakeScore(weights[MG][count], weights[EG][count++]);    
-    }
-
-    for (int i = 0; i < 32; i++) {
-    	
-    	arr_weight_queen_mobility[i] = MakeScore(weights[MG][count], weights[EG][count++]);    
-    }
-
-    for(int i = 8; i <= 55; i++) pawnPSQT[i] = MakeScore(weights[MG][count], weights[EG][count++]); 
-    for(int i = 0; i <= 63; i++) knightPSQT[i] = MakeScore(weights[MG][count], weights[EG][count++]); 
-    for(int i = 0; i <= 63; i++) bishopPSQT[i] = MakeScore(weights[MG][count], weights[EG][count++]); 
-    for(int i = 0; i <= 63; i++) rookPSQT[i] = MakeScore(weights[MG][count], weights[EG][count++]); 
-    for(int i = 0; i <= 63; i++) queenPSQT[i] = MakeScore(weights[MG][count], weights[EG][count++]);
-    for(int i = 0; i <= 63; i++) kingPSQT[i] = MakeScore(weights[MG][count], weights[EG][count++]); 
-
-    assert(count == NTERMS);
-}
-
-void loadCoefficients(TraceCoefficients *T, TVector coeffs, TArray type) {
+void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
 
 	int i = 0;
 
 	// Material
 
-	type[i] = NORMAL;
-    coeffs[WHITE][i] = T->nPawns[WHITE];                         
-    coeffs[BLACK][i++] = T->nPawns[BLACK];                         
+	loadCoeff->type[i] = NORMAL;
+    loadCoeff->coeffs[WHITE][i] = T->nPawns[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->nPawns[BLACK];                         
 
-	type[i] = NORMAL;
-    coeffs[WHITE][i] = T->nKnights[WHITE];                         
-    coeffs[BLACK][i++] = T->nKnights[BLACK];                         
+	loadCoeff->type[i] = NORMAL;
+    loadCoeff->coeffs[WHITE][i] = T->nKnights[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->nKnights[BLACK];                         
 
-	type[i] = NORMAL;
-    coeffs[WHITE][i] = T->nBishops[WHITE];                         
-    coeffs[BLACK][i++] = T->nBishops[BLACK];                         
+	loadCoeff->type[i] = NORMAL;
+    loadCoeff->coeffs[WHITE][i] = T->nBishops[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->nBishops[BLACK];                         
 
-	type[i] = NORMAL;
-    coeffs[WHITE][i] = T->nRooks[WHITE];                         
-    coeffs[BLACK][i++] = T->nRooks[BLACK];                         
+	loadCoeff->type[i] = NORMAL;
+    loadCoeff->coeffs[WHITE][i] = T->nRooks[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->nRooks[BLACK];                         
 
-	type[i] = NORMAL;
-    coeffs[WHITE][i] = T->nQueen[WHITE];                         
-    coeffs[BLACK][i++] = T->nQueen[BLACK];   
+	loadCoeff->type[i] = NORMAL;
+    loadCoeff->coeffs[WHITE][i] = T->nQueen[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->nQueen[BLACK];   
 
                         
 
     // Pawns
 
-	type[i] = NORMAL;
-    coeffs[WHITE][i] = T->isolatedPawns[WHITE];                         
-    coeffs[BLACK][i++] = T->isolatedPawns[BLACK];  
+	loadCoeff->type[i] = NORMAL;
+    loadCoeff->coeffs[WHITE][i] = T->isolatedPawns[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->isolatedPawns[BLACK];  
 
-	type[i] = NORMAL;
-    coeffs[WHITE][i] = T->backwardPawns[WHITE];                         
-    coeffs[BLACK][i++] = T->backwardPawns[BLACK];                         
+	loadCoeff->type[i] = NORMAL;
+    loadCoeff->coeffs[WHITE][i] = T->backwardPawns[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->backwardPawns[BLACK];                         
 
-	type[i] = NORMAL;
-    coeffs[WHITE][i] = T->doublePawns[WHITE];                         
-    coeffs[BLACK][i++] = T->doublePawns[BLACK];                         
+	loadCoeff->type[i] = NORMAL;
+    loadCoeff->coeffs[WHITE][i] = T->doublePawns[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->doublePawns[BLACK];                         
 
-	type[i] = NORMAL;
-	coeffs[WHITE][i] = T->defendedPawns[WHITE];                         
-    coeffs[BLACK][i++] = T->defendedPawns[BLACK];     
+	loadCoeff->type[i] = NORMAL;
+	loadCoeff->coeffs[WHITE][i] = T->defendedPawns[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->defendedPawns[BLACK];     
 
-	type[i] = NORMAL;
-	coeffs[WHITE][i] = T->pawnHoles[WHITE];                         
-    coeffs[BLACK][i++] = T->pawnHoles[BLACK];                         
+	loadCoeff->type[i] = NORMAL;
+	loadCoeff->coeffs[WHITE][i] = T->pawnHoles[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->pawnHoles[BLACK];                         
 	
     for (int k = 0; k < 8; k++) {
 	
-		type[i] = NORMAL;
-	    coeffs[WHITE][i] = T->passedPawn[WHITE][k];                         
-	    coeffs[BLACK][i++] = T->passedPawn[BLACK][k];                         
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->passedPawn[WHITE][k];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->passedPawn[BLACK][k];                         
 	}
     
     for (int k = 0; k < 8; k++) {
 	
-		type[i] = NORMAL;
-	    coeffs[WHITE][i] = T->defendedPassedPawn[WHITE][k];                         
-	    coeffs[BLACK][i++] = T->defendedPassedPawn[BLACK][k];                         
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->defendedPassedPawn[WHITE][k];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->defendedPassedPawn[BLACK][k];                         
 	}
 
 	// Knights
 
-	type[i] = NORMAL;
-    coeffs[WHITE][i] = T->undefendedKnight[WHITE];                         
-    coeffs[BLACK][i++] = T->undefendedKnight[BLACK];                         
+	loadCoeff->type[i] = NORMAL;
+    loadCoeff->coeffs[WHITE][i] = T->undefendedKnight[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->undefendedKnight[BLACK];                         
 
-	type[i] = NORMAL;
-    coeffs[WHITE][i] = T->knightDefendedByPawn[WHITE];                         
-    coeffs[BLACK][i++] = T->knightDefendedByPawn[BLACK];                         
+	loadCoeff->type[i] = NORMAL;
+    loadCoeff->coeffs[WHITE][i] = T->knightDefendedByPawn[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->knightDefendedByPawn[BLACK];                         
 
 	// Bishops
 
-	type[i] = NORMAL;
-	coeffs[WHITE][i] = T->bishopPair[WHITE];                         
-    coeffs[BLACK][i++] = T->bishopPair[BLACK]; 
+	loadCoeff->type[i] = NORMAL;
+	loadCoeff->coeffs[WHITE][i] = T->bishopPair[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->bishopPair[BLACK]; 
 
-	type[i] = NORMAL;
-    coeffs[WHITE][i] = T->undefendedBishop[WHITE];                         
-    coeffs[BLACK][i++] = T->undefendedBishop[BLACK];                         
+	loadCoeff->type[i] = NORMAL;
+    loadCoeff->coeffs[WHITE][i] = T->undefendedBishop[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->undefendedBishop[BLACK];                         
 
-	type[i] = NORMAL;
-    coeffs[WHITE][i] = T->badBishop[WHITE];                         
-    coeffs[BLACK][i++] = T->badBishop[BLACK];                         
+	loadCoeff->type[i] = NORMAL;
+    loadCoeff->coeffs[WHITE][i] = T->badBishop[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->badBishop[BLACK];                         
 
                              
     // Rooks                     
 
-	type[i] = NORMAL;
-	coeffs[WHITE][i] = T->halfOpenFile[WHITE];                         
-    coeffs[BLACK][i++] = T->halfOpenFile[BLACK];                         
+	loadCoeff->type[i] = NORMAL;
+	loadCoeff->coeffs[WHITE][i] = T->halfOpenFile[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->halfOpenFile[BLACK];                         
 
-	type[i] = NORMAL;
-	coeffs[WHITE][i] = T->openFile[WHITE];                         
-    coeffs[BLACK][i++] = T->openFile[BLACK];                         
+	loadCoeff->type[i] = NORMAL;
+	loadCoeff->coeffs[WHITE][i] = T->openFile[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->openFile[BLACK];                         
 
-	type[i] = NORMAL;
-	coeffs[WHITE][i] = T->rookEnemyQueenSameFile[WHITE];                         
-    coeffs[BLACK][i++] = T->rookEnemyQueenSameFile[BLACK];                         
+	loadCoeff->type[i] = NORMAL;
+	loadCoeff->coeffs[WHITE][i] = T->rookEnemyQueenSameFile[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->rookEnemyQueenSameFile[BLACK];                         
 
-	type[i] = NORMAL;
-	coeffs[WHITE][i] = T->rookSupportingFriendlyRook[WHITE];                         
-    coeffs[BLACK][i++] = T->rookSupportingFriendlyRook[BLACK];                         
+	loadCoeff->type[i] = NORMAL;
+	loadCoeff->coeffs[WHITE][i] = T->rookSupportingFriendlyRook[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->rookSupportingFriendlyRook[BLACK];                         
 
-	// type[i] = NORMAL;
-	// coeffs[WHITE][i] = T->rookBlockedByKing[WHITE];                         
- //    coeffs[BLACK][i++] = T->rookBlockedByKing[BLACK];                         
+	// loadCoeff->type[i] = NORMAL;
+	// loadCoeff->coeffs[WHITE][i] = T->rookBlockedByKing[WHITE];                         
+ //    loadCoeff->coeffs[BLACK][i++] = T->rookBlockedByKing[BLACK];                         
 
-	type[i] = NORMAL;
-	coeffs[WHITE][i] = T->rookOnSeventhRank[WHITE];                         
-    coeffs[BLACK][i++] = T->rookOnSeventhRank[BLACK];                         
+	loadCoeff->type[i] = NORMAL;
+	loadCoeff->coeffs[WHITE][i] = T->rookOnSeventhRank[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->rookOnSeventhRank[BLACK];                         
     
-    type[i] = NORMAL;
-	coeffs[WHITE][i] = T->rookOnEightRank[WHITE];                         
-    coeffs[BLACK][i++] = T->rookOnEightRank[BLACK];                         
+    loadCoeff->type[i] = NORMAL;
+	loadCoeff->coeffs[WHITE][i] = T->rookOnEightRank[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->rookOnEightRank[BLACK];                         
     
 
     // Queen
 
-	type[i] = NORMAL;
-    coeffs[WHITE][i] = T->queenUnderdevelopedPieces[WHITE];                         
-    coeffs[BLACK][i++] = T->queenUnderdevelopedPieces[BLACK];                         
+	loadCoeff->type[i] = NORMAL;
+    loadCoeff->coeffs[WHITE][i] = T->queenUnderdevelopedPieces[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->queenUnderdevelopedPieces[BLACK];                         
   	
   	// King
 
-	type[i] = NORMAL;
-    coeffs[WHITE][i] = T->kingPawnShield[WHITE];                         
-    coeffs[BLACK][i++] = T->kingPawnShield[BLACK];                         
+	loadCoeff->type[i] = NORMAL;
+    loadCoeff->coeffs[WHITE][i] = T->kingPawnShield[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->kingPawnShield[BLACK];                         
 
-	type[i] = NORMAL;
-    coeffs[WHITE][i] = T->kingEnemyPawnStorm[WHITE];                         
-    coeffs[BLACK][i++] = T->kingEnemyPawnStorm[BLACK]; 
+	loadCoeff->type[i] = NORMAL;
+    loadCoeff->coeffs[WHITE][i] = T->kingEnemyPawnStorm[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->kingEnemyPawnStorm[BLACK]; 
 
 
     // Pieces Mobility
     for (int k = 0; k < 16; k++) {
 	
-		type[i] = NORMAL;
-	    coeffs[WHITE][i] = T->knightMobility[WHITE][k];                         
-	    coeffs[BLACK][i++] = T->knightMobility[BLACK][k];                         
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->knightMobility[WHITE][k];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->knightMobility[BLACK][k];                         
 	}
 
     for (int k = 0; k < 16; k++) {
 		
-		type[i] = NORMAL;
-	    coeffs[WHITE][i] = T->bishopMobility[WHITE][k];                         
-	    coeffs[BLACK][i++] = T->bishopMobility[BLACK][k];                         
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->bishopMobility[WHITE][k];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->bishopMobility[BLACK][k];                         
 	}
 
     for (int k = 0; k < 16; k++) {
 		
-		type[i] = NORMAL;
-	    coeffs[WHITE][i] = T->rookMobility[WHITE][k];                         
-	    coeffs[BLACK][i++] = T->rookMobility[BLACK][k];                         
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->rookMobility[WHITE][k];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->rookMobility[BLACK][k];                         
 	}
 	
     for (int k = 0; k < 32; k++) {
 	
-		type[i] = NORMAL;	
-	    coeffs[WHITE][i] = T->queenMobility[WHITE][k];                         
-	    coeffs[BLACK][i++] = T->queenMobility[BLACK][k];                         
+		loadCoeff->type[i] = NORMAL;	
+	    loadCoeff->coeffs[WHITE][i] = T->queenMobility[WHITE][k];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->queenMobility[BLACK][k];                         
 	}
 
 
@@ -306,107 +225,98 @@ void loadCoefficients(TraceCoefficients *T, TVector coeffs, TArray type) {
 
     for (int k = 8; k < 56; k++) {
 	
-		type[i] = NORMAL;
-	    coeffs[WHITE][i] = T->pawnPSQT[WHITE][k];                         
-	    coeffs[BLACK][i++] = T->pawnPSQT[BLACK][k];                         
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->pawnPSQT[WHITE][k];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->pawnPSQT[BLACK][k];                         
     }
 
     for (int k = 0; k < 64; k++) {
 
-		type[i] = NORMAL;
-	    coeffs[WHITE][i] = T->knightPSQT[WHITE][k];                         
-	    coeffs[BLACK][i++] = T->kingPSQT[BLACK][k];                         
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->knightPSQT[WHITE][k];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->kingPSQT[BLACK][k];                         
     }
 
     for (int k = 0; k < 64; k++) {
 
-		type[i] = NORMAL;
-	    coeffs[WHITE][i] = T->bishopPSQT[WHITE][k];                         
-	    coeffs[BLACK][i++] = T->bishopPSQT[BLACK][k];                         
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->bishopPSQT[WHITE][k];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->bishopPSQT[BLACK][k];                         
     }
 
     for (int k = 0; k < 64; k++) {
 
-		type[i] = NORMAL;
-	    coeffs[WHITE][i] = T->rookPSQT[WHITE][k];                         
-	    coeffs[BLACK][i++] = T->rookPSQT[BLACK][k];                         
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->rookPSQT[WHITE][k];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->rookPSQT[BLACK][k];                         
     }
 
     for (int k = 0; k < 64; k++) {
 
-		type[i] = NORMAL;
-	    coeffs[WHITE][i] = T->queenPSQT[WHITE][k];                         
-	    coeffs[BLACK][i++] = T->queenPSQT[BLACK][k];                         
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->queenPSQT[WHITE][k];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->queenPSQT[BLACK][k];                         
     }
 
     for (int k = 0; k < 64; k++) {
 
-		type[i] = NORMAL;
-	    coeffs[WHITE][i] = T->kingPSQT[WHITE][k];                         
-	    coeffs[BLACK][i++] = T->kingPSQT[BLACK][k];                         
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->kingPSQT[WHITE][k];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->kingPSQT[BLACK][k];                         
     }
     
 
-    type[i] = NORMAL;
-    coeffs[WHITE][i] = T->centerControl[WHITE];                         
-    coeffs[BLACK][i++] = T->centerControl[BLACK];                         
+    loadCoeff->type[i] = NORMAL;
+    loadCoeff->coeffs[WHITE][i] = T->centerControl[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->centerControl[BLACK];                         
 
 
+	loadCoeff->type[i] = SAFETY;
+    loadCoeff->coeffs[WHITE][i] = T->knightAttack[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->knightAttack[BLACK];                         
 
-	type[i] = SAFETY;
-    coeffs[WHITE][i] = T->knightAttack[WHITE];                         
-    coeffs[BLACK][i++] = T->knightAttack[BLACK];                         
+	loadCoeff->type[i] = SAFETY;
+    loadCoeff->coeffs[WHITE][i] = T->bishopAttack[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->bishopAttack[BLACK];                         
 
-	type[i] = SAFETY;
-    coeffs[WHITE][i] = T->bishopAttack[WHITE];                         
-    coeffs[BLACK][i++] = T->bishopAttack[BLACK];                         
+	loadCoeff->type[i] = SAFETY;
+    loadCoeff->coeffs[WHITE][i] = T->rookAttack[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->rookAttack[BLACK];                         
 
-	type[i] = SAFETY;
-    coeffs[WHITE][i] = T->rookAttack[WHITE];                         
-    coeffs[BLACK][i++] = T->rookAttack[BLACK];                         
-
-	type[i] = SAFETY;
-    coeffs[WHITE][i] = T->queenAttack[WHITE];                         
-    coeffs[BLACK][i++] = T->queenAttack[BLACK];                         
-
+	loadCoeff->type[i] = SAFETY;
+    loadCoeff->coeffs[WHITE][i] = T->queenAttack[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->queenAttack[BLACK];                         
 
 
+	loadCoeff->type[i] = SAFETY;
+    loadCoeff->coeffs[WHITE][i] = T->rookSafeContactCheck[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->rookSafeContactCheck[BLACK];                         
+
+	loadCoeff->type[i] = SAFETY;
+    loadCoeff->coeffs[WHITE][i] = T->queenSafeContactCheck[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->queenSafeContactCheck[BLACK];                         
 
 
-	type[i] = SAFETY;
-    coeffs[WHITE][i] = T->rookSafeContactCheck[WHITE];                         
-    coeffs[BLACK][i++] = T->rookSafeContactCheck[BLACK];                         
+    loadCoeff->type[i] = SAFETY;
+    loadCoeff->coeffs[WHITE][i] = T->knightCheck[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->knightCheck[BLACK];                         
 
-	type[i] = SAFETY;
-    coeffs[WHITE][i] = T->queenSafeContactCheck[WHITE];                         
-    coeffs[BLACK][i++] = T->queenSafeContactCheck[BLACK];                         
+    loadCoeff->type[i] = SAFETY;
+    loadCoeff->coeffs[WHITE][i] = T->bishopCheck[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->bishopCheck[BLACK];                         
 
+    loadCoeff->type[i] = SAFETY;
+    loadCoeff->coeffs[WHITE][i] = T->rookCheck[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->rookCheck[BLACK];                         
 
-
-
-
-
-    type[i] = SAFETY;
-    coeffs[WHITE][i] = T->knightCheck[WHITE];                         
-    coeffs[BLACK][i++] = T->knightCheck[BLACK];                         
-
-    type[i] = SAFETY;
-    coeffs[WHITE][i] = T->bishopCheck[WHITE];                         
-    coeffs[BLACK][i++] = T->bishopCheck[BLACK];                         
-
-    type[i] = SAFETY;
-    coeffs[WHITE][i] = T->rookCheck[WHITE];                         
-    coeffs[BLACK][i++] = T->rookCheck[BLACK];                         
-
-    type[i] = SAFETY;
-    coeffs[WHITE][i] = T->queenCheck[WHITE];                         
-    coeffs[BLACK][i++] = T->queenCheck[BLACK];                         
+    loadCoeff->type[i] = SAFETY;
+    loadCoeff->coeffs[WHITE][i] = T->queenCheck[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->queenCheck[BLACK];                         
 
 
-
-    type[i] = SAFETY;
-    coeffs[WHITE][i] = T->safetyAdjustment[WHITE];                         
-    coeffs[BLACK][i++] = T->safetyAdjustment[BLACK];                         
+    loadCoeff->type[i] = SAFETY;
+    loadCoeff->coeffs[WHITE][i] = T->safetyAdjustment[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->safetyAdjustment[BLACK];                         
 
 
 
@@ -505,9 +415,6 @@ void startTuner() {
 	cparams[EG][count++] = ScoreEG(weight_rook_on_eight_rank);
 
 
-
-
-
 	cparams[MG][count] = ScoreMG(weight_queen_underdeveloped_pieces);
 	cparams[EG][count++] = ScoreEG(weight_queen_underdeveloped_pieces);
 
@@ -579,10 +486,8 @@ void startTuner() {
 		cparams[EG][count++] = ScoreEG(kingPSQT[i]);
 	}
 
-
 	cparams[MG][count] = ScoreMG(weight_center_control);
 	cparams[EG][count++] = ScoreEG(weight_center_control);
-
 
 	cparams[MG][count] = ScoreMG(weight_knight_attack);
 	cparams[EG][count++] = ScoreEG(weight_knight_attack);
@@ -621,11 +526,6 @@ void startTuner() {
 
 
 
-	// displayWeights(params, cparams);
-
-	// std::cout<<count<<"\n";
-
-
 	assert(count == NTERMS);
 
 	std::fstream newfile;
@@ -640,24 +540,16 @@ void startTuner() {
 
 		std::string tp;
 
-		Thread th;	
-	    th.moves_history_counter = 1;
-		
-
-
 		while (getline(newfile, tp)) {
-
 
 			double result;
 
+			// std::string fen = tp.substr(0, tp.find("\""));
+			
+			std::string fen = tp.substr(0, tp.find(";"));
 
-
-			std::string fen = tp.substr(0, tp.find("\""));
-			//std::string fen = tp.substr(0, tp.find(";"));
-
-
-			if (fen.length() <= 0) continue;
-
+			if (fen.length() <= 0) 
+				continue;
 
 
 			// unsigned first = fen.find('{') + 1;
@@ -694,29 +586,29 @@ void startTuner() {
 			assert(result == 1.0 || result == 0.5 || result == 0.0);
 
 
+			T->clear();
+			
+			LoadCoeff *loadCoeff = new LoadCoeff();
 
+			Thread *th = new Thread();
+			th->moves_history_counter = 1;
+		
 			Data data = {};	
-
 			data.result = result;
 
-			TVector coeffs;  
-
-			T->clear();
-
-			u8 side = parseFen(fen, &th);
+	
+			u8 side = parseFen(fen, th);
 			
-			data.sEval = traceFullEval(T, side, &th);
+			data.sEval = traceFullEval(T, side, th);
 			//data.sEval = QuiescenseForTuning(0, side, -VAL_INFINITY, VAL_INFINITY, 12, &th, T);  
 
-			// data.result = stored_eval;
-			
+			delete th; // free resources after use
+
 			if (side == BLACK) {
 
 				data.sEval = -data.sEval;
-				// data.result = -data.result;
 			}
-						
-
+					
 			data.eval = T->eval;
 
 			data.pfactors[MG] = 0 + T->phase / 24.0;
@@ -727,38 +619,42 @@ void startTuner() {
 		    data.safety[WHITE] = T->safety[WHITE];
 		    data.safety[BLACK] = T->safety[BLACK];
 
-
-			TArray type;		
-			loadCoefficients(T, coeffs, type);
+			loadCoefficients(T, loadCoeff);
 
 			std::vector<CoefficientsInfo> infoList;
-			for (int i = 0; i < NTERMS; i++) {
+			for (uint16_t i = 0; i < NTERMS; i++) {
 
-				if (type[i] == NORMAL && coeffs[WHITE][i] - coeffs[BLACK][i] != 0.0) {
+				// std::cout<<coeffs[WHITE][i]<<","<<coeffs[BLACK][i]<<"\n";
+
+				if (	loadCoeff->type[i] == NORMAL 
+					&&	loadCoeff->coeffs[WHITE][i] - loadCoeff->coeffs[BLACK][i] != 0.0) {
 
 					CoefficientsInfo coefficientsInfo = {
-						static_cast<uint16_t>(i),
-						static_cast<int8_t>(coeffs[WHITE][i]), 
-						static_cast<int8_t>(coeffs[BLACK][i]),
-						static_cast<int8_t>(type[i])
+						i, 
+						loadCoeff->coeffs[WHITE][i], 
+						loadCoeff->coeffs[BLACK][i],
+						loadCoeff->type[i]
 					};
 
 					infoList.push_back(coefficientsInfo);
 				}
 
-				if (type[i] != NORMAL && (coeffs[WHITE][i] != 0.0 || coeffs[BLACK][i] != 0.0)) {
+				if (	loadCoeff->type[i] != NORMAL 
+					&&	(loadCoeff->coeffs[WHITE][i] != 0.0 || loadCoeff->coeffs[BLACK][i] != 0.0)) {
 
 					CoefficientsInfo coefficientsInfo = {
-						static_cast<uint16_t>(i),
-						static_cast<int8_t>(coeffs[WHITE][i]), 
-						static_cast<int8_t>(coeffs[BLACK][i]),
-						static_cast<int8_t>(type[i])
+						i, 
+						loadCoeff->coeffs[WHITE][i], 
+						loadCoeff->coeffs[BLACK][i],
+						loadCoeff->type[i]
 					};
 
 					infoList.push_back(coefficientsInfo);	
 				}
 			}
 			
+			delete loadCoeff; // free resources after use
+
 
 			std::copy(infoList.begin(), infoList.end(), std::back_inserter(data.coefficientsInfoList));
 
@@ -766,9 +662,15 @@ void startTuner() {
 
 			count++;
 
-			if (count % 10000 == 0)	std::cout << count << " positions loaded \n";
+			if (count % 10000 == 0)	{
 
-			if (count >= NPOSITIONS)	break;
+				std::cout << count << " positions loaded \n";
+			}
+
+			if (count >= NPOSITIONS) {
+
+				break;			
+			}	
 		}
 	}
       
@@ -776,115 +678,15 @@ void startTuner() {
 
     assert(count == NPOSITIONS);
 
-    // std::vector<int> weights;
+	std::cout<<"Data list size -> " << dataList.size() << "\n";
 
-    // for (int i = 0; i < initialGuess.size(); i++) {
-
-    // 	weights.push_back(initialGuess[i]);
-    // 	paramHistoryListraceCoefficients.push_back(true);
-    // }
-
-    // calculateParamHistoryList(historyParams);
-
-	// bool parameterImproved = false;
-	// scaling_constant = optimiseConstant(scaling_constant, 0, averageEvaluationError(weights),
-	// 			500, 1, weights, true, parameterImproved);
-
-	// if (parameterImproved) {
-
-	// 	std::cout << "\n" << "New Scaling constant = " << scaling_constant << "\n";
-	// }
-	
-	// localOptimize(initialGuess);
 	optimise(params, cparams);
 }
-
-
-
-
-void writeEvalToFile() {
-
-	std::fstream newfile;
-   	newfile.open ("ccrl-40-15-elo-3000_7_5_m.epd", std::ios::in); 
-		
-	std::ofstream foutput; 
-	foutput.open ("data.txt", std::ios::app); 
-
-	int count = 1;
-
-	// read data from file to a vector
-	if (newfile.is_open() && foutput.is_open()) {   
-
-		std::string tp;
-
-		Thread th;	
-	    th.moves_history_counter = 1;
-		
-		while (getline(newfile, tp)) {
-
-			// std::string fen = tp.substr(0, tp.find(";"));
-
-			// if (fen.length() <= 0) continue;
-
-			// int score = evaluateFENNNUE(&fen[0]);
-
-			// u8 side = parseFen(const_cast<char *>(fen.c_str()), &th);
-
-			// int score = evaluateNNUE(side, &th);
-
-			// foutput<<fen << " " << "{" << score << "}" << "\n"; 
-			
-			// count++;
-
-			// if (count % 10000 == 0) std::cout << count << " eval for entries written" << std::endl;	
-		}
-	}
-
-	newfile.close();
-	foutput.close(); 
-
-	std::cout << count - 1 << " eval for entries written" << std::endl;
-}
-
-void getEval() {
-
-	std::fstream newfile;
-   	newfile.open ("data.txt", std::ios::in); 
-	
-	if (newfile.is_open()) {   
-
-		std::string tp;
-
-		int count = 0;
-		while (getline(newfile, tp)) {
-
-			count++;
-			std::string fen = tp.substr(0, tp.find("\""));
-	
-
-			unsigned first = fen.find('{') + 1;
-			unsigned last = fen.find('}');
-			std::string strNew = fen.substr (first, last-first);
-			int stored_eval = std::stoi( strNew);
-
-			std::cout<<stored_eval<<std::endl;
-
-			if (count > 10) break;
-		}
-	}	
-
-}
-
-
 
 
 void optimise(TVector params, TVector cparams) {
 
 	const double K = computeOptimalK();
-
-
-	std::cout<<"Data list size -> " << dataList.size() << "\n";
-
 
 	double bestMae = 0.0, mae = 0.0;
 
@@ -893,17 +695,16 @@ void optimise(TVector params, TVector cparams) {
 	// For Adam optimiser
 	double beta1 = 0.9, beta2 = 0.999;
 	double alpha1 = 0.001;
-	double eps = 0.00000001;
 	
 	auto startTime = std::chrono::steady_clock::now();
 	auto skipTime = std::chrono::steady_clock::now();
 	auto lrStepTime = std::chrono::steady_clock::now();
 
 	int counter = 0;
-	int index = 0;
+	uint64_t index = 0;
 
 	bool skip = false;
-	std::vector<Data> data_batch(BATCHSIZE);
+	std::vector<Data> data_batch;
 	
 	for (u64 epoch = 1; epoch < MAXEPOCHS; epoch++) {
 
@@ -922,8 +723,9 @@ void optimise(TVector params, TVector cparams) {
 			std::random_shuffle(dataList.begin(), dataList.end());	
 		}
 
-
-    	std::copy(dataList.begin() + index, (dataList.begin() + index) + BATCHSIZE, data_batch.begin());
+		data_batch.clear();
+    	std::copy(dataList.begin() + index, (dataList.begin() + index) + BATCHSIZE, back_inserter(data_batch));
+    	
     	index += BATCHSIZE;
 
 
@@ -964,6 +766,7 @@ void optimise(TVector params, TVector cparams) {
         	params[EG][i] += alpha1 * eg_m_k_hat / (sqrt(eg_r_k_hat) + 1e-8);
 		}
 
+		
 		auto endTime = std::chrono::steady_clock::now();
 
 		if (std::chrono::duration_cast<std::chrono::seconds>(endTime - skipTime).count() > 20) {
@@ -976,12 +779,8 @@ void optimise(TVector params, TVector cparams) {
 
 			startTime = std::chrono::steady_clock::now();
 
-			// new weights gets loaded here	
 			mae = tunedEvaluationErrors(params, K);
 
-			// loadWeights(params, cparams);				
-			// double mae = averageEvaluationError();
-			
 			std::cout << std::setprecision(10);
 			std::cout << "Iteration -> " << epoch << ", ";
 			std::cout << "MAE -> " << mae << ", ";
@@ -997,7 +796,6 @@ void optimise(TVector params, TVector cparams) {
 				std::async(writeToFile, params, cparams);
 			} 
 		}
-
 
 		// if (std::chrono::duration_cast<std::chrono::seconds>(endTime - lrStepTime).count() > 60 * 5) {
 			
@@ -1018,14 +816,11 @@ double staticEvaluationErrors(double K) {
     	#pragma omp for schedule(static, NPOSITIONS / NPARTITIONS) reduction(+:total)
     	for (int i = 0; i < NPOSITIONS; i++)
             total += pow(dataList[i].result - sigmoid(K, dataList[i].sEval), 2);
-  
-    	// for (int i = 0; i < NPOSITIONS; i++)
-     //        total += pow(dataList[i].result - dataList[i].sEval, 2);
-    
     }
 
     return total / (double) NPOSITIONS;
 }
+
 
 double tunedEvaluationErrors(TVector weights, double K) {
 
@@ -1035,15 +830,12 @@ double tunedEvaluationErrors(TVector weights, double K) {
     {
   	    #pragma omp for schedule(static, NPOSITIONS / NPARTITIONS) reduction(+:total)
   	      for (int i = 0; i < NPOSITIONS; i++)
-          	total += pow(dataList[i].result - sigmoid(K, linearEvaluation(weights, dataList[i], NULL)), 2);
-  
-        // for (int i = 0; i < NPOSITIONS; i++)
-        //     total += pow(dataList[i].result - linearEvaluation(weights, dataList[i], NULL), 2);
-    
+          	total += pow(dataList[i].result - sigmoid(K, linearEvaluation(weights, dataList[i], NULL)), 2);  
     }
 
     return total / (double) NPOSITIONS;
 }
+
 
 
 double linearEvaluation(TVector weights, Data data, TGradientData *gradientData) {
@@ -1052,13 +844,9 @@ double linearEvaluation(TVector weights, Data data, TGradientData *gradientData)
     double normal[2], safety[2];
     double mg[2][2] = {0}, eg[2][2] = {0};
 
-	std::vector<CoefficientsInfo> list = data.coefficientsInfoList;
-
     // Save any modifications for MG or EG for each evaluation type
-	for (std::vector<CoefficientsInfo>::iterator i = list.begin(); i != list.end(); ++i) {
+	for (auto info : data.coefficientsInfoList) {
 		
-		CoefficientsInfo info = *i;
-
 		mg[info.type][WHITE] += (double) info.wcoeff * weights[MG][info.index];
         mg[info.type][BLACK] += (double) info.bcoeff * weights[MG][info.index];
         eg[info.type][WHITE] += (double) info.wcoeff * weights[EG][info.index];
@@ -1087,10 +875,12 @@ double linearEvaluation(TVector weights, Data data, TGradientData *gradientData)
 
 
     // Save this information since we need it to compute the gradients
-    if(gradientData != NULL) 
-		*gradientData = (TGradientData) {
+    if (gradientData != NULL) {
+    	
+    	*gradientData = (TGradientData) {
 	        wsafety[MG], bsafety[MG], wsafety[EG], bsafety[EG]
 	    };
+    }
 
 
     midgame = normal[MG] + safety[MG];
@@ -1102,6 +892,8 @@ double linearEvaluation(TVector weights, Data data, TGradientData *gradientData)
 
 
 
+
+
 void updateSingleGradient(Data data, TVector gradient, TVector weights, double K) {
 
 	TGradientData gradientData;
@@ -1110,14 +902,12 @@ void updateSingleGradient(Data data, TVector gradient, TVector weights, double K
     double S = sigmoid(K, E);
     double A = (data.result - S) * S * (1 - S);
 	
-	// double A = data.result - E;
-
     double mgBase = A * data.pfactors[MG];
     double egBase = A * data.pfactors[EG];
 
 	std::vector<CoefficientsInfo> list = data.coefficientsInfoList;
 
-	for (auto &info : list) {
+	for (auto info : list) {
 
         if (info.type == NORMAL) {
     
@@ -1137,77 +927,6 @@ void updateSingleGradient(Data data, TVector gradient, TVector weights, double K
 }
 
 
-
-
-
-
-
-
-
-
-
-// void updateSingleGradient(Data data, TVector gradient, TVector weights) {
-
-//     double E = linearEvaluation(weights, data);
-//     double S = sigmoid(K, E);
-//     double A = (data.result - S) * S * (1 - S);
-
-//     double mgBase = A * data.pfactors[MG];
-//     double egBase = A * data.pfactors[EG];
-
-// 	std::vector<CoefficientsInfo> list = data.coefficientsInfoList;
-
-// 	for (int j = 0; j < lisT->size(); j++) {
-
-// 		uint16_t index = list[j].index;
-// 	    int8_t coeffsDiff = list[j].wcoeff - list[j].bcoeff;
-	
-// 		gradient[MG][index] += mgBase * coeffsDiff;
-// 		gradient[EG][index] += egBase * coeffsDiff;
-// 	}
-// }
-
-
-
-
-
-// void computeGradient(TVector gradient, TVector weights, std::vector<Data> data_batch) {
-
-//     #pragma omp parallel shared(gradient)
-//     {
-//         TVector local = {0};
-//         #pragma omp for schedule(static, NPOSITIONS / NPARTITIONS)
-//         for (int i = 0; i < NPOSITIONS; i++)
-//             updateSingleGradient(data_batch[i], local, weights);
-
-//         for (int i = 0; i < NTERMS; i++) {
-            
-//             gradient[MG][i] += local[MG][i];
-//             gradient[EG][i] += local[EG][i];
-//         }
-//     }
-// }
-
-
-// void computeGradient(TVector gradient, TVector weights, std::vector<Data> data_batch,  double K, int batch) {
-
-//     #pragma omp parallel shared(gradient)
-//     {
-//         TVector local = {0};
-
-//        #pragma omp for schedule(static, BATCHSIZE / NPARTITIONS)   
-//         for (int i = batch * BATCHSIZE; i < (batch + 1) * BATCHSIZE; i++)
-//         	updateSingleGradient(data_batch[i], local, weights, K);
-
-//         for (int i = 0; i < NTERMS; i++) {
-
-//             gradient[MG][i] += local[MG][i];
-//             gradient[EG][i] += local[EG][i];
-//         }
-//     }
-// }
-
-
 void computeGradient(TVector gradient, TVector weights, std::vector<Data> data_batch,  double K) {
 
 	#pragma omp parallel shared(gradient) 
@@ -1215,10 +934,9 @@ void computeGradient(TVector gradient, TVector weights, std::vector<Data> data_b
         TVector local = {0};
 
 		#pragma omp for schedule(static, BATCHSIZE / NPARTITIONS)   
-        for (int i = 0; i < data_batch.size(); i++) {
+        for (int i = 0; i < data_batch.size(); i++) 
         	updateSingleGradient(data_batch[i], local, weights, K);
-        }
-
+        
         for (int i = 0; i < NTERMS; i++) {
 
             gradient[MG][i] += local[MG][i];
@@ -1254,295 +972,6 @@ double computeOptimalK() {
     printf("\n");
 
     return start;
-}
-
-void calculateParamHistoryList(std::vector<double> historyParams) {
-
-	const int nParams = historyParams.size();
-
-	//TODO load weights
-	double bestE = averageEvaluationError();
-
-	std::vector<double> bestParValues = historyParams;
-   
-	for (int pi = 0; pi < nParams; pi++) {
-
-		paramHistoryList[pi] = true;
-		
-		std::vector<double> newParValues = bestParValues;
-		newParValues[pi] += 1;
-		
-		//TODO load weights
-		double newE = averageEvaluationError();
-		
-		if (newE < bestE) {
-
-			bestE = newE;
-			bestParValues = newParValues;
-
-			paramHistoryList[pi] = true;
-
-			std::cout <<"\n" << "Progress = "  << pi + 1 << "/" << nParams << "\n";
- 
-			// displayWeights(bestParValues);
-		} else {
-
-			newParValues[pi] -= 2;
-
-			//TODO load weights
-			newE = averageEvaluationError();
-			if (newE < bestE) {
-
-				bestE = newE;
-				bestParValues = newParValues;
-
-				paramHistoryList[pi] = false;
-	
-				std::cout <<"\n" << "Progress = "  << pi + 1 << "/" << nParams << "\n";
- 
-				// displayWeights(bestParValues);
-			}
-		}
-	}
-}
-
-double averageEvaluationError() {
-
-	// auto startTime = std::chrono::steady_clock::now();
-
-	double error = 0.0;
-	u64 positionsChecked = 0;
-	
-	// for (int i = 0; i < num_positions; i++) {
-
-	// 	Thread tunerThread;
-	// 	// Bad access error fix
-	//     tunerThread.movesHistoryCounter = 1;
-
-	// 	u8 side = parseFen(const_cast<char *>(dataList[i].fen.c_str()), &tunerThread);
-
-	// 	// int eval = side ? -quiescense(0, BLACK, -VAL_INFINITY, VAL_INFINITY, &tunerThread) 
-	// 	// 	: quiescense(0, WHITE, -VAL_INFINITY, VAL_INFINITY, &tunerThread);
-
-	// 	double eval = fullEval(WHITE, &tunerThread);
-
-	// 	error += pow(dataList[i].result - sigmoid(K, eval), 2);
-
-	// 	positionsChecked++;
-	// }
-
-	double mae = error / (double) positionsChecked;
-
-	// auto endTime = std::chrono::steady_clock::now();
-
-	// std::cout << "Positions -> " << positionsChecked << ", MAE -> " << std::setprecision(10) << mae  
-	// 	<< ", Time -> " << std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime).count() << "s" << "\n";
-
-	return mae;
-}
-
-int optimiseConstant(int constant, int pos, double current_mea, int max_iter, int step, 
-	std::vector<double> weightList, bool isOptimisingScalingConstant, bool &improved) {
-
-	improved = false;
-
-    int original = constant;
-
-    double adjusted_mea;
-    constant = original + step;
-
-    if (!isOptimisingScalingConstant) weightList[pos] = constant;
-
-    //TODO load new weights
-    //loadWeights(weightList);
-
-    if ((adjusted_mea = averageEvaluationError()) < current_mea) {
-
-        std::cout << "optimising constant (increasing): " << constant << std::endl;
-
-        while (adjusted_mea < current_mea && abs(constant - original) <= max_iter) {
-            
-            current_mea = adjusted_mea;
-            constant += step;
-            
-            if (!isOptimisingScalingConstant) weightList[pos] = constant;
-
-            adjusted_mea = averageEvaluationError();
-
-            std::cout << " : constant: " << constant << " -> " << adjusted_mea << std::endl;
-        }
-
-        constant -= step;
-
-        improved = true;
-    } else {
-
-        std::cout << "optimising constant (decreasing): " << constant << std::endl;
-
-        constant = original - step;
-        
-        if (!isOptimisingScalingConstant) weightList[pos] = constant;
-
-        adjusted_mea = averageEvaluationError();
-        while (adjusted_mea < current_mea && abs(constant - original) <= max_iter) {
-        
-            current_mea = adjusted_mea;
-            constant -= step;
-
-		    if (!isOptimisingScalingConstant) weightList[pos] = constant;
-
-            adjusted_mea = averageEvaluationError();
-
-            std::cout << " : constant: " << constant << " -> " << adjusted_mea << std::endl;
-
-            improved = true;
-        }
-
-        constant += step;
-    }
-
-    if (improved) {
-
-    	std::cout << "constant optimised: " << constant << " -> " << current_mea << std::endl;
-    }
-
-    return constant;
-}
-
-std::vector<double> localOptimize(std::vector<double>& initialGuess) {
-
-	int cycle_count = 0;
-
-	const int nParams = initialGuess.size();
-
-	// double bestE = averageEvaluationError(initialGuess);
-
-	std::vector<double> bestParValues = initialGuess;
-
-	bool improved = true;
-   
-	while ( improved ) {
-
-		cycle_count++;
-
-		improved = false;
-
-		for (int pi = 0; pi < nParams; pi++) {
-
-			std::cout <<"\n" << "Cycle count = " << cycle_count << ", Current progress = "  << pi + 1 << "/" << nParams << "\n";		
-
-  			std::vector<double> newParValues = bestParValues;
-			
-			bool parameterImproved1 = false;
-			
-			//TODO load weights before calling averageEvaluationError()
-
-			int constant = optimiseConstant(newParValues[pi], pi, averageEvaluationError(),
-				10, 5, newParValues, false, parameterImproved1);
- 			
- 			if (parameterImproved1) {
-
-				newParValues[pi] = constant;
-
-           		bestParValues = newParValues;
-
-				std::cout << "\n" << "First pass parameter improved" << "\n";			
-			}
-
-			bool parameterImproved2 = false;
-			
-			constant = optimiseConstant(newParValues[pi], pi, averageEvaluationError(),
-					5, 1, newParValues, false, parameterImproved2);
-			
-			if (parameterImproved2) {
-
-				newParValues[pi] = constant;
-
-           		bestParValues = newParValues;
-
-				std::cout << "\n" << "Second pass parameter improved" << "\n";			
-			}
-
-			if (parameterImproved1 || parameterImproved2) {
-
-				// displayWeights(bestParValues);
-
-				improved = true;
-			}
-
-			// if (paramHistoryList[pi]) {
-
-			// 	paramHistoryList[pi] = true;
-
-			// 	newParValues[pi] += 1;
-			// 	double newE = averageEvaluationError(newParValues);
-			// 	if (newE < bestE) {
-
-			// 		bestE = newE;
-			// 		bestParValues = newParValues;
-			// 		improved = true;
-
-			// 		paramHistoryList[pi] = true;
-		
-			// 		displayWeights();
-					
-			// 		std::cout <<"\n" << "Cycle count = " << cycle_count << ", Current progress = "  << pi + 1 << "/" << nParams << "\n";
-			// 	} else {
-
-			// 		newParValues[pi] -= 2;
-			// 		newE = averageEvaluationError(newParValues);
-			// 		if (newE < bestE) {
-
-			// 			bestE = newE;
-			// 			bestParValues = newParValues;
-			// 			improved = true;
-		
-			// 			paramHistoryList[pi] = false;
-
-			// 			displayWeights();
-			
-			// 			std::cout <<"\n" << "Cycle count = " << cycle_count << ", Current progress = "  << pi + 1 << "/" << nParams << "\n";
-			// 		}
-			// 	}
-			// } else {
-
-			// 	paramHistoryList[pi] = false;
-
-			// 	newParValues[pi] -= 1;
-			// 	double newE = averageEvaluationError(newParValues);
-			// 	if (newE < bestE) {
-
-			// 		bestE = newE;
-			// 		bestParValues = newParValues;
-			// 		improved = true;
-
-			// 		paramHistoryList[pi] = false;
-		 
-			// 		displayWeights();
-
-			// 		std::cout <<"\n" << "Cycle count = " << cycle_count << ", Current progress = "  << pi + 1 << "/" << nParams << "\n";
-			// 	} else {
-
-			// 		newParValues[pi] += 2;
-			// 		newE = averageEvaluationError(newParValues);
-			// 		if (newE < bestE) {
-
-			// 			bestE = newE;
-			// 			bestParValues = newParValues;
-			// 			improved = true;
-		
-			// 			paramHistoryList[pi] = true;
- 
-			// 			displayWeights();
-
-			// 			std::cout <<"\n" << "Cycle count = " << cycle_count << ", Current progress = "  << pi + 1 << "/" << nParams << "\n";
-			// 		}
-			// 	}
-			// }
-		}
-	}
-
-   return bestParValues;
 }
 
 void displayWeights(TVector params, TVector cparams) {
@@ -1735,7 +1164,7 @@ void displayWeights(TVector params, TVector cparams) {
 	} std::cout << "\n";
 	std::cout <<"};"<<"\n\n"; 
 
-
+	
 	std::cout << "weight_center_control = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n\n";
    
 
@@ -1949,10 +1378,8 @@ void writeToFile(TVector params, TVector cparams) {
 	} myfile << "\n";
 	myfile <<"};"<<"\n\n";
 
-
 	myfile << "weight_center_control = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n\n";
    
-
  	myfile << "weight_knight_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
    		"\nweight_bishop_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
    		"\nweight_rook_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
@@ -1969,4 +1396,78 @@ void writeToFile(TVector params, TVector cparams) {
 	myfile.close();
 
 	assert(count == NTERMS);
+}
+
+
+void writeEvalToFile() {
+
+	std::fstream newfile;
+   	newfile.open ("ccrl-40-15-elo-3000_7_5_m.epd", std::ios::in); 
+		
+	std::ofstream foutput; 
+	foutput.open ("data.txt", std::ios::app); 
+
+	int count = 1;
+
+	// read data from file to a vector
+	if (newfile.is_open() && foutput.is_open()) {   
+
+		std::string tp;
+
+		Thread th;	
+	    th.moves_history_counter = 1;
+		
+		while (getline(newfile, tp)) {
+
+			// std::string fen = tp.substr(0, tp.find(";"));
+
+			// if (fen.length() <= 0) continue;
+
+			// int score = evaluateFENNNUE(&fen[0]);
+
+			// u8 side = parseFen(const_cast<char *>(fen.c_str()), &th);
+
+			// int score = evaluateNNUE(side, &th);
+
+			// foutput<<fen << " " << "{" << score << "}" << "\n"; 
+			
+			// count++;
+
+			// if (count % 10000 == 0) std::cout << count << " eval for entries written" << std::endl;	
+		}
+	}
+
+	newfile.close();
+	foutput.close(); 
+
+	std::cout << count - 1 << " eval for entries written" << std::endl;
+}
+
+void getEval() {
+
+	std::fstream newfile;
+   	newfile.open ("data.txt", std::ios::in); 
+	
+	if (newfile.is_open()) {   
+
+		std::string tp;
+
+		int count = 0;
+		while (getline(newfile, tp)) {
+
+			count++;
+			std::string fen = tp.substr(0, tp.find("\""));
+	
+
+			unsigned first = fen.find('{') + 1;
+			unsigned last = fen.find('}');
+			std::string strNew = fen.substr (first, last-first);
+			int stored_eval = std::stoi( strNew);
+
+			std::cout<<stored_eval<<std::endl;
+
+			if (count > 10) break;
+		}
+	}	
+
 }
