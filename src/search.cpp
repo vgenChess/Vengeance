@@ -610,7 +610,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 	th->moveList[PLY].moves.clear();
 	th->moveList[PLY].badCaptures.clear();
 
-	wsas(true) {
+	while (true) {
 
 		// fetch next psuedo-legal move
 		currentMove = getNextMove(PLY, SIDE, th, &th->moveList[PLY]);
