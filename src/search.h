@@ -22,6 +22,8 @@ public:
 	
 	bool isNullMoveAllowed;	 
 
+	u32 skipMove;
+
 	std::vector<u32> pline;
 
 	SearchInfo() {
@@ -31,6 +33,8 @@ public:
 		depth = 0;
 	
 		isNullMoveAllowed = false;
+
+		skipMove = NO_MOVE;
 
 		pline.clear();
 	}

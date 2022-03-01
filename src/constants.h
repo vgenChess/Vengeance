@@ -37,6 +37,7 @@ const float VALF_MATE_THREAT_EXT = 0.5;
 const float VALF_RECAPTURE_EXT = 0.75;
 const float VALF_PRANK_EXT = 1;
 const float VALF_PROMOTION_EXT = 0.75;
+const float VALF_SINGULAR_EXT = 1.25;
 
 #endif
 

@@ -45,6 +45,8 @@ void recordEval(int eval, Thread *th) {
 
 bool probeHash(HASHE *tt, Thread *th) {
     
+    if (tt == NULL) return false;
+
     u32 dataKey = tt->bestMove ^ tt->value ^ tt->depth ^ tt->flags ^ tt->sEval;
     
     return (tt->key ^ dataKey) == th->hashKey; 
