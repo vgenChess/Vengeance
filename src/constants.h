@@ -19,7 +19,7 @@ const uint16_t VALUI16_LTD_RAZOR = 915;
 const uint16_t VALUI16_RVRFPRUNE = 265;
 const uint16_t VALUI16_EXT_RVRFPRUNE = 515;
 const uint16_t VALUI16_LTD_RVRRAZOR = 915;
-const uint16_t VALUI16_Q_DELTA = 200;
+const uint16_t VALUI16_Q_DELTA = 150;
 
 const int16_t VALI16_NO_DEPTH = -127;
 const int16_t VALI16_HISTORY_PRUNING = -5000;   
