@@ -14,8 +14,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: make
+      working-directory: ./Vengeance/src
       run: make
     - name: make check
+      working-directory: ./Vengeance/src
       run: make check
     - name: make distcheck
+      working-directory: ./Vengeance/src
       run: make distcheck
