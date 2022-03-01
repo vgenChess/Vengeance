@@ -784,15 +784,15 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 
 			bestScore = score;
 			bestMove = currentMove.move;
-			
+
 			if (score > alpha) {
 
 				alpha = score;
 				hashf = hashfEXACT;
-
+				
+				// record the moves for the PV			
 				si->pline.clear();
 				si->pline.push_back(bestMove);
-				
 				std::copy(searchInfo.pline.begin(), searchInfo.pline.end(), back_inserter(si->pline));
 				searchInfo.pline.clear();
 
@@ -800,29 +800,32 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 
 					hashf = hashfBETA;
 					
+					// Fail high
+					// No further moves need to be searched, since one refutation is already sufficient 
+					// to avoid the move that led to this node or position. 
 					break;
-				} 					
-			} 
+				}
+			}
 		}
 	}
 
 
-	if (hashf == hashfBETA) { // failed high
+	if (hashf == hashfBETA) {
 
 		if (isQuietMove) {
 
-			if (	bestMove != KILLER_MOVE_1 
-				&&  bestMove != KILLER_MOVE_2) {
+			// update killers
+		
+			if (bestMove != KILLER_MOVE_1 && bestMove != KILLER_MOVE_2) {
 
 				th->moveStack[PLY].killerMoves[1] = KILLER_MOVE_1;
 				th->moveStack[PLY].killerMoves[0] = bestMove;
-			}							
+			}
 
-			updateHistory(PLY, SIDE, depth, bestMove, quietMovesPlayed, th);			
-		} else {
+			updateHistory(PLY, SIDE, depth, bestMove, quietMovesPlayed, th);				
+		} 
 
-			updateCaptureHistory(PLY, SIDE, depth, bestMove, captureMovesPlayed, th);
-		}
+		updateCaptureHistory(PLY, SIDE, depth, bestMove, captureMovesPlayed, th);
 	}
 
 
