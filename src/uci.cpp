@@ -271,8 +271,6 @@ void UciLoop() {
 
         else if (token == "tune") {
             
-           TUNE = 1;
-            
            startTuner();
         } 
 

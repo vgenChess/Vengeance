@@ -293,19 +293,20 @@ void setDist();
 
 void initTableDoublePawns();
 
-int traceFullEval(TraceCoefficients *traceCoefficients, u8 sideToMove, Thread *th);
-int fullEval(u8 sideToMove, Thread *th);
-int evaluateSide(int side, EvalInfo *evalInfo, Thread *th);
+int32_t traceFullEval(TraceCoefficients *traceCoefficients, u8 sideToMove, Thread *th);
 
-int PSQTScore(u8 sideToMove, Thread *th);
-int pawnsEval(u8 sideToMove, EvalInfo *evalInfo, Thread *th);
-int knightsEval(u8 side, EvalInfo *evalInfo, Thread *th);
-int bishopsEval(u8 side, EvalInfo *evalInfo, Thread *th);
-int rooksEval(u8 side, EvalInfo *evalInfo, Thread *th);
-int queenEval(u8 side, EvalInfo *evalInfo, Thread *th);
-int kingEval(u8 side, EvalInfo *evalInfo, Thread *th);
+int32_t fullEval(u8 sideToMove, Thread *th);
+int32_t evaluateSide(int side, EvalInfo *evalInfo, Thread *th);
 
-int evalBoard(u8 side, Thread *th, EvalInfo *evalInfo); 
+int32_t PSQTScore(u8 sideToMove, Thread *th);
+int32_t pawnsEval(u8 sideToMove, EvalInfo *evalInfo, Thread *th);
+int32_t knightsEval(u8 side, EvalInfo *evalInfo, Thread *th);
+int32_t bishopsEval(u8 side, EvalInfo *evalInfo, Thread *th);
+int32_t rooksEval(u8 side, EvalInfo *evalInfo, Thread *th);
+int32_t queenEval(u8 side, EvalInfo *evalInfo, Thread *th);
+int32_t kingEval(u8 side, EvalInfo *evalInfo, Thread *th);
+
+int32_t evalBoard(u8 side, Thread *th, EvalInfo *evalInfo); 
 
 void initPSQT();
 

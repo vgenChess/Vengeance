@@ -246,9 +246,6 @@ class PV {
 
 extern int MAX_DEPTH;
 
-
-extern int TUNE;
-
 extern u64 quiet, prevCap, cap, prevEp, ep, prevCas, cas, check, prom;
 
 extern u64 KEY_SIDE_TO_MOVE;
