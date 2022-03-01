@@ -42,6 +42,8 @@ public:
 	u64 occupied, empty;
 
 	u64 hashKey, pawnsHashKey;
+
+	EvalInfo evalInfo;
 	
 	explicit Thread();
 

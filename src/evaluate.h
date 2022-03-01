@@ -12,60 +12,6 @@
 #include "globals.h"
 #include "thread.h"
 
-class EvalInfo {
-	
-	public:
-
-		u64 openFilesBB;
-		u64 halfOpenFilesBB[2]; 
-
-		u64 pawnsAttacks[2];
-		u64 knightsAttacks[2];
-		u64 bishopsAttacks[2];
-		u64 rooksAttacks[2];
-		u64 queensAttacks[2];
-		u64 kingAttacks[2];
-
-		u64 attacks[2];
-
-		u64 kingZoneBB[2];
-
-		int kingSq[2];
-
-		int kingAttackersCount[2];
-    int kingAttackersWeight[2];
-
-    int kingAdjacentZoneAttacksCount[2];
-
-    void clear() {
-
-			this->openFilesBB = 0ULL;
-
-			for (int i = 0; i < 2; i++) {
-
-				this->halfOpenFilesBB[i] = 0ULL;
-
-				this->pawnsAttacks[i] = 0ULL;
-				this->knightsAttacks[i] = 0ULL;
-				this->bishopsAttacks[i] = 0ULL;
-				this->rooksAttacks[i] = 0ULL;
-				this->queensAttacks[i] = 0ULL;
-				this->kingAttacks[i] = 0ULL;
-
-				this->attacks[i] = 0ULL;
-
-				this->kingZoneBB[i] = 0ULL;
-
-				this->kingSq[i] = 0;
-
-				this->kingAttackersCount[i] = 0;
-   			this->kingAttackersWeight[i] = 0;
-
-    		this->kingAdjacentZoneAttacksCount[i] = 0;
-			} 
-		}
-};
-
 class TraceCoefficients {
 
 	public:
@@ -293,19 +239,20 @@ void setDist();
 
 void initTableDoublePawns();
 
-int traceFullEval(TraceCoefficients *traceCoefficients, u8 sideToMove, Thread *th);
-int fullEval(u8 sideToMove, Thread *th);
-int evaluateSide(int side, EvalInfo *evalInfo, Thread *th);
+int32_t traceFullEval(TraceCoefficients *traceCoefficients, u8 sideToMove, Thread *th);
 
-int PSQTScore(u8 sideToMove, Thread *th);
-int pawnsEval(u8 sideToMove, EvalInfo *evalInfo, Thread *th);
-int knightsEval(u8 side, EvalInfo *evalInfo, Thread *th);
-int bishopsEval(u8 side, EvalInfo *evalInfo, Thread *th);
-int rooksEval(u8 side, EvalInfo *evalInfo, Thread *th);
-int queenEval(u8 side, EvalInfo *evalInfo, Thread *th);
-int kingEval(u8 side, EvalInfo *evalInfo, Thread *th);
+int32_t fullEval(u8 sideToMove, Thread *th);
+int32_t evaluateSide(int side, Thread *th);
 
-int evalBoard(u8 side, Thread *th, EvalInfo *evalInfo); 
+int32_t PSQTScore(u8 sideToMove, Thread *th);
+int32_t pawnsEval(u8 sideToMove, Thread *th);
+int32_t knightsEval(u8 side, Thread *th);
+int32_t bishopsEval(u8 side, Thread *th);
+int32_t rooksEval(u8 side, Thread *th);
+int32_t queenEval(u8 side, Thread *th);
+int32_t kingEval(u8 side, Thread *th);
+
+int32_t evalBoard(u8 side, Thread *th); 
 
 void initPSQT();
 

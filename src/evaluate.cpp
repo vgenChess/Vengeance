@@ -27,8 +27,8 @@
 #define MIDGAME 1
 #define ENDGAME 2
 
-// for tuning
-int TUNE = 0;
+// uncomment for tuning eval 
+//#define TUNE
 
 TraceCoefficients *T;
 
@@ -59,92 +59,95 @@ u64 arrFiles[8] = {
 int WHITE_PSQT[8][64];
 int BLACK_PSQT[8][64];
 
-EvalInfo *evalInfo = new EvalInfo();
 
-void initEvalInfo(EvalInfo *info, Thread *th) {
+void initEvalInfo(Thread *th) {
 
-
-	info->openFilesBB = openFiles(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
+	th->evalInfo.clear();
 
 
-	info->halfOpenFilesBB[WHITE] 
-		= halfOpenOrOpenFile(th->whitePieceBB[PAWNS]) ^ info->openFilesBB;	
-	info->halfOpenFilesBB[BLACK] 
-		= halfOpenOrOpenFile(th->blackPieceBB[PAWNS]) ^ info->openFilesBB;
+	th->evalInfo.openFilesBB = openFiles(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
 
 
-	info->pawnsAttacks[WHITE] = 
+	th->evalInfo.halfOpenFilesBB[WHITE] 
+		= halfOpenOrOpenFile(th->whitePieceBB[PAWNS]) ^ th->evalInfo.openFilesBB;	
+	th->evalInfo.halfOpenFilesBB[BLACK] 
+		= halfOpenOrOpenFile(th->blackPieceBB[PAWNS]) ^ th->evalInfo.openFilesBB;
+
+
+	th->evalInfo.pawnsAttacks[WHITE] = 
 		wPawnWestAttacks(th->whitePieceBB[PAWNS]) | wPawnEastAttacks(th->whitePieceBB[PAWNS]);
-	info->pawnsAttacks[BLACK] = 
+	th->evalInfo.pawnsAttacks[BLACK] = 
 		bPawnWestAttacks(th->blackPieceBB[PAWNS]) | bPawnEastAttacks(th->blackPieceBB[PAWNS]);
 	
-	info->attacks[WHITE] |= info->pawnsAttacks[WHITE];
-	info->attacks[BLACK] |= info->pawnsAttacks[BLACK];
+	th->evalInfo.attacks[WHITE] |= th->evalInfo.pawnsAttacks[WHITE];
+	th->evalInfo.attacks[BLACK] |= th->evalInfo.pawnsAttacks[BLACK];
 	
 	int sq = -1;
-	u64 b = 0ULL, attacks = 0ULL;
+	u64 bb = 0ULL, attacks = 0ULL;
 	for (int p = KNIGHTS; p <= KING; p++) {
 
 		for (int side = WHITE; side <= BLACK; side++) {
 
-			b = side ? th->blackPieceBB[p] : th->whitePieceBB[p];
+			bb = side ? th->blackPieceBB[p] : th->whitePieceBB[p];
 			attacks = 0ULL;
-			while (b) {
+			while (bb) {
 
-				sq = GET_POSITION(b);
-				b &= b - 1;
+				sq = GET_POSITION(bb);
+				POP_POSITION(bb);
 
 				assert(sq >= 0 && sq <= 63);
 
-				if (p == KNIGHTS) attacks |= get_knight_attacks(sq);
-				else if (p == BISHOPS) attacks |= Bmagic(sq, th->occupied);
-				else if (p == ROOKS)   attacks |= Rmagic(sq, th->occupied);
-				else if (p == QUEEN)   attacks |= Qmagic(sq, th->occupied);
-				else if (p == KING)    attacks |= get_king_attacks(sq);
+					 if (p == KNIGHTS)	attacks |= get_knight_attacks(sq);
+				else if (p == BISHOPS)	attacks |= Bmagic(sq, th->occupied);
+				else if (p == ROOKS)	attacks |= Rmagic(sq, th->occupied);
+				else if (p == QUEEN)	attacks |= Qmagic(sq, th->occupied);
+				else if (p == KING)		attacks |= get_king_attacks(sq);
 			}	
 
-			if (p == KNIGHTS) info->knightsAttacks[side] = attacks;
-			else if (p == BISHOPS) info->bishopsAttacks[side] = attacks;
-			else if (p == ROOKS)   info->rooksAttacks[side] = attacks;
-			else if (p == QUEEN)   info->queensAttacks[side] = attacks;
-			else if (p == KING)    info->kingAttacks[side] = attacks;
+				 if (p == KNIGHTS) 	th->evalInfo.knightsAttacks[side] = attacks;
+			else if (p == BISHOPS)	th->evalInfo.bishopsAttacks[side] = attacks;
+			else if (p == ROOKS)	th->evalInfo.rooksAttacks[side] = attacks;
+			else if (p == QUEEN)	th->evalInfo.queensAttacks[side] = attacks;
+			else if (p == KING)		th->evalInfo.kingAttacks[side] = attacks;
 		
-			info->attacks[side] |= attacks;
+			th->evalInfo.attacks[side] |= attacks;
 		}
 	}
 
-	info->kingSq[WHITE] = GET_POSITION(th->whitePieceBB[KING]);	
-	info->kingSq[BLACK] = GET_POSITION(th->blackPieceBB[KING]);	
+
+	th->evalInfo.kingSq[WHITE] = GET_POSITION(th->whitePieceBB[KING]);	
+	th->evalInfo.kingSq[BLACK] = GET_POSITION(th->blackPieceBB[KING]);	
 
 	
-	info->kingZoneBB[WHITE] = info->kingAttacks[WHITE] | (info->kingAttacks[WHITE] >> 8);
-	info->kingZoneBB[BLACK] = info->kingAttacks[BLACK] | (info->kingAttacks[BLACK] << 8);
+	th->evalInfo.kingZoneBB[WHITE] = th->evalInfo.kingAttacks[WHITE] | (th->evalInfo.kingAttacks[WHITE] >> 8);
+	th->evalInfo.kingZoneBB[BLACK] = th->evalInfo.kingAttacks[BLACK] | (th->evalInfo.kingAttacks[BLACK] << 8);
 
 
-	info->kingAttackersCount[WHITE] = 0;
-    info->kingAttackersCount[BLACK] = 0;
+	th->evalInfo.kingAttackersCount[WHITE] = 0;
+    th->evalInfo.kingAttackersCount[BLACK] = 0;
     
-    info->kingAttackersWeight[WHITE] = 0;
-	info->kingAttackersWeight[BLACK] = 0;
+    th->evalInfo.kingAttackersWeight[WHITE] = 0;
+	th->evalInfo.kingAttackersWeight[BLACK] = 0;
 
-  	info->kingAdjacentZoneAttacksCount[WHITE] = 0;
-  	info->kingAdjacentZoneAttacksCount[BLACK] = 0;	
+  	th->evalInfo.kingAdjacentZoneAttacksCount[WHITE] = 0;
+  	th->evalInfo.kingAdjacentZoneAttacksCount[BLACK] = 0;	
 }
 
-int traceFullEval(TraceCoefficients *traceCoefficients, u8 sideToMove, Thread *th) {
+int32_t traceFullEval(TraceCoefficients *traceCoefficients, u8 sideToMove, Thread *th) {
 
 	T = traceCoefficients;
 
 	return fullEval(sideToMove, th);
 }
 
-int fullEval(u8 sideToMove, Thread *th) {
-
-	int hashedEval;
-	if (!TUNE && probeEval(&hashedEval, th)) {
-
-		return sideToMove == WHITE ? hashedEval : -hashedEval;
-	}	
+int32_t fullEval(u8 sideToMove, Thread *th) {
+	
+	#if defined(TUNE)
+	#else
+		int hashedEval;
+		if (probeEval(&hashedEval, th))
+			return sideToMove == WHITE ? hashedEval : -hashedEval;
+	#endif
 	
 
 	int nWhitePawns = POPCOUNT(th->whitePieceBB[PAWNS]);
@@ -159,7 +162,8 @@ int fullEval(u8 sideToMove, Thread *th) {
 	int nBlackRooks = POPCOUNT(th->blackPieceBB[ROOKS]);
 	int nBlackQueen = POPCOUNT(th->blackPieceBB[QUEEN]);
 
-	if (TUNE) {	
+
+	#if defined(TUNE)
 		
 		T->nPawns[BLACK] =  nBlackPawns;
 		T->nKnights[BLACK] = nBlackKnights;
@@ -172,124 +176,137 @@ int fullEval(u8 sideToMove, Thread *th) {
 		T->nBishops[WHITE] = nWhiteBishops;
 		T->nRooks[WHITE] = nWhiteRooks;
 		T->nQueen[WHITE] = nWhiteQueen;
-	}
 
-	
-	evalInfo->clear();
-	initEvalInfo(evalInfo, th);
+	#endif
 
-	int eval = evaluateSide(WHITE, evalInfo, th) - evaluateSide(BLACK, evalInfo, th);
 
-	if (TUNE)	T->eval = eval;
-	
+	initEvalInfo(th);
+
+
+	int eval = evaluateSide(WHITE, th) - evaluateSide(BLACK, th);
+
+	#if defined(TUNE)	
+		T->eval = eval;
+	#endif
+
 
 	// Tapered evaluation 
-
 	int phase = 4 * (nWhiteQueen + nBlackQueen) 
 		+ 2 * (nWhiteRooks + nBlackRooks)
       	+ 1 * (nWhiteKnights + nBlackKnights)
       	+ 1 * (nWhiteBishops + nBlackBishops);
 
-	if (TUNE)	T->phase = phase;
-	
-	
-    int score = (ScoreMG(eval) * phase + ScoreEG(eval) * (24 - phase)) / 24;
+	#if defined(TUNE)	
+		T->phase = phase;
+	#endif
 
-    if (!TUNE)	recordEval(score, th);
+
+    int32_t score = (ScoreMG(eval) * phase + ScoreEG(eval) * (24 - phase)) / 24;
+
+    #if defined(TUNE)	
+	#else
+		recordEval(score, th);
+	#endif
+
 
 	return sideToMove == WHITE ? score : -score;
 }
 
-int evaluateSide(int side, EvalInfo *evalInfo, Thread *th) {
+int32_t evaluateSide(int side, Thread *th) {
 
-	int score = 0;
+	int32_t score = 0;
 
-	if (TUNE) {
+	#if defined(TUNE)
 
-		score += pawnsEval(side, evalInfo, th);
-	} else {
-
+		score += pawnsEval(side, th);
+	#else
+	
 		int pawnsScore;
 		if (!probePawnHash(&pawnsScore, th)) { // TODO check pawn hash logic
 
-			pawnsScore = pawnsEval(side, evalInfo, th);
+			pawnsScore = pawnsEval(side, th);
 			recordPawnHash(pawnsScore, th);
 		}
 
-		score += pawnsScore; 
-	}
+		score += pawnsScore;
+	#endif
+
 
 	score += PSQTScore(side, th) 
-		+ knightsEval(side, evalInfo, th) 
-		+ bishopsEval(side, evalInfo, th) 
-		+ rooksEval(side, evalInfo, th) 
-		+ queenEval(side, evalInfo, th) 
-		+ kingEval(side, evalInfo, th); 
-		// + evalBoard(side, th, evalInfo); 
+		+ knightsEval(side, th) 
+		+ bishopsEval(side, th) 
+		+ rooksEval(side, th) 
+		+ queenEval(side, th) 
+		+ kingEval(side, th); 
+		// + evalBoard(side, th); 
 	
 	return score;
 }
 
 
-int pawnsEval(u8 sideToMove, EvalInfo *evalInfo, Thread *th) {
+int32_t pawnsEval(u8 sideToMove, Thread *th) {
 
-	int score = 0;
+	int32_t score = 0;
 	int sq = -1, rank = -1;
 
-	if (TUNE) {
+	#if defined(TUNE)
 		
-		u64 bitboard = sideToMove ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
-		while (bitboard) {
+		u64 bb = sideToMove ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+		while (bb) {
 
-			int sq = GET_POSITION(bitboard);
-			bitboard &= bitboard - 1; 
+			int sq = GET_POSITION(bb);
+			POP_POSITION(bb);
 
 			T->pawnPSQT[sideToMove][sideToMove ? Mirror64[sq] : sq] = 1; 
 		}
-	}
+	#endif
 
 
 	const int nIsolatedPawns = isolatedPawns(sideToMove, th);
 	score += nIsolatedPawns * weight_isolated_pawn;
 
-	if (TUNE)	T->isolatedPawns[sideToMove] = nIsolatedPawns;
-
+	#if defined(TUNE)	
+		T->isolatedPawns[sideToMove] = nIsolatedPawns;
+	#endif
 
 	const int nDoublePawns = numOfDoublePawns(sideToMove, th);
 	score += nDoublePawns * weight_double_pawn;
 
-	if (TUNE)	T->doublePawns[sideToMove] = nDoublePawns;
-			
+	#if defined(TUNE)	
+		T->doublePawns[sideToMove] = nDoublePawns;
+	#endif
 
 	const int nBackwardPawns = countBackWardPawns(sideToMove, th);
 	score += nBackwardPawns * weight_backward_pawn;
 
-	if (TUNE)	T->backwardPawns[sideToMove] = nBackwardPawns;
-
+	#if defined(TUNE)	
+		T->backwardPawns[sideToMove] = nBackwardPawns;
+	#endif
 
 	u64 defendedPawns = sideToMove ? 
-		th->blackPieceBB[PAWNS] & evalInfo->pawnsAttacks[BLACK]
-		: th->whitePieceBB[PAWNS] & evalInfo->pawnsAttacks[WHITE];
+		th->blackPieceBB[PAWNS] & th->evalInfo.pawnsAttacks[BLACK]
+		: th->whitePieceBB[PAWNS] & th->evalInfo.pawnsAttacks[WHITE];
 
 	int nDefendedPawns = POPCOUNT(defendedPawns);
 	score += nDefendedPawns * weight_defended_pawn;
 
-	if (TUNE)	T->defendedPawns[sideToMove] = nDefendedPawns;
-
+	#if defined(TUNE)	
+		T->defendedPawns[sideToMove] = nDefendedPawns;
+	#endif
 
 	const int nPawnHoles = numOfPawnHoles(sideToMove, th);
 	score += nPawnHoles * weight_pawn_hole;
 
-	if (TUNE)	T->pawnHoles[sideToMove] = nPawnHoles;
-
-
+	#if defined(TUNE)	
+		T->pawnHoles[sideToMove] = nPawnHoles;
+	#endif
 
 	u64 passedPawns = sideToMove ? bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS])
 		: wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
 	while (passedPawns) {
 		
 		sq = GET_POSITION(passedPawns);
-		passedPawns &= passedPawns - 1;
+		POP_POSITION(passedPawns);
 
 		assert(sq >= 0 && sq <= 63);
 
@@ -298,16 +315,20 @@ int pawnsEval(u8 sideToMove, EvalInfo *evalInfo, Thread *th) {
 		assert(rank+1 >= 1 && rank+1 <= 8);
 	
 
-		if ((1ULL << sq) & evalInfo->pawnsAttacks[sideToMove]) {
+		if ((1ULL << sq) & th->evalInfo.pawnsAttacks[sideToMove]) {
 
 			score += arr_weight_defended_passed_pawn[rank];
 			
-			if (TUNE)	T->defendedPassedPawn[sideToMove][rank]++;
+			#if defined(TUNE)	
+				T->defendedPassedPawn[sideToMove][rank]++;
+			#endif
 		} else {
 			
 			score += arr_weight_passed_pawn[rank];
 
-			if (TUNE)	T->passedPawn[sideToMove][rank]++;
+			#if defined(TUNE)	
+				T->passedPawn[sideToMove][rank]++;
+			#endif
 		}		
 	}
 
@@ -316,11 +337,11 @@ int pawnsEval(u8 sideToMove, EvalInfo *evalInfo, Thread *th) {
 
 
 
-int knightsEval(u8 side, EvalInfo *evalInfo, Thread *th) {
+int32_t knightsEval(u8 side, Thread *th) {
 
 	const u8 opponent = side ^ 1;
 
-	int score = 0;
+	int32_t score = 0;
 	int mobilityCount = 0;
 
 	int sq = -1, rank = -1; 
@@ -330,54 +351,60 @@ int knightsEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 	while (knightsBB) {
 
 		sq = GET_POSITION(knightsBB);
-		knightsBB &= knightsBB - 1;
+		POP_POSITION(knightsBB);
 
 		assert(sq >= 0 && sq <= 63);
 
 		u64 attacksBB = get_knight_attacks(sq);
 
-		if (attacksBB & evalInfo->kingZoneBB[opponent]) {
+		if (attacksBB & th->evalInfo.kingZoneBB[opponent]) {
  			
- 			evalInfo->kingAttackersCount[opponent]++;
-            evalInfo->kingAttackersWeight[opponent] += weight_knight_attack;
+ 			th->evalInfo.kingAttackersCount[opponent]++;
+            th->evalInfo.kingAttackersWeight[opponent] += weight_knight_attack;
 
-            if (TUNE)	T->knightAttack[opponent]++; 
+            #if defined(TUNE)	
+            	T->knightAttack[opponent]++; 
+            #endif
 
-            u64 bb = (attacksBB & evalInfo->kingAttacks[opponent]);
+            u64 bb = (attacksBB & th->evalInfo.kingAttacks[opponent]);
             if (bb)	
-           		evalInfo->kingAdjacentZoneAttacksCount[opponent] += POPCOUNT(bb);
+           		th->evalInfo.kingAdjacentZoneAttacksCount[opponent] += POPCOUNT(bb);
 		}
 
 		// undefended
-		if (!((1ULL << sq) & evalInfo->attacks[side])) {
+		if (!((1ULL << sq) & th->evalInfo.attacks[side])) {
 
 			score += weight_undefended_knight;
 
-			if (TUNE)	T->undefendedKnight[side]++;			
+			#if defined(TUNE)	
+				T->undefendedKnight[side]++;			
+			#endif
 		}
 
 		// defended by pawn
-		if ((1ULL << sq) & evalInfo->pawnsAttacks[side]) {
+		if ((1ULL << sq) & th->evalInfo.pawnsAttacks[side]) {
 
 			score += weight_knight_defended_by_pawn;
 
-			if (TUNE)	T->knightDefendedByPawn[side]++;
+			#if defined(TUNE)	
+				T->knightDefendedByPawn[side]++;
+			#endif
 		}
 
 
 		u64 mobilityBB = attacksBB 
 			& ~(side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]) 
-			& ~(evalInfo->pawnsAttacks[opponent]);
+			& ~(th->evalInfo.pawnsAttacks[opponent]);
 
 		mobilityCount = POPCOUNT(mobilityBB);
 
 		score += arr_weight_knight_mobility[mobilityCount];
 
-		if (TUNE) {
+		#if defined(TUNE)
 
 			T->knightPSQT[side][side ? Mirror64[sq] : sq] = 1; 
 			T->knightMobility[side][mobilityCount]++;
-		}
+		#endif
 	}
 
 	return score;
@@ -388,11 +415,11 @@ int knightsEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
 
 
-int bishopsEval(u8 side, EvalInfo *evalInfo, Thread *th) {
+int32_t bishopsEval(u8 side, Thread *th) {
 
 	const u8 opponent = side ^ 1;
 
-	int score = 0;
+	int32_t score = 0;
 	int mobilityCount = 0;
 	int sq = -1;
 
@@ -405,70 +432,70 @@ int bishopsEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
 		score += weight_bishop_pair;
 
-		if (TUNE)	T->bishopPair[side]++;
+		#if defined(TUNE)	
+			T->bishopPair[side]++;
+		#endif
 	}
 
 
 	while (bishopBB) {
 	
 		sq = GET_POSITION(bishopBB);
-
-		bishopBB &= bishopBB - 1;
-
+		POP_POSITION(bishopBB);
 
 		assert(sq >= 0 && sq <= 63);
 
 
 		u64 attacksBB = Bmagic(sq, th->occupied);
 
-		if (attacksBB & evalInfo->kingZoneBB[opponent]) {
+		if (attacksBB & th->evalInfo.kingZoneBB[opponent]) {
  			
- 			evalInfo->kingAttackersCount[opponent]++;
-            evalInfo->kingAttackersWeight[opponent] += weight_bishop_attack;
+ 			th->evalInfo.kingAttackersCount[opponent]++;
+            th->evalInfo.kingAttackersWeight[opponent] += weight_bishop_attack;
 
-            if (TUNE)	T->bishopAttack[opponent]++; 
-
-            u64 bb = (attacksBB & evalInfo->kingAttacks[opponent]);
+            #if defined(TUNE)	
+            	T->bishopAttack[opponent]++; 
+            #endif
+            	
+            u64 bb = (attacksBB & th->evalInfo.kingAttacks[opponent]);
             if (bb)	
-           		evalInfo->kingAdjacentZoneAttacksCount[opponent] += POPCOUNT(bb);
+           		th->evalInfo.kingAdjacentZoneAttacksCount[opponent] += POPCOUNT(bb);
 		}
 	
 
-		if (!((1ULL << sq) & evalInfo->attacks[side])) {
+		if (!((1ULL << sq) & th->evalInfo.attacks[side])) {
 
 			score += weight_undefended_bishop;
 
-			if (TUNE)	T->undefendedBishop[side]++;			
+			#if defined(TUNE)	
+				T->undefendedBishop[side]++;			
+			#endif
 		}
 
 		
-
-		int count = POPCOUNT(evalInfo->bishopsAttacks[side] 
+		int count = POPCOUNT(th->evalInfo.bishopsAttacks[side] 
 			& (side ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS]));
 		
 		if (count > 0) {
 
 			score += count * weight_bad_bishop;
 
-			if (TUNE)	T->badBishop[side] = count;
+			#if defined(TUNE)	
+				T->badBishop[side] = count;
+			#endif
 		}
-
-
 
 		u64 mobilityBB = attacksBB & ~(side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 
 		mobilityCount = POPCOUNT(mobilityBB);
 
-
 		score += arr_weight_bishop_mobility[mobilityCount];
 
+		#if defined(TUNE) 
 
-		if (TUNE) {
-			
 			T->bishopPSQT[side][side ? Mirror64[sq] : sq] = 1; 	
-
 			T->bishopMobility[side][mobilityCount]++;
-		}
+		#endif
 	}
 	
 	return score;
@@ -482,16 +509,16 @@ Tarrasch Rule
 */
 
 
-int rooksEval(u8 side, EvalInfo *evalInfo, Thread *th) {
+int32_t rooksEval(u8 side, Thread *th) {
 	
 	const u8 opponent = side ^ 1;
 
-	int score = 0;
+	int32_t score = 0;
 	int sq = -1;
 
 	int mobilityCount = 0;
 
-	const int kingSq = evalInfo->kingSq[side];
+	const int kingSq = th->evalInfo.kingSq[side];
 
 
 	u64 rooksBB = side ? th->blackPieceBB[ROOKS] : th->whitePieceBB[ROOKS];
@@ -499,27 +526,32 @@ int rooksEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 	while (rooksBB) {
 
 		sq = GET_POSITION(rooksBB);
-		rooksBB &= rooksBB - 1;
+		POP_POSITION(rooksBB);
 
 		assert(sq >= 0 && sq <= 63);
 
 
-		if (TUNE)	T->rookPSQT[side][side ? Mirror64[sq] : sq] = 1; 
+		#if defined(TUNE)	
+			T->rookPSQT[side][side ? Mirror64[sq] : sq] = 1; 
+		#endif
 
-
-		if ((1ULL << sq) & evalInfo->halfOpenFilesBB[side]) {
+		if ((1ULL << sq) & th->evalInfo.halfOpenFilesBB[side]) {
 
 			score += weight_rook_half_open_file;
 		
-			if (TUNE)	T->halfOpenFile[side]++;
+			#if defined(TUNE)	
+				T->halfOpenFile[side]++;
+			#endif
 		}
 
 
-		if ((1ULL << sq) & evalInfo->openFilesBB) {
+		if ((1ULL << sq) & th->evalInfo.openFilesBB) {
 
 			score += weight_rook_open_file;
 
-			if (TUNE)	T->openFile[side]++;
+			#if defined(TUNE)	
+				T->openFile[side]++;
+			#endif
 		}
 
 
@@ -528,22 +560,28 @@ int rooksEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
 			score += weight_rook_enemy_queen_same_file;
 
-			if (TUNE)	T->rookEnemyQueenSameFile[side]++;
+			#if defined(TUNE)	
+				T->rookEnemyQueenSameFile[side]++;
+			#endif
 		}
 
 
 		u64 attacksBB = Rmagic(sq, th->occupied);
 
-		if (attacksBB & evalInfo->kingZoneBB[opponent]) {
+		if (attacksBB & th->evalInfo.kingZoneBB[opponent]) {
  			
- 			evalInfo->kingAttackersCount[opponent]++;
-            evalInfo->kingAttackersWeight[opponent] += weight_rook_attack;
+ 			th->evalInfo.kingAttackersCount[opponent]++;
+            th->evalInfo.kingAttackersWeight[opponent] += weight_rook_attack;
 
-            if (TUNE)	T->rookAttack[opponent]++; 
+            #if defined(TUNE)	
+            	T->rookAttack[opponent]++; 
+            #endif
 
-            u64 bb = (attacksBB & evalInfo->kingAttacks[opponent]);
-            if (bb)	
-           		evalInfo->kingAdjacentZoneAttacksCount[opponent] += POPCOUNT(bb);
+            u64 bb = (attacksBB & th->evalInfo.kingAttacks[opponent]);
+            if (bb)	{
+            	
+           		th->evalInfo.kingAdjacentZoneAttacksCount[opponent] += POPCOUNT(bb);
+            }
 		}
 	
 
@@ -554,14 +592,17 @@ int rooksEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
 		score += arr_weight_rook_mobility[mobilityCount];
 
-		if (TUNE)	T->rookMobility[side][mobilityCount]++;
-		
+		#if defined(TUNE)	
+			T->rookMobility[side][mobilityCount]++;
+		#endif
 
 		if (attacksBB & rooksBB) {
 
 			score += weight_rook_supporting_friendly_rook;
 
-			if (TUNE)	T->rookSupportingFriendlyRook[side] = 1;
+			#if defined(TUNE)	
+				T->rookSupportingFriendlyRook[side] = 1;
+			#endif
 		}
 
 			
@@ -587,15 +628,19 @@ int rooksEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
 				score += weight_rook_on_seventh_rank;
 			
-				if (TUNE)	T->rookOnSeventhRank[BLACK]++;					
-			} 	
+				#if defined(TUNE)	
+					T->rookOnSeventhRank[BLACK]++;					
+				#endif
+			}
 
 			// Rook on Eight rank (Rank 1 for black)
 			if ((1ULL << sq) & RANK_1) {
 
 				score += weight_rook_on_eight_rank;
 
-				if (TUNE)	T->rookOnEightRank[BLACK]++;					
+				#if defined(TUNE)	
+					T->rookOnEightRank[BLACK]++;					
+				#endif
 			} 	
 		} else {
 			
@@ -620,7 +665,9 @@ int rooksEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
 				score += weight_rook_on_seventh_rank;
 			
-				if (TUNE)	T->rookOnSeventhRank[WHITE]++;					
+				#if defined(TUNE)	
+					T->rookOnSeventhRank[WHITE]++;					
+				#endif
 			} 	
 
 
@@ -629,7 +676,9 @@ int rooksEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
 				score += weight_rook_on_eight_rank;
 
-				if (TUNE)	T->rookOnEightRank[WHITE]++;					
+				#if defined(TUNE)	
+					T->rookOnEightRank[WHITE]++;					
+				#endif
 			} 
 		}
 	}
@@ -640,11 +689,11 @@ int rooksEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
 
 
-int queenEval(u8 side, EvalInfo *evalInfo, Thread *th) {
+int32_t queenEval(u8 side, Thread *th) {
 
 	const u8 opponent = side ^ 1;
 
-	int score = 0;
+	int32_t score = 0;
 
 	int sq = -1;
 	int mobilityCount = 0;
@@ -657,12 +706,13 @@ int queenEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 	while (queenBB) {
 
 		sq = GET_POSITION(queenBB);
-		queenBB &= queenBB - 1;
+		POP_POSITION(queenBB);
 
 		assert(sq >= 0 && sq <= 63);
 
-		if (TUNE)	T->queenPSQT[side][side ? Mirror64[sq] : sq] = 1; 		
-	
+		#if defined(TUNE)
+			T->queenPSQT[side][side ? Mirror64[sq] : sq] = 1; 		
+		#endif
 	
 		if (pieceCount > 20 && side ? sq <= 55 : sq >= 8) { // recheck logic
 
@@ -676,22 +726,26 @@ int queenEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 			
 			score += count * weight_queen_underdeveloped_pieces;
 			
-			if (TUNE)	T->queenUnderdevelopedPieces[side] += count;
+			#if defined(TUNE)	
+				T->queenUnderdevelopedPieces[side] += count;
+			#endif
 		}
 
 
 		attacksBB = Qmagic(sq, th->occupied);
 
-		if (attacksBB & evalInfo->kingZoneBB[opponent]) {
+		if (attacksBB & th->evalInfo.kingZoneBB[opponent]) {
  			
- 			evalInfo->kingAttackersCount[opponent]++;
-            evalInfo->kingAttackersWeight[opponent] += weight_queen_attack;
+ 			th->evalInfo.kingAttackersCount[opponent]++;
+            th->evalInfo.kingAttackersWeight[opponent] += weight_queen_attack;
 
-            if (TUNE)	T->queenAttack[opponent]++; 
+            #if defined(TUNE)	
+            	T->queenAttack[opponent]++; 
+            #endif
 
-            u64 bb = (attacksBB & evalInfo->kingAttacks[opponent]);
+            u64 bb = (attacksBB & th->evalInfo.kingAttacks[opponent]);
             if (bb)	
-           		evalInfo->kingAdjacentZoneAttacksCount[opponent] += POPCOUNT(bb);
+           		th->evalInfo.kingAdjacentZoneAttacksCount[opponent] += POPCOUNT(bb);
 		}
 
 
@@ -703,7 +757,9 @@ int queenEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 		score += arr_weight_queen_mobility[mobilityCount];
 
 
-		if (TUNE)	T->queenMobility[side][mobilityCount]++;
+		#if defined(TUNE)	
+			T->queenMobility[side][mobilityCount]++;
+		#endif
 	}	
 
 	return score;
@@ -728,8 +784,8 @@ int queenEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 // 	u64 enemyPawns = opponent ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 
 
-// 	const int kingSq = evalInfo->kingSq[us];
-// 	const u64 shieldBB = evalInfo->shieldBB[us];
+// 	const int kingSq = th->evalInfo.kingSq[us];
+// 	const u64 shieldBB = th->evalInfo.shieldBB[us];
 
 // 	if (TUNE)	T->kingPSQT[us][us ? Mirror64[kingSq] : kingSq] = 1; 			
 
@@ -751,32 +807,32 @@ int queenEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 // 	}
 
 
-// 	if (evalInfo->kingAttackersCount[opponent] >= 2
-// 		&& evalInfo->kingAdjacentZoneAttacksCount[opponent]) {
+// 	if (th->evalInfo.kingAttackersCount[opponent] >= 2
+// 		&& th->evalInfo.kingAdjacentZoneAttacksCount[opponent]) {
 
 // 		u64 kingUndefendedSquares  =
-// 	        evalInfo->attacks[opponent] & ~evalInfo->pawnsAttacks[us]
-// 	        & ~evalInfo->knightsAttacks[us] & ~evalInfo->bishopsAttacks[us]
-// 	        & ~evalInfo->rooksAttacks[us] & ~evalInfo->queensAttacks[us]
-// 	        & evalInfo->kingAttacks[us];
+// 	        th->evalInfo.attacks[opponent] & ~th->evalInfo.pawnsAttacks[us]
+// 	        & ~th->evalInfo.knightsAttacks[us] & ~th->evalInfo.bishopsAttacks[us]
+// 	        & ~th->evalInfo.rooksAttacks[us] & ~th->evalInfo.queensAttacks[us]
+// 	        & th->evalInfo.kingAttacks[us];
 
-// 	   	attackCounter =  std::min(25, (evalInfo->kingAttackersCount[opponent] * evalInfo->kingAttackersWeight[opponent]) / 2)
-//                  + 3 * (evalInfo->kingAdjacentZoneAttacksCount[opponent] + count_1s_max_15(kingUndefendedSquares));
+// 	   	attackCounter =  std::min(25, (th->evalInfo.kingAttackersCount[opponent] * th->evalInfo.kingAttackersWeight[opponent]) / 2)
+//                  + 3 * (th->evalInfo.kingAdjacentZoneAttacksCount[opponent] + count_1s_max_15(kingUndefendedSquares));
                
 
 // 		u64 enemyPieces = opponent ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES];
 
 // 		u64 b, b2;
 
-// 		b = kingUndefendedSquares & evalInfo->queensAttacks[opponent] & ~enemyPieces;
+// 		b = kingUndefendedSquares & th->evalInfo.queensAttacks[opponent] & ~enemyPieces;
 	     
 // 		if(b) {
 		
 // 		    u64 attackedByOthers =
-// 				evalInfo->pawnsAttacks[opponent] |
-// 				evalInfo->knightsAttacks[opponent] |
-// 				evalInfo->bishopsAttacks[opponent] |
-// 				evalInfo->rooksAttacks[opponent];
+// 				th->evalInfo.pawnsAttacks[opponent] |
+// 				th->evalInfo.knightsAttacks[opponent] |
+// 				th->evalInfo.bishopsAttacks[opponent] |
+// 				th->evalInfo.rooksAttacks[opponent];
 
 // 			b &= attackedByOthers;
 
@@ -786,15 +842,15 @@ int queenEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 // 		}
 
 
-// 		b = kingUndefendedSquares & evalInfo->rooksAttacks[opponent] & ~enemyPieces;
+// 		b = kingUndefendedSquares & th->evalInfo.rooksAttacks[opponent] & ~enemyPieces;
 	     
 // 		if(b) {
 		
 // 		    u64 attackedByOthers =
-// 				evalInfo->pawnsAttacks[opponent] |
-// 				evalInfo->knightsAttacks[opponent] |
-// 				evalInfo->bishopsAttacks[opponent] |
-// 				evalInfo->rooksAttacks[opponent];
+// 				th->evalInfo.pawnsAttacks[opponent] |
+// 				th->evalInfo.knightsAttacks[opponent] |
+// 				th->evalInfo.bishopsAttacks[opponent] |
+// 				th->evalInfo.rooksAttacks[opponent];
 
 // 			b &= attackedByOthers;
 
@@ -805,30 +861,30 @@ int queenEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 
 
 
-// 		b = Rmagic(kingSq, th->occupied) & ~enemyPieces & ~evalInfo->attacks[us];
+// 		b = Rmagic(kingSq, th->occupied) & ~enemyPieces & ~th->evalInfo.attacks[us];
 // 		// Queen checks
-// 		b2 = b & evalInfo->queensAttacks[opponent];
+// 		b2 = b & th->evalInfo.queensAttacks[opponent];
 // 		if(b2) attackCounter += weight_queen_check_counter * count_1s_max_15(b2);
 
 // 		// Rook checks
-// 		b2 = b & evalInfo->rooksAttacks[opponent];
+// 		b2 = b & th->evalInfo.rooksAttacks[opponent];
 // 		if(b2) attackCounter += weight_rook_check_counter * count_1s_max_15(b2);
 
 
-// 	    b = Bmagic(kingSq, th->occupied) & ~enemyPieces & ~evalInfo->attacks[us];
+// 	    b = Bmagic(kingSq, th->occupied) & ~enemyPieces & ~th->evalInfo.attacks[us];
 // 	    // Queen checks
-// 		b2 = b & evalInfo->queensAttacks[opponent];
+// 		b2 = b & th->evalInfo.queensAttacks[opponent];
 // 	    if(b2) attackCounter += weight_queen_check_counter * count_1s_max_15(b2);
 
 // 	    // Bishop checks
-// 	    b2 = b & evalInfo->bishopsAttacks[opponent];
+// 	    b2 = b & th->evalInfo.bishopsAttacks[opponent];
 // 	    if(b2) attackCounter += weight_bishop_check_counter * count_1s_max_15(b2);
 
 
 
-// 	    b = get_knight_attacks(kingSq) & ~enemyPieces & ~evalInfo->attacks[us];
+// 	    b = get_knight_attacks(kingSq) & ~enemyPieces & ~th->evalInfo.attacks[us];
 // 	    // Knight checks
-// 	    b2 = b & evalInfo->knightsAttacks[opponent];
+// 	    b2 = b & th->evalInfo.knightsAttacks[opponent];
 // 	    if(b2) attackCounter += weight_knight_check_counter * count_1s_max_15(b2);
 	  
 	  
@@ -849,14 +905,15 @@ int queenEval(u8 side, EvalInfo *evalInfo, Thread *th) {
 // }
 
 
-int kingEval(u8 us, EvalInfo *evalInfo, Thread *th) {
+int32_t kingEval(u8 us, Thread *th) {
 	
 	int sq = -1;												    	
-	int score = 0;
 	int attackCounter = 0;		
 	int nAttacks = 0;
 	int attackers = 0;
-
+	
+	int32_t score = 0;
+	
 	const u8 opponent = us ^ 1;
 	u64 enemyPieceBB = 0ULL, attacks = 0ULL;
 
@@ -864,54 +921,57 @@ int kingEval(u8 us, EvalInfo *evalInfo, Thread *th) {
 	u64 enemyPawns = opponent ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 
 
-	const int kingSq = evalInfo->kingSq[us];
+	const int kingSq = th->evalInfo.kingSq[us];
 	
-	if (TUNE)	T->kingPSQT[us][us ? Mirror64[kingSq] : kingSq] = 1; 			
+	#if defined(TUNE)	
+		T->kingPSQT[us][us ? Mirror64[kingSq] : kingSq] = 1; 			
+	#endif
 
-
-	const int nPawnsShield = POPCOUNT(evalInfo->kingZoneBB[us] & friendlyPawns);
+	const int nPawnsShield = POPCOUNT(th->evalInfo.kingZoneBB[us] & friendlyPawns);
 	score += nPawnsShield * weight_king_pawn_shield;
 
-	if (TUNE) 	T->kingPawnShield[us] = nPawnsShield;
-	
+	#if defined(TUNE) 	
+		T->kingPawnShield[us] = nPawnsShield;
+	#endif
 
-	const u64 enemyPawnStormArea = evalInfo->kingZoneBB[us] | 
-		(us ? evalInfo->kingZoneBB[us] >> 8 : evalInfo->kingZoneBB[us] << 8);
+	const u64 enemyPawnStormArea = th->evalInfo.kingZoneBB[us] | 
+		(us ? th->evalInfo.kingZoneBB[us] >> 8 : th->evalInfo.kingZoneBB[us] << 8);
 
 	const int nEnemyPawnsStorm = POPCOUNT(enemyPawnStormArea & enemyPawns);
 	score += nEnemyPawnsStorm * weight_king_enemy_pawn_storm;
 
-	if (TUNE)	T->kingEnemyPawnStorm[us] = nEnemyPawnsStorm;
-	
+	#if defined(TUNE)	
+		T->kingEnemyPawnStorm[us] = nEnemyPawnsStorm;
+	#endif
 
 	const int queenCount = POPCOUNT(opponent ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN]);
 
 	if (queenCount >= 1 
-		&& evalInfo->kingAttackersCount[us] >= 2
-		&& evalInfo->kingAdjacentZoneAttacksCount[us]) { // TODO recheck logic for if check
+		&& th->evalInfo.kingAttackersCount[us] >= 2
+		&& th->evalInfo.kingAdjacentZoneAttacksCount[us]) { // TODO recheck logic for if check
 
 		u64 kingUndefendedSquares  =
-	        evalInfo->attacks[opponent] & ~evalInfo->pawnsAttacks[us]
-	        & ~evalInfo->knightsAttacks[us] & ~evalInfo->bishopsAttacks[us]
-	        & ~evalInfo->rooksAttacks[us] & ~evalInfo->queensAttacks[us]
-	        & evalInfo->kingAttacks[us];
+	        th->evalInfo.attacks[opponent] & ~th->evalInfo.pawnsAttacks[us]
+	        & ~th->evalInfo.knightsAttacks[us] & ~th->evalInfo.bishopsAttacks[us]
+	        & ~th->evalInfo.rooksAttacks[us] & ~th->evalInfo.queensAttacks[us]
+	        & th->evalInfo.kingAttacks[us];
 
 		u64 enemyPieces = opponent ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES];
 
-		int safetyScore = evalInfo->kingAttackersWeight[us];
+		int32_t safetyScore = th->evalInfo.kingAttackersWeight[us];
 
 		int count;
 		u64 b, b2;
 
-		b = kingUndefendedSquares & evalInfo->queensAttacks[opponent] & ~enemyPieces;
+		b = kingUndefendedSquares & th->evalInfo.queensAttacks[opponent] & ~enemyPieces;
 	     
 		if(b) {
 		
 		    u64 attackedByOthers =
-				evalInfo->pawnsAttacks[opponent] |
-				evalInfo->knightsAttacks[opponent] |
-				evalInfo->bishopsAttacks[opponent] |
-				evalInfo->rooksAttacks[opponent];
+				th->evalInfo.pawnsAttacks[opponent] |
+				th->evalInfo.knightsAttacks[opponent] |
+				th->evalInfo.bishopsAttacks[opponent] |
+				th->evalInfo.rooksAttacks[opponent];
 
 			b &= attackedByOthers;
 
@@ -919,19 +979,21 @@ int kingEval(u8 us, EvalInfo *evalInfo, Thread *th) {
 
 	        safetyScore += weight_queen_safe_contact_check * count;
 
-	        if (TUNE)	T->queenSafeContactCheck[us] = count;
+	        #if defined(TUNE)	
+	        	T->queenSafeContactCheck[us] = count;
+			#endif
 		}
 
 
-		b = kingUndefendedSquares & evalInfo->rooksAttacks[opponent] & ~enemyPieces;
+		b = kingUndefendedSquares & th->evalInfo.rooksAttacks[opponent] & ~enemyPieces;
 	     
 		if(b) {
 		
 		    u64 attackedByOthers =
-				evalInfo->pawnsAttacks[opponent] |
-				evalInfo->knightsAttacks[opponent] |
-				evalInfo->bishopsAttacks[opponent] |
-				evalInfo->rooksAttacks[opponent];
+				th->evalInfo.pawnsAttacks[opponent] |
+				th->evalInfo.knightsAttacks[opponent] |
+				th->evalInfo.bishopsAttacks[opponent] |
+				th->evalInfo.rooksAttacks[opponent];
 
 			b &= attackedByOthers;
 
@@ -939,68 +1001,79 @@ int kingEval(u8 us, EvalInfo *evalInfo, Thread *th) {
 
 	        safetyScore += weight_rook_safe_contact_check * count;
 			
-	        if (TUNE)	T->rookSafeContactCheck[us] = count;
+	        #if defined(TUNE)	
+	        	T->rookSafeContactCheck[us] = count;
+			#endif
 		}
 		
 
-		b = Qmagic(kingSq, th->occupied) & ~enemyPieces & ~evalInfo->attacks[us];
+		b = Qmagic(kingSq, th->occupied) & ~enemyPieces & ~th->evalInfo.attacks[us];
 
-		b2 = b & evalInfo->queensAttacks[opponent];
+		b2 = b & th->evalInfo.queensAttacks[opponent];
 		if(b2) {
 		
 			count = POPCOUNT(b);
 			
 			safetyScore += weight_queen_check * count;
 			
-			if (TUNE)	T->queenCheck[us] = count;
+			#if defined(TUNE)	
+				T->queenCheck[us] = count;
+			#endif
 		}
 
 
-		b = Rmagic(kingSq, th->occupied) & ~enemyPieces & ~evalInfo->attacks[us];
+		b = Rmagic(kingSq, th->occupied) & ~enemyPieces & ~th->evalInfo.attacks[us];
 		
 		// Rook checks
-		b2 = b & evalInfo->rooksAttacks[opponent];
+		b2 = b & th->evalInfo.rooksAttacks[opponent];
 		if(b2) {
 			
 			count = POPCOUNT(b);
 	
 			safetyScore += weight_rook_check * count;
 
-			if (TUNE)	T->rookCheck[us] = count;
+			#if defined(TUNE)	
+				T->rookCheck[us] = count;
+			#endif
 		}
 
 
-	    b = Bmagic(kingSq, th->occupied) & ~enemyPieces & ~evalInfo->attacks[us];
+	    b = Bmagic(kingSq, th->occupied) & ~enemyPieces & ~th->evalInfo.attacks[us];
 
 	    // Bishop checks
-	    b2 = b & evalInfo->bishopsAttacks[opponent];
+	    b2 = b & th->evalInfo.bishopsAttacks[opponent];
 	    if(b2) {
 
 			count = POPCOUNT(b);
 
 		  	safetyScore += weight_bishop_check * count;
 
-		  	if (TUNE)	T->bishopCheck[us] = count;
+		  	#if defined(TUNE)	
+		  		T->bishopCheck[us] = count;
+	    	#endif
 	    } 
 
 	  
-	    b = get_knight_attacks(kingSq) & ~enemyPieces & ~evalInfo->attacks[us];
+	    b = get_knight_attacks(kingSq) & ~enemyPieces & ~th->evalInfo.attacks[us];
 	    // Knight checks
-	    b2 = b & evalInfo->knightsAttacks[opponent];
+	    b2 = b & th->evalInfo.knightsAttacks[opponent];
 	    if(b2) {
 
 			count = POPCOUNT(b);
 
 	    	safetyScore += weight_knight_check * count;
 	  		
-	  		if (TUNE)	T->knightCheck[us] = count;
+	  		#if defined(TUNE)	
+	  			T->knightCheck[us] = count;
+	    	#endif
 	    } 
 
 
 	    safetyScore += weight_safety_adjustment;
 
-	    if (TUNE)	T->safetyAdjustment[us] = 1;
-
+	    #if defined(TUNE)	
+	    	T->safetyAdjustment[us] = 1;
+	    #endif
 
 	
 		int mg = ScoreMG(safetyScore);
@@ -1009,33 +1082,39 @@ int kingEval(u8 us, EvalInfo *evalInfo, Thread *th) {
 	    score += MakeScore(-mg * MAX(0, mg) / 720, -MAX(0, eg) / 20);  
 	
 
-		if (TUNE)	T->safety[us] = safetyScore;
+		#if defined(TUNE)	
+			T->safety[us] = safetyScore;
+		#endif
 	} 
-    else if (TUNE) {
+    else {
 
-    	T->knightAttack[us] = 0;
-		T->bishopAttack[us] = 0;
-		T->rookAttack[us] = 0;
-		T->queenAttack[us] = 0;
-    }
+    	#if defined(TUNE)
+	    	T->knightAttack[us] = 0;
+			T->bishopAttack[us] = 0;
+			T->rookAttack[us] = 0;
+			T->queenAttack[us] = 0;
+    	#endif
+    } 
 
 	return score;
 }
 
 
-int PSQTScore(u8 sideToMove, Thread *th) {
+int32_t PSQTScore(u8 sideToMove, Thread *th) {
 	
-	int score = 0;
+	int sq;
+	int32_t score = 0;
 
 	for (int piece = PAWNS; piece <= KING; piece++) {
 
-		u64 bitboard = sideToMove ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
-		while (bitboard) {
+		u64 bb = sideToMove ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
+		while (bb) {
 
-			const int sq = GET_POSITION(bitboard); 
-			bitboard &= bitboard - 1; 
-
+			sq = GET_POSITION(bb); 
+			
 			score += sideToMove ? BLACK_PSQT[piece][sq] : WHITE_PSQT[piece][sq];
+	
+			POP_POSITION(bb); 
 		}
 	}
 
@@ -1070,15 +1149,17 @@ void initPSQT() {
 }
 
 
-int evalBoard(u8 side, Thread *th, EvalInfo *evalInfo) {
+int32_t evalBoard(u8 side, Thread *th) {
 
-	int score = 0;
+	int32_t score = 0;
 
-	int nCenterControl = POPCOUNT(CENTER & evalInfo->attacks[side]);
+	int nCenterControl = POPCOUNT(CENTER & th->evalInfo.attacks[side]);
 
 	score += nCenterControl * weight_center_control;
 
-	if (TUNE)	T->centerControl[side] = nCenterControl;
+	#if defined(TUNE)	
+		T->centerControl[side] = nCenterControl;
+	#endif
 
 	return score;
 }
