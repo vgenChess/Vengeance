@@ -64,6 +64,7 @@ void initEvalInfo(Thread *th) {
 
 	th->evalInfo.clear();
 
+
 	th->evalInfo.openFilesBB = openFiles(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
 
 
@@ -82,17 +83,17 @@ void initEvalInfo(Thread *th) {
 	th->evalInfo.attacks[BLACK] |= th->evalInfo.pawnsAttacks[BLACK];
 	
 	int sq = -1;
-	u64 b = 0ULL, attacks = 0ULL;
+	u64 bb = 0ULL, attacks = 0ULL;
 	for (int p = KNIGHTS; p <= KING; p++) {
 
 		for (int side = WHITE; side <= BLACK; side++) {
 
-			b = side ? th->blackPieceBB[p] : th->whitePieceBB[p];
+			bb = side ? th->blackPieceBB[p] : th->whitePieceBB[p];
 			attacks = 0ULL;
-			while (b) {
+			while (bb) {
 
-				sq = GET_POSITION(b);
-				b &= b - 1;
+				sq = GET_POSITION(bb);
+				POP_POSITION(bb);
 
 				assert(sq >= 0 && sq <= 63);
 
@@ -250,11 +251,11 @@ int32_t pawnsEval(u8 sideToMove, Thread *th) {
 
 	#if defined(TUNE)
 		
-		u64 bitboard = sideToMove ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
-		while (bitboard) {
+		u64 bb = sideToMove ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+		while (bb) {
 
-			int sq = GET_POSITION(bitboard);
-			bitboard &= bitboard - 1; 
+			int sq = GET_POSITION(bb);
+			POP_POSITION(bb);
 
 			T->pawnPSQT[sideToMove][sideToMove ? Mirror64[sq] : sq] = 1; 
 		}
@@ -305,7 +306,7 @@ int32_t pawnsEval(u8 sideToMove, Thread *th) {
 	while (passedPawns) {
 		
 		sq = GET_POSITION(passedPawns);
-		passedPawns &= passedPawns - 1;
+		POP_POSITION(passedPawns);
 
 		assert(sq >= 0 && sq <= 63);
 
@@ -350,7 +351,7 @@ int32_t knightsEval(u8 side, Thread *th) {
 	while (knightsBB) {
 
 		sq = GET_POSITION(knightsBB);
-		knightsBB &= knightsBB - 1;
+		POP_POSITION(knightsBB);
 
 		assert(sq >= 0 && sq <= 63);
 
@@ -440,9 +441,7 @@ int32_t bishopsEval(u8 side, Thread *th) {
 	while (bishopBB) {
 	
 		sq = GET_POSITION(bishopBB);
-
-		bishopBB &= bishopBB - 1;
-
+		POP_POSITION(bishopBB);
 
 		assert(sq >= 0 && sq <= 63);
 
@@ -527,7 +526,7 @@ int32_t rooksEval(u8 side, Thread *th) {
 	while (rooksBB) {
 
 		sq = GET_POSITION(rooksBB);
-		rooksBB &= rooksBB - 1;
+		POP_POSITION(rooksBB);
 
 		assert(sq >= 0 && sq <= 63);
 
@@ -707,7 +706,7 @@ int32_t queenEval(u8 side, Thread *th) {
 	while (queenBB) {
 
 		sq = GET_POSITION(queenBB);
-		queenBB &= queenBB - 1;
+		POP_POSITION(queenBB);
 
 		assert(sq >= 0 && sq <= 63);
 
@@ -1103,17 +1102,19 @@ int32_t kingEval(u8 us, Thread *th) {
 
 int32_t PSQTScore(u8 sideToMove, Thread *th) {
 	
+	int sq;
 	int32_t score = 0;
 
 	for (int piece = PAWNS; piece <= KING; piece++) {
 
-		u64 bitboard = sideToMove ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
-		while (bitboard) {
+		u64 bb = sideToMove ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
+		while (bb) {
 
-			const int sq = GET_POSITION(bitboard); 
-			bitboard &= bitboard - 1; 
-
+			sq = GET_POSITION(bb); 
+			
 			score += sideToMove ? BLACK_PSQT[piece][sq] : WHITE_PSQT[piece][sq];
+	
+			POP_POSITION(bb); 
 		}
 	}
 
