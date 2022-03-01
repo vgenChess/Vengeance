@@ -179,7 +179,9 @@ int32_t fullEval(u8 sideToMove, Thread *th) {
 
 	#endif
 
+
 	initEvalInfo(th);
+
 
 	int eval = evaluateSide(WHITE, th) - evaluateSide(BLACK, th);
 
@@ -198,16 +200,14 @@ int32_t fullEval(u8 sideToMove, Thread *th) {
 		T->phase = phase;
 	#endif
 
-    int32_t score = (ScoreMG(eval) * phase + ScoreEG(eval) * (24 - phase)) / 24;
 
-    #if defined(TUNE)	
-		T->phase = phase;
-	#endif
+    int32_t score = (ScoreMG(eval) * phase + ScoreEG(eval) * (24 - phase)) / 24;
 
     #if defined(TUNE)	
 	#else
 		recordEval(score, th);
 	#endif
+
 
 	return sideToMove == WHITE ? score : -score;
 }
