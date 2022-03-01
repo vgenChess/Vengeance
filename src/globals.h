@@ -244,6 +244,61 @@ class PV {
 		std::vector<u32> line;
 };
 
+
+class EvalInfo {
+	
+public:
+
+	u64 openFilesBB;
+	u64 halfOpenFilesBB[2]; 
+
+	u64 pawnsAttacks[2];
+	u64 knightsAttacks[2];
+	u64 bishopsAttacks[2];
+	u64 rooksAttacks[2];
+	u64 queensAttacks[2];
+	u64 kingAttacks[2];
+
+	u64 attacks[2];
+
+	u64 kingZoneBB[2];
+
+	int kingSq[2];
+
+	int kingAttackersCount[2];
+	int kingAttackersWeight[2];
+
+	int kingAdjacentZoneAttacksCount[2];
+
+    void clear() {
+
+		this->openFilesBB = 0ULL;
+
+		for (int i = 0; i < 2; i++) {
+
+			this->halfOpenFilesBB[i] = 0ULL;
+
+			this->pawnsAttacks[i] = 0ULL;
+			this->knightsAttacks[i] = 0ULL;
+			this->bishopsAttacks[i] = 0ULL;
+			this->rooksAttacks[i] = 0ULL;
+			this->queensAttacks[i] = 0ULL;
+			this->kingAttacks[i] = 0ULL;
+
+			this->attacks[i] = 0ULL;
+
+			this->kingZoneBB[i] = 0ULL;
+
+			this->kingSq[i] = 0;
+
+			this->kingAttackersCount[i] = 0;
+			this->kingAttackersWeight[i] = 0;
+
+			this->kingAdjacentZoneAttacksCount[i] = 0;
+		} 
+	}
+};
+
 extern int MAX_DEPTH;
 
 extern u64 quiet, prevCap, cap, prevEp, ep, prevCas, cas, check, prom;

@@ -59,7 +59,6 @@ u64 arrFiles[8] = {
 int WHITE_PSQT[8][64];
 int BLACK_PSQT[8][64];
 
-EvalInfo *evalInfo = new EvalInfo();
 
 void initEvalInfo(EvalInfo *info, Thread *th) {
 
@@ -178,10 +177,10 @@ int32_t fullEval(u8 sideToMove, Thread *th) {
 	#endif
 
 	
-	evalInfo->clear();
-	initEvalInfo(evalInfo, th);
+	th->evalInfo.clear();
+	initEvalInfo(&th->evalInfo, th);
 
-	int eval = evaluateSide(WHITE, evalInfo, th) - evaluateSide(BLACK, evalInfo, th);
+	int eval = evaluateSide(WHITE, &th->evalInfo, th) - evaluateSide(BLACK, &th->evalInfo, th);
 
 	#if defined(TUNE)	
 		T->eval = eval;
