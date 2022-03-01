@@ -7,7 +7,7 @@
 - Aspiration Window
 - Null Move Pruning
 - Fractional Extensions
-- Singular Extenions 
+- Singular Extensions 
 - Futility Pruning
 - Limited Razoring
 - Reverse Futility Pruning
