@@ -271,6 +271,8 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
     loadCoeff->coeffs[BLACK][i++] = T->centerControl[BLACK];                         
 
 
+
+
 	loadCoeff->type[i] = SAFETY;
     loadCoeff->coeffs[WHITE][i] = T->knightAttack[WHITE];                         
     loadCoeff->coeffs[BLACK][i++] = T->knightAttack[BLACK];                         
@@ -708,15 +710,6 @@ void optimise(TVector params, TVector cparams) {
 	
 	for (u64 epoch = 1; epoch < MAXEPOCHS; epoch++) {
 
-		if (skip) { 
-
-			skip = false;
-
-			index += BATCHSIZE;
-			continue;
-		}
-
-
 		if (index >= dataList.size()) {
 
 			index = 0;
@@ -768,12 +761,6 @@ void optimise(TVector params, TVector cparams) {
 
 		
 		auto endTime = std::chrono::steady_clock::now();
-
-		if (std::chrono::duration_cast<std::chrono::seconds>(endTime - skipTime).count() > 20) {
-			
-			skipTime = std::chrono::steady_clock::now();
-			skip = true;
-		}
 
 		if (std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime).count() > DISPLAY_TIME) {
 
