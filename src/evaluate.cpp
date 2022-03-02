@@ -195,8 +195,8 @@ int32_t fullEval(u8 sideToMove, Thread *th) {
 
 
 	int32_t eval = 0;
-
-	/*#if defined(TUNE)
+/*
+	#if defined(TUNE)
 
 		eval += pawnsEval(WHITE, th) - pawnsEval(BLACK, th);
 	#else
@@ -210,8 +210,8 @@ int32_t fullEval(u8 sideToMove, Thread *th) {
 
 		score += pawnsScore;
 	#endif
-*/
 
+*/
 	eval += PSQTScore(WHITE, th) - PSQTScore(BLACK, th);
 	eval += pawnsEval(WHITE, th) - pawnsEval(BLACK, th);
 	eval += knightsEval(WHITE, th) - knightsEval(BLACK, th);
@@ -811,70 +811,33 @@ int32_t kingEval(u8 us, Thread *th) {
 	if (	th->evalInfo.kingAttackersCount[us] >= 2
 		&&	th->evalInfo.kingAdjacentZoneAttacksCount[us]) { 
 
-
 		int32_t safetyScore = th->evalInfo.kingAttackersWeight[us];
 
         u64 kingUndefendedSquares = 
         		th->evalInfo.attacks[them]
         		&	th->evalInfo.kingAttacks[us]
-        		&	~(	th->evalInfo.allPawnAttacks[us] |	
-        				th->evalInfo.allKnightAttacks[us] |
-        				th->evalInfo.allBishopAttacks[us] |
-        				th->evalInfo.allRookAttacks[us] |
+        		&	~(	th->evalInfo.allPawnAttacks[us] | th->evalInfo.allKnightAttacks[us] |
+        				th->evalInfo.allBishopAttacks[us] | th->evalInfo.allRookAttacks[us] |
         				th->evalInfo.allQueenAttacks[us]);
 
 		u64 enemyPieces = them ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES];
 
+		u64 queenSafeContactCheck = kingUndefendedSquares 
+			& th->evalInfo.allQueenAttacks[them] 
+			& ~enemyPieces
+			& (		th->evalInfo.allPawnAttacks[them] 
+				|	th->evalInfo.allKnightAttacks[them] 
+				|	th->evalInfo.allBishopAttacks[them] 
+				|	th->evalInfo.allRookAttacks[them]);
+
+		u64 rookSafeContactCheck = kingUndefendedSquares 
+			& th->evalInfo.allRookAttacks[them] 
+			& ~enemyPieces
+			& (		th->evalInfo.allPawnAttacks[them] 
+				|	th->evalInfo.allKnightAttacks[them] 
+				|	th->evalInfo.allBishopAttacks[them] 
+				|	th->evalInfo.allQueenAttacks[them]);
 		
-		int count;
-		u64 b;
-
-		b = kingUndefendedSquares & th->evalInfo.allQueenAttacks[them] & ~enemyPieces;
-	     
-		if (b) {
-		
-		    u64 attackedByOthers =
-				th->evalInfo.allPawnAttacks[them] |
-				th->evalInfo.allKnightAttacks[them] |
-				th->evalInfo.allBishopAttacks[them] |
-				th->evalInfo.allRookAttacks[them];
-
-			b &= attackedByOthers;
-
-			count = POPCOUNT(b);
-
-	        safetyScore += weight_queen_safe_contact_check * count;
-
-	        #if defined(TUNE)	
-
-	        	T->queenSafeContactCheck[us] = count;
-			#endif
-		}
-
-
-		b = kingUndefendedSquares & th->evalInfo.allRookAttacks[them] & ~enemyPieces;
-	     
-		if (b) {
-		
-		    u64 attackedByOthers =
-				th->evalInfo.allPawnAttacks[them] |
-				th->evalInfo.allKnightAttacks[them] |
-				th->evalInfo.allBishopAttacks[them] |
-				th->evalInfo.allQueenAttacks[them];
-
-			b &= attackedByOthers;
-
-			count = POPCOUNT(b);
-
-	        safetyScore += weight_rook_safe_contact_check * count;
-			
-	        #if defined(TUNE)	
-
-	        	T->rookSafeContactCheck[us] = count;
-			#endif
-		}
-		
-
 		u64 safe = ~(enemyPieces | th->evalInfo.attacks[us]);
 		u64 b1 = Rmagic(kingSq, th->occupied) & safe;
 		u64 b2 = Bmagic(kingSq, th->occupied) & safe;
@@ -884,7 +847,9 @@ int32_t kingEval(u8 us, Thread *th) {
 		u64 bishopSafeChecks = b2 & th->evalInfo.allBishopAttacks[them];
 		u64 knightSafeChecks = get_knight_attacks(kingSq) 
 			& th->evalInfo.allKnightAttacks[them] & safe;
- 
+		
+		safetyScore += weight_queen_safe_contact_check * POPCOUNT(queenSafeContactCheck);
+		safetyScore += weight_rook_safe_contact_check * POPCOUNT(rookSafeContactCheck);
 		safetyScore += weight_queen_check * POPCOUNT(queenSafeChecks);
 		safetyScore += weight_rook_check * POPCOUNT(rookSafeChecks);
 		safetyScore += weight_bishop_check * POPCOUNT(bishopSafeChecks);
@@ -893,6 +858,8 @@ int32_t kingEval(u8 us, Thread *th) {
 
 		#if defined(TUNE)
 
+	        T->queenSafeContactCheck[us] = POPCOUNT(queenSafeContactCheck);
+	        T->rookSafeContactCheck[us] = POPCOUNT(rookSafeContactCheck);
 			T->queenCheck[us] = POPCOUNT(queenSafeChecks);
 			T->rookCheck[us] = POPCOUNT(rookSafeChecks);
 			T->bishopCheck[us] = POPCOUNT(bishopSafeChecks);
