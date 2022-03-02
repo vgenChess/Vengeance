@@ -192,8 +192,9 @@ int32_t fullEval(u8 stm, Thread *th) {
 
 	initEvalInfo(th);
 
-
 	int32_t eval = 0;
+
+	// TODO Pawn eval cache
 /*
 	#if defined(TUNE)
 
