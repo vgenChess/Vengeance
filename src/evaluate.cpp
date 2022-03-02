@@ -712,8 +712,6 @@ int32_t queenEval(u8 side, Thread *th) {
 	int sq = -1;
 	int mobilityCount = 0;
 
-	const int pieceCount = POPCOUNT(th->whitePieceBB[PIECES] | th->blackPieceBB[PIECES]);
-
 	u64 attacksBB = 0ULL, mobilityBB = 0ULL; 	
 	u64 queenBB = side ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN];
 
@@ -728,8 +726,9 @@ int32_t queenEval(u8 side, Thread *th) {
 	
 			T->queenPSQT[side][side ? Mirror64[sq] : sq] = 1; 		
 		#endif
-	
-		if (pieceCount > 20 && side ? sq <= 55 : sq >= 8) { // recheck logic
+			
+			// early game
+		if (POPCOUNT(th->occupied) > 20 && side ? sq <= 55 : sq >= 8) { // recheck logic
 
 			u64 minorPiecesBB = side ? 
 				th->blackPieceBB[ROOKS] | th->blackPieceBB[KNIGHTS] | th->blackPieceBB[BISHOPS] :
