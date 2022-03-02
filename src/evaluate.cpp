@@ -731,8 +731,8 @@ int32_t queenEval(u8 side, Thread *th) {
 		if (POPCOUNT(th->occupied) > 20 && side ? sq <= 55 : sq >= 8) { // recheck logic
 
 			u64 minorPiecesBB = side ? 
-				th->blackPieceBB[ROOKS] | th->blackPieceBB[KNIGHTS] | th->blackPieceBB[BISHOPS] :
-				th->whitePieceBB[ROOKS] | th->whitePieceBB[KNIGHTS] | th->whitePieceBB[BISHOPS];
+				th->blackPieceBB[KNIGHTS] | th->blackPieceBB[BISHOPS] :
+				th->whitePieceBB[KNIGHTS] | th->whitePieceBB[BISHOPS];
 
 			u64 underdevelopedPiecesBB = (side ? RANK_8 : RANK_1) & minorPiecesBB; 
 
