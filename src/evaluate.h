@@ -283,20 +283,6 @@ u64 openFiles(u64 wpanws, u64 bpawns);
 
 u64 halfOpenOrOpenFile(u64 gen);
 
-
-inline int count_1s_max_15(u64 b) {
-  unsigned w = unsigned(b >> 32), v = unsigned(b);
-  v = v - ((v >> 1) & 0x55555555);
-  w = w - ((w >> 1) & 0x55555555);
-  v = (v & 0x33333333) + ((v >> 2) & 0x33333333);
-  w = (w & 0x33333333) + ((w >> 2) & 0x33333333);
-  v = ((v+w) * 0x11111111) >> 28;
-  return int(v);
-}
-
-int evaluateNNUE(u8 stm, Thread *th);
-
-
 #endif /* evaluate_h */
 
 
