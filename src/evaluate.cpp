@@ -607,6 +607,18 @@ int32_t rooksEval(u8 side, Thread *th) {
 		u64 attacksBB = Rmagic(sq, th->occupied);
 
 
+		// Connected Rooks
+		if (attacksBB & rooksBB) {
+
+			score += weight_rook_supporting_friendly_rook;
+
+			#if defined(TUNE)	
+				
+				T->rookSupportingFriendlyRook[side] = 1;
+			#endif
+		}
+
+
 		// Rook mobility
 		u64 mobilityBB = attacksBB & th->empty;
 
@@ -620,18 +632,6 @@ int32_t rooksEval(u8 side, Thread *th) {
 		#endif
 
 
-		// Connected Rooks
-		if (attacksBB & rooksBB) {
-
-			score += weight_rook_supporting_friendly_rook;
-
-			#if defined(TUNE)	
-				
-				T->rookSupportingFriendlyRook[side] = 1;
-			#endif
-		}
-
-		
 		// Update values for opponent King safety 
 		if (attacksBB & th->evalInfo.kingZoneBB[opp]) {
  			
@@ -650,10 +650,7 @@ int32_t rooksEval(u8 side, Thread *th) {
             }
 		}
 
-
-
-
-		if (side) {
+		/*if (side) {
 
 			// for black
 
@@ -683,12 +680,11 @@ int32_t rooksEval(u8 side, Thread *th) {
 			// 		T->rookBlockedByKing[WHITE]++;
 			// 	}
 			// }
-		}
+		}*/
 	}
 
 	return score;
 }
-
 
 
 
@@ -717,7 +713,7 @@ int32_t queenEval(u8 side, Thread *th) {
 		#endif
 
 			// early game
-		if (POPCOUNT(th->occupied) > 20 && side ? sq <= 55 : sq >= 8) { // recheck logic
+		if (POPCOUNT(th->occupied) >= 22 && side ? sq <= 48 : sq >= 15) { 
 
 			u64 minorPiecesBB = side ? 
 				th->blackPieceBB[KNIGHTS] | th->blackPieceBB[BISHOPS] :
@@ -738,6 +734,20 @@ int32_t queenEval(u8 side, Thread *th) {
 
 		attacksBB = Qmagic(sq, th->occupied);
 
+		// Queen mobility
+		mobilityBB = attacksBB & th->empty;
+
+		mobilityCount = POPCOUNT(mobilityBB);
+
+		score += arr_weight_queen_mobility[mobilityCount];
+
+		#if defined(TUNE)	
+	
+			T->queenMobility[side][mobilityCount]++;
+		#endif
+
+
+		// Update values for opponent King safety 
 		if (attacksBB & th->evalInfo.kingZoneBB[opp]) {
  			
  			th->evalInfo.kingAttackersCount[opp]++;
@@ -754,21 +764,8 @@ int32_t queenEval(u8 side, Thread *th) {
            		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
             }
 		}
-
-
-		mobilityBB = attacksBB & ~(side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
-
-		mobilityCount = POPCOUNT(mobilityBB);
-
-
-		score += arr_weight_queen_mobility[mobilityCount];
-
-
-		#if defined(TUNE)	
-	
-			T->queenMobility[side][mobilityCount]++;
-		#endif
 	}	
+
 
 	return score;
 }
