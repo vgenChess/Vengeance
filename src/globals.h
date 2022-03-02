@@ -252,13 +252,19 @@ public:
 	u64 openFilesBB;
 	u64 halfOpenFilesBB[2]; 
 
-	u64 pawnsAttacks[2];
-	u64 knightsAttacks[2];
-	u64 bishopsAttacks[2];
-	u64 rooksAttacks[2];
-	u64 queensAttacks[2];
-	u64 kingAttacks[2];
+	u64 knightAttacks[2][64];
+	u64 bishopAttacks[2][64];
+	u64 rookAttacks[2][64];
+	u64 queenAttacks[2][64];
 
+	u64 allPawnAttacks[2];
+	u64 allKnightAttacks[2];
+	u64 allBishopAttacks[2];
+	u64 allRookAttacks[2];
+	u64 allQueenAttacks[2];
+
+	u64 kingAttacks[2];
+	
 	u64 attacks[2];
 
 	u64 kingZoneBB[2];
@@ -275,15 +281,23 @@ public:
 		this->openFilesBB = 0ULL;
 
 		for (int i = 0; i < 2; i++) {
-
+	
 			this->halfOpenFilesBB[i] = 0ULL;
 
-			this->pawnsAttacks[i] = 0ULL;
-			this->knightsAttacks[i] = 0ULL;
-			this->bishopsAttacks[i] = 0ULL;
-			this->rooksAttacks[i] = 0ULL;
-			this->queensAttacks[i] = 0ULL;
+			this->allPawnAttacks[i] = 0ULL;
+			this->allKnightAttacks[i] = 0ULL;
+			this->allBishopAttacks[i] = 0ULL;
+			this->allRookAttacks[i] = 0ULL;
+			this->allQueenAttacks[i] = 0ULL;
 			this->kingAttacks[i] = 0ULL;
+
+			for (int j = 0; j < 64; j++) {
+
+				this->knightAttacks[i][j] = 0ULL;
+				this->bishopAttacks[i][j] = 0ULL;
+				this->rookAttacks[i][j] = 0ULL;
+				this->queenAttacks[i][j] = 0ULL;
+			}
 
 			this->attacks[i] = 0ULL;
 
