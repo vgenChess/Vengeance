@@ -16,7 +16,6 @@
 #include "utility.h"
 #include "movegen.h"
 #include "make_unmake.h"
-#include "psqt.h"
 #include "hash.h"
 #include "magicmoves.h"
 #include "nonslidingmoves.h"

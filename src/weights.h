@@ -6,84 +6,157 @@
 
 int 
 
-weight_pawn = S(100, 100),
-weight_knight = S(300, 300),
-weight_bishop = S(300, 300),
-weight_rook = S(500, 500),
-weight_queen = S(900, 900), 
+weight_pawn = S(82, 106),
+weight_knight = S(308, 287),
+weight_bishop = S(318, 301),
+weight_rook = S(462, 489),
+weight_queen = S(926, 928), 
 
+weight_isolated_pawn = S(-12, 1),
+weight_backward_pawn = S(-7, -4),
+weight_double_pawn = S(-8, -21),
+weight_defended_pawn = S(7, 3),
+weight_pawn_hole = S(-2, 3), 
+arr_weight_passed_pawn[8] = { S(0, 0), S(-7, -13), S(-10, -12), S(-7, 3), S(8, 22), S(32, 58), S(54, 78), S(0, 0), }, 
+arr_weight_defended_passed_pawn[8] = { S(0, 0), S(0, 0), S(-3, -7), S(0, 5), S(14, 24), S(30, 38), S(19, 21), S(0, 0), }, 
 
-weight_isolated_pawn = S(0, 0),
-weight_backward_pawn = S(0, 0),
-weight_double_pawn = S(0, 0),
-weight_defended_pawn = S(0, 0),
-weight_pawn_hole = S(0, 0), 
-arr_weight_passed_pawn[8] = { 
- S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) 
-}, 
-arr_weight_defended_passed_pawn[8] = { 
- S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) 
-}, 
+weight_undefended_knight = S(-3, -10), 
+weight_knight_defended_by_pawn = S(7, 9), 
 
-weight_undefended_knight = S(0, 0), weight_knight_defended_by_pawn = S(0, 0), 
+weight_bad_bishop = S(25, 30), 
+weight_bishop_pair = S(2, -9), 
 
-weight_undefended_bishop = S(0, 0), 
-weight_bishop_pair = S(0, 0), 
-weight_bad_bishop = S(0, 0),
+weight_rook_half_open_file = S(15, 7), 
+weight_rook_open_file = S(28, 8), 
+weight_rook_enemy_queen_same_file = S(7, 3), 
+weight_rook_on_seventh_rank = S(9, 5), 
+weight_rook_on_eight_rank = S(11, 9), 
+weight_rook_supporting_friendly_rook = S(7, 9), 
 
-weight_rook_half_open_file = S(0, 0), 
-weight_rook_open_file = S(0, 0), 
-weight_rook_enemy_queen_same_file = S(0, 0), 
-weight_rook_on_seventh_rank = S(0, 0), 
-weight_rook_on_eight_rank = S(0, 0), 
-weight_rook_supporting_friendly_rook = S(0, 0), 
+weight_queen_underdeveloped_pieces = S(-10, -7), 
 
-weight_queen_underdeveloped_pieces = S(0, 0), 
-
-weight_king_pawn_shield = S(0, 0), 
-weight_king_enemy_pawn_storm = S(0, 0), 
+weight_king_pawn_shield = S(10, 1), 
+weight_king_enemy_pawn_storm = S(-12, 15), 
 
 arr_weight_knight_mobility[16] = { 
 
- S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), 
- S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) 
+S(-18, -17), S(-18, -22), S(-9, -22), S(-4, -15), S(8, -8), S(12, 5), S(15, 5), S(13, 9), 
+S(10, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), 
 
 }, 
 arr_weight_bishop_mobility[16] = { 
- 
- S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), 
- S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) 
+
+S(-19, -20), S(-10, -22), S(-2, -16), S(2, -10), S(6, -3), S(8, 1), S(9, 4), S(9, 6), 
+S(11, 10), S(12, 6), S(7, 7), S(10, 5), S(3, 3), S(5, 4), S(0, 0), S(0, 0), 
 
 }, 
 arr_weight_rook_mobility[16] = { 
- 
- S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), 
- S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) 
+
+S(-15, -28), S(-8, -24), S(-7, -18), S(-5, -13), S(-5, -9), S(0, -6), S(1, -3), S(3, 0), 
+S(6, 1), S(9, 3), S(10, 5), S(10, 5), S(16, 8), S(10, 4), S(9, 6), S(0, 0), 
 
 }, 
 arr_weight_queen_mobility[32] = { 
 
- S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), 
- S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), 
- S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), 
- S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0)  
+S(-1, -1), S(-4, -4), S(-4, -7), S(-6, -12), S(-3, -11), S(-1, -9), S(-1, -11), S(-3, -11), 
+S(-1, -8), S(1, -6), S(1, -4), S(1, -2), S(3, 4), S(3, 3), S(3, 4), S(7, 6), 
+S(5, 6), S(7, 8), S(9, 9), S(9, 9), S(9, 9), S(10, 11), S(9, 10), S(9, 9), 
+S(8, 7), S(7, 7), S(1, 1), S(4, 4), S(0, 0), S(0, 0), S(0, 0), S(0, 0), 
 
-},
+}, 
 
-weight_center_control = S(1, 1), 
+weight_center_control = S(8, 2), 
 
-weight_knight_attack = S(1, 1), 
-weight_bishop_attack = S(1, 1), 
-weight_rook_attack = S(1, 1), 
-weight_queen_attack = S(1, 1), 
-weight_rook_safe_contact_check = S(1, 1), 
-weight_queen_safe_contact_check = S(1, 1), 
-weight_knight_check = S(1, 1), 
-weight_bishop_check = S(1, 1), 
-weight_rook_check = S(1, 1), 
-weight_queen_check = S(1, 1), 
-weight_safety_adjustment = S(1, 1)
-;
+weight_knight_attack = S(38, -1), 
+weight_bishop_attack = S(40, 9), 
+weight_rook_attack = S(41, 7), 
+weight_queen_attack = S(55, 45), 
+weight_rook_safe_contact_check = S(34, 24), 
+weight_queen_safe_contact_check = S(40, 35), 
+weight_knight_check = S(27, 8), 
+weight_bishop_check = S(27, 18), 
+weight_rook_check = S(27, 11), 
+weight_queen_check = S(43, 36), 
+weight_safety_adjustment = S(60, 12);
+
+
+int pawnPSQT[64] = {
+
+S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), 
+S(  -7,  -6), S(  -4,  -1), S( -13,   1), S( -12,  -3), S( -11,   2), S(  10,  -2), S(  12,  -3), S(  -6, -17), 
+S(  -6, -10), S( -10,  -2), S(  -4, -11), S( -10,  -3), S(  -6,  -4), S(  -8,  -7), S(   7,  -6), S(  -5, -15), 
+S(  -8,   1), S(  -7,   1), S(  -2, -10), S(   9, -15), S(   8, -13), S(  -3, -12), S(  -8,  -1), S( -13,  -7), 
+S(   1,  12), S(   5,   8), S(  -1,   2), S(  11,  -7), S(  12,  -7), S(   3,  -1), S(   1,   7), S(  -6,   5), 
+S(  15,  33), S(  13,  33), S(  13,  22), S(   8,  12), S(  13,   9), S(  20,  16), S(  14,  24), S(   8,  25), 
+S(  34,  45), S(  28,  40), S(  22,  30), S(  22,  24), S(  18,  23), S(  18,  22), S(  13,  25), S(  16,  33), 
+S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), 
+};
+
+int knightPSQT[64] = {
+
+S(  -9, -12), S(  -4,  -8), S(  -3,  -7), S( -15,  -5), S(   0,  -7), S( -11,  -2), S(   2,  -5), S(   1, -11), 
+S(  -6, -10), S(  -1,  -4), S(  -4,   0), S(   3,   1), S(   0,   4), S(  -2,   0), S(   0,  -1), S(   1,  -5), 
+S(  -9,  -6), S(  -7,  -5), S(  -2,  -2), S(   4,   5), S(   2,   4), S(   4,   0), S(   2,  -1), S(  -8,  -6), 
+S(  -4,  -6), S(  -3,  -3), S(   6,   4), S(   6,   8), S(  11,   5), S(   3,   3), S(   3,  -2), S(  -1,  -7), 
+S(  -3,  -4), S(   4,   1), S(   3,   6), S(  15,   9), S(  11,   7), S(  10,   8), S(   4,   2), S(   1,  -2), 
+S(  -7,  -3), S(   4,   2), S(   4,   5), S(  10,   5), S(   9,   3), S(   9,   5), S(   8,   4), S(  -1,  -5), 
+S(  -6,  -5), S(  -4,  -2), S(   5,  -1), S(   1,   1), S(  -2,  -2), S(   1,  -2), S(   0,  -2), S(  -4,  -4), 
+S( -12,  -9), S(  -3,  -4), S(   0,  -1), S(  -3,  -5), S(   0,  -3), S(  -6,  -5), S(  -2,  -3), S(  -7,  -8), 
+
+};
+
+int bishopPSQT[64] = {
+
+S(  -9, -11), S(  -1,  -4), S(  -6, -10), S(  -6,  -4), S(  -4,  -3), S(  -7,  -5), S(  -5,  -4), S(  -8,  -8), 
+S(  -1,  -4), S(   5,  -6), S(   3,  -2), S(   1,   1), S(   6,   4), S(   3,  -1), S(  16,   0), S(  -3,  -7), 
+S(  -5,  -3), S(   3,   0), S(   5,   5), S(   7,   7), S(   7,  10), S(   9,   3), S(   4,   1), S(  -2,  -1), 
+S(  -3,  -3), S(   2,   2), S(   3,   7), S(   9,  10), S(   9,   6), S(   2,   4), S(  -1,  -2), S(   0,  -2), 
+S(  -4,  -2), S(  -1,   5), S(   2,   6), S(  10,   8), S(  10,   8), S(   7,   5), S(   1,  -1), S(  -4,  -2), 
+S(  -8,  -2), S(   2,   0), S(   5,   1), S(   4,   2), S(   3,   1), S(   7,   2), S(   4,   0), S(  -3,  -2), 
+S(  -9,  -5), S(  -4,  -3), S(  -6,  -1), S(  -6,  -5), S(   2,   0), S(   4,  -2), S(   0,  -3), S( -13, -10), 
+S(  -9,  -7), S(  -4,  -5), S(  -9,  -6), S(  -6,  -4), S(  -3,  -3), S(  -6,  -4), S(  -3,  -3), S(  -4,  -6), 
+
+};
+
+int rookPSQT[64] = {
+
+S(  -6,  -5), S(  -2,   1), S(   3,   3), S(   5,   0), S(   7,  -4), S(  11,  -2), S( -16,  -3), S(  -9, -12), 
+S( -15,  -5), S(  -3,  -2), S(  -5,  -2), S(  -2,  -2), S(  -3,  -6), S(   3,  -1), S(  -4,  -3), S( -21,  -6), 
+S( -11,  -3), S(  -3,   0), S(  -3,  -2), S(  -5,  -5), S(  -3,  -6), S(  -1,  -3), S(  -2,  -2), S(  -9,  -6), 
+S(  -8,  -2), S(  -4,   0), S(  -1,   1), S(  -4,  -3), S(  -2,  -5), S(  -4,  -5), S(  -1,  -3), S(  -5,  -7), 
+S(  -4,   0), S(  -4,  -1), S(   2,   4), S(  -1,  -2), S(   0,  -2), S(   3,   1), S(  -4,  -4), S(  -2,  -2), 
+S(   1,   5), S(   5,   7), S(   4,   6), S(   3,   3), S(  -1,  -1), S(   5,   2), S(   6,   2), S(   0,  -1), 
+S(   2,   5), S(   4,   6), S(   8,   7), S(   5,   3), S(   4,  -2), S(   6,   3), S(   1,   1), S(   2,   0), 
+S(   4,   7), S(   4,   4), S(   2,   4), S(   4,   2), S(   3,   2), S(   1,   2), S(   1,   2), S(   0,   1), 
+
+};
+
+int queenPSQT[64] = {
+
+S(  -2,  -5), S(  -7,  -8), S(  -4,  -4), S(   5,  -6), S(  -4,  -2), S(  -8,  -8), S(  -5,  -5), S(  -9,  -9), 
+S( -11,  -9), S(  -5,  -6), S(   3,  -3), S(   2,   0), S(   6,   2), S(   3,  -1), S(  -6,  -7), S(  -1,  -3), 
+S(  -4,  -2), S(   2,  -6), S(   1,   3), S(   1,   1), S(   0,   1), S(   5,   6), S(   4,   6), S(   3,   3), 
+S(  -1,  -6), S(  -6,   0), S(  -2,   1), S(  -4,   8), S(   1,   6), S(   2,   6), S(   4,   8), S(   1,   4), 
+S(  -8,  -5), S(  -8,  -1), S(  -5,  -1), S(  -5,   4), S(   3,  10), S(   5,   8), S(   4,   9), S(   3,   7), 
+S(  -7,  -7), S(  -4,  -3), S(  -2,  -1), S(   4,   8), S(   9,  10), S(  12,  11), S(  11,   9), S(  12,   9), 
+S( -11, -10), S( -16,  -5), S(   1,   4), S(   4,   6), S(   3,   8), S(  10,   9), S(   7,   6), S(   7,   5), 
+S(  -9,  -7), S(   1,   3), S(   5,   6), S(   3,   4), S(   8,   8), S(   7,   6), S(   4,   3), S(   6,   6), 
+
+};
+
+int kingPSQT[64] = {
+
+S( -12, -17), S(   5, -11), S(   3,  -7), S( -20,  -8), S(   1, -11), S( -17,  -6), S(  18, -14), S(  -1, -22), 
+S(  -5,  -9), S(   0,  -4), S(  -1,   3), S( -19,   5), S( -17,   8), S(  -7,   6), S(   4,   0), S(   3,  -9), 
+S(  -3,  -6), S(  -1,  -2), S(   2,   4), S(  -2,   6), S(  -1,   8), S(  -1,   6), S(   1,   2), S(  -7,  -7), 
+S(  -7,  -7), S(   1,  -2), S(   3,   6), S(  -1,   6), S(  -1,   6), S(   0,   4), S(  -4,  -1), S( -11, -10), 
+S(  -1,  -2), S(   7,   7), S(   7,   7), S(   5,   7), S(   3,   4), S(   7,   9), S(   6,   7), S(  -3,  -2), 
+S(   5,   4), S(   8,   6), S(  10,   8), S(   4,   3), S(   5,   4), S(  15,  13), S(  15,  13), S(   3,   3), 
+S(   2,  -1), S(   7,   6), S(   6,   5), S(   7,   4), S(   6,   5), S(   9,  10), S(   4,   5), S(   0,   1), 
+S(  -4,  -5), S(   1,  -2), S(   1,  -2), S(   0,  -1), S(  -1,  -1), S(   2,   3), S(   3,   2), S(   0,  -1), 
+
+};
+
 
 #endif
 
