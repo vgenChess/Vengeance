@@ -414,10 +414,8 @@ int32_t knightsEval(u8 stm, Thread *th) {
 			#endif
 		}
 
-
-		u64 mobilityBB = attacksBB 
-			& ~(stm ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]) 
-			& ~(th->evalInfo.allPawnAttacks[opp]);
+		//TODO check logic
+		u64 mobilityBB = attacksBB & th->empty & ~th->evalInfo.allPawnAttacks[opp];
 
 		mobilityCount = POPCOUNT(mobilityBB);
 
@@ -473,8 +471,8 @@ int32_t bishopsEval(u8 stm, Thread *th) {
 		#endif
 
 
-		// Bishop blocked by own pawn
-		if (attacksBB & stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS]) {
+		// Bishop blocked by own pawn (Todo check logic)
+		if (attacksBB & (stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS])) {
 
 			score += weight_bad_bishop;
 
