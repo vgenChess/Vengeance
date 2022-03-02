@@ -236,28 +236,28 @@ void setDist();
 
 void initTableDoublePawns();
 
-int32_t traceFullEval(TraceCoefficients *traceCoefficients, u8 sideToMove, Thread *th);
+int32_t traceFullEval(TraceCoefficients *traceCoefficients, u8 stm, Thread *th);
 
-int32_t fullEval(u8 sideToMove, Thread *th);
+int32_t fullEval(u8 stm, Thread *th);
 
-int32_t PSQTScore(u8 sideToMove, Thread *th);
-int32_t pawnsEval(u8 sideToMove, Thread *th);
-int32_t knightsEval(u8 side, Thread *th);
-int32_t bishopsEval(u8 side, Thread *th);
-int32_t rooksEval(u8 side, Thread *th);
-int32_t queenEval(u8 side, Thread *th);
-int32_t kingEval(u8 side, Thread *th);
+int32_t PSQTScore(u8 stm, Thread *th);
+int32_t pawnsEval(u8 stm, Thread *th);
+int32_t knightsEval(u8 stm, Thread *th);
+int32_t bishopsEval(u8 stm, Thread *th);
+int32_t rooksEval(u8 stm, Thread *th);
+int32_t queenEval(u8 stm, Thread *th);
+int32_t kingEval(u8 stm, Thread *th);
 
-int32_t evalBoard(u8 side, Thread *th); 
+int32_t evalBoard(u8 stm, Thread *th); 
 
 void initPSQT();
 
-int numOfPawnHoles(u8 side, Thread *th);
-int isolatedPawns(u8 side, Thread *th);
-int numOfDoublePawns(u8 side, Thread *th);
-int countBackWardPawns(u8 side, Thread *th);
-int countPassedPawns(u8 side, Thread *th);
-int countDefendedPawns(u8 side, Thread *th);
+int numOfPawnHoles(u8 stm, Thread *th);
+int isolatedPawns(u8 stm, Thread *th);
+int numOfDoublePawns(u8 stm, Thread *th);
+int countBackWardPawns(u8 stm, Thread *th);
+int countPassedPawns(u8 stm, Thread *th);
+int countDefendedPawns(u8 stm, Thread *th);
 
 u64 wPawnsBehindOwn(u64 wpawns);
 u64 bPawnsBehindOwn(u64 bpawns); 
@@ -294,7 +294,7 @@ inline int count_1s_max_15(u64 b) {
   return int(v);
 }
 
-int evaluateNNUE(u8 side, Thread *th);
+int evaluateNNUE(u8 stm, Thread *th);
 
 
 #endif /* evaluate_h */
