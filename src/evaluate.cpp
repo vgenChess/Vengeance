@@ -150,10 +150,11 @@ int32_t traceFullEval(TraceCoefficients *traceCoefficients, u8 sideToMove, Threa
 
 int32_t fullEval(u8 sideToMove, Thread *th) {
 	
+	
 	#if defined(TUNE)
 	#else
 
-		int hashedEval;
+		int32_t hashedEval;
 		if (probeEval(&hashedEval, th)) {
 
 			return sideToMove == WHITE ? hashedEval : -hashedEval;
@@ -193,7 +194,37 @@ int32_t fullEval(u8 sideToMove, Thread *th) {
 	initEvalInfo(th);
 
 
-	int eval = evaluateSide(WHITE, th) - evaluateSide(BLACK, th);
+	int32_t eval = 0;
+
+	/*#if defined(TUNE)
+
+		eval += pawnsEval(WHITE, th) - pawnsEval(BLACK, th);
+	#else
+	
+		int pawnsScore;
+		if (!probePawnHash(&pawnsScore, th)) { // TODO check pawn hash logic
+
+			pawnsScore = pawnsEval(side, th);
+			recordPawnHash(pawnsScore, th);
+		}
+
+		score += pawnsScore;
+	#endif
+*/
+
+	eval += PSQTScore(WHITE, th) - PSQTScore(BLACK, th);
+	eval += pawnsEval(WHITE, th) - pawnsEval(BLACK, th);
+	eval += knightsEval(WHITE, th) - knightsEval(BLACK, th);
+	eval += bishopsEval(WHITE, th) - bishopsEval(BLACK, th);
+	eval += rooksEval(WHITE, th) - rooksEval(BLACK, th);
+	eval += queenEval(WHITE, th) - queenEval(BLACK, th);
+	
+	// evaluation of other pieces other than king needs to be done first
+	// before king eval because of values needed for king safety calculation
+	eval += kingEval(WHITE, th) - kingEval(BLACK, th);
+	eval += evalBoard(WHITE, th) - evalBoard(BLACK, th);
+	
+
 
 	#if defined(TUNE)	
 
@@ -225,37 +256,6 @@ int32_t fullEval(u8 sideToMove, Thread *th) {
 
 	return sideToMove == WHITE ? score : -score;
 }
-
-int32_t evaluateSide(int side, Thread *th) {
-
-	int32_t score = 0;
-
-	#if defined(TUNE)
-
-		score += pawnsEval(side, th);
-	#else
-	
-		int pawnsScore;
-		if (!probePawnHash(&pawnsScore, th)) { // TODO check pawn hash logic
-
-			pawnsScore = pawnsEval(side, th);
-			recordPawnHash(pawnsScore, th);
-		}
-
-		score += pawnsScore;
-	#endif
-
-	score += PSQTScore(side, th) 
-		+ knightsEval(side, th) 
-		+ bishopsEval(side, th) 
-		+ rooksEval(side, th) 
-		+ queenEval(side, th) 
-		+ kingEval(side, th) 
-		+ evalBoard(side, th); 
-	
-	return score;
-}
-
 
 int32_t pawnsEval(u8 sideToMove, Thread *th) {
 
@@ -966,21 +966,21 @@ int32_t kingEval(u8 side, Thread *th) {
 
 	const int queenCount = POPCOUNT(opp ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN]);
 
-	if (	th->evalInfo.kingAttackersCount[opp] >= 2
-		&&	th->evalInfo.kingAdjacentZoneAttacksCount[opp]) { // TODO recheck logic for if check
+	if (	th->evalInfo.kingAttackersCount[side] >= 2
+		&&	th->evalInfo.kingAdjacentZoneAttacksCount[side]) { // TODO recheck logic for if check
 		
 
-		int32_t safetyScore = th->evalInfo.kingAttackersWeight[opp];
+		int32_t safetyScore = th->evalInfo.kingAttackersWeight[side];
 
 
         u64 kingUndefendedSquares = 
         		th->evalInfo.attacks[opp]
-        	&	th->evalInfo.kingAttacks[side]
-        	&	~(	th->evalInfo.allPawnAttacks[side] |	
-        			th->evalInfo.allKnightAttacks[side] |
-        			th->evalInfo.allBishopAttacks[side] |
-        			th->evalInfo.allRookAttacks[side] |
-        			th->evalInfo.allQueenAttacks[side]);
+        		&	th->evalInfo.kingAttacks[side]
+        		&	~(	th->evalInfo.allPawnAttacks[side] |	
+        				th->evalInfo.allKnightAttacks[side] |
+        				th->evalInfo.allBishopAttacks[side] |
+        				th->evalInfo.allRookAttacks[side] |
+        				th->evalInfo.allQueenAttacks[side]);
 
 		u64 enemyPieces = opp ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES];
 
@@ -1006,6 +1006,7 @@ int32_t kingEval(u8 side, Thread *th) {
 	        safetyScore += weight_queen_safe_contact_check * count;
 
 	        #if defined(TUNE)	
+
 	        	T->queenSafeContactCheck[opp] = count;
 			#endif
 		}
@@ -1028,6 +1029,7 @@ int32_t kingEval(u8 side, Thread *th) {
 	        safetyScore += weight_rook_safe_contact_check * count;
 			
 	        #if defined(TUNE)	
+
 	        	T->rookSafeContactCheck[opp] = count;
 			#endif
 		}
@@ -1043,6 +1045,7 @@ int32_t kingEval(u8 side, Thread *th) {
 			safetyScore += weight_queen_check * count;
 			
 			#if defined(TUNE)	
+
 				T->queenCheck[opp] = count;
 			#endif
 		}
@@ -1058,7 +1061,8 @@ int32_t kingEval(u8 side, Thread *th) {
 	
 			safetyScore += weight_rook_check * count;
 
-			#if defined(TUNE)	
+			#if defined(TUNE)
+
 				T->rookCheck[opp] = count;
 			#endif
 		}
@@ -1075,6 +1079,7 @@ int32_t kingEval(u8 side, Thread *th) {
 		  	safetyScore += weight_bishop_check * count;
 
 		  	#if defined(TUNE)	
+
 		  		T->bishopCheck[opp] = count;
 	    	#endif
 	    } 
@@ -1090,6 +1095,7 @@ int32_t kingEval(u8 side, Thread *th) {
 	    	safetyScore += weight_knight_check * count;
 	  		
 	  		#if defined(TUNE)	
+
 	  			T->knightCheck[opp] = count;
 	    	#endif
 	    } 
@@ -1098,6 +1104,7 @@ int32_t kingEval(u8 side, Thread *th) {
 	    safetyScore += weight_safety_adjustment;
 
 	    #if defined(TUNE)	
+
 	    	T->safetyAdjustment[opp] = 1;
 	    #endif
 
@@ -1109,6 +1116,7 @@ int32_t kingEval(u8 side, Thread *th) {
 	
 
 		#if defined(TUNE)	
+
 			T->safety[opp] = safetyScore;
 		#endif
 	} 

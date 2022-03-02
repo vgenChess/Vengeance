@@ -239,7 +239,6 @@ void initTableDoublePawns();
 int32_t traceFullEval(TraceCoefficients *traceCoefficients, u8 sideToMove, Thread *th);
 
 int32_t fullEval(u8 sideToMove, Thread *th);
-int32_t evaluateSide(int side, Thread *th);
 
 int32_t PSQTScore(u8 sideToMove, Thread *th);
 int32_t pawnsEval(u8 sideToMove, Thread *th);
