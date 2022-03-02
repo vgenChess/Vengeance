@@ -217,57 +217,9 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
 	}
 
 
-
-    //PSQT
-
-    for (int k = 8; k < 56; k++) {
-	
-		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = T->pawnPSQT[WHITE][k];                         
-	    loadCoeff->coeffs[BLACK][i++] = T->pawnPSQT[BLACK][k];                         
-    }
-
-    for (int k = 0; k < 64; k++) {
-
-		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = T->knightPSQT[WHITE][k];                         
-	    loadCoeff->coeffs[BLACK][i++] = T->kingPSQT[BLACK][k];                         
-    }
-
-    for (int k = 0; k < 64; k++) {
-
-		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = T->bishopPSQT[WHITE][k];                         
-	    loadCoeff->coeffs[BLACK][i++] = T->bishopPSQT[BLACK][k];                         
-    }
-
-    for (int k = 0; k < 64; k++) {
-
-		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = T->rookPSQT[WHITE][k];                         
-	    loadCoeff->coeffs[BLACK][i++] = T->rookPSQT[BLACK][k];                         
-    }
-
-    for (int k = 0; k < 64; k++) {
-
-		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = T->queenPSQT[WHITE][k];                         
-	    loadCoeff->coeffs[BLACK][i++] = T->queenPSQT[BLACK][k];                         
-    }
-
-    for (int k = 0; k < 64; k++) {
-
-		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = T->kingPSQT[WHITE][k];                         
-	    loadCoeff->coeffs[BLACK][i++] = T->kingPSQT[BLACK][k];                         
-    }
-    
-
     loadCoeff->type[i] = NORMAL;
     loadCoeff->coeffs[WHITE][i] = T->centerControl[WHITE];                         
     loadCoeff->coeffs[BLACK][i++] = T->centerControl[BLACK];                         
-
-
 
 
 	loadCoeff->type[i] = SAFETY;
@@ -318,6 +270,50 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
     loadCoeff->coeffs[BLACK][i++] = T->safetyAdjustment[BLACK];                         
 
 
+    //PSQT
+
+    for (int k = 8; k < 56; k++) {
+	
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->pawnPSQT[WHITE][k];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->pawnPSQT[BLACK][k];                         
+    }
+
+    for (int k = 0; k < 64; k++) {
+
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->knightPSQT[WHITE][k];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->kingPSQT[BLACK][k];                         
+    }
+
+    for (int k = 0; k < 64; k++) {
+
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->bishopPSQT[WHITE][k];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->bishopPSQT[BLACK][k];                         
+    }
+
+    for (int k = 0; k < 64; k++) {
+
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->rookPSQT[WHITE][k];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->rookPSQT[BLACK][k];                         
+    }
+
+    for (int k = 0; k < 64; k++) {
+
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->queenPSQT[WHITE][k];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->queenPSQT[BLACK][k];                         
+    }
+
+    for (int k = 0; k < 64; k++) {
+
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->kingPSQT[WHITE][k];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->kingPSQT[BLACK][k];                         
+    }
+    
 
     assert(i == NTERMS);
 }
@@ -445,41 +441,6 @@ void startTuner() {
 		cparams[EG][count++] = ScoreEG(arr_weight_queen_mobility[i]);
 	}
 
-	for (int i = 8; i <= 55; i++) {
-
-		cparams[MG][count] = ScoreMG(pawnPSQT[i]);
-		cparams[EG][count++] = ScoreEG(pawnPSQT[i]);
-	}
-
-	for (int i = 0; i <= 63; i++) {
-	
-		cparams[MG][count] = ScoreMG(knightPSQT[i]);
-		cparams[EG][count++] = ScoreEG(knightPSQT[i]);
-	}
-
-	for (int i = 0; i <= 63; i++) {
-	
-		cparams[MG][count] = ScoreMG(bishopPSQT[i]);
-		cparams[EG][count++] = ScoreEG(bishopPSQT[i]);
-	}
-
-	for (int i = 0; i <= 63; i++) {
-	
-		cparams[MG][count] = ScoreMG(rookPSQT[i]);
-		cparams[EG][count++] = ScoreEG(rookPSQT[i]);
-	}
-
-	for (int i = 0; i <= 63; i++) {
-	
-		cparams[MG][count] = ScoreMG(queenPSQT[i]);
-		cparams[EG][count++] = ScoreEG(queenPSQT[i]);
-	}
-	
-	for (int i = 0; i <= 63; i++) {
-
-		cparams[MG][count] = ScoreMG(kingPSQT[i]);
-		cparams[EG][count++] = ScoreEG(kingPSQT[i]);
-	}
 
 	cparams[MG][count] = ScoreMG(weight_center_control);
 	cparams[EG][count++] = ScoreEG(weight_center_control);
@@ -515,10 +476,45 @@ void startTuner() {
 	cparams[EG][count++] = ScoreEG(weight_queen_check);
 
 
-
 	cparams[MG][count] = ScoreMG(weight_safety_adjustment);
 	cparams[EG][count++] = ScoreEG(weight_safety_adjustment);
 
+
+	for (int i = 8; i <= 55; i++) {
+
+		cparams[MG][count] = ScoreMG(pawnPSQT[i]);
+		cparams[EG][count++] = ScoreEG(pawnPSQT[i]);
+	}
+
+	for (int i = 0; i <= 63; i++) {
+	
+		cparams[MG][count] = ScoreMG(knightPSQT[i]);
+		cparams[EG][count++] = ScoreEG(knightPSQT[i]);
+	}
+
+	for (int i = 0; i <= 63; i++) {
+	
+		cparams[MG][count] = ScoreMG(bishopPSQT[i]);
+		cparams[EG][count++] = ScoreEG(bishopPSQT[i]);
+	}
+
+	for (int i = 0; i <= 63; i++) {
+	
+		cparams[MG][count] = ScoreMG(rookPSQT[i]);
+		cparams[EG][count++] = ScoreEG(rookPSQT[i]);
+	}
+
+	for (int i = 0; i <= 63; i++) {
+	
+		cparams[MG][count] = ScoreMG(queenPSQT[i]);
+		cparams[EG][count++] = ScoreEG(queenPSQT[i]);
+	}
+	
+	for (int i = 0; i <= 63; i++) {
+
+		cparams[MG][count] = ScoreMG(kingPSQT[i]);
+		cparams[EG][count++] = ScoreEG(kingPSQT[i]);
+	}
 
 
 	assert(count == NTERMS);
@@ -1056,8 +1052,23 @@ void displayWeights(TVector params, TVector cparams) {
 		if(((i + 1) % 8) == 0) std::cout<<"\n";
 	}
 	std::cout << "\n"; 
-	std::cout <<"}, "<<"\n";
+	std::cout <<"}, "<<"\n\n";
 
+
+	std::cout << "weight_center_control = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n\n";
+   
+
+ 	std::cout << "weight_knight_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+   		"\nweight_bishop_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+   		"\nweight_rook_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+   		"\nweight_queen_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+   		"\nweight_rook_safe_contact_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+		"\nweight_queen_safe_contact_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+		"\nweight_knight_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+   		"\nweight_bishop_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+   		"\nweight_rook_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+   		"\nweight_queen_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+  		"\nweight_safety_adjustment = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
 
 	// PSQT weights
 
@@ -1138,22 +1149,6 @@ void displayWeights(TVector params, TVector cparams) {
 		if(((i + 1) % 8) == 0) std::cout<<"\n";
 	} std::cout << "\n";
 	std::cout <<"};"<<"\n\n"; 
-
-	
-	std::cout << "weight_center_control = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n\n";
-   
-
- 	std::cout << "weight_knight_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_bishop_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_rook_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_queen_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_rook_safe_contact_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-		"\nweight_queen_safe_contact_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-		"\nweight_knight_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_bishop_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_rook_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_queen_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-  		"\nweight_safety_adjustment = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n\n";
 
 	assert (count == NTERMS); 
 }
@@ -1269,8 +1264,23 @@ void writeToFile(TVector params, TVector cparams) {
 		if(((i + 1) % 8) == 0) myfile<<"\n";
 	}
 	myfile << "\n"; 
-	myfile <<"}, "<<"\n";
+	myfile <<"}, "<<"\n\n";
 
+
+	myfile << "weight_center_control = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n\n";
+   
+
+ 	myfile << "weight_knight_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+   		"\nweight_bishop_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+   		"\nweight_rook_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+   		"\nweight_queen_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+   		"\nweight_rook_safe_contact_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+		"\nweight_queen_safe_contact_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+		"\nweight_knight_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+   		"\nweight_bishop_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+   		"\nweight_rook_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+   		"\nweight_queen_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+  		"\nweight_safety_adjustment = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
 
 	// PSQT weights
 
@@ -1351,20 +1361,6 @@ void writeToFile(TVector params, TVector cparams) {
 		if(((i + 1) % 8) == 0) myfile<<"\n";
 	} myfile << "\n";
 	myfile <<"};"<<"\n\n";
-
-	myfile << "weight_center_control = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n\n";
-   
- 	myfile << "weight_knight_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_bishop_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_rook_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_queen_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_rook_safe_contact_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-		"\nweight_queen_safe_contact_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-		"\nweight_knight_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_bishop_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_rook_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_queen_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-  		"\nweight_safety_adjustment = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n\n";
 
 
 	myfile.close();
