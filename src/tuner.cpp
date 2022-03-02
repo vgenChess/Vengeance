@@ -890,10 +890,6 @@ double linearEvaluation(TVector weights, Data data, TGradientData *gradientData)
     return (midgame * data.phase + endgame * (24.0 - data.phase)) / 24.0;
 } 
 
-
-
-
-
 void updateSingleGradient(Data data, TVector gradient, TVector weights, double K) {
 
 	TGradientData gradientData;
@@ -1398,7 +1394,6 @@ void writeToFile(TVector params, TVector cparams) {
 	assert(count == NTERMS);
 }
 
-
 void writeEvalToFile() {
 
 	std::fstream newfile;
@@ -1457,7 +1452,6 @@ void getEval() {
 
 			count++;
 			std::string fen = tp.substr(0, tp.find("\""));
-	
 
 			unsigned first = fen.find('{') + 1;
 			unsigned last = fen.find('}');
@@ -1469,5 +1463,4 @@ void getEval() {
 			if (count > 10) break;
 		}
 	}	
-
 }
