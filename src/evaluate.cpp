@@ -824,10 +824,7 @@ int32_t kingEval(u8 side, Thread *th) {
 	#endif
 
 
-	int enemyQueenCount = side ? POPCOUNT(th->blackPieceBB[QUEEN]) : POPCOUNT(th->whitePieceBB[QUEEN]);
-		
-	if (	enemyQueenCount >= 1 
-		&&	th->evalInfo.kingAttackersCount[opp] >= 2
+	if (	th->evalInfo.kingAttackersCount[opp] >= 2
 		&&	th->evalInfo.kingAdjacentZoneAttacksCount[opp]) { // TODO recheck logic for if check
 		
 
