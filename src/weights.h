@@ -6,11 +6,11 @@
 
 int 
 
-weight_pawn = S(0, 0),
-weight_knight = S(0, 0),
-weight_bishop = S(0, 0),
-weight_rook = S(0, 0),
-weight_queen = S(0, 0), 
+weight_pawn = S(100, 100),
+weight_knight = S(300, 300),
+weight_bishop = S(300, 300),
+weight_rook = S(500, 500),
+weight_queen = S(900, 900), 
 
 
 weight_isolated_pawn = S(0, 0),
