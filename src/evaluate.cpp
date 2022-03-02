@@ -432,6 +432,7 @@ int32_t bishopsEval(u8 side, Thread *th) {
 	
 	const int nBishops = POPCOUNT(bishopBB);
 	
+	// Bishop pair
 	if (nBishops == 2) {	// This should be equal to 2 and not greater or equal to 
 							// since we want to capture the weight for exactly 2 bishops
 		score += weight_bishop_pair;
@@ -467,18 +468,6 @@ int32_t bishopsEval(u8 side, Thread *th) {
            		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
             }
 		}
-	
-
-		if (!((1ULL << sq) & th->evalInfo.attacks[side])) {
-
-			score += weight_undefended_bishop;
-
-			#if defined(TUNE)	
-			
-				T->undefendedBishop[side]++;			
-			#endif
-		}
-
 		
 		int count = POPCOUNT(th->evalInfo.bishopsAttacks[side] 
 			& (side ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS]));

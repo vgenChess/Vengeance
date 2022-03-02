@@ -135,10 +135,6 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
     loadCoeff->coeffs[BLACK][i++] = T->bishopPair[BLACK]; 
 
 	loadCoeff->type[i] = NORMAL;
-    loadCoeff->coeffs[WHITE][i] = T->undefendedBishop[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->undefendedBishop[BLACK];                         
-
-	loadCoeff->type[i] = NORMAL;
     loadCoeff->coeffs[WHITE][i] = T->badBishop[WHITE];                         
     loadCoeff->coeffs[BLACK][i++] = T->badBishop[BLACK];                         
 
@@ -384,15 +380,11 @@ void startTuner() {
 
 
 
-	cparams[MG][count] = ScoreMG(weight_undefended_bishop);
-	cparams[EG][count++] = ScoreEG(weight_undefended_bishop);
-
 	cparams[MG][count] = ScoreMG(weight_bishop_pair);
 	cparams[EG][count++] = ScoreEG(weight_bishop_pair);
 
 	cparams[MG][count] = ScoreMG(weight_bad_bishop);
 	cparams[EG][count++] = ScoreEG(weight_bad_bishop);
-
 
 
 
@@ -1006,7 +998,6 @@ void displayWeights(TVector params, TVector cparams) {
 	std::cout<<"\n\n";
 
 
- 	std::cout << "weight_undefended_bishop = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
  	std::cout << "weight_bad_bishop = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
    	std::cout << "weight_bishop_pair = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", ";
 	std::cout<<"\n\n";
@@ -1219,8 +1210,7 @@ void writeToFile(TVector params, TVector cparams) {
 	myfile << "\n\n";
 
 
- 	myfile << "weight_undefended_bishop = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
-    myfile << "weight_bad_bishop = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
+ 	myfile << "weight_bad_bishop = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
    	myfile << "weight_bishop_pair = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", ";
 	myfile << "\n\n";
 

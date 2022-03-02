@@ -34,7 +34,6 @@ class TraceCoefficients {
 		int knightDefendedByPawn[2];
 		
 		int bishopPair[2];
-		int undefendedBishop[2];
 		int badBishop[2];
 
 		int halfOpenFile[2];
@@ -129,8 +128,6 @@ class TraceCoefficients {
 
 			for (int i = 0; i < 2; i++)
 				this->bishopPair[i] = 0;
-			for (int i = 0; i < 2; i++)
-				this->undefendedBishop[i] = 0;
 			for (int i = 0; i < 2; i++) 
 				this->badBishop[i] = 0;
 
