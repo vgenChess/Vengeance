@@ -150,7 +150,7 @@ int32_t traceFullEval(TraceCoefficients *traceCoefficients, u8 sideToMove, Threa
 
 int32_t fullEval(u8 sideToMove, Thread *th) {
 	
-	
+
 	#if defined(TUNE)
 	#else
 
@@ -964,10 +964,9 @@ int32_t kingEval(u8 side, Thread *th) {
 
 
 
-	const int queenCount = POPCOUNT(opp ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN]);
+	const int enemyQueenCount = POPCOUNT(opp ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN]);
 
-	if (	th->evalInfo.kingAttackersCount[side] >= 2
-		&&	th->evalInfo.kingAdjacentZoneAttacksCount[side]) { // TODO recheck logic for if check
+	if (th->evalInfo.kingAttackersCount[side] > 1 - enemyQueenCount) { // TODO recheck logic for if check
 		
 
 		int32_t safetyScore = th->evalInfo.kingAttackersWeight[side];
@@ -986,8 +985,7 @@ int32_t kingEval(u8 side, Thread *th) {
 
 		
 		int count;
-		u64 b, b2;
-
+		u64 b;
 
 		b = kingUndefendedSquares & th->evalInfo.allQueenAttacks[opp] & ~enemyPieces;
 	     
@@ -1035,10 +1033,13 @@ int32_t kingEval(u8 side, Thread *th) {
 		}
 		
 
-		b = Qmagic(kingSq, th->occupied) & ~enemyPieces & ~th->evalInfo.attacks[opp];
+		u64 safe = ~(enemyPieces | th->evalInfo.attacks[side]);
+		u64 b1 = Rmagic(kingSq, th->occupied) & safe;
+		u64 b2 = Bmagic(kingSq, th->occupied) & safe;
 
-		b2 = b & th->evalInfo.allQueenAttacks[opp];
-		if (b2) {
+		b = (b1 | b2) & th->evalInfo.allQueenAttacks[opp];
+
+		if (b) {
 		
 			count = POPCOUNT(b);
 			
@@ -1050,12 +1051,8 @@ int32_t kingEval(u8 side, Thread *th) {
 			#endif
 		}
 
-
-		b = Rmagic(kingSq, th->occupied) & ~enemyPieces & ~th->evalInfo.attacks[opp];
-		
-		// Rook checks
-		b2 = b & th->evalInfo.allRookAttacks[opp];
-		if (b2) {
+		b = b1 & th->evalInfo.allRookAttacks[opp];
+		if (b) {
 			
 			count = POPCOUNT(b);
 	
@@ -1067,12 +1064,9 @@ int32_t kingEval(u8 side, Thread *th) {
 			#endif
 		}
 
-
-	    b = Bmagic(kingSq, th->occupied) & ~enemyPieces & ~th->evalInfo.attacks[opp];
-
-	    // Bishop checks
-	    b2 = b & th->evalInfo.allBishopAttacks[opp];
-	    if (b2) {
+		
+		b = b2 & th->evalInfo.allBishopAttacks[opp];
+		if (b) {
 
 			count = POPCOUNT(b);
 
@@ -1085,10 +1079,11 @@ int32_t kingEval(u8 side, Thread *th) {
 	    } 
 
 	  
-	    b = get_knight_attacks(kingSq) & ~enemyPieces & ~th->evalInfo.attacks[opp];
-	    // Knight checks
-	    b2 = b & th->evalInfo.allKnightAttacks[opp];
-	    if (b2) {
+	    b = 	get_knight_attacks(kingSq) 
+	    	&	th->evalInfo.allKnightAttacks[opp] 
+	    	&	safe;
+	    
+	    if (b) {
 
 			count = POPCOUNT(b);
 
