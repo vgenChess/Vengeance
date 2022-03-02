@@ -793,34 +793,34 @@ int32_t kingEval(u8 side, Thread *th) {
 	const u8 opp = side ^ 1;
 	u64 enemyPieceBB = 0ULL, attacks = 0ULL;
 
-	u64 friendlyPawns = opp ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+	u64 friendlyPawns = side ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 	u64 enemyPawns = opp ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 
 
-	const int kingSq = th->evalInfo.kingSq[opp];
+	const int kingSq = th->evalInfo.kingSq[side];
 	
 	#if defined(TUNE)	
 	
-		T->kingPSQT[opp][opp ? Mirror64[kingSq] : kingSq] = 1; 			
+		T->kingPSQT[side][side ? Mirror64[kingSq] : kingSq] = 1; 			
 	#endif
 
-	const int nPawnsShield = POPCOUNT(th->evalInfo.kingZoneBB[opp] & friendlyPawns);
+	const int nPawnsShield = POPCOUNT(th->evalInfo.kingZoneBB[side] & friendlyPawns);
 	score += nPawnsShield * weight_king_pawn_shield;
 
 	#if defined(TUNE) 	
 	
-		T->kingPawnShield[opp] = nPawnsShield;
+		T->kingPawnShield[side] = nPawnsShield;
 	#endif
 
-	const u64 enemyPawnStormArea = th->evalInfo.kingZoneBB[opp] | 
-		(opp ? th->evalInfo.kingZoneBB[opp] >> 8 : th->evalInfo.kingZoneBB[opp] << 8);
+	const u64 enemyPawnStormArea = th->evalInfo.kingZoneBB[side] | 
+		(side ? th->evalInfo.kingZoneBB[side] >> 8 : th->evalInfo.kingZoneBB[side] << 8);
 
 	const int nEnemyPawnsStorm = POPCOUNT(enemyPawnStormArea & enemyPawns);
 	score += nEnemyPawnsStorm * weight_king_enemy_pawn_storm;
 
 	#if defined(TUNE)	
 
-		T->kingEnemyPawnStorm[opp] = nEnemyPawnsStorm;
+		T->kingEnemyPawnStorm[side] = nEnemyPawnsStorm;
 	#endif
 
 
