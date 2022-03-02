@@ -23,13 +23,12 @@
 #include "functions.h"
 
 
-#define MAXEPOCHS      1000000000
-#define NPARTITIONS    			4 
-#define BATCHSIZE      		   16 
-#define NPOSITIONS     	   725000 
-#define DISPLAY_TIME 		   60				
-#define LRDROPRATE			    1
-
+#define MAXEPOCHS		1000000000
+#define NPARTITIONS		4 
+#define BATCHSIZE		16 
+#define NPOSITIONS		725000 
+#define DISPLAY_TIME	60				
+#define LRDROPRATE		1
 
 struct Score {
 	
@@ -48,7 +47,9 @@ int seePieceVal[8] = { 0, 100, 300, 300, 500, 900, 2000, 0 };
 
 std::vector<Data> dataList;
 
+
 double sigmoid(double K, double E) {
+
     return 1.0 / (1.0 + exp(-K * E / 400.0));
 }
 

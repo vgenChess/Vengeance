@@ -534,11 +534,14 @@ int32_t rooksEval(u8 side, Thread *th) {
 
 		assert(sq >= 0 && sq <= 63);
 
+
 		#if defined(TUNE)	
 			
 			T->rookPSQT[side][side ? Mirror64[sq] : sq] = 1; 
 		#endif
 
+
+		// Rook on half open file
 		if ((1ULL << sq) & th->evalInfo.halfOpenFilesBB[side]) {
 
 			score += weight_rook_half_open_file;
@@ -549,7 +552,7 @@ int32_t rooksEval(u8 side, Thread *th) {
 			#endif
 		}
 
-
+		// Rook on open file
 		if ((1ULL << sq) & th->evalInfo.openFilesBB) {
 
 			score += weight_rook_open_file;
@@ -560,7 +563,7 @@ int32_t rooksEval(u8 side, Thread *th) {
 			#endif
 		}
 
-
+		// Rook on same file as enemy Queen
 		if (arrFiles[sq & 7] & 
 			(opp ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN])) {
 
@@ -572,9 +575,64 @@ int32_t rooksEval(u8 side, Thread *th) {
 			#endif
 		}
 
+		// Rook on Seventh rank
+		if ((1ULL << sq) & side ? RANK_2 : RANK_7) {
+
+			score += weight_rook_on_seventh_rank;
+		
+			#if defined(TUNE)	
+		
+				if (side)
+					T->rookOnSeventhRank[BLACK]++;					
+				else
+					T->rookOnSeventhRank[WHITE]++;
+			#endif
+		}
+
+		// Rook on Eight rank
+		if ((1ULL << sq) & side ? RANK_1 : RANK_8) {
+
+			score += weight_rook_on_eight_rank;
+
+			#if defined(TUNE)	
+
+				if (side)
+					T->rookOnEightRank[BLACK]++;					
+				else
+					T->rookOnEightRank[WHITE]++;							
+			#endif
+		} 	
+
 
 		u64 attacksBB = Rmagic(sq, th->occupied);
 
+
+		// Rook mobility
+		u64 mobilityBB = attacksBB & th->empty;
+
+		mobilityCount = POPCOUNT(mobilityBB);
+
+		score += arr_weight_rook_mobility[mobilityCount]; 
+
+		#if defined(TUNE)	
+			
+			T->rookMobility[side][mobilityCount]++; 
+		#endif
+
+
+		// Connected Rooks
+		if (attacksBB & rooksBB) {
+
+			score += weight_rook_supporting_friendly_rook;
+
+			#if defined(TUNE)	
+				
+				T->rookSupportingFriendlyRook[side] = 1;
+			#endif
+		}
+
+		
+		// Update values for opponent King safety 
 		if (attacksBB & th->evalInfo.kingZoneBB[opp]) {
  			
  			th->evalInfo.kingAttackersCount[opp]++;
@@ -591,31 +649,10 @@ int32_t rooksEval(u8 side, Thread *th) {
            		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
             }
 		}
-	
 
-		u64 mobilityBB = attacksBB & 
-			~(side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 
-		mobilityCount = POPCOUNT(mobilityBB);
 
-		score += arr_weight_rook_mobility[mobilityCount];
 
-		#if defined(TUNE)	
-			
-			T->rookMobility[side][mobilityCount]++;
-		#endif
-
-		if (attacksBB & rooksBB) {
-
-			score += weight_rook_supporting_friendly_rook;
-
-			#if defined(TUNE)	
-				
-				T->rookSupportingFriendlyRook[side] = 1;
-			#endif
-		}
-
-			
 		if (side) {
 
 			// for black
@@ -631,29 +668,6 @@ int32_t rooksEval(u8 side, Thread *th) {
 			// 		T->rookBlockedByKing[BLACK]++;
 			// 	}
 			// }
-
-
-			// Rook on Seventh rank (Rank 2 for black)
-			if ((1ULL << sq) & RANK_2) {
-
-				score += weight_rook_on_seventh_rank;
-			
-				#if defined(TUNE)	
-				
-					T->rookOnSeventhRank[BLACK]++;					
-				#endif
-			}
-
-			// Rook on Eight rank (Rank 1 for black)
-			if ((1ULL << sq) & RANK_1) {
-
-				score += weight_rook_on_eight_rank;
-
-				#if defined(TUNE)	
-
-					T->rookOnEightRank[BLACK]++;					
-				#endif
-			} 	
 		} else {
 			
 			// for white 	
@@ -668,32 +682,7 @@ int32_t rooksEval(u8 side, Thread *th) {
 
 			// 		T->rookBlockedByKing[WHITE]++;
 			// 	}
-			// } 				
-		
-
-
-			// Rook on Seventh rank (Rank 2 for black)
-			if ((1ULL << sq) & RANK_7) {
-
-				score += weight_rook_on_seventh_rank;
-			
-				#if defined(TUNE)	
-	
-					T->rookOnSeventhRank[WHITE]++;					
-				#endif
-			} 	
-
-
-			// Rook on Eight rank (Rank 1 for black)
-			if ((1ULL << sq) & RANK_8) {
-
-				score += weight_rook_on_eight_rank;
-
-				#if defined(TUNE)	
-	
-					T->rookOnEightRank[WHITE]++;					
-				#endif
-			} 
+			// }
 		}
 	}
 
