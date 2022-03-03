@@ -7,6 +7,6 @@
 #include "thread.h"
 
 void updateHistory(int ply, int side, int depth, U32 bestMove, std::vector<U32> &quietMovesPlayed, Thread *th);
-void updateCaptureHistory(int ply, int side, int depth, U32 bestMove,std::vector<U32>&captureMovesPlayed, Thread *th);
+void updateCaptureHistory(int depth, U32 bestMove,std::vector<U32>&captureMovesPlayed, Thread *th);
 
 #endif 

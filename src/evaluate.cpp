@@ -359,7 +359,7 @@ int knightsEval(U8 stm, Thread *th) {
 	int score = 0;
 	int mobilityCount = 0;
 
-	int sq = -1, rank = -1; 
+	int sq = -1; 
 
 	U64 knightsBB = stm ? th->blackPieceBB[KNIGHTS] : th->whitePieceBB[KNIGHTS];
 

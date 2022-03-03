@@ -314,8 +314,8 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 	assert(alpha < beta); 
 
 
-	const char SIDE = si->side;
-	const char OPP = SIDE ^ 1;
+	const U8 SIDE = si->side;
+	const U8 OPP = SIDE ^ 1;
 
 	const int PLY = si->ply;
 	
@@ -880,7 +880,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 			updateHistory(PLY, SIDE, depth, bestMove, quietMovesPlayed, th);				
 		} 
 
-		updateCaptureHistory(PLY, SIDE, depth, bestMove, captureMovesPlayed, th);
+		updateCaptureHistory(depth, bestMove, captureMovesPlayed, th);
 	}
 
 
@@ -906,7 +906,7 @@ int quiescenseSearch(int ply, int side, int alpha, int beta, SearchThread *th, s
 	assert (ply > 0);
 
 
-	const char OPP = side ^ 1;
+	const U8 OPP = side ^ 1;
 
 	const bool IS_MAIN_THREAD = th == Threads.main();
 

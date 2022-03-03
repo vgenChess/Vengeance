@@ -35,7 +35,7 @@ void updateHistory(int ply, int side, int depth, U32 bestMove, std::vector<U32> 
 	}
 }
 
-void updateCaptureHistory(int ply, int side, int depth, U32 bestMove,std::vector<U32>&captureMovesPlayed, Thread *th) {
+void updateCaptureHistory(int depth, U32 bestMove,std::vector<U32>&captureMovesPlayed, Thread *th) {
 
 	int32_t bonus = std::min(400, depth * depth), delta = 0;
 
