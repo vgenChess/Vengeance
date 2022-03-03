@@ -132,11 +132,7 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
 
 	loadCoeff->type[i] = NORMAL;
 	loadCoeff->coeffs[WHITE][i] = T->bishopPair[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->bishopPair[BLACK]; 
-
-	loadCoeff->type[i] = NORMAL;
-    loadCoeff->coeffs[WHITE][i] = T->badBishop[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->badBishop[BLACK];                         
+    loadCoeff->coeffs[BLACK][i++] = T->bishopPair[BLACK];                       
 
                              
     // Rooks                     
@@ -275,43 +271,87 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
     for (int k = 8; k < 56; k++) {
 	
 		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = T->pawnPSQT[WHITE][k];                         
-	    loadCoeff->coeffs[BLACK][i++] = T->pawnPSQT[BLACK][k];                         
+	    loadCoeff->coeffs[WHITE][i] = T->whitePawnPSQT[k];                         
+	    loadCoeff->coeffs[BLACK][i++] = 0;                         
     }
 
     for (int k = 0; k < 64; k++) {
 
 		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = T->knightPSQT[WHITE][k];                         
-	    loadCoeff->coeffs[BLACK][i++] = T->kingPSQT[BLACK][k];                         
+	    loadCoeff->coeffs[WHITE][i] = T->whiteKnightPSQT[k];                         
+	    loadCoeff->coeffs[BLACK][i++] = 0;                         
     }
 
     for (int k = 0; k < 64; k++) {
 
 		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = T->bishopPSQT[WHITE][k];                         
-	    loadCoeff->coeffs[BLACK][i++] = T->bishopPSQT[BLACK][k];                         
+	    loadCoeff->coeffs[WHITE][i] = T->whiteBishopPSQT[k];                         
+	    loadCoeff->coeffs[BLACK][i++] = 0;                         
     }
 
     for (int k = 0; k < 64; k++) {
 
 		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = T->rookPSQT[WHITE][k];                         
-	    loadCoeff->coeffs[BLACK][i++] = T->rookPSQT[BLACK][k];                         
+	    loadCoeff->coeffs[WHITE][i] = T->whiteRookPSQT[k];                         
+	    loadCoeff->coeffs[BLACK][i++] = 0;                         
     }
 
     for (int k = 0; k < 64; k++) {
 
 		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = T->queenPSQT[WHITE][k];                         
-	    loadCoeff->coeffs[BLACK][i++] = T->queenPSQT[BLACK][k];                         
+	    loadCoeff->coeffs[WHITE][i] = T->whiteQueenPSQT[k];                         
+	    loadCoeff->coeffs[BLACK][i++] = 0;                         
     }
 
     for (int k = 0; k < 64; k++) {
 
 		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = T->kingPSQT[WHITE][k];                         
-	    loadCoeff->coeffs[BLACK][i++] = T->kingPSQT[BLACK][k];                         
+	    loadCoeff->coeffs[WHITE][i] = T->whiteKingPSQT[k];                         
+	    loadCoeff->coeffs[BLACK][i++] = 0;                         
+    }
+    
+    // for black
+
+    for (int k = 8; k < 56; k++) {
+	
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = 0;                         
+	    loadCoeff->coeffs[BLACK][i++] = T->blackPawnPSQT[k];                         
+    }
+
+    for (int k = 0; k < 64; k++) {
+
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = 0;                         
+	    loadCoeff->coeffs[BLACK][i++] = T->blackKnightPSQT[k];                         
+    }
+
+    for (int k = 0; k < 64; k++) {
+
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = 0;                         
+	    loadCoeff->coeffs[BLACK][i++] = T->blackBishopPSQT[k];                         
+    }
+
+    for (int k = 0; k < 64; k++) {
+
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = 0;                         
+	    loadCoeff->coeffs[BLACK][i++] = T->blackRookPSQT[k];                         
+    }
+
+    for (int k = 0; k < 64; k++) {
+
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = 0;                         
+	    loadCoeff->coeffs[BLACK][i++] = T->blackQueenPSQT[k];                         
+    }
+
+    for (int k = 0; k < 64; k++) {
+
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = 0;                         
+	    loadCoeff->coeffs[BLACK][i++] = T->blackKingPSQT[k];                         
     }
     
 
@@ -378,10 +418,6 @@ void startTuner() {
 
 	cparams[MG][count] = ScoreMG(weight_bishop_pair);
 	cparams[EG][count++] = ScoreEG(weight_bishop_pair);
-
-	cparams[MG][count] = ScoreMG(weight_bad_bishop);
-	cparams[EG][count++] = ScoreEG(weight_bad_bishop);
-
 
 
 	cparams[MG][count] = ScoreMG(weight_rook_half_open_file);
@@ -482,45 +518,82 @@ void startTuner() {
 
 	for (int i = 8; i <= 55; i++) {
 
-		cparams[MG][count] = ScoreMG(pawnPSQT[i]);
-		cparams[EG][count++] = ScoreEG(pawnPSQT[i]);
+		cparams[MG][count] = ScoreMG(whitePawnPSQT[i]);
+		cparams[EG][count++] = ScoreEG(whitePawnPSQT[i]);
 	}
 
 	for (int i = 0; i <= 63; i++) {
 	
-		cparams[MG][count] = ScoreMG(knightPSQT[i]);
-		cparams[EG][count++] = ScoreEG(knightPSQT[i]);
+		cparams[MG][count] = ScoreMG(whiteKnightPSQT[i]);
+		cparams[EG][count++] = ScoreEG(whiteKnightPSQT[i]);
 	}
 
 	for (int i = 0; i <= 63; i++) {
 	
-		cparams[MG][count] = ScoreMG(bishopPSQT[i]);
-		cparams[EG][count++] = ScoreEG(bishopPSQT[i]);
+		cparams[MG][count] = ScoreMG(whiteBishopPSQT[i]);
+		cparams[EG][count++] = ScoreEG(whiteBishopPSQT[i]);
 	}
 
 	for (int i = 0; i <= 63; i++) {
 	
-		cparams[MG][count] = ScoreMG(rookPSQT[i]);
-		cparams[EG][count++] = ScoreEG(rookPSQT[i]);
+		cparams[MG][count] = ScoreMG(whiteRookPSQT[i]);
+		cparams[EG][count++] = ScoreEG(whiteRookPSQT[i]);
 	}
 
 	for (int i = 0; i <= 63; i++) {
 	
-		cparams[MG][count] = ScoreMG(queenPSQT[i]);
-		cparams[EG][count++] = ScoreEG(queenPSQT[i]);
+		cparams[MG][count] = ScoreMG(whiteQueenPSQT[i]);
+		cparams[EG][count++] = ScoreEG(whiteQueenPSQT[i]);
 	}
 	
 	for (int i = 0; i <= 63; i++) {
 
-		cparams[MG][count] = ScoreMG(kingPSQT[i]);
-		cparams[EG][count++] = ScoreEG(kingPSQT[i]);
+		cparams[MG][count] = ScoreMG(whiteKingPSQT[i]);
+		cparams[EG][count++] = ScoreEG(whiteKingPSQT[i]);
 	}
 
+
+	for (int i = 8; i <= 55; i++) {
+
+		cparams[MG][count] = ScoreMG(blackPawnPSQT[i]);
+		cparams[EG][count++] = ScoreEG(blackPawnPSQT[i]);
+	}
+
+	for (int i = 0; i <= 63; i++) {
+	
+		cparams[MG][count] = ScoreMG(blackKnightPSQT[i]);
+		cparams[EG][count++] = ScoreEG(blackKnightPSQT[i]);
+	}
+
+	for (int i = 0; i <= 63; i++) {
+	
+		cparams[MG][count] = ScoreMG(blackBishopPSQT[i]);
+		cparams[EG][count++] = ScoreEG(blackBishopPSQT[i]);
+	}
+
+	for (int i = 0; i <= 63; i++) {
+	
+		cparams[MG][count] = ScoreMG(blackRookPSQT[i]);
+		cparams[EG][count++] = ScoreEG(blackRookPSQT[i]);
+	}
+
+	for (int i = 0; i <= 63; i++) {
+	
+		cparams[MG][count] = ScoreMG(blackQueenPSQT[i]);
+		cparams[EG][count++] = ScoreEG(blackQueenPSQT[i]);
+	}
+	
+	for (int i = 0; i <= 63; i++) {
+
+		cparams[MG][count] = ScoreMG(blackKingPSQT[i]);
+		cparams[EG][count++] = ScoreEG(blackKingPSQT[i]);
+	}
 
 	assert(count == NTERMS);
 
 	std::fstream newfile;
-   	newfile.open ("quiet-labeled.epd", std::ios::in); 
+   	// newfile.open ("lichess-big3-resolved.book", std::ios::in); 
+	newfile.open ("quiet-labeled.epd", std::ios::in); 
 	
 	count = 0;
 
@@ -535,9 +608,9 @@ void startTuner() {
 
 			double result;
 
-			// std::string fen = tp.substr(0, tp.find("\""));
+			std::string fen = tp.substr(0, tp.find("\""));
 			
-			std::string fen = tp.substr(0, tp.find(";"));
+			// std::string fen = tp.substr(0, tp.find(";"));
 
 			if (fen.length() <= 0) 
 				continue;
@@ -564,15 +637,15 @@ void startTuner() {
 
 			// for file "4818922_positions_gm2600.txt"
 
-			// if (tp.find("1.0") != std::string::npos)	
-			// 	result = 1.0;
-			// else if (tp.find("0.5") != std::string::npos) 
-			// 	result = 0.5;
-			// else if (tp.find("0.0") != std::string::npos)	
-			// 	result = 0.0;
-			// else 
-			// 	continue;
-
+			/*if (tp.find("1.0") != std::string::npos)	
+				result = 1.0;
+			else if (tp.find("0.5") != std::string::npos) 
+				result = 0.5;
+			else if (tp.find("0.0") != std::string::npos)	
+				result = 0.0;
+			else 
+				continue;
+*/
 			
 			assert(result == 1.0 || result == 0.5 || result == 0.0);
 
@@ -985,9 +1058,8 @@ void displayWeights(TVector params, TVector cparams) {
 	std::cout<<"\n\n";
 
 
- 	std::cout << "weight_bad_bishop = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
-   	std::cout << "weight_bishop_pair = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", ";
-	std::cout<<"\n\n";
+ 	std::cout << "weight_bishop_pair = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
+   	std::cout<<"\n\n";
 
 
  	std::cout << "weight_rook_half_open_file = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
@@ -1063,7 +1135,7 @@ void displayWeights(TVector params, TVector cparams) {
 
 	// PSQT weights
 
-	std::cout <<"\n"<< "int pawnPSQT[64] = {" <<"\n\n";
+	std::cout <<"\n"<< "int whitePawnPSQT[64] = {" <<"\n\n";
 	
 	for (int i = 0; i < 8; i++) { 
 	
@@ -1087,7 +1159,7 @@ void displayWeights(TVector params, TVector cparams) {
 	std::cout <<"};"<<"\n";
 	
 
-	std::cout <<"\n"<< "int knightPSQT[64] = {" <<"\n\n";
+	std::cout <<"\n"<< "int whiteKnightPSQT[64] = {" <<"\n\n";
 	for (int i = 0; i < 64; i++) { 
 
 		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
@@ -1098,7 +1170,7 @@ void displayWeights(TVector params, TVector cparams) {
 	std::cout <<"};"<<"\n";
 
 
-	std::cout <<"\n"<< "int bishopPSQT[64] = {" <<"\n\n";
+	std::cout <<"\n"<< "int whiteBishopPSQT[64] = {" <<"\n\n";
 	for (int i = 0; i < 64; i++) { 
 
 		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
@@ -1109,7 +1181,7 @@ void displayWeights(TVector params, TVector cparams) {
 	std::cout <<"};"<<"\n"; 
 
 
-	std::cout <<"\n"<< "int rookPSQT[64] = {" <<"\n\n";
+	std::cout <<"\n"<< "int whiteRookPSQT[64] = {" <<"\n\n";
 	for (int i = 0; i < 64; i++) { 
 
 		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
@@ -1120,7 +1192,7 @@ void displayWeights(TVector params, TVector cparams) {
 	std::cout <<"};"<<"\n"; 
 
 
-	std::cout <<"\n"<< "int queenPSQT[64] = {" <<"\n\n";
+	std::cout <<"\n"<< "int whiteQueenPSQT[64] = {" <<"\n\n";
 	for (int i = 0; i < 64; i++) { 
 
 		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
@@ -1131,7 +1203,7 @@ void displayWeights(TVector params, TVector cparams) {
 	std::cout <<"};"<<"\n"; 
 
 
-	std::cout <<"\n"<< "int kingPSQT[64] = {" <<"\n\n";
+	std::cout <<"\n"<< "int whiteKingPSQT[64] = {" <<"\n\n";
 	for (int i = 0; i < 64; i++) { 
 
 		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
@@ -1140,6 +1212,88 @@ void displayWeights(TVector params, TVector cparams) {
 		if(((i + 1) % 8) == 0) std::cout<<"\n";
 	} std::cout << "\n";
 	std::cout <<"};"<<"\n\n"; 
+
+
+
+	std::cout <<"\n"<< "int blackPawnPSQT[64] = {" <<"\n\n";
+	
+	for (int i = 0; i < 8; i++) { 
+	
+		std::cout << "S(" << std::setw(4) << 0<<"," << 
+			std::setw(4) <<0<<")" << ", "; 
+	} std::cout << "\n";
+
+	for (int i = 0; i < 48; i++) { 
+	
+		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
+			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
+			
+		if(((i + 1) % 8) == 0) std::cout<<"\n";
+	}
+
+	for (int i = 0; i < 8; i++) { 
+	
+		std::cout << "S(" << std::setw(4) << 0<<"," << 
+			std::setw(4) <<0<<")" << ", "; 
+	} std::cout << "\n";
+	std::cout <<"};"<<"\n";
+	
+
+	std::cout <<"\n"<< "int blackKnightPSQT[64] = {" <<"\n\n";
+	for (int i = 0; i < 64; i++) { 
+
+		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
+			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
+			
+		if(((i + 1) % 8) == 0) std::cout<<"\n";
+	} std::cout << "\n"; 
+	std::cout <<"};"<<"\n";
+
+
+	std::cout <<"\n"<< "int blackBishopPSQT[64] = {" <<"\n\n";
+	for (int i = 0; i < 64; i++) { 
+
+		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
+			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
+			
+		if(((i + 1) % 8) == 0) std::cout<<"\n";
+	} std::cout << "\n";
+	std::cout <<"};"<<"\n"; 
+
+
+	std::cout <<"\n"<< "int blackRookPSQT[64] = {" <<"\n\n";
+	for (int i = 0; i < 64; i++) { 
+
+		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
+			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
+			
+		if(((i + 1) % 8) == 0) std::cout<<"\n";
+	} std::cout << "\n"; 
+	std::cout <<"};"<<"\n"; 
+
+
+	std::cout <<"\n"<< "int blackQueenPSQT[64] = {" <<"\n\n";
+	for (int i = 0; i < 64; i++) { 
+
+		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
+			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
+			
+		if(((i + 1) % 8) == 0) std::cout<<"\n";
+	} std::cout << "\n"; 	
+	std::cout <<"};"<<"\n"; 
+
+
+	std::cout <<"\n"<< "int blackKingPSQT[64] = {" <<"\n\n";
+	for (int i = 0; i < 64; i++) { 
+
+		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
+			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
+			
+		if(((i + 1) % 8) == 0) std::cout<<"\n";
+	} std::cout << "\n";
+	std::cout <<"};"<<"\n\n";
+
+
 
 	assert (count == NTERMS); 
 }
@@ -1196,9 +1350,8 @@ void writeToFile(TVector params, TVector cparams) {
 	myfile << "\n\n";
 
 
- 	myfile << "weight_bad_bishop = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
-   	myfile << "weight_bishop_pair = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", ";
-	myfile << "\n\n";
+ 	myfile << "weight_bishop_pair = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
+   	myfile << "\n\n";
 
 
  	myfile << "weight_rook_half_open_file = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
@@ -1275,7 +1428,7 @@ void writeToFile(TVector params, TVector cparams) {
 
 	// PSQT weights
 
-	myfile <<"\n"<< "int pawnPSQT[64] = {" <<"\n\n";
+	myfile <<"\n"<< "int whitePawnPSQT[64] = {" <<"\n\n";
 	
 	for (int i = 0; i < 8; i++) { 
 	
@@ -1299,7 +1452,7 @@ void writeToFile(TVector params, TVector cparams) {
 	myfile <<"};"<<"\n";
 	
 
-	myfile <<"\n"<< "int knightPSQT[64] = {" <<"\n\n";
+	myfile <<"\n"<< "int whiteKnightPSQT[64] = {" <<"\n\n";
 	for (int i = 0; i < 64; i++) { 
 
 		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
@@ -1310,7 +1463,7 @@ void writeToFile(TVector params, TVector cparams) {
 	myfile <<"};"<<"\n";
 
 
-	myfile <<"\n"<< "int bishopPSQT[64] = {" <<"\n\n";
+	myfile <<"\n"<< "int whiteBishopPSQT[64] = {" <<"\n\n";
 	for (int i = 0; i < 64; i++) { 
 
 		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
@@ -1321,7 +1474,7 @@ void writeToFile(TVector params, TVector cparams) {
 	myfile <<"};"<<"\n"; 
 
 
-	myfile <<"\n"<< "int rookPSQT[64] = {" <<"\n\n";
+	myfile <<"\n"<< "int whiteRookPSQT[64] = {" <<"\n\n";
 	for (int i = 0; i < 64; i++) { 
 
 		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
@@ -1332,7 +1485,7 @@ void writeToFile(TVector params, TVector cparams) {
 	myfile <<"};"<<"\n"; 
 
 
-	myfile <<"\n"<< "int queenPSQT[64] = {" <<"\n\n";
+	myfile <<"\n"<< "int whiteQueenPSQT[64] = {" <<"\n\n";
 	for (int i = 0; i < 64; i++) { 
 
 		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
@@ -1343,7 +1496,86 @@ void writeToFile(TVector params, TVector cparams) {
 	myfile <<"};"<<"\n"; 
 
 
-	myfile <<"\n"<< "int kingPSQT[64] = {" <<"\n\n";
+	myfile <<"\n"<< "int whiteKingPSQT[64] = {" <<"\n\n";
+	for (int i = 0; i < 64; i++) { 
+
+		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
+			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
+			
+		if(((i + 1) % 8) == 0) myfile<<"\n";
+	} myfile << "\n";
+	myfile <<"};"<<"\n\n";
+
+
+	myfile <<"\n"<< "int blackPawnPSQT[64] = {" <<"\n\n";
+	
+	for (int i = 0; i < 8; i++) { 
+	
+		myfile << "S(" << std::setw(4) << 0<<"," << 
+			std::setw(4) <<0<<")" << ", "; 
+	} myfile << "\n";
+
+	for (int i = 0; i < 48; i++) { 
+	
+		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
+			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
+			
+		if(((i + 1) % 8) == 0) myfile<<"\n";
+	}
+
+	for (int i = 0; i < 8; i++) { 
+	
+		myfile << "S(" << std::setw(4) << 0<<"," << 
+			std::setw(4) <<0<<")" << ", "; 
+	} myfile << "\n";
+	myfile <<"};"<<"\n";
+	
+
+	myfile <<"\n"<< "int blackKnightPSQT[64] = {" <<"\n\n";
+	for (int i = 0; i < 64; i++) { 
+
+		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
+			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
+			
+		if(((i + 1) % 8) == 0) myfile<<"\n";
+	} myfile << "\n"; 
+	myfile <<"};"<<"\n";
+
+
+	myfile <<"\n"<< "int blackBishopPSQT[64] = {" <<"\n\n";
+	for (int i = 0; i < 64; i++) { 
+
+		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
+			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
+			
+		if(((i + 1) % 8) == 0) myfile<<"\n";
+	} myfile << "\n";
+	myfile <<"};"<<"\n"; 
+
+
+	myfile <<"\n"<< "int blackRookPSQT[64] = {" <<"\n\n";
+	for (int i = 0; i < 64; i++) { 
+
+		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
+			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
+			
+		if(((i + 1) % 8) == 0) myfile<<"\n";
+	} myfile << "\n"; 
+	myfile <<"};"<<"\n"; 
+
+
+	myfile <<"\n"<< "int blackQueenPSQT[64] = {" <<"\n\n";
+	for (int i = 0; i < 64; i++) { 
+
+		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
+			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
+			
+		if(((i + 1) % 8) == 0) myfile<<"\n";
+	} myfile << "\n"; 	
+	myfile <<"};"<<"\n"; 
+
+
+	myfile <<"\n"<< "int blackKingPSQT[64] = {" <<"\n\n";
 	for (int i = 0; i < 64; i++) { 
 
 		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 

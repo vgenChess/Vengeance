@@ -171,18 +171,18 @@ int fullEval(U8 stm, Thread *th) {
 
 
 	#if defined(TUNE)
-		
-		T->nPawns[BLACK] =  nBlackPawns;
-		T->nKnights[BLACK] = nBlackKnights;
-		T->nBishops[BLACK] = nBlackBishops;
-		T->nRooks[BLACK] = nBlackRooks;
-		T->nQueen[BLACK] = nBlackQueen;
 
 		T->nPawns[WHITE] =  nWhitePawns;
 		T->nKnights[WHITE] = nWhiteKnights;
 		T->nBishops[WHITE] = nWhiteBishops;
 		T->nRooks[WHITE] = nWhiteRooks;
 		T->nQueen[WHITE] = nWhiteQueen;
+
+		T->nPawns[BLACK] =  nBlackPawns;
+		T->nKnights[BLACK] = nBlackKnights;
+		T->nBishops[BLACK] = nBlackBishops;
+		T->nRooks[BLACK] = nBlackRooks;
+		T->nQueen[BLACK] = nBlackQueen;
 	#endif
 
 
@@ -265,7 +265,13 @@ int pawnsEval(U8 stm, Thread *th) {
 			int sq = GET_POSITION(bb);
 			POP_POSITION(bb);
 
-			T->pawnPSQT[stm][stm ? Mirror64[sq] : sq] = 1; 
+			#if defined(TUNE)
+		
+				if (stm)
+					T->blackPawnPSQT[sq] = 1; 			
+				else 
+					T->whitePawnPSQT[sq] = 1;
+			#endif
 		}
 	#endif
 
@@ -420,9 +426,17 @@ int knightsEval(U8 stm, Thread *th) {
 
 		#if defined(TUNE)
 
-			T->knightPSQT[stm][stm ? Mirror64[sq] : sq] = 1; 
 			T->knightMobility[stm][mobilityCount]++;
 		#endif
+	
+		#if defined(TUNE)
+	
+			if (stm)
+				T->blackKnightPSQT[sq] = 1; 			
+			else 
+				T->whiteKnightPSQT[sq] = 1;
+		#endif
+
 	}
 
 	return score;
@@ -439,16 +453,14 @@ int bishopsEval(U8 stm, Thread *th) {
 
 	U64 bishopBB = stm ? th->blackPieceBB[BISHOPS] : th->whitePieceBB[BISHOPS];
 	
-	const int nBishops = POPCOUNT(bishopBB);
-	
 	// Bishop pair
-	if (nBishops == 2) {	// This should be equal to 2 and not greater or equal to 
-							// since we want to capture the weight for exactly 2 bishops
+	if (POPCOUNT(bishopBB) == 2) {	
+
 		score += weight_bishop_pair;
 
 		#if defined(TUNE)	
 			
-			T->bishopPair[stm]++;
+			T->bishopPair[stm] = 1;
 		#endif
 	}
 
@@ -462,22 +474,13 @@ int bishopsEval(U8 stm, Thread *th) {
 		U64 attacksBB = th->evalInfo.bishopAttacks[stm][sq];
 
 
-		#if defined(TUNE) 
-			// Bishop piece square table
-			T->bishopPSQT[stm][stm ? Mirror64[sq] : sq] = 1; 	
+		#if defined(TUNE)
+	
+			if (stm)
+				T->blackBishopPSQT[sq] = 1; 			
+			else 
+				T->whiteBishopPSQT[sq] = 1;
 		#endif
-
-
-		// Bishop blocked by own pawn (Todo check logic)
-		if (attacksBB & (stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS])) {
-
-			score += weight_bad_bishop;
-
-			#if defined(TUNE)	
-
-				T->badBishop[stm] = 1;
-			#endif
-		}
 
 
 		// Bishop mobility
@@ -491,7 +494,6 @@ int bishopsEval(U8 stm, Thread *th) {
 
 			T->bishopMobility[stm][mobilityCount]++;
 		#endif
-
 
 
 		// Update values for opp King safety 
@@ -542,9 +544,12 @@ int rooksEval(U8 stm, Thread *th) {
 		assert(sq >= 0 && sq <= 63);
 
 
-		#if defined(TUNE)	
-			
-			T->rookPSQT[stm][stm ? Mirror64[sq] : sq] = 1; 
+		#if defined(TUNE)
+	
+			if (stm)
+				T->blackRookPSQT[sq] = 1; 			
+			else 
+				T->whiteRookPSQT[sq] = 1;
 		#endif
 
 
@@ -714,10 +719,13 @@ int queenEval(U8 stm, Thread *th) {
 
 		#if defined(TUNE)
 	
-			T->queenPSQT[stm][stm ? Mirror64[sq] : sq] = 1; 		
+			if (stm)
+				T->blackQueenPSQT[sq] = 1; 			
+			else 
+				T->whiteQueenPSQT[sq] = 1;
 		#endif
-
 			
+	
 		if (	POPCOUNT(th->occupied) >= 22	// early game
 			&&	(stm ? sq <= 48 : sq >= 15)) { 
 
@@ -795,7 +803,11 @@ int kingEval(U8 stm, Thread *th) {
 
 	#if defined(TUNE)	
 
-		T->kingPSQT[stm][stm ? Mirror64[kingSq] : kingSq] = 1; 			
+		if (stm)
+			T->blackKingPSQT[kingSq] = 1; 			
+		else 
+			T->whiteKingPSQT[kingSq] = 1;
+
 		T->kingPawnShield[stm] = POPCOUNT(th->evalInfo.kingZoneBB[stm] & ourPawns);
 		T->kingEnemyPawnStorm[stm] = POPCOUNT(pawnStormZone & theirPawns);
 	#endif
@@ -908,23 +920,19 @@ void initPSQT() {
 
 	for (int sq = 0; sq < 64; sq++) {
 
-		WHITE_PSQT[PAWNS][sq] = pawnPSQT[sq] + weight_pawn; 
-		BLACK_PSQT[PAWNS][sq] = pawnPSQT[Mirror64[sq]] + weight_pawn;
-
-		WHITE_PSQT[KNIGHTS][sq] = knightPSQT[sq] + weight_knight; 
-		BLACK_PSQT[KNIGHTS][sq] = knightPSQT[Mirror64[sq]] + weight_knight; 
-
-		WHITE_PSQT[BISHOPS][sq] = bishopPSQT[sq] + weight_bishop; 
-		BLACK_PSQT[BISHOPS][sq] = bishopPSQT[Mirror64[sq]] + weight_bishop;
-
-		WHITE_PSQT[ROOKS][sq] = rookPSQT[sq] + weight_rook; 
-		BLACK_PSQT[ROOKS][sq] = rookPSQT[Mirror64[sq]] + weight_rook;
+		WHITE_PSQT[PAWNS][sq] = whitePawnPSQT[sq] + weight_pawn; 
+		WHITE_PSQT[KNIGHTS][sq] = whiteKnightPSQT[sq] + weight_knight; 
+		WHITE_PSQT[BISHOPS][sq] = whiteBishopPSQT[sq] + weight_bishop; 
+		WHITE_PSQT[ROOKS][sq] = whiteRookPSQT[sq] + weight_rook; 
+		WHITE_PSQT[QUEEN][sq] = whiteQueenPSQT[sq] + weight_queen; 
+		WHITE_PSQT[KING][sq] = whiteKingPSQT[sq]; 
 	
-		WHITE_PSQT[QUEEN][sq] = queenPSQT[sq] + weight_queen; 
-		BLACK_PSQT[QUEEN][sq] = queenPSQT[Mirror64[sq]] + weight_queen;
-
-		WHITE_PSQT[KING][sq] = kingPSQT[sq]; 
-		BLACK_PSQT[KING][sq] = kingPSQT[Mirror64[sq]];
+		BLACK_PSQT[PAWNS][sq] = blackPawnPSQT[sq] + weight_pawn;
+		BLACK_PSQT[KNIGHTS][sq] = blackKnightPSQT[sq] + weight_knight; 
+		BLACK_PSQT[BISHOPS][sq] = blackBishopPSQT[sq] + weight_bishop;
+		BLACK_PSQT[ROOKS][sq] = blackRookPSQT[sq] + weight_rook;
+		BLACK_PSQT[QUEEN][sq] = blackQueenPSQT[sq] + weight_queen;
+		BLACK_PSQT[KING][sq] = blackKingPSQT[sq];
 	}
 }
 

@@ -130,11 +130,18 @@ extern int weight_queen_check;
 
 extern int weight_safety_adjustment;
 
-extern int pawnPSQT[U8_MAX_SQUARES];
-extern int knightPSQT[U8_MAX_SQUARES];
-extern int bishopPSQT[U8_MAX_SQUARES];
-extern int rookPSQT[U8_MAX_SQUARES];
-extern int queenPSQT[U8_MAX_SQUARES];
-extern int kingPSQT[U8_MAX_SQUARES];
+extern int whitePawnPSQT[U8_MAX_SQUARES];
+extern int whiteKnightPSQT[U8_MAX_SQUARES];
+extern int whiteBishopPSQT[U8_MAX_SQUARES];
+extern int whiteRookPSQT[U8_MAX_SQUARES];
+extern int whiteQueenPSQT[U8_MAX_SQUARES];
+extern int whiteKingPSQT[U8_MAX_SQUARES];
+
+extern int blackPawnPSQT[U8_MAX_SQUARES];
+extern int blackKnightPSQT[U8_MAX_SQUARES];
+extern int blackBishopPSQT[U8_MAX_SQUARES];
+extern int blackRookPSQT[U8_MAX_SQUARES];
+extern int blackQueenPSQT[U8_MAX_SQUARES];
+extern int blackKingPSQT[U8_MAX_SQUARES];
 
 #endif /* globals_h */
