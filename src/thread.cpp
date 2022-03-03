@@ -2,20 +2,19 @@
 
 #include "thread.h"
 #include "search.h"
-#include "constants.h"
 
 Thread initThread;
 SearchThreadPool Threads; // Global object
 
 Thread::Thread() {
 
-	this->moveList = std::vector<MOVE_LIST> (MAX_MOVES);
-	this->pvLine = std::vector<PV> (MAX_PLY);
-	this->moveStack = std::vector<MOVE_STACK> (MAX_PLY + 4);
-	this->undoMoveStack = std::vector<UNDO_MOVE_STACK> (MAX_PLY + 4);
+	this->moveList = std::vector<MOVE_LIST> (U16_MAX_MOVES);
+	this->pvLine = std::vector<PV> (U16_MAX_PLY);
+	this->moveStack = std::vector<MOVE_STACK> (U16_MAX_PLY + 4);
+	this->undoMoveStack = std::vector<UNDO_MOVE_STACK> (U16_MAX_PLY + 4);
 	this->movesHistory = std::vector<MOVES_HISTORY> (8192);
-	this->pawnHashTable = std::vector<PAWNS_HASH> (PAWN_HASH_TABLE_SIZE);
-	this->evalHashTable = std::vector<EVAL_HASH> (EVAL_HASH_TABLE_SIZE);
+	this->pawnHashTable = std::vector<PAWNS_HASH> (U32_PAWN_HASH_TABLE_SIZE);
+	this->evalHashTable = std::vector<EVAL_HASH> (U32_EVAL_HASH_TABLE_SIZE);
 
 	for (int i = 0; i < 2; ++i) {
 		for (int j = 0; j < 64; ++j) {
@@ -27,7 +26,7 @@ Thread::Thread() {
 		}
 	}
 
-	for (int i = 0; i < MAX_PIECES; ++i) {
+	for (int i = 0; i < U8_MAX_PIECES; ++i) {
 		
 		this->whitePieceBB[i] = 0;
 		this->blackPieceBB[i] = 0;
@@ -39,13 +38,13 @@ Thread::Thread() {
 
 void Thread::initMembers() {
 
-	this->moveList = std::vector<MOVE_LIST> (MAX_MOVES);
-	this->pvLine = std::vector<PV> (MAX_PLY);
-	this->moveStack = std::vector<MOVE_STACK> (MAX_PLY + 4);
-	this->undoMoveStack = std::vector<UNDO_MOVE_STACK> (MAX_PLY + 4);
+	this->moveList = std::vector<MOVE_LIST> (U16_MAX_MOVES);
+	this->pvLine = std::vector<PV> (U16_MAX_PLY);
+	this->moveStack = std::vector<MOVE_STACK> (U16_MAX_PLY + 4);
+	this->undoMoveStack = std::vector<UNDO_MOVE_STACK> (U16_MAX_PLY + 4);
 	this->movesHistory = std::vector<MOVES_HISTORY> (8192);
-	this->pawnHashTable = std::vector<PAWNS_HASH> (PAWN_HASH_TABLE_SIZE);
-	this->evalHashTable = std::vector<EVAL_HASH> (EVAL_HASH_TABLE_SIZE);
+	this->pawnHashTable = std::vector<PAWNS_HASH> (U32_PAWN_HASH_TABLE_SIZE);
+	this->evalHashTable = std::vector<EVAL_HASH> (U32_EVAL_HASH_TABLE_SIZE);
 
 	for (int i = 0; i < 2; ++i) {
 		for (int j = 0; j < 64; ++j) {
@@ -57,7 +56,7 @@ void Thread::initMembers() {
 		}
 	}
 
-	for (int i = 0; i < MAX_PIECES; ++i) {
+	for (int i = 0; i < U8_MAX_PIECES; ++i) {
 		
 		this->whitePieceBB[i] = 0;
 		this->blackPieceBB[i] = 0;
@@ -98,7 +97,7 @@ void Thread::clear() {
 		}
 	}
 
-	for (int i = 0; i < MAX_PIECES; ++i) {
+	for (int i = 0; i < U8_MAX_PIECES; ++i) {
 
 		this->whitePieceBB[i] = 0;
 		this->blackPieceBB[i] = 0;
@@ -190,9 +189,9 @@ void SearchThread::init() {
 	undoMoveStack.clear();
 	movesHistory.clear();
 
-	pvLine = std::vector<PV> (MAX_PLY);
-	moveStack = std::vector<MOVE_STACK> (MAX_PLY + 4);
-	undoMoveStack = std::vector<UNDO_MOVE_STACK> (MAX_PLY + 4);
+	pvLine = std::vector<PV> (U16_MAX_PLY);
+	moveStack = std::vector<MOVE_STACK> (U16_MAX_PLY + 4);
+	undoMoveStack = std::vector<UNDO_MOVE_STACK> (U16_MAX_PLY + 4);
 	movesHistory = std::vector<MOVES_HISTORY> (8192);
 
 	//TODO use one line code to copy all the init struct to other struct, like memcopy etc
@@ -303,9 +302,9 @@ void SearchThreadPool::wait_for_search_finished() const {
             th->wait_for_search_finished();
 }
 
-uint64_t SearchThreadPool::getTotalNodes() const {
+U64 SearchThreadPool::getTotalNodes() const {
 
-	uint64_t sum = 0;
+	U64 sum = 0;
 	for (SearchThread* thread : *this) {
 
 		sum += thread->nodes;
@@ -314,9 +313,9 @@ uint64_t SearchThreadPool::getTotalNodes() const {
 	return sum;
 }
 
-uint64_t SearchThreadPool::getTotalTTHits() const {
+U64 SearchThreadPool::getTotalTTHits() const {
 
-	uint64_t sum = 0;
+	U64 sum = 0;
 	for (SearchThread* thread : *this) {
 
 		sum += thread->ttHits;

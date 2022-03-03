@@ -33,7 +33,6 @@
 #include "constants.h"
 #include "history.h"
 #include "ucireport.h"
-#include "functions.h"
 
 bool timeSet, stopped;
 
@@ -66,7 +65,7 @@ void initLMR() {
 }
 
 //TODO refactor logic
-void startSearch(u8 side) {
+void startSearch(U8 side) {
 
 
 	ABORT_SEARCH = false;
@@ -108,8 +107,8 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
 	th->nodes = 0;
 	th->ttHits = 0;	
 
-	th->depth = VALI16_NO_DEPTH;
-	th->completedDepth = VALI16_NO_DEPTH;
+	th->depth = I16_NO_DEPTH;
+	th->completedDepth = I16_NO_DEPTH;
 
 	stableMoveCount = 0;
 
@@ -166,8 +165,8 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
  			assert(th->pvLine.at(th->completedDepth).line.size() > 0 
 		    	&& th->pvLine.at(th->completedDepth-1).line.size() > 0);
 
- 			u32 previousMove = th->pvLine.at(th->completedDepth-1).line.at(0);
- 			u32 currentMove = th->pvLine.at(th->completedDepth).line.at(0);
+ 			U32 previousMove = th->pvLine.at(th->completedDepth-1).line.at(0);
+ 			U32 currentMove = th->pvLine.at(th->completedDepth).line.at(0);
 		    
  			stableMoveCount = previousMove == currentMove ? stableMoveCount + 1 : 0;
  			stableMoveCount = std::min(10, stableMoveCount);
@@ -176,7 +175,7 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
 
 			
 			// win factor
-			float winFactor = currentScore >= VALUI16_WIN_SCORE ? 0.5 : 1;
+			float winFactor = currentScore >= U16_WIN_SCORE ? 0.5 : 1;
 			
 		    
 		    // Check for time 
@@ -195,25 +194,25 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
 }
 
 
-void aspirationWindowSearch(u8 side, SearchThread *th) {
+void aspirationWindowSearch(U8 side, SearchThread *th) {
 
-	int32_t window = VALI32_MATE;
+	int32_t window = I32_MATE;
 
-	int32_t score = -VALI32_MATE;
-	int32_t alpha = -VALI32_MATE, beta = VALI32_MATE;
+	int32_t score = -I32_MATE;
+	int32_t alpha = -I32_MATE, beta = I32_MATE;
 	
 	if (th->depth > 4 && th->completedDepth > 0) {
 
-		window = VALUI8_AP_WINDOW;
+		window = U8_AP_WINDOW;
 
 		int scoreKnown = th->pvLine.at(th->completedDepth).score;
 
-  		alpha = std::max(-VALI32_MATE, scoreKnown - window);
-	  	beta  = std::min( VALI32_MATE, scoreKnown + window);	
+  		alpha = std::max(-I32_MATE, scoreKnown - window);
+	  	beta  = std::min( I32_MATE, scoreKnown + window);	
 	}
  	
 
-	std::vector<u32> line;
+	std::vector<U32> line;
 
 
 	SearchInfo searchInfo;
@@ -230,10 +229,10 @@ void aspirationWindowSearch(u8 side, SearchThread *th) {
 	while (true) {
 		
 		searchInfo.depth = std::max(1, th->depth - failHighCounter);
-		th->selDepth = VALI16_NO_DEPTH;	
+		th->selDepth = I16_NO_DEPTH;	
 		searchInfo.pline.clear();
 		
-		score = alphabetaSearch(alpha, beta, VALI32_MATE, th, &searchInfo);
+		score = alphabetaSearch(alpha, beta, I32_MATE, th, &searchInfo);
 
 		if (Threads.stop)
         	break;
@@ -241,15 +240,15 @@ void aspirationWindowSearch(u8 side, SearchThread *th) {
 		if (score <= alpha)	{
 
 			beta = (alpha + beta) / 2;
-			alpha = std::max(score - window, -VALI32_MATE);
+			alpha = std::max(score - window, -I32_MATE);
 
 			failHighCounter = 0;
 		}
 		else if (score >= beta)	{
 
-			beta = std::min(score + window, VALI32_MATE);
+			beta = std::min(score + window, I32_MATE);
 			
-			if (std::abs(score) < VALUI16_WIN_SCORE)
+			if (std::abs(score) < U16_WIN_SCORE)
 				failHighCounter++;
 		}	
 		else {
@@ -303,7 +302,7 @@ void checkTime() {
 }
 
 
-int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread *th, SearchInfo *si) {
+int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo *si) {
 
 
 	// if (alpha >= beta) {
@@ -315,10 +314,10 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 	assert(alpha < beta); 
 
 
-	const uint8_t SIDE = si->side;
-	const uint8_t OPP = SIDE ^ 1;
+	const char SIDE = si->side;
+	const char OPP = SIDE ^ 1;
 
-	const int32_t PLY = si->ply;
+	const int PLY = si->ply;
 	
 	const bool IS_ROOT_NODE = PLY == 0;
   	const bool IS_MAIN_THREAD = th == Threads.main();
@@ -331,7 +330,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 
 	// Quiescense Search(under observation)
 
-	if (depth <= 0 || PLY >= MAX_PLY) {
+	if (depth <= 0 || PLY >= U16_MAX_PLY) {
 
 		si->pline.clear();
 		return quiescenseSearch(PLY, SIDE, alpha, beta, th, &si->pline);
@@ -343,7 +342,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 
 	if (	timeSet 
 		&&  IS_MAIN_THREAD 
-		&&  th->nodes % VALUI16_CHECK_NODES == 0) checkTime();
+		&&  th->nodes % U16_CHECK_NODES == 0) checkTime();
 	
 	if (IS_MAIN_THREAD && Threads.stop) return 0;
 
@@ -366,7 +365,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 
 	const bool IS_PV_NODE = alpha != beta - 1;
 
-	const int16_t VALI16_ALL_PIECES = POPCOUNT(th->occupied);
+	const int16_t I16_ALL_PIECES = POPCOUNT(th->occupied);
 
 
 	if (!IS_ROOT_NODE) {
@@ -374,8 +373,8 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 		// Repetition detection
 		if (isRepetition(PLY, th)) {
 
-			if (VALI16_ALL_PIECES > 22)	return -50;
-			if (VALI16_ALL_PIECES > 12)	return -25;	// middlegame
+			if (I16_ALL_PIECES > 22)	return -50;
+			if (I16_ALL_PIECES > 12)	return -25;	// middlegame
 									 	return   0;	// endgame
 		}
 
@@ -391,12 +390,12 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 	HASHE *tt = IS_SINGULAR_SEARCH ? NULL : &hashTable[th->hashKey % HASH_TABLE_SIZE];
 	
 	bool ttMatch = probeHash(tt, th);
-	int32_t ttScore = ttMatch ? tt->value : VALI32_UNKNOWN;
-	u32 ttMove =  ttMatch ? tt->bestMove : NO_MOVE;
+	int32_t ttScore = ttMatch ? tt->value : I32_UNKNOWN;
+	U32 ttMove =  ttMatch ? tt->bestMove : NO_MOVE;
 
 	if (ttMatch) th->ttHits++;
 
-	if (!IS_ROOT_NODE && !IS_PV_NODE && ttMatch && tt->depth >= depth && ttScore != VALI32_UNKNOWN) {
+	if (!IS_ROOT_NODE && !IS_PV_NODE && ttMatch && tt->depth >= depth && ttScore != I32_UNKNOWN) {
 		
 		if (	tt->flags == hashfEXACT 
 			||	(tt->flags == hashfBETA && ttScore >= beta)
@@ -418,25 +417,25 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 	const bool IS_IN_CHECK = isKingInCheck(SIDE, th);
     bool improving = false;
 
-	int32_t sEval = VALI32_UNKNOWN;
+	int32_t sEval = I32_UNKNOWN;
 
 	if (IS_SINGULAR_SEARCH) {
 
 		sEval = th->moveStack[PLY].sEval;
 	} else if (IS_IN_CHECK) {
         
-        sEval = VALI32_UNKNOWN;
+        sEval = I32_UNKNOWN;
         improving = false;
     } else if (ttMatch) {
         
         sEval = tt->sEval;
-        if (sEval == VALI32_UNKNOWN)
+        if (sEval == I32_UNKNOWN)
             sEval = fullEval(SIDE, th); // Do not save sEval to the TT since it can overwrite the previous hash entry
     } else {
 
         sEval = fullEval(SIDE, th);
 
-        recordHash(NO_MOVE, VALI16_NO_DEPTH, VALI32_UNKNOWN, VALUI8_NO_BOUND, sEval, th);		
+        recordHash(NO_MOVE, I16_NO_DEPTH, I32_UNKNOWN, U8_NO_BOUND, sEval, th);		
     }
 
 
@@ -448,7 +447,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 
 
 
-	const int16_t VALI16_OPP_PIECES = POPCOUNT(
+	const int16_t I16_OPP_PIECES = POPCOUNT(
 		OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);	
 
 	// Reverse Futility Pruning
@@ -456,19 +455,19 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 		&&	!IS_PV_NODE 
 		&&	!IS_IN_CHECK 
 		&&	!IS_SINGULAR_SEARCH
-		&&	std::abs(alpha) < VALUI16_WIN_SCORE
-		&&	std::abs(beta) < VALUI16_WIN_SCORE 
-		&&	VALI16_OPP_PIECES > 3) { 
+		&&	std::abs(alpha) < U16_WIN_SCORE
+		&&	std::abs(beta) < U16_WIN_SCORE 
+		&&	I16_OPP_PIECES > 3) { 
 
-		assert(sEval != VALI32_UNKNOWN);
+		assert(sEval != I32_UNKNOWN);
 		
-		if (depth == 1 && sEval - VALUI16_RVRFPRUNE >= beta) 
+		if (depth == 1 && sEval - U16_RVRFPRUNE >= beta) 
 			return beta; 	
 	
-		if (depth == 2 && sEval - VALUI16_EXT_RVRFPRUNE >= beta) 
+		if (depth == 2 && sEval - U16_EXT_RVRFPRUNE >= beta) 
 			return beta;		
 	
-		if (depth == 3 && sEval - VALUI16_LTD_RVRRAZOR >= beta) 
+		if (depth == 3 && sEval - U16_LTD_RVRRAZOR >= beta) 
 			depth--;
 	}
 
@@ -484,7 +483,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 	th->moveStack[PLY].sEval = sEval;
 
 
-	std::vector<u32> line;
+	std::vector<U32> line;
 
 
 	SearchInfo searchInfo;	
@@ -496,7 +495,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 		&&	!IS_PV_NODE 
 		&&	!IS_IN_CHECK 
 		&&	!IS_SINGULAR_SEARCH
-		&&	VALI16_OPP_PIECES > 3 // Check the logic for endgame
+		&&	I16_OPP_PIECES > 3 // Check the logic for endgame
 		&&	CAN_NULL_MOVE 
 		&&	depth > 2 
 		&&	sEval >= beta) { 
@@ -523,7 +522,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 		if (score >= beta)
 			return beta;
 	
-		if (std::abs(score) >= VALUI16_WIN_SCORE) // Mate threat 	
+		if (std::abs(score) >= U16_WIN_SCORE) // Mate threat 	
 			mateThreat = true;
 	}
 
@@ -533,19 +532,19 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 		&&	!IS_PV_NODE 
 		&&	!IS_IN_CHECK 
 		&&	!IS_SINGULAR_SEARCH
-		&&	std::abs(alpha) < VALUI16_WIN_SCORE
-		&&	std::abs(beta) < VALUI16_WIN_SCORE 
-		&&	VALI16_OPP_PIECES > 3)	{ 
+		&&	std::abs(alpha) < U16_WIN_SCORE
+		&&	std::abs(beta) < U16_WIN_SCORE 
+		&&	I16_OPP_PIECES > 3)	{ 
 			
-		assert(sEval != VALI32_UNKNOWN);
+		assert(sEval != I32_UNKNOWN);
 
-		if (depth == 1 && sEval + VALUI16_FPRUNE <= alpha) // Futility Pruning
+		if (depth == 1 && sEval + U16_FPRUNE <= alpha) // Futility Pruning
 			fPrune = true;  	
 		
-		else if (depth == 2 && sEval + VALUI16_EXT_FPRUNE <= alpha) // Extended Futility Pruning
+		else if (depth == 2 && sEval + U16_EXT_FPRUNE <= alpha) // Extended Futility Pruning
 			fPrune = true;			
 		
-		else if (depth == 3 && sEval + VALUI16_LTD_RAZOR <= alpha) // Limited Razoring
+		else if (depth == 3 && sEval + U16_LTD_RAZOR <= alpha) // Limited Razoring
 			depth--; 					
 	}
 	
@@ -558,7 +557,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 		&&  depth >= 7
 		&&  ttMatch
 		&&  ttMove != NO_MOVE 
-		&&  std::abs(ttScore) < VALUI16_WIN_SCORE
+		&&  std::abs(ttScore) < U16_WIN_SCORE
 		&&  tt->flags == hashfBETA
 		&&  tt->depth >= depth - 3) {
 
@@ -591,16 +590,16 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 	int8_t hashf = hashfALPHA;
 	int16_t currentMoveType, currentMoveFromSq, currentMoveToSq;
 	int32_t reduce = 0, extend = 0, movesPlayed = 0, newDepth = 0;
-	int32_t score = -VALI32_MATE, bestScore = -VALI32_MATE;
+	int32_t score = -I32_MATE, bestScore = -I32_MATE;
 
-	u32 bestMove = NO_MOVE, previousMove = IS_ROOT_NODE ? NO_MOVE : th->moveStack[PLY - 1].move;
+	U32 bestMove = NO_MOVE, previousMove = IS_ROOT_NODE ? NO_MOVE : th->moveStack[PLY - 1].move;
 
-	const u32 KILLER_MOVE_1 = th->moveStack[PLY].killerMoves[0];
-	const u32 KILLER_MOVE_2 = th->moveStack[PLY].killerMoves[1];
+	const U32 KILLER_MOVE_1 = th->moveStack[PLY].killerMoves[0];
+	const U32 KILLER_MOVE_2 = th->moveStack[PLY].killerMoves[1];
 
 	Move currentMove;
 
-	std::vector<u32> quietMovesPlayed, captureMovesPlayed;
+	std::vector<U32> quietMovesPlayed, captureMovesPlayed;
 	
 	th->moveList[PLY].skipQuiets = false;
 	th->moveList[PLY].stage = PLAY_HASH_MOVE;
@@ -676,8 +675,8 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 				}
 
 				// Late move pruning
-				if (	depth <= VALUI8_LMP_DEPTH 
-					&&	movesPlayed >= VALUI8_LMP_BASE * depth) {
+				if (	depth <= U8_LMP_DEPTH 
+					&&	movesPlayed >= U8_LMP_BASE * depth) {
 
 					th->moveList[PLY].skipQuiets = true;
 
@@ -686,8 +685,8 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 				}
 
 				// History pruning
-				if (	depth <= VALUI8_HISTORY_PRUNING_DEPTH 
-					&&	currentMove.score < VALI16_HISTORY_PRUNING) {
+				if (	depth <= U8_HISTORY_PRUNING_DEPTH 
+					&&	currentMove.score < I16_HISTORY_PRUNING) {
 
 					unmake_move(PLY, currentMove.move, th);
 					continue;
@@ -719,22 +718,22 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 
 			if (currentMove.move == ttMove && ttMoveIsSingular) { // Singular extension
 
-				extension += VALF_SINGULAR_EXT;
+				extension += F_SINGULAR_EXT;
 			}
 
 			if (IS_IN_CHECK) {
 
-				extension += VALF_CHECK_EXT;	// Check extension
+				extension += F_CHECK_EXT;	// Check extension
 			}
 
 			if (mateThreat) {
 
-				extension += VALF_MATE_THREAT_EXT; // Mate threat extension
+				extension += F_MATE_THREAT_EXT; // Mate threat extension
 			}
 		
 			if (currentMoveType == MOVE_PROMOTION) {
 
-				extension += VALF_PROMOTION_EXT;	// Promotion extension
+				extension += F_PROMOTION_EXT;	// Promotion extension
 			}
 			
 			bool isPrank = SIDE ? 
@@ -743,7 +742,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 			
 			if (pieceCurrMove == PAWNS && isPrank) {
 
-				extension += VALF_PRANK_EXT;  // Pawn push extension
+				extension += F_PRANK_EXT;  // Pawn push extension
 			}
 
 			int16_t prevMoveType = move_type(previousMove);
@@ -752,17 +751,17 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 				int16_t prevMoveToSq = to_sq(previousMove);
 				if (currentMoveToSq == prevMoveToSq) {
 
-					extension += VALF_RECAPTURE_EXT; // Recapture extension
+					extension += F_RECAPTURE_EXT; // Recapture extension
 				}
 			}
 
-			if (extension >= VALF_ONE_PLY) {
+			if (extension >= F_ONE_PLY) {
 
 				extend = 1;
-				extension -= VALF_ONE_PLY;
-				if (extension >= VALF_ONE_PLY) {
+				extension -= F_ONE_PLY;
+				if (extension >= F_ONE_PLY) {
 
-					extension = 3 * VALF_ONE_PLY / 4;
+					extension = 3 * F_ONE_PLY / 4;
 				}
 			}
 		} 
@@ -900,20 +899,20 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread 
 
 
 // TODO should limit Quiescense search explosion
-int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, SearchThread *th, std::vector<u32> *pline) {
+int quiescenseSearch(int ply, int side, int alpha, int beta, SearchThread *th, std::vector<U32> *pline) {
 
 
 	assert (alpha < beta);
 	assert (ply > 0);
 
 
-	const int8_t OPP = side ^ 1;
+	const char OPP = side ^ 1;
 
 	const bool IS_MAIN_THREAD = th == Threads.main();
 
 
 	// Check if time limit has been reached
-	if (timeSet && IS_MAIN_THREAD && th->nodes % VALUI16_CHECK_NODES == 0) checkTime();	
+	if (timeSet && IS_MAIN_THREAD && th->nodes % U16_CHECK_NODES == 0) checkTime();	
 	
 	if (IS_MAIN_THREAD && Threads.stop) return 0;
 
@@ -924,13 +923,13 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 	th->nodes++;
 
 
-	const int16_t VALI16_ALL_PIECES = POPCOUNT(th->occupied);
+	const char VAL_ALL_PIECES = POPCOUNT(th->occupied);
 
 	// Repetition detection
 	if (isRepetition(ply, th)) {
 
-		if (VALI16_ALL_PIECES > 22)	return -50;
-		if (VALI16_ALL_PIECES > 12)	return -25;	// middlegame
+		if (VAL_ALL_PIECES > 22)	return -50;
+		if (VAL_ALL_PIECES > 12)	return -25;	// middlegame
 								 	return   0;	// endgame
 	}
 
@@ -939,14 +938,14 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 	// Check for drawish endgame
 	if (isPositionDraw(th)) return 0;
 
-	if (ply >= MAX_PLY - 1) return fullEval(side, th);
+	if (ply >= U16_MAX_PLY - 1) return fullEval(side, th);
 
 
 
 	HASHE *tt = &hashTable[th->hashKey % HASH_TABLE_SIZE];
 
 	bool ttMatch = probeHash(tt, th);  
-	int32_t ttScore = VALI32_UNKNOWN;
+	int32_t ttScore = I32_UNKNOWN;
 
 	if (ttMatch) { // no depth check required since its 0 in quiescense search
 
@@ -954,7 +953,7 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 
 		ttScore = tt->value;
 
-	  	if (	ttScore != VALI32_UNKNOWN 
+	  	if (	ttScore != I32_UNKNOWN 
 	  		&&	(tt->flags == hashfEXACT 
 			||	(tt->flags == hashfBETA && ttScore >= beta)
 			||	(tt->flags == hashfALPHA && ttScore <= alpha))) {
@@ -964,19 +963,19 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 	}
 
 
-	u32 bestMove = NO_MOVE;
-	int32_t sEval, bestScore = -VALI32_MATE;
+	U32 bestMove = NO_MOVE;
+	int32_t sEval, bestScore = -I32_MATE;
 	
 	if (ttMatch) {
         
         sEval = tt->sEval;
-        if (sEval == VALI32_UNKNOWN)
+        if (sEval == I32_UNKNOWN)
             sEval = fullEval(side, th); // Do not save sEval to the TT since it can overwrite the previous hash entry
     } else {
 
         sEval = fullEval(side, th);
 
-        recordHash(NO_MOVE, VALI16_NO_DEPTH, VALI32_UNKNOWN, VALUI8_NO_BOUND, sEval, th);		
+        recordHash(NO_MOVE, I16_NO_DEPTH, I32_UNKNOWN, U8_NO_BOUND, sEval, th);		
     }
 
 
@@ -992,9 +991,9 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 	th->moveStack[ply].castleFlags = th->moveStack[ply - 1].castleFlags;
 
 
-	const int32_t Q_FUTILITY_BASE = sEval + VALUI16_Q_DELTA; 
+	const int32_t Q_FUTILITY_BASE = sEval + U16_Q_DELTA; 
 
-	const int16_t VALI16_OPP_PIECES = 
+	const int16_t I16_OPP_PIECES = 
 		POPCOUNT(OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 
 	
@@ -1002,7 +1001,7 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 	
 	Move currentMove;
 
-	std::vector<u32> line;
+	std::vector<U32> line;
 
 	th->moveList[ply].skipQuiets = true;
 	th->moveList[ply].stage = GEN_CAPTURES;
@@ -1012,7 +1011,7 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 	th->moveList[ply].badCaptures.clear();
 
 	int16_t capPiece, movesPlayed = 0; 
-	int32_t score = -VALI32_MATE;
+	int32_t score = -I32_MATE;
 
 	while (true) {
 
@@ -1043,7 +1042,7 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
  			&&	move_type(currentMove.move) != MOVE_PROMOTION) {
 
 			// Delta pruning
-	 		if (VALI16_OPP_PIECES > 3 && Q_FUTILITY_BASE + seeVal[capPiece] <= alpha) {
+	 		if (I16_OPP_PIECES > 3 && Q_FUTILITY_BASE + seeVal[capPiece] <= alpha) {
 
 				unmake_move(ply, currentMove.move, th);
 
@@ -1126,13 +1125,13 @@ int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, 
 /*int QuiescenseForTuning(int ply, int side, int alpha, int beta, int depth, Thread *th, TraceCoefficients *T) {
 
 	
-	const u8 opponent = side ^ 1;
+	const U8 opponent = side ^ 1;
 
 	
 	int staticEval = traceFullEval(T, side, th);
 
 
-	if (ply > MAX_PLY)	return staticEval;
+	if (ply > U16_MAX_PLY)	return staticEval;
 
 	if (staticEval >= beta)	return staticEval;
 	

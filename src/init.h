@@ -13,7 +13,7 @@
 #include "utility.h"
 
 // http://compgroups.net/comp.lang.fortran/64-bit-kiss-rngs/601519
-u64 x=1234567890987654321ULL,c=123456123456123456ULL,
+U64 x=1234567890987654321ULL,c=123456123456123456ULL,
 y=362436362436362436ULL,z=1066149217761810ULL,t;
 
 #define MWC (t=(x<<58)+c, c=(x>>6), x+=t, c+=(x<t), x)

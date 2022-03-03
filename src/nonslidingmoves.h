@@ -9,37 +9,34 @@
 #ifndef nonslidingmoves_h
 #define nonslidingmoves_h
 
-#include "globals.h"
-#include "evaluate.h"
+#include "types.h"
 
-u64 get_king_attacks(int sq);
-u64 king_attacks(u64 kingSet);
-u64 get_knight_attacks(int sq);
-u64 knight_attacks(u64 knightSet);
+U64 get_king_attacks(int sq);
+U64 king_attacks(U64 kingSet);
+U64 get_knight_attacks(int sq);
+U64 knight_attacks(U64 knightSet);
 
 void init_king_attacks(void);
 void init_knight_attacks(void);
 
-// https://chessprogramming.wikispaces.com/Pawn+Pushes+%28Bitboards%29
+U64 wSinglePushTargets(U64 wpawns, U64 empty);
+U64 wDblPushTargets(U64 wpawns, U64 empty);
 
-u64 wSinglePushTargets(u64 wpawns, u64 empty);
-u64 wDblPushTargets(u64 wpawns, u64 empty);
+U64 bSinglePushTargets(U64 bpawns, U64 empty);
+U64 bDoublePushTargets(U64 bpawns, U64 empty);
 
-u64 bSinglePushTargets(u64 bpawns, u64 empty);
-u64 bDoublePushTargets(u64 bpawns, u64 empty);
+U64 wPawnsAble2Push(U64 wpawns, U64 empty);
+U64 wPawnsAble2DblPush(U64 wpawns, U64 empty);
 
-u64 wPawnsAble2Push(u64 wpawns, u64 empty);
-u64 wPawnsAble2DblPush(u64 wpawns, u64 empty);
+U64 bPawnsAble2Push(U64 bpawns, U64 empty);
+U64 bPawnsAble2DblPush(U64 bpawns, U64 empty);
 
-u64 bPawnsAble2Push(u64 bpawns, u64 empty);
-u64 bPawnsAble2DblPush(u64 bpawns, u64 empty);
+U64 wPawnAnyAttacks(U64 wpawns);
+U64 wPawnDblAttacks(U64 wpawns);
+U64 wPawnSingleAttacks(U64 wpawns);
 
-u64 wPawnAnyAttacks(u64 wpawns);
-u64 wPawnDblAttacks(u64 wpawns);
-u64 wPawnSingleAttacks(u64 wpawns);
-
-u64 bPawnAnyAttacks(u64 bpawns);
-u64 bPawnDblAttacks(u64 bpawns);
-u64 bPawnSingleAttacks(u64 bpawns);
+U64 bPawnAnyAttacks(U64 bpawns);
+U64 bPawnDblAttacks(U64 bpawns);
+U64 bPawnSingleAttacks(U64 bpawns);
 
 #endif /* nonslidingmoves_h */

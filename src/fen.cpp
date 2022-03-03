@@ -13,7 +13,7 @@
 #include <vector>
 #include <assert.h>
 
-#include "globals.h"
+#include "functions.h"
 #include "fen.h"
 #include "utility.h"
 
@@ -40,12 +40,12 @@ size_t split(const std::string &txt, std::vector<std::string> &strs, char ch) {
 }
 
 
-u8 parseFen(std::string str, Thread *th) {
+U8 parseFen(std::string str, Thread *th) {
 
 
     th->hashKey = 0ULL;
             
-	u8 side = -1;
+	U8 side = -1;
 
     vector <string> tokens1; 
 
@@ -76,7 +76,7 @@ u8 parseFen(std::string str, Thread *th) {
 
     std::string strCastleFlags = tokens1[2];
 
-	u8 flag = 0;    
+	U8 flag = 0;    
 
     for (auto &ch : strCastleFlags) {
         
@@ -123,7 +123,7 @@ u8 parseFen(std::string str, Thread *th) {
         
         th->moveStack[0].epSquare = squareFromAlgebricPos(char_array);
 
-        u64 epSqBitboard = 1ULL << th->moveStack[0].epSquare;
+        U64 epSqBitboard = 1ULL << th->moveStack[0].epSquare;
 
         if (     epSqBitboard & A_FILE) th->hashKey ^= KEY_EP_A_FILE;
         else if (epSqBitboard & B_FILE) th->hashKey ^= KEY_EP_B_FILE;
@@ -141,9 +141,6 @@ u8 parseFen(std::string str, Thread *th) {
 
 
     //----------------------------------------------------------
-
-
-    // clearAllBitBoards(th);
 
     
     vector <string> tokens2; 

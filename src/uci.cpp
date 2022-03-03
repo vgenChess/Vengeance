@@ -15,6 +15,8 @@
 #include <sstream>
 #include <cmath>
 
+#include "types.h"
+#include "globals.h"
 #include "uci.h"
 #include "utility.h"
 #include "make_unmake.h"
@@ -28,6 +30,7 @@
 #include "tuner.h"
 #include "ucireport.h"
 #include "functions.h"
+#include "see.h"
 
 #define NAME "V0.9"
 #define START_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -108,7 +111,7 @@ void UciLoop() {
             initThread.movesHistory[0].hashKey = initThread.hashKey;
             initThread.movesHistory[0].fiftyMovesCounter = 0;
 
-            u8 sideToMove = WHITE;
+            U8 sideToMove = WHITE;
 
             is>>token;
 

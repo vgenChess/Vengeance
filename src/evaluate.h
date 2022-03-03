@@ -64,7 +64,7 @@ class TraceCoefficients {
 		int queenPSQT[2][64];
 		int kingPSQT[2][64];
 
-    int knightAttack[2];
+    	int knightAttack[2];
 		int bishopAttack[2];
 		int rookAttack[2];
 		int queenAttack[2];
@@ -236,52 +236,52 @@ void setDist();
 
 void initTableDoublePawns();
 
-int32_t traceFullEval(TraceCoefficients *traceCoefficients, u8 stm, Thread *th);
+int traceFullEval(TraceCoefficients *traceCoefficients, U8 stm, Thread *th);
 
-int32_t fullEval(u8 stm, Thread *th);
+int fullEval(U8 stm, Thread *th);
 
-int32_t PSQTScore(u8 stm, Thread *th);
-int32_t pawnsEval(u8 stm, Thread *th);
-int32_t knightsEval(u8 stm, Thread *th);
-int32_t bishopsEval(u8 stm, Thread *th);
-int32_t rooksEval(u8 stm, Thread *th);
-int32_t queenEval(u8 stm, Thread *th);
-int32_t kingEval(u8 stm, Thread *th);
+int PSQTScore(U8 stm, Thread *th);
+int pawnsEval(U8 stm, Thread *th);
+int knightsEval(U8 stm, Thread *th);
+int bishopsEval(U8 stm, Thread *th);
+int rooksEval(U8 stm, Thread *th);
+int queenEval(U8 stm, Thread *th);
+int kingEval(U8 stm, Thread *th);
 
-int32_t evalBoard(u8 stm, Thread *th); 
+int evalBoard(U8 stm, Thread *th); 
 
 void initPSQT();
 
-int numOfPawnHoles(u8 stm, Thread *th);
-int isolatedPawns(u8 stm, Thread *th);
-int numOfDoublePawns(u8 stm, Thread *th);
-int countBackWardPawns(u8 stm, Thread *th);
-int countPassedPawns(u8 stm, Thread *th);
-int countDefendedPawns(u8 stm, Thread *th);
+int numOfPawnHoles(U8 stm, Thread *th);
+int isolatedPawns(U8 stm, Thread *th);
+int numOfDoublePawns(U8 stm, Thread *th);
+int countBackWardPawns(U8 stm, Thread *th);
+int countPassedPawns(U8 stm, Thread *th);
+int countDefendedPawns(U8 stm, Thread *th);
 
-u64 wPawnsBehindOwn(u64 wpawns);
-u64 bPawnsBehindOwn(u64 bpawns); 
-u64 wPawnsInfrontOwn (u64 wpawns);
-u64 bPawnsInfrontOwn (u64 bpawns);
+U64 wPawnsBehindOwn(U64 wpawns);
+U64 bPawnsBehindOwn(U64 bpawns); 
+U64 wPawnsInfrontOwn (U64 wpawns);
+U64 bPawnsInfrontOwn (U64 bpawns);
 
-u64 wBackward(u64 wpawns, u64 bpawns);
-u64 bBackward(u64 bpawns, u64 wpawns);
+U64 wBackward(U64 wpawns, U64 bpawns);
+U64 bBackward(U64 bpawns, U64 wpawns);
 
-u64 wPassedPawns(u64 wpawns, u64 bpawns);
-u64 bPassedPawns(u64 bpawns, u64 wpawns);
+U64 wPassedPawns(U64 wpawns, U64 bpawns);
+U64 bPassedPawns(U64 bpawns, U64 wpawns);
 
-u64 wPawnDefendedFromWest(u64 wpawns);
-u64 wPawnDefendedFromEast(u64 wpawns);
-u64 bPawnDefendedFromWest(u64 bpawns);
-u64 bPawnDefendedFromEast(u64 bpawns);
+U64 wPawnDefendedFromWest(U64 wpawns);
+U64 wPawnDefendedFromEast(U64 wpawns);
+U64 bPawnDefendedFromWest(U64 bpawns);
+U64 bPawnDefendedFromEast(U64 bpawns);
 
-u64 noNeighborOnEastFile (u64 pawns);
-u64 noNeighborOnWestFile (u64 pawns);
-u64 isolanis(u64 pawns);
+U64 noNeighborOnEastFile (U64 pawns);
+U64 noNeighborOnWestFile (U64 pawns);
+U64 isolanis(U64 pawns);
 
-u64 openFiles(u64 wpanws, u64 bpawns);
+U64 openFiles(U64 wpanws, U64 bpawns);
 
-u64 halfOpenOrOpenFile(u64 gen);
+U64 halfOpenOrOpenFile(U64 gen);
 
 #endif /* evaluate_h */
 

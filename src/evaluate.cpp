@@ -37,7 +37,7 @@ int Mirror64[64] = {
 	0,	1,	2,	3,	4,	5,	6,	7
 };
 
-u64 arrFiles[8] = {
+U64 arrFiles[8] = {
 
 	A_FILE, B_FILE, C_FILE, D_FILE,
 	E_FILE, F_FILE, G_FILE, H_FILE
@@ -71,10 +71,10 @@ void initEvalInfo(Thread *th) {
 	th->evalInfo.attacks[BLACK] |= th->evalInfo.allPawnAttacks[BLACK];
 	
 	int sq = -1;
-	u64 bb = 0ULL;
+	U64 bb = 0ULL;
 	for (int p = KNIGHTS; p <= KING; p++) {
 
-		for (int stm = WHITE; stm <= BLACK; stm++) {
+		for (U8 stm = WHITE; stm <= BLACK; stm++) {
 
 			bb = stm ? th->blackPieceBB[p] : th->whitePieceBB[p];
 			
@@ -137,19 +137,19 @@ void initEvalInfo(Thread *th) {
   	th->evalInfo.kingAdjacentZoneAttacksCount[BLACK] = 0;	
 }
 
-int32_t traceFullEval(TraceCoefficients *traceCoefficients, u8 stm, Thread *th) {
+int traceFullEval(TraceCoefficients *traceCoefficients, U8 stm, Thread *th) {
 
 	T = traceCoefficients;
 
 	return fullEval(stm, th);
 }
 
-int32_t fullEval(u8 stm, Thread *th) {
+int fullEval(U8 stm, Thread *th) {
 	
 
 	#if !defined(TUNE)
 	
-		int32_t hashedEval;
+		int hashedEval;
 		if (probeEval(&hashedEval, th)) {
 
 			return stm == WHITE ? hashedEval : -hashedEval;
@@ -188,7 +188,7 @@ int32_t fullEval(u8 stm, Thread *th) {
 
 	initEvalInfo(th);
 
-	int32_t eval = 0;
+	int eval = 0;
 
 	// TODO Pawn eval cache
 /*
@@ -241,7 +241,7 @@ int32_t fullEval(u8 stm, Thread *th) {
 	#endif
 
 
-    int32_t score = (ScoreMG(eval) * phase + ScoreEG(eval) * (24 - phase)) / 24;
+    int score = (ScoreMG(eval) * phase + ScoreEG(eval) * (24 - phase)) / 24;
 
     #if !defined(TUNE)	
 		
@@ -252,14 +252,14 @@ int32_t fullEval(u8 stm, Thread *th) {
 	return stm == WHITE ? score : -score;
 }
 
-int32_t pawnsEval(u8 stm, Thread *th) {
+int pawnsEval(U8 stm, Thread *th) {
 
-	int32_t score = 0;
+	int score = 0;
 	int sq = -1, rank = -1;
 
 	#if defined(TUNE)
 		
-		u64 bb = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+		U64 bb = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 		while (bb) {
 
 			int sq = GET_POSITION(bb);
@@ -294,7 +294,7 @@ int32_t pawnsEval(u8 stm, Thread *th) {
 		T->backwardPawns[stm] = nBackwardPawns;
 	#endif
 
-	u64 defendedPawns = stm ? 
+	U64 defendedPawns = stm ? 
 		th->blackPieceBB[PAWNS] & th->evalInfo.allPawnAttacks[BLACK]
 		: th->whitePieceBB[PAWNS] & th->evalInfo.allPawnAttacks[WHITE];
 
@@ -314,7 +314,7 @@ int32_t pawnsEval(u8 stm, Thread *th) {
 		T->pawnHoles[stm] = nPawnHoles;
 	#endif
 
-	u64 passedPawns = stm ? bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS])
+	U64 passedPawns = stm ? bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS])
 		: wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
 	while (passedPawns) {
 		
@@ -352,16 +352,16 @@ int32_t pawnsEval(u8 stm, Thread *th) {
 
 
 
-int32_t knightsEval(u8 stm, Thread *th) {
+int knightsEval(U8 stm, Thread *th) {
 
-	const u8 opp = stm ^ 1;
+	U8 opp = stm ^ 1;
 
-	int32_t score = 0;
+	int score = 0;
 	int mobilityCount = 0;
 
 	int sq = -1, rank = -1; 
 
-	u64 knightsBB = stm ? th->blackPieceBB[KNIGHTS] : th->whitePieceBB[KNIGHTS];
+	U64 knightsBB = stm ? th->blackPieceBB[KNIGHTS] : th->whitePieceBB[KNIGHTS];
 
 	while (knightsBB) {
 
@@ -370,7 +370,7 @@ int32_t knightsEval(u8 stm, Thread *th) {
 
 		assert(sq >= 0 && sq <= 63);
 
-		u64 attacksBB = th->evalInfo.knightAttacks[stm][sq];
+		U64 attacksBB = th->evalInfo.knightAttacks[stm][sq];
 
 		if (attacksBB & th->evalInfo.kingZoneBB[opp]) {
  			
@@ -382,7 +382,7 @@ int32_t knightsEval(u8 stm, Thread *th) {
             	T->knightAttack[opp]++; 
             #endif
 
-            u64 bb = (attacksBB & th->evalInfo.kingAttacks[opp]);
+            U64 bb = (attacksBB & th->evalInfo.kingAttacks[opp]);
             if (bb) {
 
            		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
@@ -412,7 +412,7 @@ int32_t knightsEval(u8 stm, Thread *th) {
 		}
 
 		//TODO check logic
-		u64 mobilityBB = attacksBB & th->empty & ~th->evalInfo.allPawnAttacks[opp];
+		U64 mobilityBB = attacksBB & th->empty & ~th->evalInfo.allPawnAttacks[opp];
 
 		mobilityCount = POPCOUNT(mobilityBB);
 
@@ -429,15 +429,15 @@ int32_t knightsEval(u8 stm, Thread *th) {
 }
 
 
-int32_t bishopsEval(u8 stm, Thread *th) {
+int bishopsEval(U8 stm, Thread *th) {
 
-	const u8 opp = stm ^ 1;
+	U8 opp = stm ^ 1;
 
-	int32_t score = 0;
+	int score = 0;
 	int mobilityCount = 0;
 	int sq = -1;
 
-	u64 bishopBB = stm ? th->blackPieceBB[BISHOPS] : th->whitePieceBB[BISHOPS];
+	U64 bishopBB = stm ? th->blackPieceBB[BISHOPS] : th->whitePieceBB[BISHOPS];
 	
 	const int nBishops = POPCOUNT(bishopBB);
 	
@@ -459,7 +459,7 @@ int32_t bishopsEval(u8 stm, Thread *th) {
 
 		assert(sq >= 0 && sq <= 63);
 		
-		u64 attacksBB = th->evalInfo.bishopAttacks[stm][sq];
+		U64 attacksBB = th->evalInfo.bishopAttacks[stm][sq];
 
 
 		#if defined(TUNE) 
@@ -481,7 +481,7 @@ int32_t bishopsEval(u8 stm, Thread *th) {
 
 
 		// Bishop mobility
-		u64 mobilityBB = attacksBB & th->empty;
+		U64 mobilityBB = attacksBB & th->empty;
 
 		mobilityCount = POPCOUNT(mobilityBB);
 
@@ -505,7 +505,7 @@ int32_t bishopsEval(u8 stm, Thread *th) {
             	T->bishopAttack[opp]++; 
             #endif
             	
-            u64 bb = (attacksBB & th->evalInfo.kingAttacks[opp]);
+            U64 bb = (attacksBB & th->evalInfo.kingAttacks[opp]);
             if (bb)	{
 
            		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
@@ -521,18 +521,18 @@ int32_t bishopsEval(u8 stm, Thread *th) {
 Increasing value as pawns disappear 
 Tarrasch Rule
 */
-int32_t rooksEval(u8 stm, Thread *th) {
+int rooksEval(U8 stm, Thread *th) {
 	
-	const u8 opp = stm ^ 1;
+	const U8 opp = stm ^ 1;
 
-	int32_t score = 0;
+	int score = 0;
 	int sq = -1;
 
 	int mobilityCount = 0;
 
 	const int kingSq = th->evalInfo.kingSq[stm];
 
-	u64 rooksBB = stm ? th->blackPieceBB[ROOKS] : th->whitePieceBB[ROOKS];
+	U64 rooksBB = stm ? th->blackPieceBB[ROOKS] : th->whitePieceBB[ROOKS];
 
 	while (rooksBB) {
 
@@ -605,7 +605,7 @@ int32_t rooksEval(u8 stm, Thread *th) {
 		} 	
 
 
-		u64 attacksBB = th->evalInfo.rookAttacks[stm][sq];
+		U64 attacksBB = th->evalInfo.rookAttacks[stm][sq];
 
 
 		// Connected Rooks
@@ -621,7 +621,7 @@ int32_t rooksEval(u8 stm, Thread *th) {
 
 
 		// Rook mobility
-		u64 mobilityBB = attacksBB & th->empty;
+		U64 mobilityBB = attacksBB & th->empty;
 
 		mobilityCount = POPCOUNT(mobilityBB);
 
@@ -644,7 +644,7 @@ int32_t rooksEval(u8 stm, Thread *th) {
             	T->rookAttack[opp]++; 
             #endif
 
-            u64 bb = attacksBB & th->evalInfo.kingAttacks[opp];
+            U64 bb = attacksBB & th->evalInfo.kingAttacks[opp];
             if (bb)	{
             	
            		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
@@ -689,17 +689,17 @@ int32_t rooksEval(u8 stm, Thread *th) {
 
 
 
-int32_t queenEval(u8 stm, Thread *th) {
+int queenEval(U8 stm, Thread *th) {
 
-	u8 opp = stm ^ 1;
+	U8 opp = stm ^ 1;
 
-	int32_t score = 0;
+	int score = 0;
 
 	int sq = -1;
 	int mobilityCount = 0;
 
-	u64 attacksBB = 0ULL, mobilityBB = 0ULL; 	
-	u64 queenBB = stm ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN];
+	U64 attacksBB = 0ULL, mobilityBB = 0ULL; 	
+	U64 queenBB = stm ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN];
 
 	while (queenBB) {
 
@@ -721,11 +721,11 @@ int32_t queenEval(u8 stm, Thread *th) {
 		if (	POPCOUNT(th->occupied) >= 22	// early game
 			&&	(stm ? sq <= 48 : sq >= 15)) { 
 
-			u64 minorPiecesBB = stm ? 
+			U64 minorPiecesBB = stm ? 
 				th->blackPieceBB[KNIGHTS] | th->blackPieceBB[BISHOPS] :
 				th->whitePieceBB[KNIGHTS] | th->whitePieceBB[BISHOPS];
 
-			u64 underdevelopedPiecesBB = (stm ? RANK_8 : RANK_1) & minorPiecesBB; 
+			U64 underdevelopedPiecesBB = (stm ? RANK_8 : RANK_1) & minorPiecesBB; 
 
 			int count = POPCOUNT(underdevelopedPiecesBB);
 			
@@ -762,7 +762,7 @@ int32_t queenEval(u8 stm, Thread *th) {
             	T->queenAttack[opp]++; 
             #endif
 
-            u64 bb = attacksBB & th->evalInfo.kingAttacks[opp];
+            U64 bb = attacksBB & th->evalInfo.kingAttacks[opp];
             if (bb)	{
 
            		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
@@ -774,19 +774,19 @@ int32_t queenEval(u8 stm, Thread *th) {
 }
 
 
-int32_t kingEval(u8 stm, Thread *th) {
+int kingEval(U8 stm, Thread *th) {
 	
-	const u8 opp = stm ^ 1;
+	U8 opp = stm ^ 1;
 
 	int kingSq = th->evalInfo.kingSq[stm];
 	
-	int32_t score = 0;	
+	int score = 0;	
 	
 	assert(kingSq >= 0 && kingSq < 64);
 
-	u64 ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
-	u64 theirPawns = opp ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
-	u64 pawnStormZone = th->evalInfo.kingZoneBB[stm];
+	U64 ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+	U64 theirPawns = opp ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+	U64 pawnStormZone = th->evalInfo.kingZoneBB[stm];
 
 	pawnStormZone |= stm ? pawnStormZone >> 8 : pawnStormZone << 8;
 
@@ -804,18 +804,18 @@ int32_t kingEval(u8 stm, Thread *th) {
 	if (	th->evalInfo.kingAttackersCount[stm] >= 2
 		&&	th->evalInfo.kingAdjacentZoneAttacksCount[stm]) { 
 
-		int32_t safetyScore = th->evalInfo.kingAttackersWeight[stm];
+		int safetyScore = th->evalInfo.kingAttackersWeight[stm];
 
-        u64 kingUndefendedSquares = 
+        U64 kingUndefendedSquares = 
         		th->evalInfo.attacks[opp]
         		&	th->evalInfo.kingAttacks[stm]
         		&	~(	th->evalInfo.allPawnAttacks[stm] | th->evalInfo.allKnightAttacks[stm] |
         				th->evalInfo.allBishopAttacks[stm] | th->evalInfo.allRookAttacks[stm] |
         				th->evalInfo.allQueenAttacks[stm]);
 
-		u64 enemyPieces = opp ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES];
+		U64 enemyPieces = opp ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES];
 
-		u64 queenSafeContactCheck = kingUndefendedSquares 
+		U64 queenSafeContactCheck = kingUndefendedSquares 
 			& th->evalInfo.allQueenAttacks[opp] 
 			& ~enemyPieces
 			& (		th->evalInfo.allPawnAttacks[opp] 
@@ -823,7 +823,7 @@ int32_t kingEval(u8 stm, Thread *th) {
 				|	th->evalInfo.allBishopAttacks[opp] 
 				|	th->evalInfo.allRookAttacks[opp]);
 
-		u64 rookSafeContactCheck = kingUndefendedSquares 
+		U64 rookSafeContactCheck = kingUndefendedSquares 
 			& th->evalInfo.allRookAttacks[opp] 
 			& ~enemyPieces
 			& (		th->evalInfo.allPawnAttacks[opp] 
@@ -831,14 +831,14 @@ int32_t kingEval(u8 stm, Thread *th) {
 				|	th->evalInfo.allBishopAttacks[opp] 
 				|	th->evalInfo.allQueenAttacks[opp]);
 		
-		u64 safe = ~(enemyPieces | th->evalInfo.attacks[stm]);
-		u64 b1 = Rmagic(kingSq, th->occupied) & safe;
-		u64 b2 = Bmagic(kingSq, th->occupied) & safe;
+		U64 safe = ~(enemyPieces | th->evalInfo.attacks[stm]);
+		U64 b1 = Rmagic(kingSq, th->occupied) & safe;
+		U64 b2 = Bmagic(kingSq, th->occupied) & safe;
 
-		u64 queenSafeChecks = (b1 | b2) & th->evalInfo.allQueenAttacks[opp];
-		u64 rookSafeChecks = b1 & th->evalInfo.allRookAttacks[opp];
-		u64 bishopSafeChecks = b2 & th->evalInfo.allBishopAttacks[opp];
-		u64 knightSafeChecks = get_knight_attacks(kingSq) 
+		U64 queenSafeChecks = (b1 | b2) & th->evalInfo.allQueenAttacks[opp];
+		U64 rookSafeChecks = b1 & th->evalInfo.allRookAttacks[opp];
+		U64 bishopSafeChecks = b2 & th->evalInfo.allBishopAttacks[opp];
+		U64 knightSafeChecks = get_knight_attacks(kingSq) 
 			& th->evalInfo.allKnightAttacks[opp] & safe;
 		
 		safetyScore += weight_queen_safe_contact_check * POPCOUNT(queenSafeContactCheck);
@@ -880,14 +880,14 @@ int32_t kingEval(u8 stm, Thread *th) {
 }
 
 
-int32_t PSQTScore(u8 stm, Thread *th) {
+int PSQTScore(U8 stm, Thread *th) {
 	
 	int sq;
-	int32_t score = 0;
+	int score = 0;
 
 	for (int piece = PAWNS; piece <= KING; piece++) {
 
-		u64 bb = stm ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
+		U64 bb = stm ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
 		while (bb) {
 
 			sq = GET_POSITION(bb); 
@@ -929,9 +929,9 @@ void initPSQT() {
 }
 
 
-int32_t evalBoard(u8 stm, Thread *th) {
+int evalBoard(U8 stm, Thread *th) {
 
-	int32_t score = 0;
+	int score = 0;
 
 	int nCenterControl = POPCOUNT(CENTER & th->evalInfo.attacks[stm]);
 
@@ -945,162 +945,162 @@ int32_t evalBoard(u8 stm, Thread *th) {
 }
 
 
-int numOfPawnHoles(u8 stm, Thread *th) {
+int numOfPawnHoles(U8 stm, Thread *th) {
 
-	u64 pawnsBB = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+	U64 pawnsBB = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 
-	u64 frontAttackSpans = stm ? 
+	U64 frontAttackSpans = stm ? 
 		bWestAttackFrontSpans(pawnsBB) | bEastAttackFrontSpans(pawnsBB)
 		: wWestAttackFrontSpans(pawnsBB) | wEastAttackFrontSpans(pawnsBB); 
 
-	u64 holes = ~frontAttackSpans & EXTENDED_CENTER
+	U64 holes = ~frontAttackSpans & EXTENDED_CENTER
 		& (stm ? (RANK_5 | RANK_6) : (RANK_3 | RANK_4)); 
 
 	return POPCOUNT(holes);
 }
 
 	
-int isolatedPawns(u8 stm, Thread *th) {
+int isolatedPawns(U8 stm, Thread *th) {
 
 	return POPCOUNT(isolanis(stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS]));
 }
 
-int numOfDoublePawns(u8 stm, Thread *th) {
+int numOfDoublePawns(U8 stm, Thread *th) {
 
-	u64 pawnsBB = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+	U64 pawnsBB = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 
-	u64 doublePawnsBB = stm ? bPawnsInfrontOwn(pawnsBB) : wPawnsInfrontOwn(pawnsBB); 
+	U64 doublePawnsBB = stm ? bPawnsInfrontOwn(pawnsBB) : wPawnsInfrontOwn(pawnsBB); 
 
 	return POPCOUNT(doublePawnsBB);
 }
 
-int countBackWardPawns(u8 stm, Thread *th) {
+int countBackWardPawns(U8 stm, Thread *th) {
 
 	return stm ? POPCOUNT(bBackward(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS])) : 
 		POPCOUNT(wBackward(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]));
 }
 
-int countPassedPawns(u8 stm, Thread *th) {
+int countPassedPawns(U8 stm, Thread *th) {
 
 	return stm ? POPCOUNT(bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS])) : 
 		POPCOUNT(wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]));
 }
 
-int countDefendedPawns(u8 stm, Thread *th) {
+int countDefendedPawns(U8 stm, Thread *th) {
 
 	return stm ? POPCOUNT(bPawnDefendedFromWest(th->blackPieceBB[PAWNS])) + POPCOUNT(bPawnDefendedFromEast(th->blackPieceBB[PAWNS])) : 
 		POPCOUNT(wPawnDefendedFromWest(th->whitePieceBB[PAWNS])) + POPCOUNT(wPawnDefendedFromEast(th->whitePieceBB[PAWNS]));
 }
 
 // pawns with at least one pawn in front on the same file
-u64 wPawnsBehindOwn(u64 wpawns) {
+U64 wPawnsBehindOwn(U64 wpawns) {
 
 	return wpawns & wRearSpans(wpawns);
 }
 
 // pawns with at least one pawn in front on the same file
-u64 bPawnsBehindOwn(u64 bpawns) {
+U64 bPawnsBehindOwn(U64 bpawns) {
 
 	return bpawns & bRearSpans(bpawns);
 }
 
 // pawns with at least one pawn behind on the same file
-u64 wPawnsInfrontOwn (u64 wpawns) {
+U64 wPawnsInfrontOwn (U64 wpawns) {
 
 	return wpawns & wFrontSpans(wpawns);
 }
 
 // pawns with at least one pawn behind on the same file
-u64 bPawnsInfrontOwn (u64 bpawns) {
+U64 bPawnsInfrontOwn (U64 bpawns) {
 
 	return bpawns & bFrontSpans(bpawns);
 }
 
-u64 wBackward(u64 wpawns, u64 bpawns) {
+U64 wBackward(U64 wpawns, U64 bpawns) {
 
-   u64 stops = wpawns << 8;
+   U64 stops = wpawns << 8;
 
-   u64 wAttackSpans = wEastAttackFrontSpans(wpawns)
+   U64 wAttackSpans = wEastAttackFrontSpans(wpawns)
                     | wWestAttackFrontSpans(wpawns);
 
-   u64 bAttacks     = bPawnEastAttacks(bpawns)
+   U64 bAttacks     = bPawnEastAttacks(bpawns)
                     | bPawnWestAttacks(bpawns);
 
    return (stops & bAttacks & ~wAttackSpans) >> 8;
 }
 
-u64 bBackward(u64 bpawns, u64 wpawns) {
+U64 bBackward(U64 bpawns, U64 wpawns) {
 	
-   u64 stops = bpawns >> 8;
-   u64 bAttackSpans = bEastAttackFrontSpans(bpawns)
+   U64 stops = bpawns >> 8;
+   U64 bAttackSpans = bEastAttackFrontSpans(bpawns)
                     | bWestAttackFrontSpans(bpawns);
 
-   u64 wAttacks     = wPawnEastAttacks(wpawns)
+   U64 wAttacks     = wPawnEastAttacks(wpawns)
                     | wPawnWestAttacks(wpawns);
 
    return (stops & wAttacks & ~bAttackSpans) << 8;
 }
 
-u64 wPassedPawns(u64 wpawns, u64 bpawns) {
+U64 wPassedPawns(U64 wpawns, U64 bpawns) {
 
-   u64 allFrontSpans = bFrontSpans(bpawns);
+   U64 allFrontSpans = bFrontSpans(bpawns);
    allFrontSpans |= eastOne(allFrontSpans)
                  |  westOne(allFrontSpans);
 
    return wpawns & ~allFrontSpans;
 }
 
-u64 bPassedPawns(u64 bpawns, u64 wpawns) {
+U64 bPassedPawns(U64 bpawns, U64 wpawns) {
 
-   u64 allFrontSpans = wFrontSpans(wpawns);
+   U64 allFrontSpans = wFrontSpans(wpawns);
    allFrontSpans |= eastOne(allFrontSpans)
                  |  westOne(allFrontSpans);
 
    return bpawns & ~allFrontSpans;
 }
 
-u64 wPawnDefendedFromWest(u64 wpawns) {
+U64 wPawnDefendedFromWest(U64 wpawns) {
 
    return wpawns & wPawnEastAttacks(wpawns);
 }
 
-u64 wPawnDefendedFromEast(u64 wpawns) {
+U64 wPawnDefendedFromEast(U64 wpawns) {
 
    return wpawns & wPawnWestAttacks(wpawns);
 }
 
-u64 bPawnDefendedFromWest(u64 bpawns) {
+U64 bPawnDefendedFromWest(U64 bpawns) {
 
    return bpawns & bPawnEastAttacks(bpawns);
 }
 
-u64 bPawnDefendedFromEast(u64 bpawns) {
+U64 bPawnDefendedFromEast(U64 bpawns) {
 
    return bpawns & bPawnWestAttacks(bpawns);
 }
 
-u64 noNeighborOnEastFile (u64 pawns) {
+U64 noNeighborOnEastFile (U64 pawns) {
 
     return pawns & ~westAttackFileFill(pawns);
 }
 
-u64 noNeighborOnWestFile (u64 pawns) {
+U64 noNeighborOnWestFile (U64 pawns) {
 
     return pawns & ~eastAttackFileFill(pawns);
 }
 
-u64 isolanis(u64 pawns) {
+U64 isolanis(U64 pawns) {
 
    return  noNeighborOnEastFile(pawns)
          & noNeighborOnWestFile(pawns);
 }
 
-u64 openFiles(u64 wpanws, u64 bpawns) {
+U64 openFiles(U64 wpanws, U64 bpawns) {
  
    return ~fileFill(wpanws) & ~fileFill(bpawns);
 }
 
-u64 halfOpenOrOpenFile(u64 gen) {
+U64 halfOpenOrOpenFile(U64 gen) {
 
 	return ~fileFill(gen);
 }

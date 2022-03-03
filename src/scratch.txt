@@ -21,7 +21,8 @@ TODO
     - Evaluation Terms to add (Outpost, Knight outpost)
     - Rewrite logic for copy/paste code
     - Add tempo for eval and tuning
-
+    - Check zobrist hashing logic, hash table implementation
+    
 Needs investigation
     - reduce search explosion for higher depths
     - delay reporting to the uci during initial seconds 

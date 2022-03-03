@@ -17,9 +17,9 @@
 #include "make_unmake.h"
 #include "utility.h"
 
-void startPerft(u8 side, u8 depth, Thread *th) {
+void startPerft(U8 side, U8 depth, Thread *th) {
     
-    u64 nodes;
+    U64 nodes;
     
     clock_t start, end;
     double cpu_time_used;
@@ -62,13 +62,14 @@ void startPerft(u8 side, u8 depth, Thread *th) {
     }
 }
 
-u64 perft(int ply, u8 depth, u8 side, Thread *th) {
+U64 perft(int ply, U8 depth, U8 side, Thread *th) {
     
-    Move move_list[MAX_MOVES];
-    u64 nodes = 0;
-    u8 i;
+    Move move_list[U16_MAX_MOVES];
+    U64 nodes = 0;
+    U8 i;
     
-    if (depth == 0) return 1;
+    if (depth == 0) 
+        return 1;
     
     if (ply != 0) {
     

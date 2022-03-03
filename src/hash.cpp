@@ -1,11 +1,11 @@
 #include "hash.h"
-
+#include "constants.h"
 
 bool probePawnHash(int *score, Thread *th) {
 
-    u64 key = th->pawnsHashKey;
+    U64 key = th->pawnsHashKey;
 
-    PAWNS_HASH *ptrhash = &th->pawnHashTable[key % PAWN_HASH_TABLE_SIZE];
+    PAWNS_HASH *ptrhash = &th->pawnHashTable[key % U32_PAWN_HASH_TABLE_SIZE];
     
     *score = ptrhash->score;
     
@@ -15,9 +15,9 @@ bool probePawnHash(int *score, Thread *th) {
 
 void recordPawnHash(int score, Thread *th) {
     
-    u64 key = th->pawnsHashKey;
+    U64 key = th->pawnsHashKey;
 
-    PAWNS_HASH *ptrhash = &(th->pawnHashTable[key % PAWN_HASH_TABLE_SIZE]);
+    PAWNS_HASH *ptrhash = &(th->pawnHashTable[key % U32_PAWN_HASH_TABLE_SIZE]);
 
     ptrhash->key = key;
     ptrhash->score = score;
@@ -26,7 +26,7 @@ void recordPawnHash(int score, Thread *th) {
 
 bool probeEval(int *eval, Thread *th) {
     
-    EVAL_HASH *ptrhash = &th->evalHashTable[th->hashKey % EVAL_HASH_TABLE_SIZE];
+    EVAL_HASH *ptrhash = &th->evalHashTable[th->hashKey % U32_EVAL_HASH_TABLE_SIZE];
     
     *eval = ptrhash->score;
     
@@ -36,7 +36,7 @@ bool probeEval(int *eval, Thread *th) {
 
 void recordEval(int eval, Thread *th) {
    
-    EVAL_HASH *ptrhash = &th->evalHashTable[th->hashKey % EVAL_HASH_TABLE_SIZE];
+    EVAL_HASH *ptrhash = &th->evalHashTable[th->hashKey % U32_EVAL_HASH_TABLE_SIZE];
 
     ptrhash->key = th->hashKey;
     ptrhash->score = eval;
@@ -47,18 +47,18 @@ bool probeHash(HASHE *tt, Thread *th) {
     
     if (tt == NULL) return false;
 
-    u32 dataKey = tt->bestMove ^ tt->value ^ tt->depth ^ tt->flags ^ tt->sEval;
+    U32 dataKey = tt->bestMove ^ tt->value ^ tt->depth ^ tt->flags ^ tt->sEval;
     
     return (tt->key ^ dataKey) == th->hashKey; 
 }
 
 
-void recordHash(u32 bestMove, int depth, int value, int hashf, int sEval, Thread *th) {
+void recordHash(U32 bestMove, int depth, int value, int hashf, int sEval, Thread *th) {
     
 
     HASHE *phashe = &hashTable[th->hashKey % HASH_TABLE_SIZE];
     
-    u32 dataKey = phashe->bestMove ^ phashe->value ^ phashe->depth ^ phashe->flags ^ phashe->sEval;
+    U32 dataKey = phashe->bestMove ^ phashe->value ^ phashe->depth ^ phashe->flags ^ phashe->sEval;
     
     bool isValidHash = (phashe->key ^ dataKey) == th->hashKey; 
 

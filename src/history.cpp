@@ -5,12 +5,12 @@
 #include "globals.h"
 #include "functions.h"
 
-void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> &quietMovesPlayed, Thread *th) {
+void updateHistory(int ply, int side, int depth, U32 bestMove, std::vector<U32> &quietMovesPlayed, Thread *th) {
 
 	int32_t hScore;
 	int32_t bonus = std::min(400, depth * depth), delta = 0;
 
-	u32 previousMove;
+	U32 previousMove;
 
 	// History Heuristics
 	for (auto &move : quietMovesPlayed) { 
@@ -35,7 +35,7 @@ void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> 
 	}
 }
 
-void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,std::vector<u32>&captureMovesPlayed, Thread *th) {
+void updateCaptureHistory(int ply, int side, int depth, U32 bestMove,std::vector<U32>&captureMovesPlayed, Thread *th) {
 
 	int32_t bonus = std::min(400, depth * depth), delta = 0;
 
@@ -43,7 +43,7 @@ void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,std::vector
 
 	uint16_t atk_piece, to, cap_piece;
 	
-	u8 mt;
+	U8 mt;
 
 	// Capture History Heuristics	
 	for (auto &move : captureMovesPlayed) {	

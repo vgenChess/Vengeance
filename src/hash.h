@@ -1,11 +1,11 @@
 #ifndef hash_h
 #define hash_h
 
-#include "globals.h"
+#include "types.h"
 #include "thread.h"
 
 bool probeHash(HASHE *tt, Thread *th);
-void recordHash(u32 bestMove, int depth, int value, int hashf, int eval_static, Thread *th);
+void recordHash(U32 bestMove, int depth, int value, int hashf, int eval_static, Thread *th);
 
 bool probePawnHash(int *score, Thread *th);
 void recordPawnHash(int score, Thread *th);

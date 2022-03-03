@@ -11,9 +11,6 @@
 
 #include <stdio.h>
 
-#include "globals.h"
-#include "thread.h"
-
 void UciLoop(void);
 
 #endif /* uci_h */

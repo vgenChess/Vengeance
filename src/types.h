@@ -1,22 +1,56 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
-#define BYTE_TO_BINARY(byte)  \
-(byte & 0x80 ? '1' : '0'), \
-(byte & 0x40 ? '1' : '0'), \
-(byte & 0x20 ? '1' : '0'), \
-(byte & 0x10 ? '1' : '0'), \
-(byte & 0x08 ? '1' : '0'), \
-(byte & 0x04 ? '1' : '0'), \
-(byte & 0x02 ? '1' : '0'), \
-(byte & 0x01 ? '1' : '0')
+#include <vector>
+/*
 
-typedef uint8_t 	u8;
-typedef uint16_t 	u16;
-typedef uint32_t 	u32;
-typedef uint64_t 	u64;
-typedef uint64_t Bitboard;
+The primitive data types available in C++ are as follows:
+
+----------------------------------------------------------------------------------------------------------------------------------------
+Type 				Description 						Bytes *  					Range *
+-----------------------------------------------------------------------------------------------------------------------------------------
+
+char 				character or small integer 			1 	 						signed: -128 to 127
+																					unsigned: 0 to 255
+-----------------------------------------------------------------------------------------------------------------------------------------------
+
+int 				integer 							short: 2 					signed short: -32,768 to 32,767
+																					unsigned short: 0 to 65,535
+
+														normal: 4                   signed: -2,147,483,648 to 2,147,483,647
+																					unsigned: 0 to 4,294,967,295
+
+														long: 4 					signed long: -2,147,483,648 to 2,147,483,647
+																					unsigned long: 0 to 4,294,967,295
+
+														long long: 8 				signed long long: -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807
+																					unsigned long long: 0 to 18,446,744,073,709,551,615
+-----------------------------------------------------------------------------------------------------------------------------------------------------																					
+
+bool 				boolean value  						1 							true or false
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+float 				floating-point number 				4 							1.17549*10-38 to 3.40282*1038
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+double 				double-precision 					8 							2.22507*10-308 to 1.79769*10308
+					floatingpoint number
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+long double 		extended-precision  				12 							3.36210*10-4932 to 1.18973*104932
+					floatingpoint number
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------					
+
+wchar_t 			wide character or short 			2 							1 wide character
+					integer
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*/
+
+
+typedef unsigned char 		U8;
+typedef unsigned short 		U16;
+typedef unsigned long 		U32;
+typedef unsigned long long	U64;
 
 enum {
 	WHITE = 0, BLACK = 1
@@ -47,6 +81,11 @@ enum {
 	BLACK_CASTLE_QUEEN_SIDE = 2, BLACK_CASTLE_KING_SIDE = 3
 };
 
+enum {
+	PROMOTE_TO_QUEEN = 0, PROMOTE_TO_ROOK = 1,
+	PROMOTE_TO_BISHOP = 2, PROMOTE_TO_KNIGHT = 3
+};
+
 enum Stage {
 	PLAY_HASH_MOVE, GEN_CAPTURES, PLAY_CAPTURES, PLAY_KILLER_MOVE_1,
 	PLAY_KILLER_MOVE_2, PLAY_COUNTER_MOVE, GEN_PROMOTIONS,
@@ -60,32 +99,32 @@ enum {
 
 typedef struct {
     
-    uint64_t key; 
+    U64 key; 
     int score;
 } PAWNS_HASH;
 
 typedef struct {
     
-    uint64_t key; 
+    U64 key; 
     int score;
 } EVAL_HASH;
 
 
 typedef struct {
 	
-	u32 move;
-	int32_t score;
+	U32 move;
+	int score;
 } Move;
 
 typedef struct {
 	
-    u8 castleFlags;
-	u8 epFlag;
-	u8 epSquare;
+    U8 castleFlags;
+	U8 epFlag;
+	U8 epSquare;
 
-	u32 move;
-	u32 ttMove;
-    u32 killerMoves[2];
+	U32 move;
+	U32 ttMove;
+    U32 killerMoves[2];
 
     int sEval;
 
@@ -94,35 +133,35 @@ typedef struct {
 
 typedef struct {
 
-	u8 castleFlags;
-	u8 epFlag;
-	u8 epSquare;
+	U8 castleFlags;
+	U8 epFlag;
+	U8 epSquare;
 	int fiftyMovesCounter;	
-	uint64_t hashKey;
-	uint64_t pawnsHashKey;
+	U64 hashKey;
+	U64 pawnsHashKey;
 } UNDO_MOVE_STACK;
 
 typedef struct {
 
 	int fiftyMovesCounter;
-	u64 hashKey;
+	U64 hashKey;
 } MOVES_HISTORY;
 
 typedef struct {
 
-	u8 flags; 
+	U8 flags; 
 	int depth;
 	int value;
 	int sEval;
-    u32 bestMove;    
-    uint64_t key;
+    U32 bestMove;    
+    U64 key;
 } HASHE;
 
 typedef struct {
 
 	bool skipQuiets;
 	int stage;
-	u32 ttMove, counterMove;
+	U32 ttMove, counterMove;
 
 	std::vector<Move> moves;
 	std::vector<Move> badCaptures;
@@ -132,30 +171,30 @@ class PV {
 
 public:
 	int score;
-	std::vector<u32> line;
+	std::vector<U32> line;
 };
 
 class EvalInfo {
 	
 public:
 	
-	Bitboard openFilesBB;
-	Bitboard halfOpenFilesBB[2]; 
+	U64 openFilesBB;
+	U64 halfOpenFilesBB[2]; 
 
-	Bitboard knightAttacks[2][64];
-	Bitboard bishopAttacks[2][64];
-	Bitboard rookAttacks[2][64];
-	Bitboard queenAttacks[2][64];
+	U64 knightAttacks[2][64];
+	U64 bishopAttacks[2][64];
+	U64 rookAttacks[2][64];
+	U64 queenAttacks[2][64];
 
-	Bitboard allPawnAttacks[2];
-	Bitboard allKnightAttacks[2];
-	Bitboard allBishopAttacks[2];
-	Bitboard allRookAttacks[2];
-	Bitboard allQueenAttacks[2];
-	Bitboard kingAttacks[2];
-	Bitboard attacks[2];
+	U64 allPawnAttacks[2];
+	U64 allKnightAttacks[2];
+	U64 allBishopAttacks[2];
+	U64 allRookAttacks[2];
+	U64 allQueenAttacks[2];
+	U64 kingAttacks[2];
+	U64 attacks[2];
 
-	Bitboard kingZoneBB[2];
+	U64 kingZoneBB[2];
 	int kingSq[2];
 	int kingAttackersCount[2];
 	int kingAttackersWeight[2];

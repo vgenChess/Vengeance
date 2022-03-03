@@ -5,7 +5,8 @@
 #include <vector>
 #include <memory>
 
-#include "globals.h"
+#include "types.h"
+#include "functions.h"
 #include "thread.h"
 #include "evaluate.h"
 
@@ -15,16 +16,16 @@ class SearchInfo {
 
 public:
 		
-	u8 side;
+	U8 side;
 	int ply;
 	int depth;
 	int realDepth;
 	
 	bool isNullMoveAllowed;	 
 
-	u32 skipMove;
+	U32 skipMove;
 
-	std::vector<u32> pline;
+	std::vector<U32> pline;
 
 	SearchInfo() {
 		
@@ -42,21 +43,19 @@ public:
 
 void initLMR();
 
-void startSearch(u8 side);
+void startSearch(U8 side);
 void iterativeDeepeningSearch(int side, SearchThread *thread);
-void aspirationWindowSearch(u8 side, SearchThread *th);
+void aspirationWindowSearch(U8 side, SearchThread *th);
 
-int32_t alphabetaSearch(int32_t alpha, int32_t beta, int32_t mate, SearchThread *th, SearchInfo *si);
-int32_t quiescenseSearch(int32_t ply, int8_t side, int32_t alpha, int32_t beta, SearchThread *th, std::vector<u32> *pline);
+int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo *si);
+int quiescenseSearch(int ply, int side, int alpha, int beta, SearchThread *th, std::vector<U32> *pline);
 
-void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> &quietMovesPlayed, Thread *th);
-void updateCaptureHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> &captureMovesPlayed, Thread *th);
+void updateHistory(int ply, int side, int depth, U32 bestMove, std::vector<U32> &quietMovesPlayed, Thread *th);
+void updateCaptureHistory(int ply, int side, int depth, U32 bestMove, std::vector<U32> &captureMovesPlayed, Thread *th);
 
-void getMoveList(int ply, int side, std::vector<Move> &moves, u8 stage, Thread *th);
+void getMoveList(int ply, int side, std::vector<Move> &moves, U8 stage, Thread *th);
 
-u64 attacksTo(u64 occupied, u8 square, u8 side, Thread *th);
-
-void debugSEE(char ch, int sq);
+U64 attacksTo(U64 occupied, U8 square, U8 side, Thread *th);
 
 // int QuiescenseForTuning(int ply, int side, int alpha, int beta, int depth, Thread *th, TraceCoefficients *T);
 

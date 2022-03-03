@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "globals.h"
+#include "constants.h"
 
 class Thread {
 	
@@ -15,14 +16,14 @@ public:
 
 	bool isInit = false;
 
-	u8 side;
+	U8 side;
 
 	uint16_t moves_history_counter;
 	
 	int32_t historyScore[2][64][64];
 	int32_t captureHistoryScore[8][64][8]; // [piece][to][c_piece]
 
-	u32 counterMove[2][64][64];
+	U32 counterMove[2][64][64];
 	
 	std::vector<MOVE_LIST> moveList;
 	std::vector<PV> pvLine;
@@ -37,11 +38,11 @@ public:
 	std::vector<PAWNS_HASH> pawnHashTable;
 	std::vector<EVAL_HASH> evalHashTable;
 
-	u64 whitePieceBB[MAX_PIECES];
-	u64 blackPieceBB[MAX_PIECES];
-	u64 occupied, empty;
+	U64 whitePieceBB[U8_MAX_PIECES];
+	U64 blackPieceBB[U8_MAX_PIECES];
+	U64 occupied, empty;
 
-	u64 hashKey, pawnsHashKey;
+	U64 hashKey, pawnsHashKey;
 
 	EvalInfo evalInfo;
 	
@@ -94,8 +95,8 @@ struct SearchThreadPool : public std::vector<SearchThread*> {
 	SearchThread* main() const { return front(); }
 
 
-	uint64_t getTotalNodes() const;
-	uint64_t getTotalTTHits() const;
+	U64 getTotalNodes() const;
+	U64 getTotalTTHits() const;
 };
 
 

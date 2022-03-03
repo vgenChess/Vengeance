@@ -21,7 +21,7 @@ std::string algebricSq[64] = {
 }; 
 
 
-std::string getMoveNotation(const u32 move) {
+std::string getMoveNotation(const U32 move) {
 
 	std::string str;
 
@@ -45,12 +45,12 @@ std::string getMoveNotation(const u32 move) {
 
 void reportBestMove() {
 
-	u32 bestMove = Threads.main()->pvLine[Threads.main()->completedDepth].line[0];
+	U32 bestMove = Threads.main()->pvLine[Threads.main()->completedDepth].line[0];
 
 	std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
 }
 
-void reportCurrentMove(int depth, int currentMoveNumber, u32 move) {
+void reportCurrentMove(int depth, int currentMoveNumber, U32 move) {
 
 	std::cout << "info depth " << depth << " currmove ";
 
@@ -62,7 +62,7 @@ void reportPV(SearchThread *th) {
 	int depth = th->completedDepth;
 	int selDepth = th->selDepth;
 	int score = th->pvLine[th->completedDepth].score;
-	std::vector<u32> pvLine = th->pvLine[th->completedDepth].line;
+	std::vector<U32> pvLine = th->pvLine[th->completedDepth].line;
 
 	std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
     int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
@@ -72,7 +72,7 @@ void reportPV(SearchThread *th) {
 				/*<< " hashfull " << hashfull()*/ << " tbhits " << Threads.getTotalTTHits() 
 				<< " score cp " << score << " pv";
 
-	for (u32 move : pvLine)	
+	for (U32 move : pvLine)	
 		std::cout << " " << getMoveNotation(move);
 	
 	std::cout << "\n";

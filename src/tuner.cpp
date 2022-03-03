@@ -588,7 +588,7 @@ void startTuner() {
 			data.result = result;
 
 	
-			u8 side = parseFen(fen, th);
+			short side = parseFen(fen, th);
 			
 			data.sEval = traceFullEval(T, side, th);
 			//data.sEval = QuiescenseForTuning(0, side, -VAL_INFINITY, VAL_INFINITY, 12, &th, T);  
@@ -697,7 +697,7 @@ void optimise(TVector params, TVector cparams) {
 	bool skip = false;
 	std::vector<Data> data_batch;
 	
-	for (u64 epoch = 1; epoch < MAXEPOCHS; epoch++) {
+	for (uint64_t epoch = 1; epoch < MAXEPOCHS; epoch++) {
 
 		if (index >= dataList.size()) {
 

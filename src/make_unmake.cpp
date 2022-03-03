@@ -14,53 +14,54 @@
 #include "hash.h"
 #include "thread.h"
 #include "functions.h"
+#include "constants.h"
+#include "globals.h"
 
 
-u64 KEY_SIDE_TO_MOVE;
+U64 KEY_SIDE_TO_MOVE;
 
-u64 KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
-u64 KEY_FLAG_WHITE_CASTLE_KING_SIDE;
-u64 KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
-u64 KEY_FLAG_BLACK_CASTLE_KING_SIDE;
+U64 KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
+U64 KEY_FLAG_WHITE_CASTLE_KING_SIDE;
+U64 KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
+U64 KEY_FLAG_BLACK_CASTLE_KING_SIDE;
 
-u64 KEY_EP_A_FILE;
-u64 KEY_EP_B_FILE;
-u64 KEY_EP_C_FILE;
-u64 KEY_EP_D_FILE;
-u64 KEY_EP_E_FILE;
-u64 KEY_EP_F_FILE;
-u64 KEY_EP_G_FILE;
-u64 KEY_EP_H_FILE;
+U64 KEY_EP_A_FILE;
+U64 KEY_EP_B_FILE;
+U64 KEY_EP_C_FILE;
+U64 KEY_EP_D_FILE;
+U64 KEY_EP_E_FILE;
+U64 KEY_EP_F_FILE;
+U64 KEY_EP_G_FILE;
+U64 KEY_EP_H_FILE;
 
-u64 quiet, prevCap, cap, prevEp, ep, prevCas, cas, check, prom;
+U64 quiet, prevCap, cap, prevEp, ep, prevCas, cas, check, prom;
 
-u64 zobrist[8][2][64];
-u64 pawnZobristKey[64];
+U64 zobrist[U8_MAX_PIECES][U8_MAX_SIDES][U8_MAX_SQUARES];
+U64 pawnZobristKey[U8_MAX_SQUARES];
 
-u64 index_bb[INDEX_BB_SIZE];
-u8 rookCastleFlagMask[64];
-
-
-void make_move(int ply, u32 move, Thread *th) {
+U64 index_bb[U8_MAX_SQUARES];
+U8 rookCastleFlagMask[64];
 
 
-
-	const u8 mtype = move_type(move);
-
-	const u8 sideToMove = colorType(move);
-	const u8 opponent = sideToMove ^ 1; 
-
-	const u8 fromSq = from_sq(move);
-	const u8 toSq = to_sq(move);
-
-	const u8 piece = pieceType(move);
-	const u8 c_piece = cPieceType(move);
+void make_move(int ply, U32 move, Thread *th) {
 
 
-	u64 from_bb = 1ULL << fromSq;
-	u64 to_bb = 1ULL << toSq; 
+	const U8 mtype = move_type(move);
 
-	u64 from_to_bb = from_bb ^ to_bb;
+	const U8 sideToMove = colorType(move);
+	const U8 opponent = sideToMove ^ 1; 
+
+	const U8 fromSq = from_sq(move);
+	const U8 toSq = to_sq(move);
+
+	const U8 piece = pieceType(move);
+	const U8 c_piece = cPieceType(move);
+
+
+	U64 from_bb = 1ULL << fromSq;
+	U64 to_bb = 1ULL << toSq; 
+
+	U64 from_to_bb = from_bb ^ to_bb;
 	
 	
 	th->undoMoveStack[ply].castleFlags = th->moveStack[ply].castleFlags;
@@ -78,7 +79,7 @@ void make_move(int ply, u32 move, Thread *th) {
 
 	if (th->moveStack[ply].epFlag != 0) {
 
-		u64 epSqBitboard = 1ULL << th->moveStack[ply].epSquare;
+		U64 epSqBitboard = 1ULL << th->moveStack[ply].epSquare;
 
 		if (	 epSqBitboard & A_FILE)	th->hashKey ^= KEY_EP_A_FILE;
 		else if (epSqBitboard & B_FILE)	th->hashKey ^= KEY_EP_B_FILE;
@@ -378,7 +379,7 @@ void make_move(int ply, u32 move, Thread *th) {
 
 			th->movesHistory[mhCounter].fiftyMovesCounter++;	
 			
-			u8 castleDirection = castleDir(move);
+			U8 castleDirection = castleDir(move);
 
 			if (sideToMove == WHITE) {
 				
@@ -568,23 +569,22 @@ void make_move(int ply, u32 move, Thread *th) {
 
 
 
-void unmake_move(int ply, u32 move, Thread *th) {
+void unmake_move(int ply, U32 move, Thread *th) {
  
-	u8 castleDirection = castleDir(move);
+	U8 castleDirection = castleDir(move);
 
-	const u8 sideToMove = colorType(move);
-	const u8 opponent = sideToMove ^ 1; 
+	const U8 sideToMove = colorType(move);
+	
+	const U8 fromSq = from_sq(move);
+	const U8 toSq = to_sq(move);
 
-	const u8 fromSq = from_sq(move);
-	const u8 toSq = to_sq(move);
+	const U8 piece = pieceType(move);
+	const U8 c_piece = cPieceType(move);
 
-	const u8 piece = pieceType(move);
-	const u8 c_piece = cPieceType(move);
+	U64 from_bb = 1ULL << fromSq;
+	U64 to_bb = 1ULL << toSq; 
 
-	u64 from_bb = 1ULL << fromSq;
-	u64 to_bb = 1ULL << toSq; 
-
-	u64 from_to_bb = from_bb ^ to_bb;
+	U64 from_to_bb = from_bb ^ to_bb;
 
 
 
@@ -733,8 +733,8 @@ void unmake_move(int ply, u32 move, Thread *th) {
 
 		case MOVE_PROMOTION: {
 
-			u8 p = -1;
-			u8 pType = promType(move);
+			U8 p = -1;
+			U8 pType = promType(move);
 
 			if  	(	pType == PROMOTE_TO_QUEEN)	p = QUEEN;
 			else if (	pType == PROMOTE_TO_ROOK)	p = ROOKS;
