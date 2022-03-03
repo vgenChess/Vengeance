@@ -16,23 +16,9 @@
 #include <ratio>
 #include <chrono>
 
+#include "types.h"
+
 #define INPUT_BUFFER 800 * 6
-
-typedef uint8_t 	u8;
-typedef uint16_t 	u16;
-typedef uint32_t 	u32;
-typedef uint64_t 	u64;
-
-#define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
-#define BYTE_TO_BINARY(byte)  \
-(byte & 0x80 ? '1' : '0'), \
-(byte & 0x40 ? '1' : '0'), \
-(byte & 0x20 ? '1' : '0'), \
-(byte & 0x10 ? '1' : '0'), \
-(byte & 0x08 ? '1' : '0'), \
-(byte & 0x04 ? '1' : '0'), \
-(byte & 0x02 ? '1' : '0'), \
-(byte & 0x01 ? '1' : '0')
 
 #define C64(constantU64) constantU64
 
@@ -53,36 +39,14 @@ typedef uint64_t 	u64;
 #define PAWN_HASH_TABLE_SIZE 2048
 #define EVAL_HASH_TABLE_SIZE 16384
 
-#define hashfEXACT 0
-#define hashfALPHA 1
-#define hashfBETA 2
-
 #define FLIP_TB(sq) ((sq)^0x38) // Flip top-to-bottom (A8==A1, A7==A2 etc.)
 #define NUMBER_OF_TBLS  12
 
 #define MAX_PLY 128
 #define MAX_MOVES 256
 
-#define CASTLE_FLAG_WHITE_KING		2
-#define CASTLE_FLAG_WHITE_QUEEN		1
-#define CASTLE_FLAG_BLACK_KING		8
-#define CASTLE_FLAG_BLACK_QUEEN		4
-
-
-#define WHITE_CASTLE_QUEEN_SIDE    	0
-#define WHITE_CASTLE_KING_SIDE  	1
-#define BLACK_CASTLE_QUEEN_SIDE 	2
-#define BLACK_CASTLE_KING_SIDE 		3
-
-
 /* Extract data from a move structure */
 
-#define MOVE_NORMAL			0
-#define MOVE_CAPTURE		1
-#define MOVE_DOUBLE_PUSH 	2
-#define MOVE_ENPASSANT 		3
-#define MOVE_CASTLE 		4
-#define MOVE_PROMOTION 		5
 
 #define RANK_1 0x00000000000000FFU
 #define RANK_2 0x000000000000FF00U
@@ -92,21 +56,16 @@ typedef uint64_t 	u64;
 #define RANK_6 0x0000FF0000000000U
 #define RANK_7 0x00FF000000000000U
 #define RANK_8 0xFF00000000000000U
-
 #define NOT_RANK_2 0xFFFFFFFFFFFF00FFU
 #define NOT_RANK_7 0xFF00FFFFFFFFFFFFU
-
 #define NOT_RANK_1 0xFFFFFFFFFFFFFF00U
 #define NOT_RANK_8 0x00FFFFFFFFFFFFFFU
-
 #define WQ_SIDE_SQS 0x000000000000000EU
 #define WK_SIDE_SQS 0x0000000000000060U
 #define BQ_SIDE_SQS 0x0E00000000000000U
 #define BK_SIDE_SQS 0x6000000000000000U
-
 #define NOT_A_FILE 0XFEFEFEFEFEFEFEFEU
 #define NOT_H_FILE 0X7F7F7F7F7F7F7F7FU
-
 #define A_FILE 0x101010101010101U
 #define B_FILE 0x202020202020202U
 #define C_FILE 0x404040404040404U
@@ -115,206 +74,15 @@ typedef uint64_t 	u64;
 #define F_FILE 0x2020202020202020U
 #define G_FILE 0x4040404040404040U
 #define H_FILE 0x8080808080808080U 
-
 #define AREA_WHITE 0x00000000FFFFFFFFU
-
 #define CENTER 0x0000001818000000U
 #define EXTENDED_CENTER 0x00003C3C3C3C0000U
 
 #define NO_MOVE 0UL
 
-#define PV_NODE 0 
-#define NON_PV_NODE 1
-
-enum {
-
-	DUMMY = 0,
-	PAWNS = 1, 
-	KNIGHTS = 2,
-	BISHOPS = 3,
-	ROOKS = 4,
-	QUEEN = 5,
-	KING = 6,
-	PIECES = 7
-};
-
-enum {
-
-	VALUE_PAWN = 100,
-	VALUE_KNIGHT = 300,
-	VALUE_BISHOP = 300,
-	VALUE_ROOK = 500,
-	VALUE_QUEEN = 900, 
-	VALUE_KING = 2000
-};
-
-
-enum Stage {
-
-	PLAY_HASH_MOVE,
-	GEN_CAPTURES,
-	PLAY_CAPTURES,
-	PLAY_KILLER_MOVE_1,
-	PLAY_KILLER_MOVE_2,
-	PLAY_COUNTER_MOVE,
-	GEN_PROMOTIONS,
-	PLAY_PROMOTIONS,
-	PLAY_BAD_CAPTURES,
-	GEN_QUIETS,
-	PLAY_QUIETS,
-	STAGE_DONE
-};
-
-typedef struct {
-    
-    u64 key; 
-    int score;
-} PAWNS_HASH;
-
-typedef struct {
-    
-    u64 key; 
-    int score;
-} EVAL_HASH;
-
-
-typedef struct {
-	
-	u32 move;
-	int32_t score;
-} Move;
-
-typedef struct {
-	
-    u8 castleFlags;
-	u8 epFlag;
-	u8 epSquare;
-
-	u32 move;
-	u32 ttMove;
-    u32 killerMoves[2];
-
-    int sEval;
-
-    float extension; 
-} MOVE_STACK;
-
-typedef struct {
-
-	u8 castleFlags;
-	u8 epFlag;
-	u8 epSquare;
-	u64 hashKey;
-	u64 pawnsHashKey;
-	int fiftyMovesCounter;	
-} UNDO_MOVE_STACK;
-
-typedef struct {
-
-	int fiftyMovesCounter;
-	u64 hashKey;
-} MOVES_HISTORY;
-
-typedef struct {
-    
-    u64 key;
-    u32 bestMove;
-	int depth;
-	int value;
-	int sEval;
-	u8 flags; 
-} HASHE;
-
-
-typedef struct {
-
-	bool skipQuiets;
-	int stage;
-	u32 ttMove, counterMove;
-
-	std::vector<Move> moves;
-	std::vector<Move> badCaptures;
-} MOVE_LIST;
-
-
-class PV {
-
-	public:
-		int score;
-		std::vector<u32> line;
-};
-
-
-class EvalInfo {
-	
-public:
-
-	u64 openFilesBB;
-	u64 halfOpenFilesBB[2]; 
-
-	u64 knightAttacks[2][64];
-	u64 bishopAttacks[2][64];
-	u64 rookAttacks[2][64];
-	u64 queenAttacks[2][64];
-
-	u64 allPawnAttacks[2];
-	u64 allKnightAttacks[2];
-	u64 allBishopAttacks[2];
-	u64 allRookAttacks[2];
-	u64 allQueenAttacks[2];
-
-	u64 kingAttacks[2];
-	
-	u64 attacks[2];
-
-	u64 kingZoneBB[2];
-
-	int kingSq[2];
-
-	int kingAttackersCount[2];
-	int kingAttackersWeight[2];
-
-	int kingAdjacentZoneAttacksCount[2];
-
-    void clear() {
-
-		this->openFilesBB = 0ULL;
-
-		for (int i = 0; i < 2; i++) {
-	
-			this->halfOpenFilesBB[i] = 0ULL;
-
-			this->allPawnAttacks[i] = 0ULL;
-			this->allKnightAttacks[i] = 0ULL;
-			this->allBishopAttacks[i] = 0ULL;
-			this->allRookAttacks[i] = 0ULL;
-			this->allQueenAttacks[i] = 0ULL;
-			this->kingAttacks[i] = 0ULL;
-
-			for (int j = 0; j < 64; j++) {
-
-				this->knightAttacks[i][j] = 0ULL;
-				this->bishopAttacks[i][j] = 0ULL;
-				this->rookAttacks[i][j] = 0ULL;
-				this->queenAttacks[i][j] = 0ULL;
-			}
-
-			this->attacks[i] = 0ULL;
-
-			this->kingZoneBB[i] = 0ULL;
-
-			this->kingSq[i] = 0;
-
-			this->kingAttackersCount[i] = 0;
-			this->kingAttackersWeight[i] = 0;
-
-			this->kingAdjacentZoneAttacksCount[i] = 0;
-		} 
-	}
-};
-
 extern int MAX_DEPTH;
 
+// for perft
 extern u64 quiet, prevCap, cap, prevEp, ep, prevCas, cas, check, prom;
 
 extern u64 KEY_SIDE_TO_MOVE;
@@ -360,9 +128,6 @@ extern std::chrono::steady_clock::time_point stopTime;
 extern u64 arrInBetween[64][64];
 
 
-
-
-
 // Eval weights
 
 extern int weight_pawn;
@@ -387,7 +152,6 @@ extern int weight_bishop_pair;
 extern int weight_undefended_bishop;
 extern int weight_bad_bishop;
 
-
 extern int weight_rook_half_open_file;
 extern int weight_rook_open_file;
 extern int weight_rook_enemy_queen_same_file;
@@ -396,29 +160,17 @@ extern int weight_rook_blocked_by_king;
 extern int weight_rook_on_seventh_rank;
 extern int weight_rook_on_eight_rank;
 
-
 extern int weight_queen_underdeveloped_pieces;
-
 
 extern int weight_king_many_pawn_shield;
 extern int weight_king_pawn_shield;
 extern int weight_king_many_enemy_pawn_storm;
 extern int weight_king_enemy_pawn_storm;
 
-
 extern int arr_weight_knight_mobility[16];
 extern int arr_weight_bishop_mobility[16];
 extern int arr_weight_rook_mobility[16];
 extern int arr_weight_queen_mobility[32];
-
-
-extern int pawnPSQT[64];
-extern int knightPSQT[64];
-extern int bishopPSQT[64];
-extern int rookPSQT[64];
-extern int queenPSQT[64];
-extern int kingPSQT[64];
-
 
 extern int weight_center_control;
 
@@ -436,5 +188,12 @@ extern int weight_rook_check;
 extern int weight_queen_check;
 
 extern int weight_safety_adjustment;
+
+extern int pawnPSQT[64];
+extern int knightPSQT[64];
+extern int bishopPSQT[64];
+extern int rookPSQT[64];
+extern int queenPSQT[64];
+extern int kingPSQT[64];
 
 #endif /* globals_h */
