@@ -591,7 +591,6 @@ void startTuner() {
 			short side = parseFen(fen, th);
 			
 			data.sEval = traceFullEval(T, side, th);
-			//data.sEval = QuiescenseForTuning(0, side, -VAL_INFINITY, VAL_INFINITY, 12, &th, T);  
 
 			delete th; // free resources after use
 
@@ -655,7 +654,7 @@ void startTuner() {
 
 			if (count % 10000 == 0)	{
 
-				std::cout << count << " positions loaded \n";
+				std::cout << (count * 100) / NPOSITIONS << "% loaded\n";
 			}
 
 			if (count >= NPOSITIONS) {
@@ -758,9 +757,9 @@ void optimise(TVector params, TVector cparams) {
 			mae = tunedEvaluationErrors(params, K);
 
 			std::cout << std::setprecision(10);
-			std::cout << "Iteration -> " << epoch << ", ";
-			std::cout << "MAE -> " << mae << ", ";
-			std::cout << "LR -> " << alpha1 << std::endl;
+			std::cout << "Epoch = [" << epoch * BATCHSIZE / NPOSITIONS << "], ";
+			std::cout << "Error = [" << mae << "], ";
+			std::cout << "Rate = [" << alpha1 << "]" << std::endl;
 
 			counter++;
 			if (counter > 4) {
@@ -772,14 +771,6 @@ void optimise(TVector params, TVector cparams) {
 				std::async(writeToFile, params, cparams);
 			} 
 		}
-
-		// if (std::chrono::duration_cast<std::chrono::seconds>(endTime - lrStepTime).count() > 60 * 5) {
-			
-		// 	lrStepTime = std::chrono::steady_clock::now();
-
-		// 	if (alpha1 > 0.001)
-		// 		alpha1 = alpha1 / LRDROPRATE;
-		// }
 	}
 } 
 
