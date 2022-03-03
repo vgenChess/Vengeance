@@ -62,6 +62,7 @@ enum Piece {
 };
 
 enum {
+	VALUE_DUMMY = 0,
 	VALUE_PAWN = 100, VALUE_KNIGHT = 300, VALUE_BISHOP = 300,
 	VALUE_ROOK = 500, VALUE_QUEEN = 900, VALUE_KING = 2000
 };
@@ -244,6 +245,35 @@ public:
 
 			this->kingAdjacentZoneAttacksCount[i] = 0;
 		} 
+	}
+};
+
+class SearchInfo {
+
+public:
+		
+	U8 side;
+	int ply;
+	int depth;
+	int realDepth;
+	
+	bool isNullMoveAllowed;	 
+
+	U32 skipMove;
+
+	std::vector<U32> pline;
+
+	SearchInfo() {
+		
+		side = WHITE;
+		ply = 0;
+		depth = 0;
+	
+		isNullMoveAllowed = false;
+
+		skipMove = 0UL;
+
+		pline.clear();
 	}
 };
 

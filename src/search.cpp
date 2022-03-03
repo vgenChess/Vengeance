@@ -34,22 +34,18 @@
 #include "history.h"
 #include "ucireport.h"
 
-bool timeSet, stopped;
+bool timeSet, stopped, abortSearch;
 
 int option_thread_count;
 
 std::chrono::steady_clock::time_point startTime, stopTime;
-
-int timePerMove;
-int MAX_TIME_PER_SEARCH = 0;
-int MIN_TIME_PER_SEARCH = 0;
-
-int seeVal[8] = { 0, VALUE_PAWN, VALUE_KNIGHT, VALUE_BISHOP, VALUE_ROOK, VALUE_QUEEN, VALUE_KING, 0};
-
 std::mutex mtx;
 
+int timePerMove;
+int stableMoveCount = 0;
+
+
 int MAX_DEPTH = 100;
-bool ABORT_SEARCH;
 
 int LMR[64][64];
 
@@ -68,12 +64,12 @@ void initLMR() {
 void startSearch(U8 side) {
 
 
-	ABORT_SEARCH = false;
+	abortSearch = false;
 
 	Threads.start_searching(); // start non-main threads
 	iterativeDeepeningSearch(side, Threads.main()); // main thread start searching
 
-	ABORT_SEARCH = true;
+	abortSearch = true;
 
 	// When we reach the maximum depth, we can arrive here without a raise of
 	// Threads.stop. However, if we are pondering or in an infinite search,
@@ -98,9 +94,6 @@ void startSearch(U8 side) {
 	timeSet = false;
 	stopped = false;
 }
-	
- 
-int stableMoveCount = 0;
 
 void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
 	
@@ -340,13 +333,14 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 
 	// Check time spent		
 
-	if (	timeSet 
-		&&  IS_MAIN_THREAD 
-		&&  th->nodes % U16_CHECK_NODES == 0) checkTime();
+	if (timeSet && IS_MAIN_THREAD && th->nodes % U16_CHECK_NODES == 0)
+		checkTime();
 	
-	if (IS_MAIN_THREAD && Threads.stop) return 0;
+	if (IS_MAIN_THREAD && Threads.stop) 
+		return 0;
 
-	if (ABORT_SEARCH) return 0; 
+	if (abortSearch) 
+		return 0; 
 
 
 
@@ -393,7 +387,8 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 	int32_t ttScore = ttMatch ? tt->value : I32_UNKNOWN;
 	U32 ttMove =  ttMatch ? tt->bestMove : NO_MOVE;
 
-	if (ttMatch) th->ttHits++;
+	if (ttMatch) 
+		th->ttHits++;
 
 	if (!IS_ROOT_NODE && !IS_PV_NODE && ttMatch && tt->depth >= depth && ttScore != I32_UNKNOWN) {
 		
@@ -695,16 +690,10 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 		}
 
 
-
         // report current move being searched
-        if (	IS_ROOT_NODE 
-        	&&	IS_MAIN_THREAD
-        	&&	th->canReportCurrMove) {	
-
+        if (IS_ROOT_NODE &&	IS_MAIN_THREAD && th->canReportCurrMove)
         	reportCurrentMove(si->realDepth, movesPlayed, currentMove.move);
-        }
-
-
+        
         
         th->moveStack[PLY].move = currentMove.move;
 
@@ -716,53 +705,42 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 
 			int16_t pieceCurrMove = pieceType(currentMove.move);
 
-			if (currentMove.move == ttMove && ttMoveIsSingular) { // Singular extension
-
+			if (currentMove.move == ttMove && ttMoveIsSingular) // Singular extension
 				extension += F_SINGULAR_EXT;
-			}
-
-			if (IS_IN_CHECK) {
-
+			
+			if (IS_IN_CHECK) 
 				extension += F_CHECK_EXT;	// Check extension
-			}
 
-			if (mateThreat) {
-
+			if (mateThreat)
 				extension += F_MATE_THREAT_EXT; // Mate threat extension
-			}
 		
-			if (currentMoveType == MOVE_PROMOTION) {
-
+			if (currentMoveType == MOVE_PROMOTION) 
 				extension += F_PROMOTION_EXT;	// Promotion extension
-			}
 			
 			bool isPrank = SIDE ? 
 				currentMoveToSq >= 8 && currentMoveToSq <= 15 : 
 				currentMoveToSq >= 48 && currentMoveToSq <= 55;
 			
-			if (pieceCurrMove == PAWNS && isPrank) {
-
+			if (pieceCurrMove == PAWNS && isPrank)
 				extension += F_PRANK_EXT;  // Pawn push extension
-			}
 
-			int16_t prevMoveType = move_type(previousMove);
+			U8 prevMoveType = move_type(previousMove);
+			
 			if (previousMove != NO_MOVE && prevMoveType == MOVE_CAPTURE) {
 
-				int16_t prevMoveToSq = to_sq(previousMove);
-				if (currentMoveToSq == prevMoveToSq) {
-
+				U8 prevMoveToSq = to_sq(previousMove);
+			
+				if (currentMoveToSq == prevMoveToSq)
 					extension += F_RECAPTURE_EXT; // Recapture extension
-				}
 			}
 
 			if (extension >= F_ONE_PLY) {
 
 				extend = 1;
 				extension -= F_ONE_PLY;
-				if (extension >= F_ONE_PLY) {
 
+				if (extension >= F_ONE_PLY) 
 					extension = 3 * F_ONE_PLY / 4;
-				}
 			}
 		} 
 
@@ -796,11 +774,17 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 				
 		        reduce = LMR[std::min(depth, 63)][std::min(movesPlayed, 63)];
 
-				if (!IS_PV_NODE) reduce++;
-				if (!improving && !IS_IN_CHECK) reduce++; // IS_IN_CHECK sets improving to false
-				if (IS_IN_CHECK && pieceType(currentMove.move) == KING) reduce++;
+				if (!IS_PV_NODE) 
+					reduce++;
+				
+				if (!improving && !IS_IN_CHECK) 
+					reduce++; // IS_IN_CHECK sets improving to false
+				
+				if (IS_IN_CHECK && pieceType(currentMove.move) == KING) 
+					reduce++;
 
-				if (th->moveList[PLY].stage < GEN_QUIETS) reduce--; // reduce less for killer and counter moves
+				if (th->moveList[PLY].stage < GEN_QUIETS) 
+					reduce--; // reduce less for killer and counter moves
 	            
 	            reduce -= std::max(-2, std::min(2, currentMove.score / 5000));	// TODO	rewrite logic				
 
@@ -824,10 +808,8 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 
 				score = -alphabetaSearch(-alpha - 1, -alpha, mate - 1, th, &searchInfo);					
 		
-				if (score > alpha && score < beta) {
-
+				if (score > alpha && score < beta)
 					score = -alphabetaSearch(-beta, -alpha, mate - 1, th, &searchInfo);					
-				}
 			}
 		}
 
@@ -869,10 +851,9 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 
 		if (isQuietMove) {
 
-			// update killers
-		
 			if (bestMove != KILLER_MOVE_1 && bestMove != KILLER_MOVE_2) {
-
+				// update killers
+		
 				th->moveStack[PLY].killerMoves[1] = KILLER_MOVE_1;
 				th->moveStack[PLY].killerMoves[0] = bestMove;
 			}
@@ -884,10 +865,8 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 	}
 
 
-	if (movesPlayed == 0) { // Mate and stalemate check
-
+	if (movesPlayed == 0) // Mate and stalemate check
 		return IS_IN_CHECK ? -mate : 0;
-	}
 
 
 	if (!IS_SINGULAR_SEARCH)
@@ -897,7 +876,9 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 	return bestScore;
 }	
 
-
+int seeVal[8] = {	VALUE_DUMMY, VALUE_PAWN, VALUE_KNIGHT, VALUE_BISHOP,
+					VALUE_ROOK, VALUE_QUEEN, VALUE_KING, VALUE_DUMMY };
+					
 // TODO should limit Quiescense search explosion
 int quiescenseSearch(int ply, int side, int alpha, int beta, SearchThread *th, std::vector<U32> *pline) {
 
@@ -912,11 +893,14 @@ int quiescenseSearch(int ply, int side, int alpha, int beta, SearchThread *th, s
 
 
 	// Check if time limit has been reached
-	if (timeSet && IS_MAIN_THREAD && th->nodes % U16_CHECK_NODES == 0) checkTime();	
+	if (timeSet && IS_MAIN_THREAD && th->nodes % U16_CHECK_NODES == 0) 
+		checkTime();	
 	
-	if (IS_MAIN_THREAD && Threads.stop) return 0;
+	if (IS_MAIN_THREAD && Threads.stop) 
+		return 0;
 
-	if (ABORT_SEARCH) return 0; 
+	if (abortSearch) 
+		return 0; 
 
 
 	th->selDepth = std::max(th->selDepth, ply);
@@ -928,17 +912,23 @@ int quiescenseSearch(int ply, int side, int alpha, int beta, SearchThread *th, s
 	// Repetition detection
 	if (isRepetition(ply, th)) {
 
-		if (VAL_ALL_PIECES > 22)	return -50;
-		if (VAL_ALL_PIECES > 12)	return -25;	// middlegame
-								 	return   0;	// endgame
+		if (VAL_ALL_PIECES > 22)	
+			return -50;	// earlygame
+		
+		if (VAL_ALL_PIECES > 12)	
+			return -25;	// middlegame
+		
+		return 0; // endgame
 	}
 
 	th->movesHistory[th->moves_history_counter + ply + 1].hashKey = th->hashKey;
 
 	// Check for drawish endgame
-	if (isPositionDraw(th)) return 0;
+	if (isPositionDraw(th)) 
+		return 0;
 
-	if (ply >= U16_MAX_PLY - 1) return fullEval(side, th);
+	if (ply >= U16_MAX_PLY - 1) 
+		return fullEval(side, th);
 
 
 
@@ -982,26 +972,14 @@ int quiescenseSearch(int ply, int side, int alpha, int beta, SearchThread *th, s
 	bestScore = sEval;
 	alpha = std::max(alpha, sEval);
 
-	if (alpha >= beta) return sEval;	
-
+	if (alpha >= beta) 
+		return sEval;	
 
 	
 	th->moveStack[ply].epFlag = th->moveStack[ply - 1].epFlag;
 	th->moveStack[ply].epSquare = th->moveStack[ply - 1].epSquare;
 	th->moveStack[ply].castleFlags = th->moveStack[ply - 1].castleFlags;
 
-
-	const int32_t Q_FUTILITY_BASE = sEval + U16_Q_DELTA; 
-
-	const int16_t I16_OPP_PIECES = 
-		POPCOUNT(OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
-
-	
-	int32_t hashf = hashfALPHA;
-	
-	Move currentMove;
-
-	std::vector<U32> line;
 
 	th->moveList[ply].skipQuiets = true;
 	th->moveList[ply].stage = GEN_CAPTURES;
@@ -1010,8 +988,16 @@ int quiescenseSearch(int ply, int side, int alpha, int beta, SearchThread *th, s
 	th->moveList[ply].moves.clear();
 	th->moveList[ply].badCaptures.clear();
 
-	int16_t capPiece, movesPlayed = 0; 
-	int32_t score = -I32_MATE;
+	const U8 VAL_OPP_PIECES = POPCOUNT(OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
+	const int Q_FUTILITY_BASE = sEval + U16_Q_DELTA; 
+
+	U8 hashf = hashfALPHA, capPiece = DUMMY;
+	short movesPlayed = 0; 
+	int score = -I32_MATE;
+
+	Move currentMove;
+	
+	std::vector<U32> line;
 
 	while (true) {
 
@@ -1042,7 +1028,7 @@ int quiescenseSearch(int ply, int side, int alpha, int beta, SearchThread *th, s
  			&&	move_type(currentMove.move) != MOVE_PROMOTION) {
 
 			// Delta pruning
-	 		if (I16_OPP_PIECES > 3 && Q_FUTILITY_BASE + seeVal[capPiece] <= alpha) {
+	 		if (VAL_OPP_PIECES > 3 && Q_FUTILITY_BASE + seeVal[capPiece] <= alpha) {
 
 				unmake_move(ply, currentMove.move, th);
 
@@ -1090,111 +1076,3 @@ int quiescenseSearch(int ply, int side, int alpha, int beta, SearchThread *th, s
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// For Tuning
-/*int QuiescenseForTuning(int ply, int side, int alpha, int beta, int depth, Thread *th, TraceCoefficients *T) {
-
-	
-	const U8 opponent = side ^ 1;
-
-	
-	int staticEval = traceFullEval(T, side, th);
-
-
-	if (ply > U16_MAX_PLY)	return staticEval;
-
-	if (staticEval >= beta)	return staticEval;
-	
-	if (staticEval > alpha)	alpha = staticEval;
-
-
-	if (ply != 0) {
-	
-		th->moveStack[ply].epFlag = th->moveStack[ply - 1].epFlag;
-		th->moveStack[ply].epSquare = th->moveStack[ply - 1].epSquare;
-		th->moveStack[ply].castleFlags = th->moveStack[ply - 1].castleFlags;
-	}
-
-	std::vector<Move> moveList;	
-
-	int val = -VALUI32_MATE;
-
-	Move currentMove, tmp;
-
-	for (int stage = STAGE_PROMOTIONS; stage <= STAGE_CAPTURES; stage++) {
-
-		moveList.clear();
-		getMoves(ply, side, moveList, stage, true, th);
-
-		int n = moveList.size();
-
-		for (int i = 0; i < n; i++) {   // loop n times - 1 per element
-        	for (int j = 0; j < n - i - 1; j++) { // last i elements are sorted already
-    
-            	if (moveList[j].score < moveList[j + 1].score) {
-            	
-                	tmp = moveList[j];
-                	moveList[j] = moveList[j + 1];
-                	moveList[j + 1] = tmp;
-           		}
-        	}
-    	}
-
-
-		for (std::vector<Move>::iterator i = moveList.begin(); i != moveList.end(); ++i) {
-	
-   	 		currentMove = *i;
-
-			make_move(ply, currentMove.move, th);
-
-			if (!isKingInCheck(side, th)) {
-
-				val = -QuiescenseForTuning(ply + 1, opponent, -beta, -alpha, depth - 1, th, T);
-
-				unmake_move(ply, currentMove.move, th);
-
-				if (val > alpha) {
-
-					if (val >= beta)	return beta;
-					
-					alpha = val;
-				}
-			} else {
-
-				unmake_move(ply, currentMove.move, th);
-			}
-		}
-	}
-
-	return alpha;
-}*/
