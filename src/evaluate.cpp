@@ -23,9 +23,6 @@
 #include "weights.h"
 #include "functions.h"
 
-#define MIDGAME 1
-#define ENDGAME 2
-
 TraceCoefficients *T;
 
 int Mirror64[64] = {
