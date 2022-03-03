@@ -90,8 +90,6 @@ extern int weight_undefended_knight;
 extern int weight_knight_defended_by_pawn;
 
 extern int weight_bishop_pair;
-extern int weight_undefended_bishop;
-extern int weight_bad_bishop;
 
 extern int weight_rook_half_open_file;
 extern int weight_rook_open_file;
