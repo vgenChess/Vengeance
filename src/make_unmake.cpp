@@ -419,7 +419,6 @@ void make_move(int ply, U32 move, Thread *th) {
 					th->hashKey ^= zobrist[ROOKS][WHITE][0] ^ zobrist[ROOKS][WHITE][3];
 					th->hashKey ^= KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
 
-					
 					th->material += WHITE_PSQT[KING][2] + WHITE_PSQT[ROOKS][3];
 					th->material -= WHITE_PSQT[KING][4] - WHITE_PSQT[ROOKS][0];
 
@@ -828,7 +827,6 @@ void makeNullMove(int ply, Thread *th) { // Needs investigation
 	th->undoMoveStack[ply].epSquare = th->moveStack[ply].epSquare;
 	th->undoMoveStack[ply].hashKey = th->hashKey;
 	th->undoMoveStack[ply].pawnsHashKey = th->pawnsHashKey;
-	th->undoMoveStack[ply].material = th->material;
 
 	// making any move will make the ep move invalid
 	th->moveStack[ply].epFlag = 0;
@@ -847,8 +845,7 @@ void unmakeNullMove(int ply, Thread *th) {
 	
 	th->hashKey = th->undoMoveStack[ply].hashKey;
 	th->pawnsHashKey = th->undoMoveStack[ply].pawnsHashKey;
-	th->material = th->undoMoveStack[ply].material;
-
+	
 	int mhCounter = th->moves_history_counter + ply; // Needs investigation
 
 	th->movesHistory[mhCounter].fiftyMovesCounter = th->undoMoveStack[ply].fiftyMovesCounter;
