@@ -18,9 +18,7 @@ public:
 
 	U8 side;
 
-	int material;
-
-	uint16_t moves_history_counter;
+	U16 moves_history_counter;
 	
 	int32_t historyScore[2][64][64];
 	int32_t captureHistoryScore[8][64][8]; // [piece][to][c_piece]

@@ -154,22 +154,7 @@ void UciLoop() {
             }
 
             initThread.side = sideToMove;
-            initThread.material = 0;
-
-            U8 sq;
-            U64 bb;
-            for (U8 side = WHITE; side <= BLACK; side++) {
-
-                for (U8 piece = PAWNS; piece <= KING; piece++) {
-                    
-                    bb = side ? initThread.blackPieceBB[piece] : initThread.whitePieceBB[piece];
-
-                    sq = GET_POSITION(bb);
-                    POP_POSITION(bb);
-
-                    initThread.material += side ? BLACK_PSQT[piece][sq] : WHITE_PSQT[piece][sq];
-                }
-            }
+            
         } else if (token == "isready") {
 
             std::cout << "readyok\n";

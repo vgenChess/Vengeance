@@ -8,8 +8,6 @@ SearchThreadPool Threads; // Global object
 
 Thread::Thread() {
 
-	this->material = 0;
-
 	this->moveList = std::vector<MOVE_LIST> (U16_MAX_MOVES);
 	this->pvLine = std::vector<PV> (U16_MAX_PLY);
 	this->moveStack = std::vector<MOVE_STACK> (U16_MAX_PLY + 4);
@@ -40,8 +38,6 @@ Thread::Thread() {
 
 void Thread::initMembers() {
 
-	this->material = 0;
-
 	this->moveList = std::vector<MOVE_LIST> (U16_MAX_MOVES);
 	this->pvLine = std::vector<PV> (U16_MAX_PLY);
 	this->moveStack = std::vector<MOVE_STACK> (U16_MAX_PLY + 4);
@@ -71,8 +67,6 @@ void Thread::initMembers() {
 }
 
 void Thread::clear() {
-
-	this->material = 0;
 
 	this->moveList.clear();
 	this->pvLine.clear();
@@ -189,8 +183,6 @@ void SearchThread::idle_loop() {
 void SearchThread::init() {
 
 	this->side = initThread.side;
-
-	this->material = initThread.material;
 
 	pvLine.clear();
 	moveStack.clear();	

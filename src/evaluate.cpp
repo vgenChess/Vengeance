@@ -229,7 +229,7 @@ int fullEval(U8 stm, Thread *th) {
 	eval += 	kingEval(WHITE, th) 	- 	kingEval(BLACK, th);
 	eval += 	evalBoard(WHITE, th) 	- 	evalBoard(BLACK, th);
 
-	eval += 	th->material;
+	// eval += 	th->material;
 
 
 	// Tapered evaluation 
@@ -256,6 +256,16 @@ int pawnsEval(U8 stm, Thread *th) {
 
 	int score = 0;
 	int sq = -1, rank = -1;
+
+	U64 ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+	while (ourPawns) {
+
+		sq = GET_POSITION(ourPawns);
+		POP_POSITION(ourPawns);
+
+		score += stm ? BLACK_PSQT[PAWNS][sq] : WHITE_PSQT[PAWNS][sq];
+	}
+
 
 	const int nIsolatedPawns = isolatedPawns(stm, th);
 	score += nIsolatedPawns * weight_isolated_pawn;
@@ -313,7 +323,7 @@ int pawnsEval(U8 stm, Thread *th) {
 		rank = stm ? Mirror64[sq] >> 3 : sq >> 3; // = sq / 8
 
 		assert(rank+1 >= 1 && rank+1 <= 8);
-	
+		
 
 		if ((1ULL << sq) & th->evalInfo.allPawnAttacks[stm]) {
 
@@ -356,6 +366,8 @@ int knightsEval(U8 stm, Thread *th) {
 		POP_POSITION(knightsBB);
 
 		assert(sq >= 0 && sq <= 63);
+		
+		score += stm ? BLACK_PSQT[KNIGHTS][sq] : WHITE_PSQT[KNIGHTS][sq];
 
 		U64 attacksBB = th->evalInfo.knightAttacks[stm][sq];
 
@@ -443,6 +455,10 @@ int bishopsEval(U8 stm, Thread *th) {
 
 		assert(sq >= 0 && sq <= 63);
 		
+
+		score += stm ? BLACK_PSQT[BISHOPS][sq] : WHITE_PSQT[BISHOPS][sq];
+
+
 		U64 attacksBB = th->evalInfo.bishopAttacks[stm][sq];
 
 
@@ -506,6 +522,7 @@ int rooksEval(U8 stm, Thread *th) {
 
 		assert(sq >= 0 && sq <= 63);
 
+		score += stm ? BLACK_PSQT[ROOKS][sq] : WHITE_PSQT[ROOKS][sq];
 
 		// Rook on half open file
 		if ((1ULL << sq) & th->evalInfo.halfOpenFilesBB[stm]) {
@@ -667,6 +684,8 @@ int queenEval(U8 stm, Thread *th) {
 
 		assert(sq >= 0 && sq <= 63);
 
+		score += stm ? BLACK_PSQT[QUEEN][sq] : WHITE_PSQT[QUEEN][sq];
+
 
 		attacksBB = th->evalInfo.queenAttacks[stm][sq];
 			
@@ -736,6 +755,10 @@ int kingEval(U8 stm, Thread *th) {
 	int score = 0;	
 	
 	assert(kingSq >= 0 && kingSq < 64);
+
+
+	score += stm ? BLACK_PSQT[KING][kingSq] : WHITE_PSQT[KING][kingSq];
+
 
 	U64 ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 	U64 theirPawns = opp ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
@@ -845,12 +868,12 @@ void initPSQT() {
 		WHITE_PSQT[QUEEN][sq] = whiteQueenPSQT[sq] + weight_val_queen; 
 		WHITE_PSQT[KING][sq] = whiteKingPSQT[sq]; 
 	
-		BLACK_PSQT[PAWNS][sq] = -blackPawnPSQT[sq] - weight_val_pawn;
-		BLACK_PSQT[KNIGHTS][sq] = -blackKnightPSQT[sq] - weight_val_knight; 
-		BLACK_PSQT[BISHOPS][sq] = -blackBishopPSQT[sq] - weight_val_bishop;
-		BLACK_PSQT[ROOKS][sq] = -blackRookPSQT[sq] - weight_val_rook;
-		BLACK_PSQT[QUEEN][sq] = -blackQueenPSQT[sq] - weight_val_queen;
-		BLACK_PSQT[KING][sq] = -blackKingPSQT[sq];
+		BLACK_PSQT[PAWNS][sq] = blackPawnPSQT[sq] + weight_val_pawn;
+		BLACK_PSQT[KNIGHTS][sq] = blackKnightPSQT[sq] + weight_val_knight; 
+		BLACK_PSQT[BISHOPS][sq] = blackBishopPSQT[sq] + weight_val_bishop;
+		BLACK_PSQT[ROOKS][sq] = blackRookPSQT[sq] + weight_val_rook;
+		BLACK_PSQT[QUEEN][sq] = blackQueenPSQT[sq] + weight_val_queen;
+		BLACK_PSQT[KING][sq] = blackKingPSQT[sq];
 	}
 }
 

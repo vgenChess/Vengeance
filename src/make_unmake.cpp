@@ -69,7 +69,6 @@ void make_move(int ply, U32 move, Thread *th) {
 	th->undoMoveStack[ply].epSquare = th->moveStack[ply].epSquare;
 	th->undoMoveStack[ply].hashKey = th->hashKey;
 	th->undoMoveStack[ply].pawnsHashKey = th->pawnsHashKey;
-	th->undoMoveStack[ply].material = th->material;
 
 
 	const int mhCounter = th->moves_history_counter + ply; // Needs investigation 
@@ -119,10 +118,6 @@ void make_move(int ply, U32 move, Thread *th) {
 				th->whitePieceBB[PIECES] ^= from_to_bb; 
 			}
 
-
-			th->material += stm ? BLACK_PSQT[piece][toSq] : WHITE_PSQT[piece][toSq];
-			th->material -= stm ? BLACK_PSQT[piece][fromSq] : WHITE_PSQT[piece][fromSq];
-			
 
 			th->hashKey ^= zobrist[piece][stm][fromSq] ^ zobrist[piece][stm][toSq];
 			
@@ -213,11 +208,6 @@ void make_move(int ply, U32 move, Thread *th) {
 			
 			th->hashKey ^= zobrist[piece][stm][fromSq] ^ zobrist[piece][stm][toSq];
 			th->hashKey ^= zobrist[target][opp][toSq];
-
-
-			th->material += stm ? BLACK_PSQT[piece][toSq] : WHITE_PSQT[piece][toSq];
-			th->material -= stm ? BLACK_PSQT[piece][fromSq] : WHITE_PSQT[piece][fromSq];
-			th->material -= stm ? BLACK_PSQT[target][toSq] : WHITE_PSQT[target][toSq];
 
 
 			if (piece == PAWNS)	
@@ -327,10 +317,6 @@ void make_move(int ply, U32 move, Thread *th) {
 			}
 			
 
-			th->material += stm ? BLACK_PSQT[PAWNS][toSq] : WHITE_PSQT[PAWNS][toSq];
-			th->material -= stm ? BLACK_PSQT[PAWNS][fromSq] : WHITE_PSQT[PAWNS][fromSq];
-
-
 			th->hashKey ^= zobrist[PAWNS][stm][fromSq] ^ zobrist[PAWNS][stm][toSq];
 
 			th->pawnsHashKey ^= pawnZobristKey[fromSq] ^ pawnZobristKey[toSq];
@@ -378,10 +364,6 @@ void make_move(int ply, U32 move, Thread *th) {
 			th->pawnsHashKey ^= pawnZobristKey[sqOfCapturedPawn]; 
 
 
-			th->material += stm ? BLACK_PSQT[PAWNS][toSq] : WHITE_PSQT[PAWNS][toSq];
-			th->material -= stm ? BLACK_PSQT[PAWNS][fromSq] : WHITE_PSQT[PAWNS][fromSq];
-			th->material -= stm ? BLACK_PSQT[PAWNS][sqOfCapturedPawn] : WHITE_PSQT[PAWNS][sqOfCapturedPawn];
-
 			break;
 		}
 
@@ -419,9 +401,6 @@ void make_move(int ply, U32 move, Thread *th) {
 					th->hashKey ^= zobrist[ROOKS][WHITE][0] ^ zobrist[ROOKS][WHITE][3];
 					th->hashKey ^= KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
 
-					th->material += WHITE_PSQT[KING][2] + WHITE_PSQT[ROOKS][3];
-					th->material -= WHITE_PSQT[KING][4] - WHITE_PSQT[ROOKS][0];
-
 				} else if (castleDirection == WHITE_CASTLE_KING_SIDE) {
 
 					//clear out king and rook
@@ -441,9 +420,6 @@ void make_move(int ply, U32 move, Thread *th) {
 					th->hashKey ^= zobrist[ROOKS][WHITE][7] ^ zobrist[ROOKS][WHITE][5];
 					th->hashKey ^= KEY_FLAG_WHITE_CASTLE_KING_SIDE;
 
-
-					th->material += WHITE_PSQT[KING][6] + WHITE_PSQT[ROOKS][5];
-					th->material -= WHITE_PSQT[KING][4] - WHITE_PSQT[ROOKS][7];
 				}
 
 				th->moveStack[ply].castleFlags &= ~(CASTLE_FLAG_WHITE_KING | CASTLE_FLAG_WHITE_QUEEN);
@@ -470,9 +446,6 @@ void make_move(int ply, U32 move, Thread *th) {
 					th->hashKey ^= KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
 
 
-					th->material += BLACK_PSQT[KING][58] + BLACK_PSQT[ROOKS][59];
-					th->material -= BLACK_PSQT[KING][60] - BLACK_PSQT[ROOKS][56];
-
 				} else if (castleDirection == BLACK_CASTLE_KING_SIDE) {
 
 					//clear out king and rook
@@ -492,9 +465,6 @@ void make_move(int ply, U32 move, Thread *th) {
 					th->hashKey ^= zobrist[ROOKS][BLACK][63] ^ zobrist[ROOKS][BLACK][61];
 					th->hashKey ^= KEY_FLAG_BLACK_CASTLE_KING_SIDE;
 
-
-					th->material += BLACK_PSQT[KING][62] + BLACK_PSQT[ROOKS][61];
-					th->material -= BLACK_PSQT[KING][60] - BLACK_PSQT[ROOKS][63];
 				}
 
 				th->moveStack[ply].castleFlags &= ~(CASTLE_FLAG_BLACK_KING | CASTLE_FLAG_BLACK_QUEEN);	
@@ -537,9 +507,6 @@ void make_move(int ply, U32 move, Thread *th) {
 			}
 
 
-			th->material += stm ? BLACK_PSQT[promoteTo][toSq] : WHITE_PSQT[promoteTo][toSq];
-			th->material -= stm ? BLACK_PSQT[PAWNS][fromSq] : WHITE_PSQT[PAWNS][fromSq];
-
 			if (target != DUMMY) {
 
 				if (stm) {
@@ -554,7 +521,6 @@ void make_move(int ply, U32 move, Thread *th) {
 		
 				th->hashKey ^= zobrist[target][opp][toSq]; 
 
-				th->material -= stm ? BLACK_PSQT[target][toSq] : WHITE_PSQT[target][toSq];
 			}
 
 					
@@ -633,7 +599,6 @@ void unmake_move(int ply, U32 move, Thread *th) {
 	
 	th->hashKey = th->undoMoveStack[ply].hashKey;
 	th->pawnsHashKey = th->undoMoveStack[ply].pawnsHashKey;
-	th->material = th->undoMoveStack[ply].material;
 
 	th->movesHistory[th->moves_history_counter + ply].fiftyMovesCounter = th->undoMoveStack[ply].fiftyMovesCounter;
 
