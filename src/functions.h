@@ -68,10 +68,9 @@
 #define ScoreMG(s) ((int16_t)((uint16_t)((unsigned)((s)))))
 #define ScoreEG(s) ((int16_t)((uint16_t)((unsigned)((s) + 0x8000) >> 16)))
 
-#define S(mg, eg) (MakeScore((mg), (eg)))
-
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
 #define MAX(A, B) ((A) > (B) ? (A) : (B))
 
+#define S(mg, eg) (MakeScore((mg), (eg)))
 
 #endif

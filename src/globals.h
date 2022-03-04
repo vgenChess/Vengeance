@@ -71,11 +71,11 @@ extern U64 arrInBetween[U8_MAX_SQUARES][U8_MAX_SQUARES];
 
 // Eval weights for tuning and evaluation
 
-extern int weight_pawn;
-extern int weight_knight;
-extern int weight_bishop;
-extern int weight_rook;
-extern int weight_queen; 
+extern int weight_val_pawn;
+extern int weight_val_knight;
+extern int weight_val_bishop;
+extern int weight_val_rook;
+extern int weight_val_queen; 
 
 extern int weight_isolated_pawn;
 extern int weight_backward_pawn;
@@ -141,5 +141,16 @@ extern int blackBishopPSQT[U8_MAX_SQUARES];
 extern int blackRookPSQT[U8_MAX_SQUARES];
 extern int blackQueenPSQT[U8_MAX_SQUARES];
 extern int blackKingPSQT[U8_MAX_SQUARES];
+
+
+extern int whitePawnPSQT[U8_MAX_SQUARES];
+extern int whiteKnightPSQT[U8_MAX_SQUARES];
+extern int whiteBishopPSQT[U8_MAX_SQUARES];
+extern int whiteRookPSQT[U8_MAX_SQUARES];
+extern int whiteQueenPSQT[U8_MAX_SQUARES];
+extern int whiteKingPSQT[U8_MAX_SQUARES];
+
+extern int WHITE_PSQT[U8_MAX_PIECES][U8_MAX_SQUARES];
+extern int BLACK_PSQT[U8_MAX_PIECES][U8_MAX_SQUARES];
 
 #endif /* globals_h */

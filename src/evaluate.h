@@ -16,11 +16,11 @@ class TraceCoefficients {
 
 public:
 
-	int nPawns[2];
-	int nKnights[2];
-	int nBishops[2];
-	int nRooks[2];
-	int nQueen[2];
+	int weight_val_pawn[2];
+	int weight_val_knight[2];
+	int weight_val_bishop[2];
+	int weight_val_rook[2];
+	int weight_val_queen[2];
 	
 	int isolatedPawns[2];
 	int backwardPawns[2];
@@ -95,15 +95,15 @@ public:
 	void clear() {
 
 		for (int i = 0; i < 2; i++)
-			this->nPawns[i] = 0;
+			this->weight_val_pawn[i] = 0;
 		for (int i = 0; i < 2; i++)
-			this->nKnights[i] = 0;
+			this->weight_val_knight[i] = 0;
 		for (int i = 0; i < 2; i++)
-			this->nBishops[i] = 0;
+			this->weight_val_bishop[i] = 0;
 		for (int i = 0; i < 2; i++)
-			this->nRooks[i] = 0;
+			this->weight_val_rook[i] = 0;
 		for (int i = 0; i < 2; i++)
-			this->nQueen[i] = 0;
+			this->weight_val_queen[i] = 0;
 
 		for (int i = 0; i < 2; i++)
 			this->isolatedPawns[i] = 0;
@@ -244,7 +244,6 @@ int traceFullEval(TraceCoefficients *traceCoefficients, U8 stm, Thread *th);
 
 int fullEval(U8 stm, Thread *th);
 
-int PSQTScore(U8 stm, Thread *th);
 int pawnsEval(U8 stm, Thread *th);
 int knightsEval(U8 stm, Thread *th);
 int bishopsEval(U8 stm, Thread *th);

@@ -18,6 +18,8 @@ public:
 
 	U8 side;
 
+	int material;
+
 	uint16_t moves_history_counter;
 	
 	int32_t historyScore[2][64][64];

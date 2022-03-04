@@ -148,6 +148,7 @@ typedef struct {
 	U8 epFlag;
 	U8 epSquare;
 	int fiftyMovesCounter;	
+	int material;
 	U64 hashKey;
 	U64 pawnsHashKey;
 } UNDO_MOVE_STACK;

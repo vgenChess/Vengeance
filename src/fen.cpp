@@ -178,6 +178,8 @@ U8 parseFen(std::string str, Thread *th) {
                     
                     th->hashKey ^= zobrist[KING][BLACK][pos];
                     
+                    th->material += BLACK_PSQT[KING][pos];
+                    
                     pos--;
                     break;
                 case 'q':
@@ -186,12 +188,16 @@ U8 parseFen(std::string str, Thread *th) {
                     
                     th->hashKey ^= zobrist[QUEEN][BLACK][pos];
                     
+                    th->material += BLACK_PSQT[QUEEN][pos];
+                    
                     pos--;
                     break;
                 case 'b':
                     th->blackPieceBB[BISHOPS] |= getBitboardFromSquare(pos);
                     
                     th->hashKey ^= zobrist[BISHOPS][BLACK][pos];
+                    
+                    th->material += BLACK_PSQT[BISHOPS][pos];
                     
                     pos--;
                     break;
@@ -200,6 +206,8 @@ U8 parseFen(std::string str, Thread *th) {
                    
                     th->hashKey ^= zobrist[KNIGHTS][BLACK][pos];
                    
+                    th->material += BLACK_PSQT[KNIGHTS][pos];
+                    
                     pos--;
                     break;
                 case 'r':
@@ -207,6 +215,8 @@ U8 parseFen(std::string str, Thread *th) {
                    
                     th->hashKey ^= zobrist[ROOKS][BLACK][pos];
                    
+                    th->material += BLACK_PSQT[ROOKS][pos];
+                    
                     pos--;
                     break;
                 case 'p':
@@ -214,6 +224,8 @@ U8 parseFen(std::string str, Thread *th) {
                    
                     th->hashKey ^= zobrist[PAWNS][BLACK][pos];
                    
+                    th->material += BLACK_PSQT[PAWNS][pos];
+                    
                     pos--;
                     break;
                
@@ -224,6 +236,8 @@ U8 parseFen(std::string str, Thread *th) {
                     
                     th->hashKey ^= zobrist[KING][WHITE][pos];
                  
+                    th->material += WHITE_PSQT[KING][pos];
+                    
                     pos--;
                     break;
                 case 'Q':
@@ -232,6 +246,8 @@ U8 parseFen(std::string str, Thread *th) {
                 
                     th->hashKey ^= zobrist[QUEEN][WHITE][pos];
                  
+                    th->material += WHITE_PSQT[QUEEN][pos];
+                    
                     pos--;
                     break;
                 case 'B':
@@ -239,6 +255,8 @@ U8 parseFen(std::string str, Thread *th) {
                     th->whitePieceBB[BISHOPS] |= getBitboardFromSquare(pos);
                 
                     th->hashKey ^= zobrist[BISHOPS][WHITE][pos];
+                    
+                    th->material += WHITE_PSQT[BISHOPS][pos];
                     
                     pos--;
                     break;
@@ -248,6 +266,8 @@ U8 parseFen(std::string str, Thread *th) {
                 
                     th->hashKey ^= zobrist[KNIGHTS][WHITE][pos];
                     
+                    th->material += WHITE_PSQT[KNIGHTS][pos];
+                    
                     pos--;
                     break;
                 case 'R':
@@ -256,6 +276,8 @@ U8 parseFen(std::string str, Thread *th) {
                 
                     th->hashKey ^= zobrist[ROOKS][WHITE][pos];
                     
+                    th->material += WHITE_PSQT[ROOKS][pos];
+                    
                     pos--;
                     break;
                 case 'P':
@@ -263,6 +285,8 @@ U8 parseFen(std::string str, Thread *th) {
                     th->whitePieceBB[PAWNS] |= getBitboardFromSquare(pos);
                     
                     th->hashKey ^= zobrist[PAWNS][WHITE][pos];
+                    
+                    th->material += WHITE_PSQT[PAWNS][pos];
                     
                     pos--;
                     break;

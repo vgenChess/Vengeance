@@ -48,14 +48,14 @@ void make_move(int ply, U32 move, Thread *th) {
 
 	const U8 mtype = move_type(move);
 
-	const U8 sideToMove = colorType(move);
-	const U8 opponent = sideToMove ^ 1; 
+	const U8 stm = colorType(move);
+	const U8 opp = stm ^ 1; 
 
 	const U8 fromSq = from_sq(move);
 	const U8 toSq = to_sq(move);
 
 	const U8 piece = pieceType(move);
-	const U8 c_piece = cPieceType(move);
+	const U8 target = cPieceType(move);
 
 
 	U64 from_bb = 1ULL << fromSq;
@@ -69,7 +69,7 @@ void make_move(int ply, U32 move, Thread *th) {
 	th->undoMoveStack[ply].epSquare = th->moveStack[ply].epSquare;
 	th->undoMoveStack[ply].hashKey = th->hashKey;
 	th->undoMoveStack[ply].pawnsHashKey = th->pawnsHashKey;
-
+	th->undoMoveStack[ply].material = th->material;
 
 
 	const int mhCounter = th->moves_history_counter + ply; // Needs investigation 
@@ -109,7 +109,7 @@ void make_move(int ply, U32 move, Thread *th) {
     		th->movesHistory[mhCounter].fiftyMovesCounter++;	
 
 
-			if (sideToMove) {  
+			if (stm) {  
 
 				th->blackPieceBB[piece] ^= from_to_bb; 
 				th->blackPieceBB[PIECES] ^= from_to_bb;
@@ -120,10 +120,12 @@ void make_move(int ply, U32 move, Thread *th) {
 			}
 
 
-
-			th->hashKey ^= zobrist[piece][sideToMove][fromSq] ^ zobrist[piece][sideToMove][toSq];
+			th->material += stm ? BLACK_PSQT[piece][toSq] : WHITE_PSQT[piece][toSq];
+			th->material -= stm ? BLACK_PSQT[piece][fromSq] : WHITE_PSQT[piece][fromSq];
 			
 
+			th->hashKey ^= zobrist[piece][stm][fromSq] ^ zobrist[piece][stm][toSq];
+			
 
 			if (piece == PAWNS) {
 
@@ -132,7 +134,7 @@ void make_move(int ply, U32 move, Thread *th) {
     			th->movesHistory[mhCounter].fiftyMovesCounter = 0;	
 			} else if (piece == KING) { // TODO check logic
 				
-				if (sideToMove == WHITE) {
+				if (stm == WHITE) {
 
 					if (th->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_QUEEN) {
 
@@ -193,35 +195,41 @@ void make_move(int ply, U32 move, Thread *th) {
 		
 			th->movesHistory[mhCounter].fiftyMovesCounter = 0;	
 
-			if (sideToMove) {  
+			if (stm) {  
 	
 				th->blackPieceBB[piece] ^= from_to_bb; 
 				th->blackPieceBB[PIECES] ^= from_to_bb;
 
-				th->whitePieceBB[c_piece] ^= to_bb;
+				th->whitePieceBB[target] ^= to_bb;
 				th->whitePieceBB[PIECES] ^= to_bb;
 			} else { 
 
 				th->whitePieceBB[piece] ^= from_to_bb;
 				th->whitePieceBB[PIECES] ^= from_to_bb; 
 			
-				th->blackPieceBB[c_piece] ^= to_bb;
+				th->blackPieceBB[target] ^= to_bb;
 				th->blackPieceBB[PIECES] ^= to_bb;
 			}
 			
-			th->hashKey ^= zobrist[piece][sideToMove][fromSq] ^ zobrist[piece][sideToMove][toSq];
-			th->hashKey ^= zobrist[c_piece][opponent][toSq];
+			th->hashKey ^= zobrist[piece][stm][fromSq] ^ zobrist[piece][stm][toSq];
+			th->hashKey ^= zobrist[target][opp][toSq];
+
+
+			th->material += stm ? BLACK_PSQT[piece][toSq] : WHITE_PSQT[piece][toSq];
+			th->material -= stm ? BLACK_PSQT[piece][fromSq] : WHITE_PSQT[piece][fromSq];
+			th->material -= opp ? BLACK_PSQT[target][toSq] : WHITE_PSQT[target][toSq];
+
 
 			if (piece == PAWNS)	
 				th->pawnsHashKey ^= pawnZobristKey[fromSq] ^ pawnZobristKey[toSq];
 
-			if (c_piece == PAWNS)	
+			if (target == PAWNS)	
 				th->pawnsHashKey ^= pawnZobristKey[toSq];
 	
 
 			// update castle flags
 			if (piece == KING) {
-				if (sideToMove == WHITE) {
+				if (stm == WHITE) {
 
 					int castleQueenSide = th->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_QUEEN;
 					if (castleQueenSide) {
@@ -272,7 +280,7 @@ void make_move(int ply, U32 move, Thread *th) {
 			}
 
 
-			if (c_piece == ROOKS) {
+			if (target == ROOKS) {
 
 				th->moveStack[ply].castleFlags &= rookCastleFlagMask[toSq];
 
@@ -305,10 +313,10 @@ void make_move(int ply, U32 move, Thread *th) {
 
 			th->movesHistory[mhCounter].fiftyMovesCounter++;	
 			th->moveStack[ply].epFlag = 1;			
-			th->moveStack[ply].epSquare = sideToMove ? toSq + 8 : toSq - 8;
+			th->moveStack[ply].epSquare = stm ? toSq + 8 : toSq - 8;
 
 
-			if (sideToMove) {  
+			if (stm) {  
 
 				th->blackPieceBB[piece] ^= from_to_bb; 
 				th->blackPieceBB[PIECES] ^= from_to_bb;		
@@ -319,7 +327,11 @@ void make_move(int ply, U32 move, Thread *th) {
 			}
 			
 
-			th->hashKey ^= zobrist[PAWNS][sideToMove][fromSq] ^ zobrist[PAWNS][sideToMove][toSq];
+			th->material += stm ? BLACK_PSQT[piece][toSq] : WHITE_PSQT[piece][toSq];
+			th->material -= stm ? BLACK_PSQT[piece][fromSq] : WHITE_PSQT[piece][fromSq];
+
+
+			th->hashKey ^= zobrist[PAWNS][stm][fromSq] ^ zobrist[PAWNS][stm][toSq];
 
 			th->pawnsHashKey ^= pawnZobristKey[fromSq] ^ pawnZobristKey[toSq];
 
@@ -339,7 +351,7 @@ void make_move(int ply, U32 move, Thread *th) {
 
 
 			//  en_passant capture
-			if (sideToMove == WHITE) {
+			if (stm == WHITE) {
 
 				th->whitePieceBB[PAWNS] ^= from_to_bb; 
 				th->whitePieceBB[PIECES] ^= from_to_bb; 
@@ -357,13 +369,18 @@ void make_move(int ply, U32 move, Thread *th) {
 			}
 
 
-			const int sq = sideToMove ? toSq + 8 : toSq - 8;	// sq visibility is within the case block
+			U8 sqOfCapturedPawn = stm ? toSq + 8 : toSq - 8;	
 
-			th->hashKey ^= zobrist[PAWNS][sideToMove][fromSq] ^ zobrist[PAWNS][sideToMove][toSq];
-			th->hashKey ^= zobrist[PAWNS][opponent][sq];
+			th->hashKey ^= zobrist[PAWNS][stm][fromSq] ^ zobrist[PAWNS][stm][toSq];
+			th->hashKey ^= zobrist[PAWNS][opp][sqOfCapturedPawn];
 
 			th->pawnsHashKey ^= pawnZobristKey[fromSq] ^ pawnZobristKey[toSq];
-			th->pawnsHashKey ^= pawnZobristKey[sq]; 
+			th->pawnsHashKey ^= pawnZobristKey[sqOfCapturedPawn]; 
+
+
+			th->material += stm ? BLACK_PSQT[PAWNS][toSq] : WHITE_PSQT[PAWNS][toSq];
+			th->material -= stm ? BLACK_PSQT[PAWNS][fromSq] : WHITE_PSQT[PAWNS][fromSq];
+			th->material -= opp ? BLACK_PSQT[PAWNS][sqOfCapturedPawn] : WHITE_PSQT[PAWNS][sqOfCapturedPawn];
 
 			break;
 		}
@@ -381,17 +398,17 @@ void make_move(int ply, U32 move, Thread *th) {
 			
 			U8 castleDirection = castleDir(move);
 
-			if (sideToMove == WHITE) {
+			if (stm == WHITE) {
 				
 				if (castleDirection == WHITE_CASTLE_QUEEN_SIDE) {
 
 					//clear out king and rook
 					th->whitePieceBB[piece] ^= 0x0000000000000010U;
-					th->whitePieceBB[c_piece] ^= 0x0000000000000001U;
+					th->whitePieceBB[target] ^= 0x0000000000000001U;
 
 					// set king and rook
 					th->whitePieceBB[piece] ^= 0x0000000000000004U;
-					th->whitePieceBB[c_piece] ^= 0x0000000000000008U;
+					th->whitePieceBB[target] ^= 0x0000000000000008U;
 
 					// update pieces
 					th->whitePieceBB[PIECES] ^= 0x0000000000000011U;
@@ -401,15 +418,20 @@ void make_move(int ply, U32 move, Thread *th) {
 					th->hashKey ^= zobrist[KING][WHITE][4] ^ zobrist[KING][WHITE][2];
 					th->hashKey ^= zobrist[ROOKS][WHITE][0] ^ zobrist[ROOKS][WHITE][3];
 					th->hashKey ^= KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
+
+					
+					th->material += WHITE_PSQT[KING][2] + WHITE_PSQT[ROOKS][3];
+					th->material -= WHITE_PSQT[KING][4] - WHITE_PSQT[ROOKS][0];
+
 				} else if (castleDirection == WHITE_CASTLE_KING_SIDE) {
 
 					//clear out king and rook
 					th->whitePieceBB[piece] ^= 0x0000000000000010U;
-					th->whitePieceBB[c_piece] ^= 0x0000000000000080U;
+					th->whitePieceBB[target] ^= 0x0000000000000080U;
 
 					// set king and rook
 					th->whitePieceBB[piece] ^= 0x0000000000000040U;
-					th->whitePieceBB[c_piece] ^= 0x0000000000000020U;
+					th->whitePieceBB[target] ^= 0x0000000000000020U;
 
 					// update pieces
 					th->whitePieceBB[PIECES] ^= 0x0000000000000090U;
@@ -419,6 +441,10 @@ void make_move(int ply, U32 move, Thread *th) {
 					th->hashKey ^= zobrist[KING][WHITE][4] ^ zobrist[KING][WHITE][6];
 					th->hashKey ^= zobrist[ROOKS][WHITE][7] ^ zobrist[ROOKS][WHITE][5];
 					th->hashKey ^= KEY_FLAG_WHITE_CASTLE_KING_SIDE;
+
+
+					th->material += WHITE_PSQT[KING][6] + WHITE_PSQT[ROOKS][5];
+					th->material -= WHITE_PSQT[KING][4] - WHITE_PSQT[ROOKS][7];
 				}
 
 				th->moveStack[ply].castleFlags &= ~(CASTLE_FLAG_WHITE_KING | CASTLE_FLAG_WHITE_QUEEN);
@@ -429,11 +455,11 @@ void make_move(int ply, U32 move, Thread *th) {
 
 					//clear out king and rook
 					th->blackPieceBB[piece] ^= 0x1000000000000000U;
-					th->blackPieceBB[c_piece] ^= 0x0100000000000000U;
+					th->blackPieceBB[target] ^= 0x0100000000000000U;
 
 					// set king and rook
 					th->blackPieceBB[piece] ^= 0x0400000000000000U;
-					th->blackPieceBB[c_piece] ^= 0x0800000000000000U;
+					th->blackPieceBB[target] ^= 0x0800000000000000U;
 
 					// update pieces
 					th->blackPieceBB[PIECES] ^= 0x1100000000000000U;
@@ -443,15 +469,20 @@ void make_move(int ply, U32 move, Thread *th) {
 					th->hashKey ^= zobrist[KING][BLACK][60] ^ zobrist[KING][BLACK][58];
 					th->hashKey ^= zobrist[ROOKS][BLACK][56] ^ zobrist[ROOKS][BLACK][59];
 					th->hashKey ^= KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
+
+
+					th->material += BLACK_PSQT[KING][58] + BLACK_PSQT[ROOKS][59];
+					th->material -= BLACK_PSQT[KING][60] - BLACK_PSQT[ROOKS][56];
+
 				} else if (castleDirection == BLACK_CASTLE_KING_SIDE) {
 
 					//clear out king and rook
 					th->blackPieceBB[piece] ^= 0x1000000000000000U;
-					th->blackPieceBB[c_piece] ^= 0x8000000000000000U;
+					th->blackPieceBB[target] ^= 0x8000000000000000U;
 
 					// set king and rook
 					th->blackPieceBB[piece] ^= 0x4000000000000000U;
-					th->blackPieceBB[c_piece] ^= 0x2000000000000000U;
+					th->blackPieceBB[target] ^= 0x2000000000000000U;
 
 					// update pieces
 					th->blackPieceBB[PIECES] ^= 0x9000000000000000U;
@@ -461,6 +492,10 @@ void make_move(int ply, U32 move, Thread *th) {
 					th->hashKey ^= zobrist[KING][BLACK][60] ^ zobrist[KING][BLACK][62];
 					th->hashKey ^= zobrist[ROOKS][BLACK][63] ^ zobrist[ROOKS][BLACK][61];
 					th->hashKey ^= KEY_FLAG_BLACK_CASTLE_KING_SIDE;
+
+
+					th->material += BLACK_PSQT[KING][62] + BLACK_PSQT[ROOKS][61];
+					th->material -= BLACK_PSQT[KING][60] - BLACK_PSQT[ROOKS][63];
 				}
 
 				th->moveStack[ply].castleFlags &= ~(CASTLE_FLAG_BLACK_KING | CASTLE_FLAG_BLACK_QUEEN);	
@@ -481,49 +516,54 @@ void make_move(int ply, U32 move, Thread *th) {
 			// promotion involves a pawn move
 			th->movesHistory[mhCounter].fiftyMovesCounter = 0;	
 		
-			uint8_t p = -1;
-			uint8_t pType = promType(move);
+			U8 promoteTo = DUMMY;
+			U8 pType = promType(move);
 
-			if (pType == PROMOTE_TO_QUEEN) p = QUEEN;
-			else if (pType == PROMOTE_TO_ROOK) p = ROOKS;
-			else if (pType == PROMOTE_TO_BISHOP) p = BISHOPS;
-			else if (pType == PROMOTE_TO_KNIGHT) p = KNIGHTS;
+				 if (pType == PROMOTE_TO_QUEEN)		promoteTo = QUEEN;
+			else if (pType == PROMOTE_TO_ROOK)		promoteTo = ROOKS;
+			else if (pType == PROMOTE_TO_BISHOP)	promoteTo = BISHOPS;
+			else if (pType == PROMOTE_TO_KNIGHT)	promoteTo = KNIGHTS;
 			
 
-			if (sideToMove) {
+			if (stm) {
 
 				th->blackPieceBB[PAWNS] ^= from_bb;
-				th->blackPieceBB[p] ^= to_bb;
+				th->blackPieceBB[promoteTo] ^= to_bb;
 				th->blackPieceBB[PIECES] ^= from_to_bb;
 			} else {
 			
 				th->whitePieceBB[PAWNS] ^= from_bb;
-				th->whitePieceBB[p] ^= to_bb;
+				th->whitePieceBB[promoteTo] ^= to_bb;
 				th->whitePieceBB[PIECES] ^= from_to_bb;
 			}
 
 
-			if (c_piece != DUMMY) {
+			th->material += stm ? BLACK_PSQT[promoteTo][toSq] : WHITE_PSQT[promoteTo][toSq];
+			th->material -= stm ? BLACK_PSQT[PAWNS][fromSq] : WHITE_PSQT[PAWNS][fromSq];
 
-				if (sideToMove) {
+			if (target != DUMMY) {
 
-					th->whitePieceBB[c_piece] ^= to_bb;
+				if (stm) {
+
+					th->whitePieceBB[target] ^= to_bb;
 					th->whitePieceBB[PIECES] ^= to_bb;
 				} else {
 
-					th->blackPieceBB[c_piece] ^= to_bb;
+					th->blackPieceBB[target] ^= to_bb;
 					th->blackPieceBB[PIECES] ^= to_bb;
 				}
 		
-				th->hashKey ^= zobrist[c_piece][opponent][toSq]; 
+				th->hashKey ^= zobrist[target][opp][toSq]; 
+
+				th->material -= opp ? BLACK_PSQT[target][toSq] : WHITE_PSQT[target][toSq];
 			}
 
 					
-			th->hashKey ^= zobrist[PAWNS][sideToMove][fromSq];
-			th->hashKey ^= zobrist[p][sideToMove][toSq];
+			th->hashKey ^= zobrist[PAWNS][stm][fromSq];
+			th->hashKey ^= zobrist[promoteTo][stm][toSq];
 
 
-			if (c_piece == ROOKS) {
+			if (target == ROOKS) {
 
 
 				if (toSq == 0 && (th->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_QUEEN)) {
@@ -573,13 +613,13 @@ void unmake_move(int ply, U32 move, Thread *th) {
  
 	U8 castleDirection = castleDir(move);
 
-	const U8 sideToMove = colorType(move);
+	const U8 stm = colorType(move);
 	
 	const U8 fromSq = from_sq(move);
 	const U8 toSq = to_sq(move);
 
 	const U8 piece = pieceType(move);
-	const U8 c_piece = cPieceType(move);
+	const U8 target = cPieceType(move);
 
 	U64 from_bb = 1ULL << fromSq;
 	U64 to_bb = 1ULL << toSq; 
@@ -594,7 +634,7 @@ void unmake_move(int ply, U32 move, Thread *th) {
 	
 	th->hashKey = th->undoMoveStack[ply].hashKey;
 	th->pawnsHashKey = th->undoMoveStack[ply].pawnsHashKey;
-
+	th->material = th->undoMoveStack[ply].material;
 
 	th->movesHistory[th->moves_history_counter + ply].fiftyMovesCounter = th->undoMoveStack[ply].fiftyMovesCounter;
 
@@ -605,7 +645,7 @@ void unmake_move(int ply, U32 move, Thread *th) {
 
 		case MOVE_NORMAL: {
 			
-			if (sideToMove) {  
+			if (stm) {  
 			
 				th->blackPieceBB[piece] ^= from_to_bb; 
 				th->blackPieceBB[PIECES] ^= from_to_bb;
@@ -621,19 +661,19 @@ void unmake_move(int ply, U32 move, Thread *th) {
 
 		case MOVE_CAPTURE: {
 
-			if (sideToMove) {  
+			if (stm) {  
 			
 				th->blackPieceBB[piece] ^= from_to_bb; 
 				th->blackPieceBB[PIECES] ^= from_to_bb;
 
-				th->whitePieceBB[c_piece] ^= to_bb;
+				th->whitePieceBB[target] ^= to_bb;
 				th->whitePieceBB[PIECES] ^= to_bb;
 			} else { 
 			
 				th->whitePieceBB[piece] ^= from_to_bb; 
 				th->whitePieceBB[PIECES] ^= from_to_bb;
 
-				th->blackPieceBB[c_piece] ^= to_bb;
+				th->blackPieceBB[target] ^= to_bb;
 				th->blackPieceBB[PIECES] ^= to_bb;
 			}
 
@@ -643,7 +683,7 @@ void unmake_move(int ply, U32 move, Thread *th) {
 
 		case MOVE_DOUBLE_PUSH: {
 
-			if (sideToMove) {  
+			if (stm) {  
 
 				th->blackPieceBB[piece] ^= from_to_bb; 
 				th->blackPieceBB[PIECES] ^= from_to_bb;
@@ -659,7 +699,7 @@ void unmake_move(int ply, U32 move, Thread *th) {
 
 		case MOVE_ENPASSANT: {
 
-			if (sideToMove == WHITE) {
+			if (stm == WHITE) {
 
 				th->whitePieceBB[PAWNS] ^= from_to_bb; 
 				th->whitePieceBB[PIECES] ^= from_to_bb; 
@@ -686,11 +726,11 @@ void unmake_move(int ply, U32 move, Thread *th) {
 
 				// clear king and rook
 				th->whitePieceBB[piece] ^= 0x0000000000000004U;
-				th->whitePieceBB[c_piece] ^= 0x0000000000000008U;
+				th->whitePieceBB[target] ^= 0x0000000000000008U;
 
 				//set king and rook
 				th->whitePieceBB[piece] ^= 0x0000000000000010U;
-				th->whitePieceBB[c_piece] ^= 0x0000000000000001U;
+				th->whitePieceBB[target] ^= 0x0000000000000001U;
 
 				// update pieces
 				th->whitePieceBB[PIECES] ^= 0x000000000000000CU;
@@ -698,30 +738,30 @@ void unmake_move(int ply, U32 move, Thread *th) {
 			} else if (castleDirection == WHITE_CASTLE_KING_SIDE) {
 
 				th->whitePieceBB[piece] ^= 0x0000000000000040U;
-				th->whitePieceBB[c_piece] ^= 0x0000000000000020U;
+				th->whitePieceBB[target] ^= 0x0000000000000020U;
 
 				th->whitePieceBB[piece] ^= 0x0000000000000010U;
-				th->whitePieceBB[c_piece] ^= 0x0000000000000080U;
+				th->whitePieceBB[target] ^= 0x0000000000000080U;
 
 				th->whitePieceBB[PIECES] ^= 0x0000000000000060U;
 				th->whitePieceBB[PIECES] ^= 0x0000000000000090U;
 			} else if (castleDirection == BLACK_CASTLE_QUEEN_SIDE) {
 
 				th->blackPieceBB[piece] ^= 0x0400000000000000U;
-				th->blackPieceBB[c_piece] ^= 0x0800000000000000U;
+				th->blackPieceBB[target] ^= 0x0800000000000000U;
 
 				th->blackPieceBB[piece] ^= 0x1000000000000000U;
-				th->blackPieceBB[c_piece] ^= 0x0100000000000000U;
+				th->blackPieceBB[target] ^= 0x0100000000000000U;
 
 				th->blackPieceBB[PIECES] ^= 0x0C00000000000000U;
 				th->blackPieceBB[PIECES] ^= 0x1100000000000000U;
 			} else if (castleDirection == BLACK_CASTLE_KING_SIDE) {
 
 				th->blackPieceBB[piece] ^= 0x4000000000000000U;
-				th->blackPieceBB[c_piece] ^= 0x2000000000000000U;
+				th->blackPieceBB[target] ^= 0x2000000000000000U;
 
 				th->blackPieceBB[piece] ^= 0x1000000000000000U;
-				th->blackPieceBB[c_piece] ^= 0x8000000000000000U;
+				th->blackPieceBB[target] ^= 0x8000000000000000U;
 
 				th->blackPieceBB[PIECES] ^= 0x6000000000000000U;
 				th->blackPieceBB[PIECES] ^= 0x9000000000000000U;
@@ -741,7 +781,7 @@ void unmake_move(int ply, U32 move, Thread *th) {
 			else if (	pType == PROMOTE_TO_BISHOP) p = BISHOPS;
 			else if (	pType == PROMOTE_TO_KNIGHT) p = KNIGHTS;
 			
-			if (sideToMove) {
+			if (stm) {
 
 				th->blackPieceBB[PAWNS] ^= from_bb;
 				th->blackPieceBB[p] ^= to_bb;
@@ -753,15 +793,15 @@ void unmake_move(int ply, U32 move, Thread *th) {
 				th->whitePieceBB[PIECES] ^= from_to_bb;
 			}
 
-			if (c_piece != DUMMY) {
+			if (target != DUMMY) {
 
-				if (sideToMove) {
+				if (stm) {
 
-					th->whitePieceBB[c_piece] ^= to_bb;
+					th->whitePieceBB[target] ^= to_bb;
 					th->whitePieceBB[PIECES] ^= to_bb;
 				} else {
 
-					th->blackPieceBB[c_piece] ^= to_bb;
+					th->blackPieceBB[target] ^= to_bb;
 					th->blackPieceBB[PIECES] ^= to_bb;
 				}
 			}
@@ -788,6 +828,7 @@ void makeNullMove(int ply, Thread *th) { // Needs investigation
 	th->undoMoveStack[ply].epSquare = th->moveStack[ply].epSquare;
 	th->undoMoveStack[ply].hashKey = th->hashKey;
 	th->undoMoveStack[ply].pawnsHashKey = th->pawnsHashKey;
+	th->undoMoveStack[ply].material = th->material;
 
 	// making any move will make the ep move invalid
 	th->moveStack[ply].epFlag = 0;
@@ -806,7 +847,7 @@ void unmakeNullMove(int ply, Thread *th) {
 	
 	th->hashKey = th->undoMoveStack[ply].hashKey;
 	th->pawnsHashKey = th->undoMoveStack[ply].pawnsHashKey;
-
+	th->material = th->undoMoveStack[ply].material;
 
 	int mhCounter = th->moves_history_counter + ply; // Needs investigation
 

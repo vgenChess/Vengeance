@@ -44,8 +44,8 @@ U64 arrFiles[8] = {
 };
 
 
-int WHITE_PSQT[8][64];
-int BLACK_PSQT[8][64];
+int WHITE_PSQT[U8_MAX_PIECES][U8_MAX_SQUARES];
+int BLACK_PSQT[U8_MAX_PIECES][U8_MAX_SQUARES];
 
 
 void initEvalInfo(Thread *th) {
@@ -146,47 +146,57 @@ int traceFullEval(TraceCoefficients *traceCoefficients, U8 stm, Thread *th) {
 
 int fullEval(U8 stm, Thread *th) {
 	
+	#if defined(TUNE)
+	
+		U8 sq;
+		U64 bb;
+		for (U8 side = WHITE; side <= BLACK; side++) {
 
-	#if !defined(TUNE)
+			for (U8 piece = PAWNS; piece <= KING; piece++) {
+				
+				bb = side ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
+
+				while (bb) {
+
+					sq = GET_POSITION(bb);
+					POP_POSITION(bb);
+
+					T->weight_val_pawn[side] += piece == PAWNS ? 1 : 0;
+					T->weight_val_knight[side] += piece == KNIGHTS ? 1 : 0;
+					T->weight_val_bishop[side] += piece == BISHOPS ? 1 : 0;
+					T->weight_val_rook[side] += piece == ROOKS ? 1 : 0;
+					T->weight_val_queen[side] += piece == QUEEN ? 1 : 0;
+					
+					T->blackPawnPSQT[sq] = piece == PAWNS ? side ? 1 : 0 : 0; 			
+					T->blackKnightPSQT[sq] = piece == KNIGHTS ? side ? 1 : 0 : 0;
+					T->blackBishopPSQT[sq] = piece == BISHOPS ? side ? 1 : 0 : 0;
+					T->blackRookPSQT[sq] = piece == ROOKS ? side ? 1 : 0 : 0; 	
+					T->blackQueenPSQT[sq] = piece == QUEEN ? side ? 1 : 0 : 0;
+					T->blackKingPSQT[sq] = piece == KING ? side ? 1 : 0 : 0; 	 			
+		
+					T->whitePawnPSQT[sq] = piece == PAWNS ? side ? 0 : 1 : 0;
+					T->whiteKnightPSQT[sq] = piece == KNIGHTS ? side ? 0 : 1 : 0; 			
+					T->whiteBishopPSQT[sq] = piece == BISHOPS ? side ? 0 : 1 : 0;		
+					T->whiteRookPSQT[sq] = piece == ROOKS ? side ? 0 : 1 : 0; 			
+					T->whiteQueenPSQT[sq] = piece == QUEEN ? side ? 0 : 1 : 0;		
+					T->whiteKingPSQT[sq] = piece == KING ? side ? 0 : 1 : 0;					
+				}
+			}
+		}
+
+	#else
 	
 		int hashedEval;
 		if (probeEval(&hashedEval, th)) {
 
 			return stm == WHITE ? hashedEval : -hashedEval;
 		}
-	#endif
-	
 
-	int nWhitePawns = POPCOUNT(th->whitePieceBB[PAWNS]);
-	int nWhiteKnights = POPCOUNT(th->whitePieceBB[KNIGHTS]);
-	int nWhiteBishops = POPCOUNT(th->whitePieceBB[BISHOPS]);
-	int nWhiteRooks = POPCOUNT(th->whitePieceBB[ROOKS]);
-	int nWhiteQueen = POPCOUNT(th->whitePieceBB[QUEEN]);
-
-	int nBlackPawns = POPCOUNT(th->blackPieceBB[PAWNS]);
-	int nBlackKnights = POPCOUNT(th->blackPieceBB[KNIGHTS]);
-	int nBlackBishops = POPCOUNT(th->blackPieceBB[BISHOPS]);
-	int nBlackRooks = POPCOUNT(th->blackPieceBB[ROOKS]);
-	int nBlackQueen = POPCOUNT(th->blackPieceBB[QUEEN]);
-
-
-	#if defined(TUNE)
-
-		T->nPawns[WHITE] =  nWhitePawns;
-		T->nKnights[WHITE] = nWhiteKnights;
-		T->nBishops[WHITE] = nWhiteBishops;
-		T->nRooks[WHITE] = nWhiteRooks;
-		T->nQueen[WHITE] = nWhiteQueen;
-
-		T->nPawns[BLACK] =  nBlackPawns;
-		T->nKnights[BLACK] = nBlackKnights;
-		T->nBishops[BLACK] = nBlackBishops;
-		T->nRooks[BLACK] = nBlackRooks;
-		T->nQueen[BLACK] = nBlackQueen;
 	#endif
 
 
 	initEvalInfo(th);
+
 
 	int eval = 0;
 
@@ -206,48 +216,37 @@ int fullEval(U8 stm, Thread *th) {
 
 		score += pawnsScore;
 	#endif
-
 */
-	eval += PSQTScore(WHITE, th) - PSQTScore(BLACK, th);
+
 	eval += pawnsEval(WHITE, th) - pawnsEval(BLACK, th);
 	eval += knightsEval(WHITE, th) - knightsEval(BLACK, th);
 	eval += bishopsEval(WHITE, th) - bishopsEval(BLACK, th);
 	eval += rooksEval(WHITE, th) - rooksEval(BLACK, th);
 	eval += queenEval(WHITE, th) - queenEval(BLACK, th);
-	
 	// evaluation of other pieces other than king needs to be done first
 	// before king eval because of values needed for king safety calculation
 	eval += kingEval(WHITE, th) - kingEval(BLACK, th);
 	eval += evalBoard(WHITE, th) - evalBoard(BLACK, th);
-	
 
-
-	#if defined(TUNE)	
-
-		T->eval = eval;
-	#endif
+	eval += th->material;
 
 
 	// Tapered evaluation 
-	int phase = 4 * (nWhiteQueen + nBlackQueen) 
-		+ 2 * (nWhiteRooks + nBlackRooks)
-      	+ 1 * (nWhiteKnights + nBlackKnights)
-      	+ 1 * (nWhiteBishops + nBlackBishops);
-
-
-	#if defined(TUNE)	
-
-		T->phase = phase;
-	#endif
-
+	int phase = 4 * POPCOUNT(th->whitePieceBB[QUEEN] | th->blackPieceBB[QUEEN]) 
+			+ 	2 * POPCOUNT(th->whitePieceBB[ROOKS] | th->blackPieceBB[ROOKS])
+      		+ 	1 * POPCOUNT(th->whitePieceBB[BISHOPS] | th->blackPieceBB[BISHOPS])
+      		+ 	1 * POPCOUNT(th->whitePieceBB[KNIGHTS] | th->blackPieceBB[KNIGHTS]);
 
     int score = (ScoreMG(eval) * phase + ScoreEG(eval) * (24 - phase)) / 24;
 
-    #if !defined(TUNE)	
-		
+    #if defined(TUNE)	
+
+		T->eval = eval;
+		T->phase = phase;
+	#else
+
 		recordEval(score, th);
 	#endif
-
 
 	return stm == WHITE ? score : -score;
 }
@@ -256,25 +255,6 @@ int pawnsEval(U8 stm, Thread *th) {
 
 	int score = 0;
 	int sq = -1, rank = -1;
-
-	#if defined(TUNE)
-		
-		U64 bb = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
-		while (bb) {
-
-			int sq = GET_POSITION(bb);
-			POP_POSITION(bb);
-
-			#if defined(TUNE)
-		
-				if (stm)
-					T->blackPawnPSQT[sq] = 1; 			
-				else 
-					T->whitePawnPSQT[sq] = 1;
-			#endif
-		}
-	#endif
-
 
 	const int nIsolatedPawns = isolatedPawns(stm, th);
 	score += nIsolatedPawns * weight_isolated_pawn;
@@ -428,15 +408,6 @@ int knightsEval(U8 stm, Thread *th) {
 
 			T->knightMobility[stm][mobilityCount]++;
 		#endif
-	
-		#if defined(TUNE)
-	
-			if (stm)
-				T->blackKnightPSQT[sq] = 1; 			
-			else 
-				T->whiteKnightPSQT[sq] = 1;
-		#endif
-
 	}
 
 	return score;
@@ -472,15 +443,6 @@ int bishopsEval(U8 stm, Thread *th) {
 		assert(sq >= 0 && sq <= 63);
 		
 		U64 attacksBB = th->evalInfo.bishopAttacks[stm][sq];
-
-
-		#if defined(TUNE)
-	
-			if (stm)
-				T->blackBishopPSQT[sq] = 1; 			
-			else 
-				T->whiteBishopPSQT[sq] = 1;
-		#endif
 
 
 		// Bishop mobility
@@ -542,15 +504,6 @@ int rooksEval(U8 stm, Thread *th) {
 		POP_POSITION(rooksBB);
 
 		assert(sq >= 0 && sq <= 63);
-
-
-		#if defined(TUNE)
-	
-			if (stm)
-				T->blackRookPSQT[sq] = 1; 			
-			else 
-				T->whiteRookPSQT[sq] = 1;
-		#endif
 
 
 		// Rook on half open file
@@ -715,15 +668,6 @@ int queenEval(U8 stm, Thread *th) {
 
 
 		attacksBB = th->evalInfo.queenAttacks[stm][sq];
-
-
-		#if defined(TUNE)
-	
-			if (stm)
-				T->blackQueenPSQT[sq] = 1; 			
-			else 
-				T->whiteQueenPSQT[sq] = 1;
-		#endif
 			
 	
 		if (	POPCOUNT(th->occupied) >= 22	// early game
@@ -802,11 +746,6 @@ int kingEval(U8 stm, Thread *th) {
 	score += POPCOUNT(pawnStormZone & theirPawns) * weight_king_enemy_pawn_storm;
 
 	#if defined(TUNE)	
-
-		if (stm)
-			T->blackKingPSQT[kingSq] = 1; 			
-		else 
-			T->whiteKingPSQT[kingSq] = 1;
 
 		T->kingPawnShield[stm] = POPCOUNT(th->evalInfo.kingZoneBB[stm] & ourPawns);
 		T->kingEnemyPawnStorm[stm] = POPCOUNT(pawnStormZone & theirPawns);
@@ -892,47 +831,25 @@ int kingEval(U8 stm, Thread *th) {
 }
 
 
-int PSQTScore(U8 stm, Thread *th) {
-	
-	int sq;
-	int score = 0;
-
-	for (int piece = PAWNS; piece <= KING; piece++) {
-
-		U64 bb = stm ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
-		while (bb) {
-
-			sq = GET_POSITION(bb); 
-			
-			score += stm ? BLACK_PSQT[piece][sq] : WHITE_PSQT[piece][sq];
-	
-			POP_POSITION(bb); 
-		}
-	}
-
-	return score;
-}
-
-
 // Helper functions
 
 void initPSQT() {
 
-	for (int sq = 0; sq < 64; sq++) {
+	for (U8 sq = 0; sq < U8_MAX_SQUARES; sq++) {
 
-		WHITE_PSQT[PAWNS][sq] = whitePawnPSQT[sq] + weight_pawn; 
-		WHITE_PSQT[KNIGHTS][sq] = whiteKnightPSQT[sq] + weight_knight; 
-		WHITE_PSQT[BISHOPS][sq] = whiteBishopPSQT[sq] + weight_bishop; 
-		WHITE_PSQT[ROOKS][sq] = whiteRookPSQT[sq] + weight_rook; 
-		WHITE_PSQT[QUEEN][sq] = whiteQueenPSQT[sq] + weight_queen; 
+		WHITE_PSQT[PAWNS][sq] = whitePawnPSQT[sq] + weight_val_pawn; 
+		WHITE_PSQT[KNIGHTS][sq] = whiteKnightPSQT[sq] + weight_val_knight; 
+		WHITE_PSQT[BISHOPS][sq] = whiteBishopPSQT[sq] + weight_val_bishop; 
+		WHITE_PSQT[ROOKS][sq] = whiteRookPSQT[sq] + weight_val_rook; 
+		WHITE_PSQT[QUEEN][sq] = whiteQueenPSQT[sq] + weight_val_queen; 
 		WHITE_PSQT[KING][sq] = whiteKingPSQT[sq]; 
 	
-		BLACK_PSQT[PAWNS][sq] = blackPawnPSQT[sq] + weight_pawn;
-		BLACK_PSQT[KNIGHTS][sq] = blackKnightPSQT[sq] + weight_knight; 
-		BLACK_PSQT[BISHOPS][sq] = blackBishopPSQT[sq] + weight_bishop;
-		BLACK_PSQT[ROOKS][sq] = blackRookPSQT[sq] + weight_rook;
-		BLACK_PSQT[QUEEN][sq] = blackQueenPSQT[sq] + weight_queen;
-		BLACK_PSQT[KING][sq] = blackKingPSQT[sq];
+		BLACK_PSQT[PAWNS][sq] = -blackPawnPSQT[sq] - weight_val_pawn;
+		BLACK_PSQT[KNIGHTS][sq] = -blackKnightPSQT[sq] - weight_val_knight; 
+		BLACK_PSQT[BISHOPS][sq] = -blackBishopPSQT[sq] - weight_val_bishop;
+		BLACK_PSQT[ROOKS][sq] = -blackRookPSQT[sq] - weight_val_rook;
+		BLACK_PSQT[QUEEN][sq] = -blackQueenPSQT[sq] - weight_val_queen;
+		BLACK_PSQT[KING][sq] = -blackKingPSQT[sq];
 	}
 }
 

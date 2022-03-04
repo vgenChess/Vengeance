@@ -61,24 +61,24 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
 	// Material
 
 	loadCoeff->type[i] = NORMAL;
-    loadCoeff->coeffs[WHITE][i] = T->nPawns[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->nPawns[BLACK];                         
+    loadCoeff->coeffs[WHITE][i] = T->weight_val_pawn[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->weight_val_pawn[BLACK];                         
 
 	loadCoeff->type[i] = NORMAL;
-    loadCoeff->coeffs[WHITE][i] = T->nKnights[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->nKnights[BLACK];                         
+    loadCoeff->coeffs[WHITE][i] = T->weight_val_knight[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->weight_val_knight[BLACK];                         
 
 	loadCoeff->type[i] = NORMAL;
-    loadCoeff->coeffs[WHITE][i] = T->nBishops[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->nBishops[BLACK];                         
+    loadCoeff->coeffs[WHITE][i] = T->weight_val_bishop[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->weight_val_bishop[BLACK];                         
 
 	loadCoeff->type[i] = NORMAL;
-    loadCoeff->coeffs[WHITE][i] = T->nRooks[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->nRooks[BLACK];                         
+    loadCoeff->coeffs[WHITE][i] = T->weight_val_rook[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->weight_val_rook[BLACK];                         
 
 	loadCoeff->type[i] = NORMAL;
-    loadCoeff->coeffs[WHITE][i] = T->nQueen[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->nQueen[BLACK];   
+    loadCoeff->coeffs[WHITE][i] = T->weight_val_queen[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->weight_val_queen[BLACK];   
 
                         
 
@@ -364,20 +364,20 @@ void startTuner() {
 
 	TVector params = {0}, cparams = {0};
 
-	cparams[MG][count] = ScoreMG(weight_pawn);
-	cparams[EG][count++] = ScoreEG(weight_pawn);
+	cparams[MG][count] = ScoreMG(weight_val_pawn);
+	cparams[EG][count++] = ScoreEG(weight_val_pawn);
 	
-	cparams[MG][count] = ScoreMG(weight_knight);
-	cparams[EG][count++] = ScoreEG(weight_knight);
+	cparams[MG][count] = ScoreMG(weight_val_knight);
+	cparams[EG][count++] = ScoreEG(weight_val_knight);
 
-	cparams[MG][count] = ScoreMG(weight_bishop);
-	cparams[EG][count++] = ScoreEG(weight_bishop);
+	cparams[MG][count] = ScoreMG(weight_val_bishop);
+	cparams[EG][count++] = ScoreEG(weight_val_bishop);
 	
-	cparams[MG][count] = ScoreMG(weight_rook);
-	cparams[EG][count++] = ScoreEG(weight_rook);
+	cparams[MG][count] = ScoreMG(weight_val_rook);
+	cparams[EG][count++] = ScoreEG(weight_val_rook);
 
-	cparams[MG][count] = ScoreMG(weight_queen);
-	cparams[EG][count++] = ScoreEG(weight_queen);
+	cparams[MG][count] = ScoreMG(weight_val_queen);
+	cparams[EG][count++] = ScoreEG(weight_val_queen);
 
 
 	cparams[MG][count] = ScoreMG(weight_isolated_pawn);
@@ -637,7 +637,7 @@ void startTuner() {
 
 			// for file "4818922_positions_gm2600.txt"
 
-			/*if (tp.find("1.0") != std::string::npos)	
+		/*	if (tp.find("1.0") != std::string::npos)	
 				result = 1.0;
 			else if (tp.find("0.5") != std::string::npos) 
 				result = 0.5;
@@ -1027,11 +1027,11 @@ void displayWeights(TVector params, TVector cparams) {
 	std::cout << "Weights" << "\n\n";
 
 	std::cout 
-		<< "weight_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
-		<< ",\nweight_knight = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
-		<< ",\nweight_bishop = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
-		<< ",\nweight_rook = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")"
-		<< ",\nweight_queen = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")";
+		<< "weight_val_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
+		<< ",\nweight_val_knight = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
+		<< ",\nweight_val_bishop = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
+		<< ",\nweight_val_rook = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")"
+		<< ",\nweight_val_queen = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")";
 	
 	std::cout<<", \n\n";
 
@@ -1318,11 +1318,11 @@ void writeToFile(TVector params, TVector cparams) {
 	myfile << "Weights" << "\n\n";
 
 	myfile 
-		<< "weight_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
-		<< ",\nweight_knight = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
-		<< ",\nweight_bishop = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
-		<< ",\nweight_rook = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")"
-		<< ",\nweight_queen = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")";
+		<< "weight_val_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
+		<< ",\nweight_val_knight = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
+		<< ",\nweight_val_bishop = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
+		<< ",\nweight_val_rook = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")"
+		<< ",\nweight_val_queen = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")";
 	
 	myfile<<", \n";
 
