@@ -161,25 +161,25 @@ int fullEval(U8 stm, Thread *th) {
 					sq = GET_POSITION(bb);
 					POP_POSITION(bb);
 
-					T->weight_val_pawn[side] += piece == PAWNS ? 1 : 0;
-					T->weight_val_knight[side] += piece == KNIGHTS ? 1 : 0;
-					T->weight_val_bishop[side] += piece == BISHOPS ? 1 : 0;
-					T->weight_val_rook[side] += piece == ROOKS ? 1 : 0;
-					T->weight_val_queen[side] += piece == QUEEN ? 1 : 0;
+					T->weight_val_pawn[side] 	+= 	piece == PAWNS 		? 	1 	: 	0;
+					T->weight_val_knight[side] 	+= 	piece == KNIGHTS 	? 	1 	: 	0;
+					T->weight_val_bishop[side] 	+= 	piece == BISHOPS 	? 	1 	: 	0;
+					T->weight_val_rook[side] 	+= 	piece == ROOKS 		? 	1 	: 	0;
+					T->weight_val_queen[side] 	+= 	piece == QUEEN 		? 	1 	:	0;
 					
-					T->blackPawnPSQT[sq] = piece == PAWNS ? side ? 1 : 0 : 0; 			
-					T->blackKnightPSQT[sq] = piece == KNIGHTS ? side ? 1 : 0 : 0;
-					T->blackBishopPSQT[sq] = piece == BISHOPS ? side ? 1 : 0 : 0;
-					T->blackRookPSQT[sq] = piece == ROOKS ? side ? 1 : 0 : 0; 	
-					T->blackQueenPSQT[sq] = piece == QUEEN ? side ? 1 : 0 : 0;
-					T->blackKingPSQT[sq] = piece == KING ? side ? 1 : 0 : 0; 	 			
+					T->blackPawnPSQT[sq] 		=	piece == PAWNS 		?	(side ? 1 : 0) 	: 	0; 			
+					T->blackKnightPSQT[sq] 		=	piece == KNIGHTS 	?	(side ? 1 : 0) 	: 	0;
+					T->blackBishopPSQT[sq] 		=	piece == BISHOPS 	?	(side ? 1 : 0) 	: 	0;
+					T->blackRookPSQT[sq] 		= 	piece == ROOKS 		?	(side ? 1 : 0) 	: 	0; 	
+					T->blackQueenPSQT[sq] 		= 	piece == QUEEN 		? 	(side ? 1 : 0) 	: 	0;
+					T->blackKingPSQT[sq] 		= 	piece == KING 		?	(side ? 1 : 0) 	: 	0; 	 			
 		
-					T->whitePawnPSQT[sq] = piece == PAWNS ? side ? 0 : 1 : 0;
-					T->whiteKnightPSQT[sq] = piece == KNIGHTS ? side ? 0 : 1 : 0; 			
-					T->whiteBishopPSQT[sq] = piece == BISHOPS ? side ? 0 : 1 : 0;		
-					T->whiteRookPSQT[sq] = piece == ROOKS ? side ? 0 : 1 : 0; 			
-					T->whiteQueenPSQT[sq] = piece == QUEEN ? side ? 0 : 1 : 0;		
-					T->whiteKingPSQT[sq] = piece == KING ? side ? 0 : 1 : 0;					
+					T->whitePawnPSQT[sq] 		= 	piece == PAWNS 		? 	(side ? 0 : 1) 	: 	0;
+					T->whiteKnightPSQT[sq] 		= 	piece == KNIGHTS 	? 	(side ? 0 : 1) 	: 	0; 			
+					T->whiteBishopPSQT[sq] 		= 	piece == BISHOPS 	?	(side ? 0 : 1) 	: 	0;		
+					T->whiteRookPSQT[sq] 		= 	piece == ROOKS 		? 	(side ? 0 : 1) 	: 	0; 			
+					T->whiteQueenPSQT[sq] 		= 	piece == QUEEN 		? 	(side ? 0 : 1) 	: 	0;		
+					T->whiteKingPSQT[sq] 		= 	piece == KING 		? 	(side ? 0 : 1) 	: 	0;					
 				}
 			}
 		}
@@ -218,17 +218,18 @@ int fullEval(U8 stm, Thread *th) {
 	#endif
 */
 
-	eval += pawnsEval(WHITE, th) - pawnsEval(BLACK, th);
-	eval += knightsEval(WHITE, th) - knightsEval(BLACK, th);
-	eval += bishopsEval(WHITE, th) - bishopsEval(BLACK, th);
-	eval += rooksEval(WHITE, th) - rooksEval(BLACK, th);
-	eval += queenEval(WHITE, th) - queenEval(BLACK, th);
+	eval += 	pawnsEval(WHITE, th) 	- 	pawnsEval(BLACK, th);
+	eval += 	knightsEval(WHITE, th) 	- 	knightsEval(BLACK, th);
+	eval += 	bishopsEval(WHITE, th) 	-	bishopsEval(BLACK, th);
+	eval += 	rooksEval(WHITE, th) 	- 	rooksEval(BLACK, th);
+	eval += 	queenEval(WHITE, th) 	- 	queenEval(BLACK, th);
+
 	// evaluation of other pieces other than king needs to be done first
 	// before king eval because of values needed for king safety calculation
-	eval += kingEval(WHITE, th) - kingEval(BLACK, th);
-	eval += evalBoard(WHITE, th) - evalBoard(BLACK, th);
+	eval += 	kingEval(WHITE, th) 	- 	kingEval(BLACK, th);
+	eval += 	evalBoard(WHITE, th) 	- 	evalBoard(BLACK, th);
 
-	eval += th->material;
+	eval += 	th->material;
 
 
 	// Tapered evaluation 
@@ -368,7 +369,7 @@ int knightsEval(U8 stm, Thread *th) {
             	T->knightAttack[opp]++; 
             #endif
 
-            U64 bb = (attacksBB & th->evalInfo.kingAttacks[opp]);
+            U64 bb = attacksBB & th->evalInfo.kingAttacks[opp];
             if (bb) {
 
            		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
@@ -747,8 +748,8 @@ int kingEval(U8 stm, Thread *th) {
 
 	#if defined(TUNE)	
 
-		T->kingPawnShield[stm] = POPCOUNT(th->evalInfo.kingZoneBB[stm] & ourPawns);
-		T->kingEnemyPawnStorm[stm] = POPCOUNT(pawnStormZone & theirPawns);
+		T->kingPawnShield[stm] = POPCOUNT(th->evalInfo.kingZoneBB[stm] & ourPawns); // TODO check logic
+		T->kingEnemyPawnStorm[stm] = POPCOUNT(pawnStormZone & theirPawns); // TODO check logic
 	#endif
 
 

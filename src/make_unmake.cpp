@@ -217,7 +217,7 @@ void make_move(int ply, U32 move, Thread *th) {
 
 			th->material += stm ? BLACK_PSQT[piece][toSq] : WHITE_PSQT[piece][toSq];
 			th->material -= stm ? BLACK_PSQT[piece][fromSq] : WHITE_PSQT[piece][fromSq];
-			th->material -= opp ? BLACK_PSQT[target][toSq] : WHITE_PSQT[target][toSq];
+			th->material -= stm ? BLACK_PSQT[target][toSq] : WHITE_PSQT[target][toSq];
 
 
 			if (piece == PAWNS)	
@@ -327,8 +327,8 @@ void make_move(int ply, U32 move, Thread *th) {
 			}
 			
 
-			th->material += stm ? BLACK_PSQT[piece][toSq] : WHITE_PSQT[piece][toSq];
-			th->material -= stm ? BLACK_PSQT[piece][fromSq] : WHITE_PSQT[piece][fromSq];
+			th->material += stm ? BLACK_PSQT[PAWNS][toSq] : WHITE_PSQT[PAWNS][toSq];
+			th->material -= stm ? BLACK_PSQT[PAWNS][fromSq] : WHITE_PSQT[PAWNS][fromSq];
 
 
 			th->hashKey ^= zobrist[PAWNS][stm][fromSq] ^ zobrist[PAWNS][stm][toSq];
@@ -380,7 +380,7 @@ void make_move(int ply, U32 move, Thread *th) {
 
 			th->material += stm ? BLACK_PSQT[PAWNS][toSq] : WHITE_PSQT[PAWNS][toSq];
 			th->material -= stm ? BLACK_PSQT[PAWNS][fromSq] : WHITE_PSQT[PAWNS][fromSq];
-			th->material -= opp ? BLACK_PSQT[PAWNS][sqOfCapturedPawn] : WHITE_PSQT[PAWNS][sqOfCapturedPawn];
+			th->material -= stm ? BLACK_PSQT[PAWNS][sqOfCapturedPawn] : WHITE_PSQT[PAWNS][sqOfCapturedPawn];
 
 			break;
 		}
@@ -554,7 +554,7 @@ void make_move(int ply, U32 move, Thread *th) {
 		
 				th->hashKey ^= zobrist[target][opp][toSq]; 
 
-				th->material -= opp ? BLACK_PSQT[target][toSq] : WHITE_PSQT[target][toSq];
+				th->material -= stm ? BLACK_PSQT[target][toSq] : WHITE_PSQT[target][toSq];
 			}
 
 					
