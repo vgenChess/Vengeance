@@ -56,13 +56,13 @@ public:
 	int rookMobility[2][16];
 	int queenMobility[2][32];
 
-	int pawnPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES];
-	int knightPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES];
-	int bishopPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES];
-	int rookPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES];
-	int queenPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES];
-	int kingPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES];
-
+	int kingPSQT[U8_MAX_SQUARES][U8_MAX_SIDES];
+	int pawnPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES][U8_MAX_SIDES];
+	int knightPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES][U8_MAX_SIDES];
+	int bishopPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES][U8_MAX_SIDES];
+	int rookPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES][U8_MAX_SIDES];
+	int queenPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES][U8_MAX_SIDES];
+	
 	int knightAttack[2];
 	int bishopAttack[2];
 	int rookAttack[2];
@@ -173,15 +173,19 @@ public:
 				this->queenMobility[i][j] = 0;
 		}
 
-		for (int i = 0; i < 64; i++) {
+		for (U8 side = WHITE; side <= BLACK; side++) {
 
-			for (int j = 0; j < 64; j++) {
-				
-				this->pawnPSQT[i][j] = 0;
-				this->knightPSQT[i][j] = 0;
-				this->bishopPSQT[i][j] = 0;
-				this->rookPSQT[i][j] = 0;
-				this->queenPSQT[i][j] = 0;
+			for (int i = 0; i < 64; i++) {
+
+				this->kingPSQT[i][side] = 0;
+				for (int j = 0; j < 64; j++) {
+					
+					this->pawnPSQT[i][j][side] = 0;
+					this->knightPSQT[i][j][side] = 0;
+					this->bishopPSQT[i][j][side] = 0;
+					this->rookPSQT[i][j][side] = 0;
+					this->queenPSQT[i][j][side] = 0;
+				}
 			}
 		}
 	

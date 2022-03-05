@@ -168,11 +168,15 @@ int fullEval(U8 stm, Thread *th) {
 					
 					kingSq = GET_POSITION(side ? th->blackPieceBB[KING] : th->whitePieceBB[KING]);
 
-					T->pawnPSQT		[side ? Mirror64[kingSq] : kingSq][side ? Mirror64[sq] : sq] = piece == PAWNS 	? 1 : 0; 			
-					T->knightPSQT	[side ? Mirror64[kingSq] : kingSq][side ? Mirror64[sq] : sq] = piece == KNIGHTS ? 1 : 0; 			
-					T->bishopPSQT	[side ? Mirror64[kingSq] : kingSq][side ? Mirror64[sq] : sq] = piece == BISHOPS ? 1 : 0; 			
-					T->rookPSQT		[side ? Mirror64[kingSq] : kingSq][side ? Mirror64[sq] : sq] = piece == ROOKS 	? 1 : 0; 			
-					T->queenPSQT	[side ? Mirror64[kingSq] : kingSq][side ? Mirror64[sq] : sq] = piece == QUEEN 	? 1 : 0; 			
+					sq = side ? Mirror64[sq] : sq;
+					kingSq = side ? Mirror64[kingSq] : kingSq;
+
+					T->kingPSQT 	[kingSq]	[side] = piece == KING  	? 1 : 0;
+					T->pawnPSQT	 	[kingSq][sq][side] = piece == PAWNS 	? 1 : 0; 			
+					T->knightPSQT	[kingSq][sq][side] = piece == KNIGHTS 	? 1 : 0; 			
+					T->bishopPSQT	[kingSq][sq][side] = piece == BISHOPS 	? 1 : 0; 			
+					T->rookPSQT		[kingSq][sq][side] = piece == ROOKS 	? 1 : 0; 			
+					T->queenPSQT	[kingSq][sq][side] = piece == QUEEN 	? 1 : 0; 			
 				}
 			}
 		}
@@ -257,7 +261,6 @@ int pawnsEval(U8 stm, Thread *th) {
 		POP_POSITION(ourPawns);
 
 		score += stm ? PSQT[Mirror64[kingSq]][PAWNS][Mirror64[sq]] : PSQT[kingSq][PAWNS][sq];
-
 	}
 
 
@@ -526,7 +529,6 @@ int rooksEval(U8 stm, Thread *th) {
 		assert(sq >= 0 && sq <= 63);
 
 
-
 		score += stm ? PSQT[Mirror64[kingSq]][ROOKS][Mirror64[sq]] : PSQT[kingSq][ROOKS][sq];
 
 
@@ -764,6 +766,9 @@ int kingEval(U8 stm, Thread *th) {
 	int score = 0;	
 	
 	assert(kingSq >= 0 && kingSq < 64);
+
+
+	score += stm ? kingPSQT[Mirror64[kingSq]] : kingPSQT[kingSq];
 
 
 	U64 ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];

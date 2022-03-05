@@ -269,12 +269,20 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
     //PSQT
 
     for (int kingSq = 0; kingSq < U8_MAX_SQUARES; kingSq++) {
+	
+		loadCoeff->type[i] = NORMAL;
+
+	    loadCoeff->coeffs[WHITE][i] = T->kingPSQT[kingSq][WHITE];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->kingPSQT[kingSq][BLACK];                         
+    }
+
+    for (int kingSq = 0; kingSq < U8_MAX_SQUARES; kingSq++) {
 		for (int pieceSq = 0; pieceSq < U8_MAX_SQUARES; pieceSq++) {
 
 			loadCoeff->type[i] = NORMAL;
 		    
-		    loadCoeff->coeffs[WHITE][i] = T->pawnPSQT[kingSq][pieceSq];                         
-		    loadCoeff->coeffs[BLACK][i++] = 0;                         
+		    loadCoeff->coeffs[WHITE][i] = T->pawnPSQT[kingSq][pieceSq][WHITE];                         
+		    loadCoeff->coeffs[BLACK][i++] = T->pawnPSQT[kingSq][pieceSq][BLACK];                         
     	}
     }
 
@@ -282,8 +290,8 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
 		for (int pieceSq = 0; pieceSq < U8_MAX_SQUARES; pieceSq++) {
 
 			loadCoeff->type[i] = NORMAL;
-		    loadCoeff->coeffs[WHITE][i] = T->knightPSQT[kingSq][pieceSq];                         
-		    loadCoeff->coeffs[BLACK][i++] = 0;                         
+		    loadCoeff->coeffs[WHITE][i] = T->knightPSQT[kingSq][pieceSq][WHITE];                         
+		    loadCoeff->coeffs[BLACK][i++] = T->knightPSQT[kingSq][pieceSq][BLACK];                         
     	}
     }
 
@@ -291,8 +299,8 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
 		for (int pieceSq = 0; pieceSq < U8_MAX_SQUARES; pieceSq++) {
 
 			loadCoeff->type[i] = NORMAL;
-		    loadCoeff->coeffs[WHITE][i] = T->bishopPSQT[kingSq][pieceSq];                         
-		    loadCoeff->coeffs[BLACK][i++] = 0;                         
+		    loadCoeff->coeffs[WHITE][i] = T->bishopPSQT[kingSq][pieceSq][WHITE];                         
+		    loadCoeff->coeffs[BLACK][i++] = T->bishopPSQT[kingSq][pieceSq][BLACK];                         
     	}
     }
 
@@ -300,8 +308,8 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
 		for (int pieceSq = 0; pieceSq < U8_MAX_SQUARES; pieceSq++) {
 
 			loadCoeff->type[i] = NORMAL;
-		    loadCoeff->coeffs[WHITE][i] = T->rookPSQT[kingSq][pieceSq];                         
-		    loadCoeff->coeffs[BLACK][i++] = 0;                         
+		    loadCoeff->coeffs[WHITE][i] = T->rookPSQT[kingSq][pieceSq][WHITE];                         
+		    loadCoeff->coeffs[BLACK][i++] = T->rookPSQT[kingSq][pieceSq][BLACK];                         
     	}
     }
 
@@ -309,8 +317,8 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
 		for (int pieceSq = 0; pieceSq < U8_MAX_SQUARES; pieceSq++) {
 
 			loadCoeff->type[i] = NORMAL;
-		    loadCoeff->coeffs[WHITE][i] = T->queenPSQT[kingSq][pieceSq];                         
-		    loadCoeff->coeffs[BLACK][i++] = 0;                         
+		    loadCoeff->coeffs[WHITE][i] = T->queenPSQT[kingSq][pieceSq][WHITE];                         
+		    loadCoeff->coeffs[BLACK][i++] = T->queenPSQT[kingSq][pieceSq][BLACK];                         
     	}
     }
 
@@ -475,7 +483,12 @@ void startTuner() {
 	cparams[MG][count] = ScoreMG(weight_safety_adjustment);
 	cparams[EG][count++] = ScoreEG(weight_safety_adjustment);
 
-
+	
+	for (int kingSq = 0; kingSq < U8_MAX_SQUARES; kingSq++) {
+	
+		cparams[MG][count] = ScoreMG(kingPSQT[kingSq]);
+		cparams[EG][count++] = ScoreEG(kingPSQT[kingSq]);
+	}
 
 	for (int kingSq = 0; kingSq < U8_MAX_SQUARES; kingSq++) {
 		for (int pieceSq = 0; pieceSq < U8_MAX_SQUARES; pieceSq++) {
@@ -1078,6 +1091,18 @@ void saveWeights(TVector params, TVector cparams) {
   		"\nweight_safety_adjustment = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
 
 	// PSQT weights
+
+
+	myfile <<"\n"<< "int kingPSQT[U8_MAX_SQUARES] = {" <<"\n\n";
+	for (int i = 0; i < U8_MAX_SQUARES; i++) { 
+
+		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
+			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
+			
+		if(((i + 1) % 8) == 0) myfile<<"\n";
+	}	
+	myfile <<"};"<<"\n"; 
+	
 
 	myfile <<"\n"<< "int pawnPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {" <<"\n\n";
 	for (int j = 0; j < U8_MAX_SQUARES; j++) { 

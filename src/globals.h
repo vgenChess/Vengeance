@@ -128,12 +128,12 @@ extern int weight_queen_check;
 
 extern int weight_safety_adjustment;
 
+extern int kingPSQT[U8_MAX_SQUARES];
 extern int pawnPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES];
 extern int knightPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES];
 extern int bishopPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES];
 extern int rookPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES];
 extern int queenPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES];
-extern int kingPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES];
 
 extern int PSQT[U8_MAX_SQUARES][U8_MAX_PIECES][U8_MAX_SQUARES];
 
