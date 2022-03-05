@@ -688,14 +688,11 @@ void optimise(TVector params, TVector cparams) {
 	double beta1 = 0.9, beta2 = 0.999;
 	double alpha1 = 0.001;
 	
-	auto startTime = std::chrono::steady_clock::now();
-	auto skipTime = std::chrono::steady_clock::now();
-	auto lrStepTime = std::chrono::steady_clock::now();
-
+	auto tunerStartTime = std::chrono::steady_clock::now();
+	
 	int counter = 0;
 	uint64_t index = 0;
 
-	bool skip = false;
 	std::vector<Data> data_batch;
 	
 	for (uint64_t epoch = 1; epoch < MAXEPOCHS; epoch++) {
@@ -755,11 +752,11 @@ void optimise(TVector params, TVector cparams) {
 		} // End of the Parallel region 
 		
 		
-		auto endTime = std::chrono::steady_clock::now();
+		auto tunerTimeNow = std::chrono::steady_clock::now();
 
-		if (std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime).count() > DISPLAY_TIME) {
+		if (std::chrono::duration_cast<std::chrono::seconds>(tunerTimeNow - tunerStartTime).count() > DISPLAY_TIME) {
 
-			startTime = std::chrono::steady_clock::now();
+			tunerTimeNow = std::chrono::steady_clock::now();
 
 			mae = tunedEvaluationErrors(params, K);
 
@@ -777,7 +774,7 @@ void optimise(TVector params, TVector cparams) {
 
 					bestMae = mae;
 
-					std::async(writeToFile, params, cparams);			
+					std::async(saveWeights, params, cparams);			
 				}
 			} 
 		}
@@ -946,7 +943,7 @@ double computeOptimalK() {
     return start;
 }
 
-void writeToFile(TVector params, TVector cparams) {
+void saveWeights(TVector params, TVector cparams) {
 	
 	TVector weights = {0};
 

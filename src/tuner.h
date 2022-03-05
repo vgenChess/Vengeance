@@ -61,4 +61,6 @@ double staticEvaluationErrors(double K);
 
 double computeOptimalK();
 
+void saveWeights(TVector params, TVector cparams);
+
 #endif

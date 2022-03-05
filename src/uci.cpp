@@ -283,16 +283,6 @@ void UciLoop() {
             #endif
         } 
 
-        else if (token == "writeEval") {
-
-            writeEvalToFile();
-        } 
-
-        else if (token == "getEval") {
-
-            getEval();
-        } 
-
         else if (token == "see") {
 
             int sq;
