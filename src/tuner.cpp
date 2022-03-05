@@ -756,15 +756,14 @@ void optimise(TVector params, TVector cparams) {
 
 		if (std::chrono::duration_cast<std::chrono::seconds>(tunerTimeNow - tunerStartTime).count() > DISPLAY_TIME) {
 
-			tunerTimeNow = std::chrono::steady_clock::now();
+			tunerStartTime = std::chrono::steady_clock::now();
 
 			mae = tunedEvaluationErrors(params, K);
 
-			std::cout << std::setprecision(10);
 			std::cout << "Epoch = [" << epoch * BATCHSIZE / NPOSITIONS << "], ";
-			std::cout << "Error = [" << mae << "], ";
-			std::cout << "Rate = [" << alpha1 << "], ";
-			std::cout << "Error loss = [" << prevMae - mae << "]" << std::endl;
+			std::cout << "Error = [" << std::fixed << std::setprecision(8) << mae << "], ";
+			std::cout << "Rate = [" << std::fixed << std::setprecision(5) << alpha1 << "], ";
+			std::cout << "Error loss = [" << std::fixed << std::setprecision(8) << prevMae - mae << "]" << std::endl;
 
 			counter++;
 			if (counter > 4) {
