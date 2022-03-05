@@ -763,7 +763,11 @@ void optimise(TVector params, TVector cparams) {
 			std::cout << "Epoch = [" << epoch * BATCHSIZE / NPOSITIONS << "], ";
 			std::cout << "Error = [" << std::fixed << std::setprecision(8) << mae << "], ";
 			std::cout << "Rate = [" << std::fixed << std::setprecision(5) << alpha1 << "], ";
-			std::cout << "Error loss = [" << std::fixed << std::setprecision(8) << prevMae - mae << "]" << std::endl;
+			
+			if (prevMae > mae)
+				std::cout << "Error loss = [" << std::fixed << std::setprecision(8) << prevMae - mae << "]" << std::endl;
+			else
+				std::cout << "Error gain = [" << std::fixed << std::setprecision(8) << mae - prevMae << "]" << std::endl;
 
 			counter++;
 			if (counter > 4) {
