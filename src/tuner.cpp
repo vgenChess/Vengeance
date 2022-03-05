@@ -686,7 +686,7 @@ void optimise(TVector params, TVector cparams) {
 
 	// For Adam optimiser
 	double beta1 = 0.9, beta2 = 0.999;
-	double alpha1 = 0.001;
+	double alpha1 = 0.01;
 	
 	auto tunerStartTime = std::chrono::steady_clock::now();
 	
