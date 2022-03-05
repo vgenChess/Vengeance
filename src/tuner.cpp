@@ -268,92 +268,51 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
 
     //PSQT
 
-    for (int k = 8; k < 56; k++) {
-	
-		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = T->whitePawnPSQT[k];                         
-	    loadCoeff->coeffs[BLACK][i++] = 0;                         
+    for (int k = 0; k < 64; k++) {
+		for (int l = 0; l < 64; l++) {
+
+			loadCoeff->type[i] = NORMAL;
+		    loadCoeff->coeffs[WHITE][i] = T->pawnPSQT[k][l];                         
+		    loadCoeff->coeffs[BLACK][i++] = 0;                         
+    	}
     }
 
     for (int k = 0; k < 64; k++) {
+		for (int l = 0; l < 64; l++) {
 
-		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = T->whiteKnightPSQT[k];                         
-	    loadCoeff->coeffs[BLACK][i++] = 0;                         
+			loadCoeff->type[i] = NORMAL;
+		    loadCoeff->coeffs[WHITE][i] = T->knightPSQT[k][l];                         
+		    loadCoeff->coeffs[BLACK][i++] = 0;                         
+    	}
     }
 
     for (int k = 0; k < 64; k++) {
+		for (int l = 0; l < 64; l++) {
 
-		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = T->whiteBishopPSQT[k];                         
-	    loadCoeff->coeffs[BLACK][i++] = 0;                         
+			loadCoeff->type[i] = NORMAL;
+		    loadCoeff->coeffs[WHITE][i] = T->bishopPSQT[k][l];                         
+		    loadCoeff->coeffs[BLACK][i++] = 0;                         
+    	}
     }
 
     for (int k = 0; k < 64; k++) {
+		for (int l = 0; l < 64; l++) {
 
-		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = T->whiteRookPSQT[k];                         
-	    loadCoeff->coeffs[BLACK][i++] = 0;                         
+			loadCoeff->type[i] = NORMAL;
+		    loadCoeff->coeffs[WHITE][i] = T->rookPSQT[k][l];                         
+		    loadCoeff->coeffs[BLACK][i++] = 0;                         
+    	}
     }
 
     for (int k = 0; k < 64; k++) {
+		for (int l = 0; l < 64; l++) {
 
-		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = T->whiteQueenPSQT[k];                         
-	    loadCoeff->coeffs[BLACK][i++] = 0;                         
+			loadCoeff->type[i] = NORMAL;
+		    loadCoeff->coeffs[WHITE][i] = T->queenPSQT[k][l];                         
+		    loadCoeff->coeffs[BLACK][i++] = 0;                         
+    	}
     }
 
-    for (int k = 0; k < 64; k++) {
-
-		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = T->whiteKingPSQT[k];                         
-	    loadCoeff->coeffs[BLACK][i++] = 0;                         
-    }
-    
-    // for black
-
-    for (int k = 8; k < 56; k++) {
-	
-		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = 0;                         
-	    loadCoeff->coeffs[BLACK][i++] = T->blackPawnPSQT[k];                         
-    }
-
-    for (int k = 0; k < 64; k++) {
-
-		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = 0;                         
-	    loadCoeff->coeffs[BLACK][i++] = T->blackKnightPSQT[k];                         
-    }
-
-    for (int k = 0; k < 64; k++) {
-
-		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = 0;                         
-	    loadCoeff->coeffs[BLACK][i++] = T->blackBishopPSQT[k];                         
-    }
-
-    for (int k = 0; k < 64; k++) {
-
-		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = 0;                         
-	    loadCoeff->coeffs[BLACK][i++] = T->blackRookPSQT[k];                         
-    }
-
-    for (int k = 0; k < 64; k++) {
-
-		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = 0;                         
-	    loadCoeff->coeffs[BLACK][i++] = T->blackQueenPSQT[k];                         
-    }
-
-    for (int k = 0; k < 64; k++) {
-
-		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = 0;                         
-	    loadCoeff->coeffs[BLACK][i++] = T->blackKingPSQT[k];                         
-    }
-    
 
     assert(i == NTERMS);
 }
@@ -516,78 +475,48 @@ void startTuner() {
 	cparams[EG][count++] = ScoreEG(weight_safety_adjustment);
 
 
-	for (int i = 8; i <= 55; i++) {
 
-		cparams[MG][count] = ScoreMG(whitePawnPSQT[i]);
-		cparams[EG][count++] = ScoreEG(whitePawnPSQT[i]);
-	}
-
-	for (int i = 0; i <= 63; i++) {
+	for (int i = 0; i < 64; i++) {
+		for (int j = 0; j < 64; j++) {
 	
-		cparams[MG][count] = ScoreMG(whiteKnightPSQT[i]);
-		cparams[EG][count++] = ScoreEG(whiteKnightPSQT[i]);
+			cparams[MG][count] = ScoreMG(pawnPSQT[i][j]);
+			cparams[EG][count++] = ScoreEG(pawnPSQT[i][j]);
+		}
 	}
 
-	for (int i = 0; i <= 63; i++) {
+	for (int i = 0; i < 64; i++) {
+		for (int j = 0; j < 64; j++) {
 	
-		cparams[MG][count] = ScoreMG(whiteBishopPSQT[i]);
-		cparams[EG][count++] = ScoreEG(whiteBishopPSQT[i]);
+			cparams[MG][count] = ScoreMG(knightPSQT[i][j]);
+			cparams[EG][count++] = ScoreEG(knightPSQT[i][j]);
+		}
 	}
 
-	for (int i = 0; i <= 63; i++) {
+	for (int i = 0; i < 64; i++) {
+		for (int j = 0; j < 64; j++) {
 	
-		cparams[MG][count] = ScoreMG(whiteRookPSQT[i]);
-		cparams[EG][count++] = ScoreEG(whiteRookPSQT[i]);
+			cparams[MG][count] = ScoreMG(bishopPSQT[i][j]);
+			cparams[EG][count++] = ScoreEG(bishopPSQT[i][j]);
+		}
 	}
 
-	for (int i = 0; i <= 63; i++) {
+	for (int i = 0; i < 64; i++) {
+		for (int j = 0; j < 64; j++) {
 	
-		cparams[MG][count] = ScoreMG(whiteQueenPSQT[i]);
-		cparams[EG][count++] = ScoreEG(whiteQueenPSQT[i]);
+			cparams[MG][count] = ScoreMG(rookPSQT[i][j]);
+			cparams[EG][count++] = ScoreEG(rookPSQT[i][j]);
+		}
 	}
+
+	for (int i = 0; i < 64; i++) {
+		for (int j = 0; j < 64; j++) {
 	
-	for (int i = 0; i <= 63; i++) {
-
-		cparams[MG][count] = ScoreMG(whiteKingPSQT[i]);
-		cparams[EG][count++] = ScoreEG(whiteKingPSQT[i]);
+			cparams[MG][count] = ScoreMG(queenPSQT[i][j]);
+			cparams[EG][count++] = ScoreEG(queenPSQT[i][j]);
+		}
 	}
 
 
-	for (int i = 8; i <= 55; i++) {
-
-		cparams[MG][count] = ScoreMG(blackPawnPSQT[i]);
-		cparams[EG][count++] = ScoreEG(blackPawnPSQT[i]);
-	}
-
-	for (int i = 0; i <= 63; i++) {
-	
-		cparams[MG][count] = ScoreMG(blackKnightPSQT[i]);
-		cparams[EG][count++] = ScoreEG(blackKnightPSQT[i]);
-	}
-
-	for (int i = 0; i <= 63; i++) {
-	
-		cparams[MG][count] = ScoreMG(blackBishopPSQT[i]);
-		cparams[EG][count++] = ScoreEG(blackBishopPSQT[i]);
-	}
-
-	for (int i = 0; i <= 63; i++) {
-	
-		cparams[MG][count] = ScoreMG(blackRookPSQT[i]);
-		cparams[EG][count++] = ScoreEG(blackRookPSQT[i]);
-	}
-
-	for (int i = 0; i <= 63; i++) {
-	
-		cparams[MG][count] = ScoreMG(blackQueenPSQT[i]);
-		cparams[EG][count++] = ScoreEG(blackQueenPSQT[i]);
-	}
-	
-	for (int i = 0; i <= 63; i++) {
-
-		cparams[MG][count] = ScoreMG(blackKingPSQT[i]);
-		cparams[EG][count++] = ScoreEG(blackKingPSQT[i]);
-	}
 
 	assert(count == NTERMS);
 
@@ -751,7 +680,7 @@ void optimise(TVector params, TVector cparams) {
 
 	const double K = computeOptimalK();
 
-	double bestMae = 0.0, mae = 0.0;
+	double bestMae = 100.0, mae = 0.0;
 
 	TVector adagrad = {0}, cache = {0}, M = {0}, R = {0};
 
@@ -786,40 +715,45 @@ void optimise(TVector params, TVector cparams) {
         TVector gradient = {0};
 
 		computeGradient(gradient, params, data_batch, K);
+
+
+		// Adagrad
+
+        // adagrad[MG][i] += pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
+        // adagrad[EG][i] += pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
+        // params[MG][i] += (K / 200.0) * (gradient[MG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + adagrad[MG][i]));
+        // params[EG][i] += (K / 200.0) * (gradient[EG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + adagrad[EG][i]));
+
+		// RMSProp
+
+        // cache[MG][i] = beta1 * cache[MG][i] + (1.0 - beta1) * pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
+        // cache[EG][i] = beta1 * cache[EG][i] + (1.0 - beta1) * pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
+        // params[MG][i] += (K / 200.0) * (gradient[MG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + cache[MG][i]));
+        // params[EG][i] += (K / 200.0) * (gradient[EG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + cache[EG][i]));
+
+		#pragma omp parallel
+		{
+			// Parallel region with default number of threads
+			#pragma omp for schedule(auto)
+			for (int i = 0; i < NTERMS; ++i) {
+				
+			    M[MG][i] = beta1 * M[MG][i] + (1.0 - beta1) * (K / 200.0) * gradient[MG][i] / BATCHSIZE;
+			    M[EG][i] = beta1 * M[EG][i] + (1.0 - beta1) * (K / 200.0) * gradient[EG][i] / BATCHSIZE;
+	
+				R[MG][i] = beta2 * R[MG][i] + (1.0 - beta2) * pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
+	        	R[EG][i] = beta2 * R[EG][i] + (1.0 - beta2) * pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
+
+	        	double mg_m_k_hat = M[MG][i] / (1.0 - pow(beta1, epoch));
+	        	double eg_m_k_hat = M[EG][i] / (1.0 - pow(beta1, epoch));
+
+	        	double mg_r_k_hat = R[MG][i] / (1.0 - pow(beta2, epoch));
+	        	double eg_r_k_hat = R[EG][i] / (1.0 - pow(beta2, epoch));
+
+	        	params[MG][i] += alpha1 * mg_m_k_hat / (sqrt(mg_r_k_hat) + 1e-8);
+	        	params[EG][i] += alpha1 * eg_m_k_hat / (sqrt(eg_r_k_hat) + 1e-8);
+			}
+		} // End of the Parallel region 
 		
-		for (int i = 0; i < NTERMS; i++) {
-			
-			// Adagrad
-
-            // adagrad[MG][i] += pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
-            // adagrad[EG][i] += pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
-            // params[MG][i] += (K / 200.0) * (gradient[MG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + adagrad[MG][i]));
-            // params[EG][i] += (K / 200.0) * (gradient[EG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + adagrad[EG][i]));
-
-			// RMSProp
-
-            // cache[MG][i] = beta1 * cache[MG][i] + (1.0 - beta1) * pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
-            // cache[EG][i] = beta1 * cache[EG][i] + (1.0 - beta1) * pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
-            // params[MG][i] += (K / 200.0) * (gradient[MG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + cache[MG][i]));
-            // params[EG][i] += (K / 200.0) * (gradient[EG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + cache[EG][i]));
-
-			// Adam
-		    M[MG][i] = beta1 * M[MG][i] + (1.0 - beta1) * (K / 200.0) * gradient[MG][i] / BATCHSIZE;
-		    M[EG][i] = beta1 * M[EG][i] + (1.0 - beta1) * (K / 200.0) * gradient[EG][i] / BATCHSIZE;
-
-        	R[MG][i] = beta2 * R[MG][i] + (1.0 - beta2) * pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
-        	R[EG][i] = beta2 * R[EG][i] + (1.0 - beta2) * pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
-
-        	double mg_m_k_hat = M[MG][i] / (1.0 - pow(beta1, epoch));
-        	double eg_m_k_hat = M[EG][i] / (1.0 - pow(beta1, epoch));
-
-        	double mg_r_k_hat = R[MG][i] / (1.0 - pow(beta2, epoch));
-        	double eg_r_k_hat = R[EG][i] / (1.0 - pow(beta2, epoch));
-
-        	params[MG][i] += alpha1 * mg_m_k_hat / (sqrt(mg_r_k_hat) + 1e-8);
-        	params[EG][i] += alpha1 * eg_m_k_hat / (sqrt(eg_r_k_hat) + 1e-8);
-		}
-
 		
 		auto endTime = std::chrono::steady_clock::now();
 
@@ -839,9 +773,12 @@ void optimise(TVector params, TVector cparams) {
 
 				counter = 0;
 
-				displayWeights(params, cparams);
+				if (mae < bestMae) {
 
-				std::async(writeToFile, params, cparams);
+					bestMae = mae;
+
+					std::async(writeToFile, params, cparams);			
+				}
 			} 
 		}
 	}
@@ -875,7 +812,6 @@ double tunedEvaluationErrors(TVector weights, double K) {
 
     return total / (double) NPOSITIONS;
 }
-
 
 
 double linearEvaluation(TVector weights, Data data, TGradientData *gradientData) {
@@ -1010,294 +946,6 @@ double computeOptimalK() {
     return start;
 }
 
-void displayWeights(TVector params, TVector cparams) {
-
-	TVector weights = {0};
-
-    // Combine updated and current parameters
-    for (int j = 0; j < NTERMS; j++) {
-        weights[MG][j] = round(params[MG][j] + cparams[MG][j]);
-        weights[EG][j] = round(params[EG][j] + cparams[EG][j]);
-    }
-
-	int count = 0;
-
-	std::cout << "\n";
-
-	std::cout << "Weights" << "\n\n";
-
-	std::cout 
-		<< "weight_val_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
-		<< ",\nweight_val_knight = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
-		<< ",\nweight_val_bishop = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
-		<< ",\nweight_val_rook = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")"
-		<< ",\nweight_val_queen = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")";
-	
-	std::cout<<", \n\n";
-
-
-	std::cout 
-		<< "\nweight_isolated_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
-		<< ",\nweight_backward_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
-		<< ",\nweight_double_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
-		<< ",\nweight_defended_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")"
-		<< ",\nweight_pawn_hole = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")";
-
-	std::cout <<", \n" << "arr_weight_passed_pawn[8] = { "; 
-    for(int i = 0; i < 8; i++) std::cout << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", "; 
-	
-	std::cout << "}, \n" << "arr_weight_defended_passed_pawn[8] = { "; 
-    for(int i = 0; i < 8; i++) std::cout << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", ";
-
-   	std::cout << "}, \n\n";
-
-
-
-   	std::cout << "weight_undefended_knight = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
-	std::cout << "weight_knight_defended_by_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", ";
-	std::cout<<"\n\n";
-
-
- 	std::cout << "weight_bishop_pair = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
-   	std::cout<<"\n\n";
-
-
- 	std::cout << "weight_rook_half_open_file = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_rook_open_file = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_rook_enemy_queen_same_file = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		// "\nweight_rook_blocked_by_king = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_rook_on_seventh_rank = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-		"\nweight_rook_on_eight_rank = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_rook_supporting_friendly_rook = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n\n";
-
-  
-   	std::cout << "weight_queen_underdeveloped_pieces = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n\n";
-
-
-	std::cout << "weight_king_pawn_shield = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";   	
-	std::cout << "weight_king_enemy_pawn_storm = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n\n";   	
-
-	std::cout << "arr_weight_knight_mobility[16] = { \n\n";
-    for (int i = 0; i < 16; i++) {
-    
-    	std::cout << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", ";
-		
-		if(((i + 1) % 8) == 0) std::cout<<"\n";
-	}
-   	std::cout << "\n"; 
-	std::cout <<"}, "<<"\n";
-
-	std::cout << "arr_weight_bishop_mobility[16] = { \n\n";
-    for (int i = 0; i < 16; i++) {
-    
-    	std::cout << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", ";
-		
-		if(((i + 1) % 8) == 0) std::cout<<"\n";
-	}
-	std::cout << "\n"; 
-	std::cout <<"}, "<<"\n";
-
-	std::cout << "arr_weight_rook_mobility[16] = { \n\n";
-    for (int i = 0; i < 16; i++) {
-    
-    	std::cout << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", ";
-		
-		if(((i + 1) % 8) == 0) std::cout<<"\n";
-	}
-	std::cout << "\n"; 
-	std::cout <<"}, "<<"\n";
-
-	std::cout << "arr_weight_queen_mobility[32] = { \n\n";
-    for (int i = 0; i < 32; i++) {
-    
-    	std::cout << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", ";
-		
-		if(((i + 1) % 8) == 0) std::cout<<"\n";
-	}
-	std::cout << "\n"; 
-	std::cout <<"}, "<<"\n\n";
-
-
-	std::cout << "weight_center_control = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n\n";
-   
-
- 	std::cout << "weight_knight_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_bishop_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_rook_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_queen_attack = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_rook_safe_contact_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-		"\nweight_queen_safe_contact_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-		"\nweight_knight_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_bishop_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_rook_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_queen_check = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-  		"\nweight_safety_adjustment = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
-
-	// PSQT weights
-
-	std::cout <<"\n"<< "int whitePawnPSQT[64] = {" <<"\n\n";
-	
-	for (int i = 0; i < 8; i++) { 
-	
-		std::cout << "S(" << std::setw(4) << 0<<"," << 
-			std::setw(4) <<0<<")" << ", "; 
-	} std::cout << "\n";
-
-	for (int i = 0; i < 48; i++) { 
-	
-		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) std::cout<<"\n";
-	}
-
-	for (int i = 0; i < 8; i++) { 
-	
-		std::cout << "S(" << std::setw(4) << 0<<"," << 
-			std::setw(4) <<0<<")" << ", "; 
-	} std::cout << "\n";
-	std::cout <<"};"<<"\n";
-	
-
-	std::cout <<"\n"<< "int whiteKnightPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
-
-		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) std::cout<<"\n";
-	} std::cout << "\n"; 
-	std::cout <<"};"<<"\n";
-
-
-	std::cout <<"\n"<< "int whiteBishopPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
-
-		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) std::cout<<"\n";
-	} std::cout << "\n";
-	std::cout <<"};"<<"\n"; 
-
-
-	std::cout <<"\n"<< "int whiteRookPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
-
-		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) std::cout<<"\n";
-	} std::cout << "\n"; 
-	std::cout <<"};"<<"\n"; 
-
-
-	std::cout <<"\n"<< "int whiteQueenPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
-
-		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) std::cout<<"\n";
-	} std::cout << "\n"; 	
-	std::cout <<"};"<<"\n"; 
-
-
-	std::cout <<"\n"<< "int whiteKingPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
-
-		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) std::cout<<"\n";
-	} std::cout << "\n";
-	std::cout <<"};"<<"\n\n"; 
-
-
-
-	std::cout <<"\n"<< "int blackPawnPSQT[64] = {" <<"\n\n";
-	
-	for (int i = 0; i < 8; i++) { 
-	
-		std::cout << "S(" << std::setw(4) << 0<<"," << 
-			std::setw(4) <<0<<")" << ", "; 
-	} std::cout << "\n";
-
-	for (int i = 0; i < 48; i++) { 
-	
-		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) std::cout<<"\n";
-	}
-
-	for (int i = 0; i < 8; i++) { 
-	
-		std::cout << "S(" << std::setw(4) << 0<<"," << 
-			std::setw(4) <<0<<")" << ", "; 
-	} std::cout << "\n";
-	std::cout <<"};"<<"\n";
-	
-
-	std::cout <<"\n"<< "int blackKnightPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
-
-		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) std::cout<<"\n";
-	} std::cout << "\n"; 
-	std::cout <<"};"<<"\n";
-
-
-	std::cout <<"\n"<< "int blackBishopPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
-
-		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) std::cout<<"\n";
-	} std::cout << "\n";
-	std::cout <<"};"<<"\n"; 
-
-
-	std::cout <<"\n"<< "int blackRookPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
-
-		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) std::cout<<"\n";
-	} std::cout << "\n"; 
-	std::cout <<"};"<<"\n"; 
-
-
-	std::cout <<"\n"<< "int blackQueenPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
-
-		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) std::cout<<"\n";
-	} std::cout << "\n"; 	
-	std::cout <<"};"<<"\n"; 
-
-
-	std::cout <<"\n"<< "int blackKingPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
-
-		std::cout << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) std::cout<<"\n";
-	} std::cout << "\n";
-	std::cout <<"};"<<"\n\n";
-
-
-
-	assert (count == NTERMS); 
-}
-
 void writeToFile(TVector params, TVector cparams) {
 	
 	TVector weights = {0};
@@ -1428,236 +1076,78 @@ void writeToFile(TVector params, TVector cparams) {
 
 	// PSQT weights
 
-	myfile <<"\n"<< "int whitePawnPSQT[64] = {" <<"\n\n";
-	
-	for (int i = 0; i < 8; i++) { 
-	
-		myfile << "S(" << std::setw(4) << 0<<"," << 
-			std::setw(4) <<0<<")" << ", "; 
-	} myfile << "\n";
+	myfile <<"\n"<< "int pawnPSQT[64][64] = {" <<"\n\n";
+	for (int j = 0; j < 64; j++) { 
 
-	for (int i = 0; i < 48; i++) { 
-	
-		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) myfile<<"\n";
-	}
+		for (int i = 0; i < 64; i++) { 
 
-	for (int i = 0; i < 8; i++) { 
-	
-		myfile << "S(" << std::setw(4) << 0<<"," << 
-			std::setw(4) <<0<<")" << ", "; 
-	} myfile << "\n";
-	myfile <<"};"<<"\n";
+			myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
+				std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
+				
+			if(((i + 1) % 16) == 0) myfile<<"\n";
+		}  
+	}	
+	myfile <<"};"<<"\n"; 
 	
 
-	myfile <<"\n"<< "int whiteKnightPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
+	myfile <<"\n"<< "int knightPSQT[64][64] = {" <<"\n\n";
+	for (int j = 0; j < 64; j++) { 
 
-		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) myfile<<"\n";
-	} myfile << "\n"; 
-	myfile <<"};"<<"\n";
+		for (int i = 0; i < 64; i++) { 
 
-
-	myfile <<"\n"<< "int whiteBishopPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
-
-		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) myfile<<"\n";
-	} myfile << "\n";
+			myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
+				std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
+				
+			if(((i + 1) % 16) == 0) myfile<<"\n";
+		}  
+	}	
 	myfile <<"};"<<"\n"; 
 
 
-	myfile <<"\n"<< "int whiteRookPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
+	myfile <<"\n"<< "int bishopPSQT[64][64] = {" <<"\n\n";
+	for (int j = 0; j < 64; j++) { 
 
-		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) myfile<<"\n";
-	} myfile << "\n"; 
+		for (int i = 0; i < 64; i++) { 
+
+			myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
+				std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
+				
+			if(((i + 1) % 16) == 0) myfile<<"\n";
+		}  
+	}	
 	myfile <<"};"<<"\n"; 
 
 
-	myfile <<"\n"<< "int whiteQueenPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
 
-		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) myfile<<"\n";
-	} myfile << "\n"; 	
+	myfile <<"\n"<< "int rookPSQT[64][64] = {" <<"\n\n";
+	for (int j = 0; j < 64; j++) { 
+
+		for (int i = 0; i < 64; i++) { 
+
+			myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
+				std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
+				
+			if(((i + 1) % 16) == 0) myfile<<"\n";
+		}  
+	}	
 	myfile <<"};"<<"\n"; 
 
 
-	myfile <<"\n"<< "int whiteKingPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
+	myfile <<"\n"<< "int queenPSQT[64][64] = {" <<"\n\n";
+	for (int j = 0; j < 64; j++) { 
 
-		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) myfile<<"\n";
-	} myfile << "\n";
-	myfile <<"};"<<"\n\n";
+		for (int i = 0; i < 64; i++) { 
 
-
-	myfile <<"\n"<< "int blackPawnPSQT[64] = {" <<"\n\n";
-	
-	for (int i = 0; i < 8; i++) { 
-	
-		myfile << "S(" << std::setw(4) << 0<<"," << 
-			std::setw(4) <<0<<")" << ", "; 
-	} myfile << "\n";
-
-	for (int i = 0; i < 48; i++) { 
-	
-		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) myfile<<"\n";
-	}
-
-	for (int i = 0; i < 8; i++) { 
-	
-		myfile << "S(" << std::setw(4) << 0<<"," << 
-			std::setw(4) <<0<<")" << ", "; 
-	} myfile << "\n";
-	myfile <<"};"<<"\n";
-	
-
-	myfile <<"\n"<< "int blackKnightPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
-
-		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) myfile<<"\n";
-	} myfile << "\n"; 
-	myfile <<"};"<<"\n";
-
-
-	myfile <<"\n"<< "int blackBishopPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
-
-		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) myfile<<"\n";
-	} myfile << "\n";
+			myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
+				std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
+				
+			if(((i + 1) % 16) == 0) myfile<<"\n";
+		}  
+	}	
 	myfile <<"};"<<"\n"; 
-
-
-	myfile <<"\n"<< "int blackRookPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
-
-		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) myfile<<"\n";
-	} myfile << "\n"; 
-	myfile <<"};"<<"\n"; 
-
-
-	myfile <<"\n"<< "int blackQueenPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
-
-		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) myfile<<"\n";
-	} myfile << "\n"; 	
-	myfile <<"};"<<"\n"; 
-
-
-	myfile <<"\n"<< "int blackKingPSQT[64] = {" <<"\n\n";
-	for (int i = 0; i < 64; i++) { 
-
-		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) myfile<<"\n";
-	} myfile << "\n";
-	myfile <<"};"<<"\n\n";
 
 
 	myfile.close();
 
 	assert(count == NTERMS);
-}
-
-void writeEvalToFile() {
-
-	std::fstream newfile;
-   	newfile.open ("ccrl-40-15-elo-3000_7_5_m.epd", std::ios::in); 
-		
-	std::ofstream foutput; 
-	foutput.open ("data.txt", std::ios::app); 
-
-	int count = 1;
-
-	// read data from file to a vector
-	if (newfile.is_open() && foutput.is_open()) {   
-
-		std::string tp;
-
-		Thread th;	
-	    th.moves_history_counter = 1;
-		
-		while (getline(newfile, tp)) {
-
-			// std::string fen = tp.substr(0, tp.find(";"));
-
-			// if (fen.length() <= 0) continue;
-
-			// int score = evaluateFENNNUE(&fen[0]);
-
-			// u8 side = parseFen(const_cast<char *>(fen.c_str()), &th);
-
-			// int score = evaluateNNUE(side, &th);
-
-			// foutput<<fen << " " << "{" << score << "}" << "\n"; 
-			
-			// count++;
-
-			// if (count % 10000 == 0) std::cout << count << " eval for entries written" << std::endl;	
-		}
-	}
-
-	newfile.close();
-	foutput.close(); 
-
-	std::cout << count - 1 << " eval for entries written" << std::endl;
-}
-
-void getEval() {
-
-	std::fstream newfile;
-   	newfile.open ("data.txt", std::ios::in); 
-	
-	if (newfile.is_open()) {   
-
-		std::string tp;
-
-		int count = 0;
-		while (getline(newfile, tp)) {
-
-			count++;
-			std::string fen = tp.substr(0, tp.find("\""));
-
-			unsigned first = fen.find('{') + 1;
-			unsigned last = fen.find('}');
-			std::string strNew = fen.substr (first, last-first);
-			int stored_eval = std::stoi( strNew);
-
-			std::cout<<stored_eval<<std::endl;
-
-			if (count > 10) break;
-		}
-	}	
 }
