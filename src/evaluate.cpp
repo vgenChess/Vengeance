@@ -228,10 +228,10 @@ int fullEval(U8 stm, Thread *th) {
 
 
 	// Tapered evaluation 
-	int phase = 4 * POPCOUNT(th->whitePieceBB[QUEEN] | th->blackPieceBB[QUEEN]) 
-			+ 	2 * POPCOUNT(th->whitePieceBB[ROOKS] | th->blackPieceBB[ROOKS])
-      		+ 	1 * POPCOUNT(th->whitePieceBB[BISHOPS] | th->blackPieceBB[BISHOPS])
-      		+ 	1 * POPCOUNT(th->whitePieceBB[KNIGHTS] | th->blackPieceBB[KNIGHTS]);
+	int phase = 	4 * POPCOUNT(th->whitePieceBB[QUEEN] | th->blackPieceBB[QUEEN]) 
+				+ 	2 * POPCOUNT(th->whitePieceBB[ROOKS] | th->blackPieceBB[ROOKS])
+      			+ 	1 * POPCOUNT(th->whitePieceBB[BISHOPS] | th->blackPieceBB[BISHOPS])
+      			+ 	1 * POPCOUNT(th->whitePieceBB[KNIGHTS] | th->blackPieceBB[KNIGHTS]);
 
     int score = (ScoreMG(eval) * phase + ScoreEG(eval) * (24 - phase)) / 24;
 
@@ -871,15 +871,15 @@ int kingEval(U8 stm, Thread *th) {
 
 void initPSQT() {
 
-	for (U8 i = 0; i < U8_MAX_SQUARES; i++) {
+	for (U8 kingSq = 0; kingSq < U8_MAX_SQUARES; kingSq++) {
 
 		for (U8 sq = 0; sq < U8_MAX_SQUARES; sq++) {
 
-			PSQT[i][PAWNS][sq] 	= 	pawnPSQT[i][sq] 	+ 	weight_val_pawn; 
-			PSQT[i][KNIGHTS][sq] = 	knightPSQT[i][sq] 	+	weight_val_knight; 
-			PSQT[i][BISHOPS][sq] = 	bishopPSQT[i][sq]	+ 	weight_val_bishop; 
-			PSQT[i][ROOKS][sq] 	= 	rookPSQT[i][sq] 	+	weight_val_rook; 
-			PSQT[i][QUEEN][sq] 	= 	queenPSQT[i][sq]	+ 	weight_val_queen; 
+			PSQT[kingSq][PAWNS][sq] 	= 	pawnPSQT[kingSq][sq] 	+ 	weight_val_pawn; 
+			PSQT[kingSq][KNIGHTS][sq] 	= 	knightPSQT[kingSq][sq] 	+	weight_val_knight; 
+			PSQT[kingSq][BISHOPS][sq] 	= 	bishopPSQT[kingSq][sq]	+ 	weight_val_bishop; 
+			PSQT[kingSq][ROOKS][sq] 	= 	rookPSQT[kingSq][sq] 	+	weight_val_rook; 
+			PSQT[kingSq][QUEEN][sq] 	= 	queenPSQT[kingSq][sq]	+ 	weight_val_queen; 
 		}
 	}
 }
