@@ -30,11 +30,13 @@ public:
 	int passedPawn[2][8];
 	int defendedPassedPawn[2][8];
 	
+	int knightOutpost[2];
 	int undefendedKnight[2];
 	int knightDefendedByPawn[2];
 	
 	int bishopPair[2];
 
+	int rookFlankOutpost[2];
 	int halfOpenFile[2];
 	int openFile[2];
 	int rookEnemyQueenSameFile[2];
@@ -121,16 +123,18 @@ public:
 				this->defendedPassedPawn[i][j] = 0;
 		}
 
-		for (int i = 0; i < 2; i++) 
+		for (int i = 0; i < 2; i++) {
+
+			this->knightOutpost[i] = 0;
 			this->undefendedKnight[i] = 0;
-		for (int i = 0; i < 2; i++)
 			this->knightDefendedByPawn[i] = 0;
-		
+		}
 
 		for (int i = 0; i < 2; i++)
 			this->bishopPair[i] = 0;
 
-
+		for (int i = 0; i < 2; i++)
+			this->rookFlankOutpost[i] = 0;
 		for (int i = 0; i < 2; i++)
 			this->halfOpenFile[i] = 0;
 		for (int i = 0; i < 2; i++)
@@ -172,7 +176,7 @@ public:
 			for (int i = 0; i < 64; i++) {
 
 				this->kingPSQT[i][side] = 0;
-				
+
 				for (int j = 0; j < 64; j++) {
 					
 					this->pawnPSQT[i][j][side] = 0;

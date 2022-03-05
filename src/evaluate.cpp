@@ -228,10 +228,10 @@ int fullEval(U8 stm, Thread *th) {
 
 
 	// Tapered evaluation 
-	int phase = 	4 * POPCOUNT(th->whitePieceBB[QUEEN] | th->blackPieceBB[QUEEN]) 
-				+ 	2 * POPCOUNT(th->whitePieceBB[ROOKS] | th->blackPieceBB[ROOKS])
-      			+ 	1 * POPCOUNT(th->whitePieceBB[BISHOPS] | th->blackPieceBB[BISHOPS])
-      			+ 	1 * POPCOUNT(th->whitePieceBB[KNIGHTS] | th->blackPieceBB[KNIGHTS]);
+	int phase = 	4 * POPCOUNT(th->whitePieceBB[QUEEN] 	| 	th->blackPieceBB[QUEEN]) 
+				+ 	2 * POPCOUNT(th->whitePieceBB[ROOKS] 	| 	th->blackPieceBB[ROOKS])
+      			+ 	1 * POPCOUNT(th->whitePieceBB[BISHOPS] 	| 	th->blackPieceBB[BISHOPS])
+      			+ 	1 * POPCOUNT(th->whitePieceBB[KNIGHTS]	| 	th->blackPieceBB[KNIGHTS]);
 
     int score = (ScoreMG(eval) * phase + ScoreEG(eval) * (24 - phase)) / 24;
 
@@ -357,6 +357,9 @@ int knightsEval(U8 stm, Thread *th) {
 	int kingSq = th->evalInfo.kingSq[stm];
 	
 	U64 knightsBB = stm ? th->blackPieceBB[KNIGHTS] : th->whitePieceBB[KNIGHTS];
+	U64 attacksBB;
+
+	U64 oppPawnHoles = ~th->evalInfo.allPawnAttacks[opp] & EXTENDED_CENTER;
 
 	while (knightsBB) {
 
@@ -366,13 +369,72 @@ int knightsEval(U8 stm, Thread *th) {
 		assert(sq >= 0 && sq <= 63);
 		
 
-
 		score += stm ? PSQT[Mirror64[kingSq]][KNIGHTS][Mirror64[sq]] : PSQT[kingSq][KNIGHTS][sq];
 
 
+		attacksBB = th->evalInfo.knightAttacks[stm][sq];
 
-		U64 attacksBB = th->evalInfo.knightAttacks[stm][sq];
+		
+		// 	Outpost
+		//	An outpost is a square on the fourth, fifth, sixth, 
+		//	or seventh rank which is protected by a pawn and which cannot be attacked by an opponent's pawn.
+		if (oppPawnHoles & (1ULL << sq)) {
 
+			score += weight_knight_outpost;
+
+			#if defined(TUNE) 
+
+				T->knightOutpost[stm]++;
+			#endif
+		}
+
+		
+		// Penalty for an undefended minor piece
+		
+		bool isDefended = (1ULL << sq) & th->evalInfo.attacks[stm]; 
+
+		if (!isDefended) {
+
+			score += weight_undefended_knight;
+
+			#if defined(TUNE)	
+			
+				T->undefendedKnight[stm]++;			
+			#endif
+		}
+
+		
+		// Marginal bonus for a knight defended by a pawn
+		
+		bool isDefendedByAPawn = (1ULL << sq) & th->evalInfo.allPawnAttacks[stm];
+		
+		if (isDefendedByAPawn) {
+
+			score += weight_knight_defended_by_pawn;
+
+			#if defined(TUNE)	
+			
+				T->knightDefendedByPawn[stm]++;
+			#endif
+		}
+
+
+		// Knight mobility
+		
+		U64 mobilityBB = attacksBB & th->empty & ~th->evalInfo.allPawnAttacks[opp];
+
+		mobilityCount = POPCOUNT(mobilityBB);
+
+		score += arr_weight_knight_mobility[mobilityCount];
+
+		#if defined(TUNE)
+
+			T->knightMobility[stm][mobilityCount]++;
+		#endif
+
+
+		// Update values required for King safety 
+		
 		if (attacksBB & th->evalInfo.kingZoneBB[opp]) {
  			
  			th->evalInfo.kingAttackersCount[opp]++;
@@ -389,40 +451,6 @@ int knightsEval(U8 stm, Thread *th) {
            		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
             }
 		}
-
-		// undefended
-		if (!((1ULL << sq) & th->evalInfo.attacks[stm])) {
-
-			score += weight_undefended_knight;
-
-			#if defined(TUNE)	
-			
-				T->undefendedKnight[stm]++;			
-			#endif
-		}
-
-		// defended by pawn
-		if ((1ULL << sq) & th->evalInfo.allPawnAttacks[stm]) {
-
-			score += weight_knight_defended_by_pawn;
-
-			#if defined(TUNE)	
-			
-				T->knightDefendedByPawn[stm]++;
-			#endif
-		}
-
-		//TODO check logic
-		U64 mobilityBB = attacksBB & th->empty & ~th->evalInfo.allPawnAttacks[opp];
-
-		mobilityCount = POPCOUNT(mobilityBB);
-
-		score += arr_weight_knight_mobility[mobilityCount];
-
-		#if defined(TUNE)
-
-			T->knightMobility[stm][mobilityCount]++;
-		#endif
 	}
 
 	return score;
@@ -481,7 +509,7 @@ int bishopsEval(U8 stm, Thread *th) {
 		#endif
 
 
-		// Update values for opp King safety 
+		// Update values required for King safety 
 		if (attacksBB & th->evalInfo.kingZoneBB[opp]) {
  			
  			th->evalInfo.kingAttackersCount[opp]++;
@@ -520,6 +548,7 @@ int rooksEval(U8 stm, Thread *th) {
 	const int kingSq = th->evalInfo.kingSq[stm];
 
 	U64 rooksBB = stm ? th->blackPieceBB[ROOKS] : th->whitePieceBB[ROOKS];
+	U64 oppFlankPawnHoles = ~th->evalInfo.allPawnAttacks[opp] & ~EXTENDED_CENTER & ~(RANK_1 | RANK_2 | RANK_7 | RANK_8);
 
 	while (rooksBB) {
 
@@ -530,6 +559,16 @@ int rooksEval(U8 stm, Thread *th) {
 
 
 		score += stm ? PSQT[Mirror64[kingSq]][ROOKS][Mirror64[sq]] : PSQT[kingSq][ROOKS][sq];
+
+		if (oppFlankPawnHoles & (1ULL << sq)) {
+
+			score += weight_rook_flank_outpost;
+			
+			#if defined(TUNE)
+
+				T->rookFlankOutpost[stm]++;
+			#endif
+		}
 
 
 		// Rook on half open file
@@ -864,6 +903,11 @@ int evalBoard(U8 stm, Thread *th) {
 	#if defined(TUNE)	
 		T->centerControl[stm] = nCenterControl;
 	#endif
+
+
+	// Evaluate trapped pieces
+
+
 
 	return score;
 }

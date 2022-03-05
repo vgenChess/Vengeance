@@ -21,10 +21,13 @@ arr_weight_defended_passed_pawn[8] = {
  S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) 
 }, 
 
-weight_undefended_knight = S(0, 0), weight_knight_defended_by_pawn = S(0, 0), 
+weight_knight_outpost = S(0, 0),
+weight_undefended_knight = S(0, 0), 
+weight_knight_defended_by_pawn = S(0, 0), 
  
 weight_bishop_pair = S(0, 0),
 
+weight_rook_flank_outpost = S(0, 0),
 weight_rook_half_open_file = S(0, 0), 
 weight_rook_open_file = S(0, 0), 
 weight_rook_enemy_queen_same_file = S(0, 0), 

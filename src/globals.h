@@ -86,11 +86,13 @@ extern int weight_pawn_hole;
 extern int arr_weight_passed_pawn[8];
 extern int arr_weight_defended_passed_pawn[8];
 
+extern int weight_knight_outpost;
 extern int weight_undefended_knight;
 extern int weight_knight_defended_by_pawn;
 
 extern int weight_bishop_pair;
 
+extern int weight_rook_flank_outpost;
 extern int weight_rook_half_open_file;
 extern int weight_rook_open_file;
 extern int weight_rook_enemy_queen_same_file;
