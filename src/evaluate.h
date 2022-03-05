@@ -39,7 +39,6 @@ public:
 	int openFile[2];
 	int rookEnemyQueenSameFile[2];
 	int rookSupportingFriendlyRook[2];
-	int rookBlockedByKing[2];
 	int rookOnSeventhRank[2];
 	int rookOnEightRank[2];
 
@@ -86,6 +85,9 @@ public:
 	int centerControl[2];
 
 	void clear() {
+
+		this->phase = 0;
+		this->eval = 0;
 
 		for (int i = 0; i < 2; i++)
 			this->weight_val_pawn[i] = 0;
@@ -138,8 +140,6 @@ public:
 		for (int i = 0; i < 2; i++)
 			this->rookSupportingFriendlyRook[i] = 0;
 		for (int i = 0; i < 2; i++)
-			this->rookBlockedByKing[i] = 0;
-		for (int i = 0; i < 2; i++)
 			this->rookOnSeventhRank[i] = 0;
 		for (int i = 0; i < 2; i++)
 			this->rookOnEightRank[i] = 0;
@@ -147,12 +147,6 @@ public:
 		for (int i = 0; i < 2; i++)
 			this->queenUnderdevelopedPieces[i] = 0;
 			
-		for (int i = 0; i < 2; i++)
-			this->kingPawnShield[i] = 0;
-		for (int i = 0; i < 2; i++)
-			this->kingEnemyPawnStorm[i] = 0;
-
-
 		for (int i = 0; i < 2; i++)	{
 			for (int j = 0; j < 16; j++)
 				this->knightMobility[i][j] = 0;
@@ -178,6 +172,7 @@ public:
 			for (int i = 0; i < 64; i++) {
 
 				this->kingPSQT[i][side] = 0;
+				
 				for (int j = 0; j < 64; j++) {
 					
 					this->pawnPSQT[i][j][side] = 0;
@@ -189,13 +184,11 @@ public:
 			}
 		}
 	
-		this->phase = 0;
-		this->eval = 0;
-
 		for (int i = 0; i < 2; i++) {
-			
-			this->safety[i] = 0;
 
+			this->kingPawnShield[i] = 0;
+			this->kingEnemyPawnStorm[i] = 0;
+	
 	    	this->knightAttack[i] = 0;
 			this->bishopAttack[i] = 0;
 			this->rookAttack[i] = 0;
@@ -210,6 +203,8 @@ public:
 			this->queenCheck[i] = 0;
 
 			this->safetyAdjustment[i] = 0;
+
+			this->safety[i] = 0;
 		}
 	}
 };

@@ -95,7 +95,6 @@ extern int weight_rook_half_open_file;
 extern int weight_rook_open_file;
 extern int weight_rook_enemy_queen_same_file;
 extern int weight_rook_supporting_friendly_rook;
-extern int weight_rook_blocked_by_king;
 extern int weight_rook_on_seventh_rank;
 extern int weight_rook_on_eight_rank;
 

@@ -634,38 +634,6 @@ int rooksEval(U8 stm, Thread *th) {
            		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
             }
 		}
-
-		/*if (stm) {
-
-			// for black
-
-			// TODO king can be in other squares too and still block the rook
-			// Penalty for a Rook blocked by an uncastled King
-			// if (kingSq == 60 && sq >= 56 && sq < 64) {
-	
-			// 	score += weight_rook_blocked_by_king;
-
-			// 	if (TUNE) {
-
-			// 		T->rookBlockedByKing[BLACK]++;
-			// 	}
-			// }
-		} else {
-			
-			// for white 	
-
-
-			// Penalty for a Rook blocked by an uncastled King
-			// if (kingSq == 4 && (sq >= 0 && sq < 8)) {
-
-			// 	score += weight_rook_blocked_by_king;
-
-			// 	if (TUNE) {
-
-			// 		T->rookBlockedByKing[WHITE]++;
-			// 	}
-			// }
-		}*/
 	}
 
 	return score;
