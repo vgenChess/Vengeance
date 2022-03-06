@@ -272,7 +272,6 @@ int fullEval(U8 stm, Thread *th) {
 -> Isolated Pawns
 -> Double Pawns
 -> Backward Pawns
--> Defended Pawns
 -> Pawn Holes
 -> Pawn Chain
 -> Pawn Phalanx
