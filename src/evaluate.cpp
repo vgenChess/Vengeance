@@ -290,6 +290,7 @@ int pawnsEval(U8 stm, Thread *th) {
 	// and the one pawn will support the advance of the other.
 
 	// TODO check logic
+	ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 	U64 phalanxPawns = pawnsWithEastNeighbors(ourPawns) | pawnsWithWestNeighbors(ourPawns);
 	while (phalanxPawns) {
 
