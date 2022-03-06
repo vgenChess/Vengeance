@@ -1052,7 +1052,7 @@ void saveWeights(TVector params, TVector cparams) {
     	for(int i = 0; i < 8; i++) 
     		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", "; 
 	
-	myfile <<", \n" << "arr_weight_passed_pawn[8] = { "; 
+	myfile <<"}, \n" << "arr_weight_passed_pawn[8] = { "; 
     	for(int i = 0; i < 8; i++) 
     		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", "; 
 	
