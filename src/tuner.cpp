@@ -26,7 +26,7 @@
 #define MAXEPOCHS		1000000000
 #define NPARTITIONS		4 
 #define BATCHSIZE		16 
-#define NPOSITIONS		725000 
+#define NPOSITIONS		7150000 
 #define DISPLAY_TIME	60				
 #define LRDROPRATE		1
 
@@ -582,8 +582,8 @@ void startTuner() {
 	assert(count == NTERMS);
 
 	std::fstream newfile;
-   	// newfile.open ("lichess-big3-resolved.book", std::ios::in); 
-	newfile.open ("quiet-labeled.epd", std::ios::in); 
+   	newfile.open ("lichess-big3-resolved.book", std::ios::in); // 7150000
+	// newfile.open ("quiet-labeled.epd", std::ios::in); 
 	
 	count = 0;
 
@@ -591,14 +591,16 @@ void startTuner() {
 
 	// read data from file to a vector
 	if (newfile.is_open()) {   
-
+		
+		short side;
 		std::string tp;
-
+		double result;
+		std::string fen;
+		
 		while (getline(newfile, tp)) {
 
-			double result;
-
-			std::string fen = tp.substr(0, tp.find("\""));
+			
+			fen = tp.substr(0, tp.find("\""));
 			
 			// std::string fen = tp.substr(0, tp.find(";"));
 
@@ -615,7 +617,7 @@ void startTuner() {
 
 			// for file "quiet-labeled.epd"
 
-			if (tp.find("1-0") != std::string::npos)	
+		/*	if (tp.find("1-0") != std::string::npos)	
 				result = 1.0;
 			else if (tp.find("1/2-1/2") != std::string::npos) 
 				result = 0.5;
@@ -623,11 +625,11 @@ void startTuner() {
 				result = 0.0;
 			else 
 				continue;
-
+*/
 
 			// for file "4818922_positions_gm2600.txt"
 
-		/*	if (tp.find("1.0") != std::string::npos)	
+			if (tp.find("1.0") != std::string::npos)	
 				result = 1.0;
 			else if (tp.find("0.5") != std::string::npos) 
 				result = 0.5;
@@ -635,7 +637,7 @@ void startTuner() {
 				result = 0.0;
 			else 
 				continue;
-*/
+
 			
 			assert(result == 1.0 || result == 0.5 || result == 0.0);
 
@@ -651,7 +653,7 @@ void startTuner() {
 			data.result = result;
 
 	
-			short side = parseFen(fen, th);
+			side = parseFen(fen, th);
 			
 			data.sEval = traceFullEval(T, side, th);
 
@@ -747,7 +749,7 @@ void optimise(TVector params, TVector cparams) {
 
 	// For Adam optimiser
 	double beta1 = 0.9, beta2 = 0.999;
-	double alpha1 = 0.01;
+	double alpha1 = 0.001;
 	
 	auto tunerStartTime = std::chrono::steady_clock::now();
 	
