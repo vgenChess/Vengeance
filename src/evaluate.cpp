@@ -311,40 +311,12 @@ int pawnsEval(U8 stm, Thread *th) {
 
 	ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 	
-	bool foundPawn = false, hasOneOpenOrSemiOpenFile = false;
-	U8 pawnIslands = 0;
-	U64 fileBB;
-	for (int i = 0; i < 8; i++) {
-
-		fileBB = arrFiles[i];
-		if (fileBB & ~ourPawns) { // check for open or semi-open file
-
-			hasOneOpenOrSemiOpenFile = true;
-
-			if (foundPawn) {
-
-				pawnIslands++;
-				foundPawn = false;
-			}
-		}
-
-		if (fileBB & ourPawns) {
-			
-			// file has pawns
-			foundPawn = true;
-		} 
-	}
-
-	if (foundPawn & hasOneOpenOrSemiOpenFile) {
-
-		pawnIslands++;
-	}
-
-	score += pawnIslands * weight_pawn_island;
+	// https://www.chessprogramming.org/Pawn_Islands_(Bitboards)
+	score += POPCOUNT(islandsEastFiles(ourPawns)) * weight_pawn_island;
 
 	#if defined(TUNE)
 
-		T->pawnIsland[stm] = pawnIslands;
+		T->pawnIsland[stm] = POPCOUNT(islandsEastFiles(ourPawns));
 	#endif
 
 

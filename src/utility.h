@@ -91,6 +91,9 @@ U64 bPawnWestAttacks(U64 bpawns);
 U64 pawnsWithEastNeighbors(U64 pawns);
 U64 pawnsWithWestNeighbors(U64 pawns);
 
+U64 islandsEastFiles(U64 f);
+U64 islandsWestFiles(U64 f);
+
 U64 inBetweenOnTheFly(U8 sq1, U8 sq2);
 U64 inBetween(U8 from, U8 to);
 
