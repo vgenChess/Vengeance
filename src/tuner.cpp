@@ -104,10 +104,6 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
     loadCoeff->coeffs[BLACK][i++] = T->doublePawns[BLACK];                         
 
 	loadCoeff->type[i] = NORMAL;
-	loadCoeff->coeffs[WHITE][i] = T->defendedPawns[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->defendedPawns[BLACK];     
-
-	loadCoeff->type[i] = NORMAL;
 	loadCoeff->coeffs[WHITE][i] = T->pawnHoles[WHITE];                         
     loadCoeff->coeffs[BLACK][i++] = T->pawnHoles[BLACK];                         
 	
@@ -391,9 +387,6 @@ void startTuner() {
 
 	cparams[MG][count] = ScoreMG(weight_double_pawn);
 	cparams[EG][count++] = ScoreEG(weight_double_pawn);
-	
-	cparams[MG][count] = ScoreMG(weight_defended_pawn);
-	cparams[EG][count++] = ScoreEG(weight_defended_pawn);
 
 	cparams[MG][count] = ScoreMG(weight_pawn_hole);
 	cparams[EG][count++] = ScoreEG(weight_pawn_hole);
@@ -1051,7 +1044,6 @@ void saveWeights(TVector params, TVector cparams) {
 		<< ",\nweight_isolated_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
 		<< ",\nweight_backward_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
 		<< ",\nweight_double_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
-		<< ",\nweight_defended_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")"
 		<< ",\nweight_pawn_hole = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")";
 	
 	myfile <<", \n" << "arr_weight_pawn_phalanx[8] = { "; 

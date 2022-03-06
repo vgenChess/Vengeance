@@ -420,20 +420,6 @@ int pawnsEval(U8 stm, Thread *th) {
 	#endif
 
 
-	// Defended pawns (TODO check logic)
-	
-	U64 defendedPawns = stm ? 
-		th->blackPieceBB[PAWNS] & th->evalInfo.allPawnAttacks[BLACK]
-		: th->whitePieceBB[PAWNS] & th->evalInfo.allPawnAttacks[WHITE];
-
-	score += POPCOUNT(defendedPawns) * weight_defended_pawn;
-
-	#if defined(TUNE)	
-		
-		T->defendedPawns[stm] = POPCOUNT(defendedPawns);
-	#endif
-
-
 	// Pawn holes
 	/*
 		Weak squares generally refer to squares on the 5th or 6th rank (inside enemy territory) that cannot be defended by pawns. 
