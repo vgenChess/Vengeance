@@ -19,6 +19,8 @@ weight_pawn_hole = S(-8, 3),
 arr_weight_passed_pawn[8] = { S(0, 0), S(3, 5), S(1, 8), S(-8, 28), S(9, 49), S(5, 113), S(81, 214), S(0, 0), }, 
 arr_weight_defended_passed_pawn[8] = { S(0, 0), S(0, 0), S(0, 14), S(6, 28), S(21, 60), S(68, 123), S(312, 166), S(0, 0), }, 
 
+
+weight_knight_all_pawns_count = S(0, 0),
 weight_knight_outpost = S(41, 13), 
 weight_undefended_knight = S(-8, 3), 
 weight_knight_defended_by_pawn = S(2, 13), 

@@ -21,6 +21,7 @@ arr_weight_defended_passed_pawn[8] = {
  S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) 
 }, 
 
+weight_knight_all_pawns_count = S(0, 0),
 weight_knight_outpost = S(0, 0),
 weight_undefended_knight = S(0, 0), 
 weight_knight_defended_by_pawn = S(0, 0), 

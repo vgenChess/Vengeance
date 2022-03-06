@@ -86,6 +86,7 @@ extern int weight_pawn_hole;
 extern int arr_weight_passed_pawn[8];
 extern int arr_weight_defended_passed_pawn[8];
 
+extern int weight_knight_all_pawns_count;
 extern int weight_knight_outpost;
 extern int weight_undefended_knight;
 extern int weight_knight_defended_by_pawn;

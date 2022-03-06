@@ -353,6 +353,8 @@ int knightsEval(U8 stm, Thread *th) {
 	int score = 0;
 	int mobilityCount = 0;
 
+	int allPawnsCount = POPCOUNT(th->blackPieceBB[PAWNS] | th->whitePieceBB[PAWNS]);
+
 	int sq = -1; 
 	int kingSq = th->evalInfo.kingSq[stm];
 	
@@ -375,10 +377,20 @@ int knightsEval(U8 stm, Thread *th) {
 		attacksBB = th->evalInfo.knightAttacks[stm][sq];
 
 		
+		// Decreasing value as pawns disappear
+
+		score += weight_knight_all_pawns_count * allPawnsCount;
+
+		#if defined (TUNE)
+
+			T->knightAllPawnsCount[stm] += allPawnsCount; 	
+		#endif
+
+		
 		// 	Outpost
 		//	An outpost is a square on the fourth, fifth, sixth, 
 		//	or seventh rank which is protected by a pawn and which cannot be attacked by an opponent's pawn.
-		if (oppPawnHoles & (1ULL << sq)) {
+		if (oppPawnHoles & (1ULL << sq) & th->evalInfo.allPawnAttacks[stm]) {
 
 			score += weight_knight_outpost;
 
@@ -560,7 +572,10 @@ int rooksEval(U8 stm, Thread *th) {
 
 		score += stm ? PSQT[Mirror64[kingSq]][ROOKS][Mirror64[sq]] : PSQT[kingSq][ROOKS][sq];
 
-		if (oppFlankPawnHoles & (1ULL << sq)) {
+		// Nimzowitsch argued when the outpost is in one of the flank (a-, b-, g- and h-) files 
+		// the ideal piece to make use of the outpost is a rook. 
+		// This is because the rook can put pressure on all the squares along the rank
+		if (oppFlankPawnHoles & (1ULL << sq) & th->evalInfo.allPawnAttacks[stm]) {
 
 			score += weight_rook_flank_outpost;
 			
@@ -656,7 +671,7 @@ int rooksEval(U8 stm, Thread *th) {
 		#endif
 
 
-		// Update values for opp King safety 
+		// Update values required for King safety later in kingEval
 		if (attacksBB & th->evalInfo.kingZoneBB[opp]) {
  			
  			th->evalInfo.kingAttackersCount[opp]++;
@@ -741,7 +756,7 @@ int queenEval(U8 stm, Thread *th) {
 		#endif
 
 
-		// Update values for opp King safety 
+		// Update values required for King safety later in kingEval
 		if (attacksBB & th->evalInfo.kingZoneBB[opp]) {
  			
  			th->evalInfo.kingAttackersCount[opp]++;

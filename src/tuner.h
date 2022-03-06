@@ -6,7 +6,7 @@
 #include "thread.h"
 #include "evaluate.h"
 			
-#define NTERMS 64 + 20480 + 130 + 2	  
+#define NTERMS 64 + 20480 + 130 + 3	  
 #define KPRECISION 10
 
 enum { NORMAL, SAFETY };
