@@ -88,6 +88,8 @@ U64 wPawnEastAttacks(U64 wpawns);
 U64 wPawnWestAttacks(U64 wpawns);
 U64 bPawnEastAttacks(U64 bpawns);
 U64 bPawnWestAttacks(U64 bpawns);
+U64 pawnsWithEastNeighbors(U64 pawns);
+U64 pawnsWithWestNeighbors(U64 pawns);
 
 U64 inBetweenOnTheFly(U8 sq1, U8 sq2);
 U64 inBetween(U8 from, U8 to);

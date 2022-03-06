@@ -77,12 +77,14 @@ extern int weight_val_bishop;
 extern int weight_val_rook;
 extern int weight_val_queen; 
 
+extern int weight_pawn_chain;
 extern int weight_isolated_pawn;
 extern int weight_backward_pawn;
 extern int weight_double_pawn;
 extern int weight_defended_pawn;
 extern int weight_pawn_hole;
 
+extern int arr_weight_pawn_phalanx[8];
 extern int arr_weight_passed_pawn[8];
 extern int arr_weight_defended_passed_pawn[8];
 
@@ -93,6 +95,7 @@ extern int weight_knight_defended_by_pawn;
 
 extern int weight_bishop_pair;
 
+extern int weight_rook_behind_a_passed_pawn;
 extern int weight_rook_flank_outpost;
 extern int weight_rook_half_open_file;
 extern int weight_rook_open_file;

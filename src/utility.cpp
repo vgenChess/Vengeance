@@ -1021,6 +1021,14 @@ U64 wPawnWestAttacks(U64 wpawns) {return noWeOne(wpawns);}
 U64 bPawnEastAttacks(U64 bpawns) {return soEaOne(bpawns);}
 U64 bPawnWestAttacks(U64 bpawns) {return soWeOne(bpawns);}
 
+U64 pawnsWithEastNeighbors(U64 pawns) {
+   return pawns & westOne (pawns);
+}
+
+U64 pawnsWithWestNeighbors(U64 pawns) {
+   return pawnsWithEastNeighbors(pawns) << 1; // * 2
+}
+
 U64 inBetweenOnTheFly(U8 sq1, U8 sq2) {
 
    const U64 m1   = C64(-1);

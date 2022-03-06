@@ -8,12 +8,15 @@ weight_val_bishop = S(300, 300),
 weight_val_rook = S(500, 500),
 weight_val_queen = S(900, 900), 
 
-
+weight_pawn_chain = S(0 , 0),
 weight_isolated_pawn = S(0, 0),
 weight_backward_pawn = S(0, 0),
 weight_double_pawn = S(0, 0),
 weight_defended_pawn = S(0, 0),
 weight_pawn_hole = S(0, 0), 
+arr_weight_pawn_phalanx[8] = { 
+ S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) 
+}, 
 arr_weight_passed_pawn[8] = { 
  S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) 
 }, 
@@ -28,6 +31,7 @@ weight_knight_defended_by_pawn = S(0, 0),
  
 weight_bishop_pair = S(0, 0),
 
+weight_rook_behind_a_passed_pawn = S(0, 0),
 weight_rook_flank_outpost = S(0, 0),
 weight_rook_half_open_file = S(0, 0), 
 weight_rook_open_file = S(0, 0), 

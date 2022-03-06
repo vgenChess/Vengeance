@@ -43,6 +43,23 @@ U64 arrFiles[8] = {
 	E_FILE, F_FILE, G_FILE, H_FILE
 };
 
+U64 arrRanks[8] = {
+
+	RANK_1, RANK_2, RANK_3, RANK_4,
+	RANK_5, RANK_6, RANK_7, RANK_8
+};
+
+std::vector<U64> patternsForPawnChains = {
+	// https://gekomad.github.io/Cinnamon/BitboardCalculator/
+	// Layout 2
+
+	0x0804020100000000U, 0x1008040201000000U, 0x2010080402010000U, 0x4020100804020100U, 
+	0x8040201008040201U, 0x0080402010080402U, 0x0000804020100804U, 0x0000008040201008U, 
+	0x0000000080402010U, 0x0000000000804020U, 0x1020408000000000U, 0x0810204080000000U, 
+	0x0408102040800000U, 0x0204081020408000U, 0x0102040810204080U, 0x0001020408102040U, 
+	0x0000010204081020U, 0x0000000102040810U, 0x0000000001020408U
+};
+
 
 int PSQT[U8_MAX_SQUARES][U8_MAX_PIECES][U8_MAX_SQUARES];
 
@@ -253,6 +270,9 @@ int pawnsEval(U8 stm, Thread *th) {
 	int sq = -1, rank = -1;
 	
 	int kingSq = th->evalInfo.kingSq[stm];
+
+
+	// Piece Square Tables
 	
 	U64 ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 	while (ourPawns) {
@@ -263,53 +283,113 @@ int pawnsEval(U8 stm, Thread *th) {
 		score += stm ? PSQT[Mirror64[kingSq]][PAWNS][Mirror64[sq]] : PSQT[kingSq][PAWNS][sq];
 	}
 
+	
+	// Pawn Phalanx
+	// A pawn-phalanx occurs when 2 or more pawns are placed alongside each other. 
+	// They are usually quite useful in attack since together they control a lot of squares in front of them 
+	// and the one pawn will support the advance of the other.
 
-	const int nIsolatedPawns = isolatedPawns(stm, th);
-	score += nIsolatedPawns * weight_isolated_pawn;
+	// TODO check logic
+	U64 phalanxPawns = pawnsWithEastNeighbors(ourPawns) | pawnsWithWestNeighbors(ourPawns);
+	while (phalanxPawns) {
+
+		sq = GET_POSITION(phalanxPawns);
+		POP_POSITION(phalanxPawns);
+
+		rank = stm ? Mirror64[sq] >> 3 : sq >> 3; // = sq / 8
+
+		score += arr_weight_pawn_phalanx[rank];
+
+		#if defined(TUNE)	
+		
+			T->pawnPhalanx[rank][stm]++;
+		#endif
+	}
+
+
+
+	// Pawn Chain
+	// TODO check logic
+	ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+	U8 chainCount = 0;
+	for (U64 pattern: patternsForPawnChains) { // TODO optimise code
+
+		if (pattern & ourPawns) {
+			
+			chainCount = POPCOUNT(pattern & ourPawns);
+			
+			if (chainCount >= 3) {
+
+				score += weight_pawn_chain;
+				
+				#if defined(TUNE) 
+
+					T->pawnChain[stm]++;
+				#endif	
+			}
+		}
+	}
+
+
+	// Isolated Pawns
+
+	score += POPCOUNT(isolatedPawns(stm, th)) * weight_isolated_pawn;
 
 	#if defined(TUNE)	
 		
-		T->isolatedPawns[stm] = nIsolatedPawns;
+		T->isolatedPawns[stm] = POPCOUNT(isolatedPawns(stm, th));
 	#endif
 
-	const int nDoublePawns = numOfDoublePawns(stm, th);
-	score += nDoublePawns * weight_double_pawn;
+
+	// Double Pawns
+	
+	score += POPCOUNT(doublePawns(stm, th)) * weight_double_pawn;
 
 	#if defined(TUNE)	
 		
-		T->doublePawns[stm] = nDoublePawns;
+		T->doublePawns[stm] = POPCOUNT(doublePawns(stm, th));
 	#endif
 
-	const int nBackwardPawns = countBackWardPawns(stm, th);
-	score += nBackwardPawns * weight_backward_pawn;
+
+	// Backward Pawns	
+	
+	score += POPCOUNT(backwardPawns(stm, th)) * weight_backward_pawn;
 
 	#if defined(TUNE)	
 		
-		T->backwardPawns[stm] = nBackwardPawns;
+		T->backwardPawns[stm] = POPCOUNT(backwardPawns(stm, th));
 	#endif
 
+
+	// Defended Pawns (TODO check logic)
+	
 	U64 defendedPawns = stm ? 
 		th->blackPieceBB[PAWNS] & th->evalInfo.allPawnAttacks[BLACK]
 		: th->whitePieceBB[PAWNS] & th->evalInfo.allPawnAttacks[WHITE];
 
-	int nDefendedPawns = POPCOUNT(defendedPawns);
-	score += nDefendedPawns * weight_defended_pawn;
+	score += POPCOUNT(defendedPawns) * weight_defended_pawn;
 
 	#if defined(TUNE)	
 		
-		T->defendedPawns[stm] = nDefendedPawns;
+		T->defendedPawns[stm] = POPCOUNT(defendedPawns);
 	#endif
 
-	const int nPawnHoles = numOfPawnHoles(stm, th);
-	score += nPawnHoles * weight_pawn_hole;
+
+	// Pawn Holes
+	
+	score += POPCOUNT(pawnHoles(stm, th)) * weight_pawn_hole;
 
 	#if defined(TUNE)	
 		
-		T->pawnHoles[stm] = nPawnHoles;
+		T->pawnHoles[stm] = POPCOUNT(pawnHoles(stm, th));
 	#endif
 
-	U64 passedPawns = stm ? bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS])
-		: wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
+
+	// Passed Pawns
+
+	U64 passedPawns = stm ? bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]) :
+							wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
+	
 	while (passedPawns) {
 		
 		sq = GET_POSITION(passedPawns);
@@ -321,7 +401,7 @@ int pawnsEval(U8 stm, Thread *th) {
 
 		assert(rank+1 >= 1 && rank+1 <= 8);
 		
-
+		// Check if the passed pawn is defended by another pawn
 		if ((1ULL << sq) & th->evalInfo.allPawnAttacks[stm]) {
 
 			score += arr_weight_defended_passed_pawn[rank];
@@ -332,14 +412,30 @@ int pawnsEval(U8 stm, Thread *th) {
 			#endif
 		} else {
 			
+			// Passed pawn is not defended by another pawn
+
 			score += arr_weight_passed_pawn[rank];
 
 			#if defined(TUNE)	
 			
 				T->passedPawn[stm][rank]++;
 			#endif
-		}		
+		}	
+
+
+		// rook behind a passed pawn
+
+		if ((1ULL << sq) & th->evalInfo.allRookAttacks[stm]) {
+
+			score += weight_rook_behind_a_passed_pawn;
+
+			#if defined(TUNE) 
+
+				T->rookBehindPassedPawn[stm]++;
+			#endif
+		}	
 	}
+
 
 	return score;
 }
@@ -377,6 +473,14 @@ int knightsEval(U8 stm, Thread *th) {
 		attacksBB = th->evalInfo.knightAttacks[stm][sq];
 
 		
+
+		// Penalty for blocking a C-pawn in closed openings 
+		// (Crafty defines it as follows: white knight on c3, white pawns on c2 and d4, no white pawn on e4)
+		// TODO implement logic
+
+
+
+
 		// Decreasing value as pawns disappear
 
 		score += weight_knight_all_pawns_count * allPawnsCount;
@@ -928,7 +1032,7 @@ int evalBoard(U8 stm, Thread *th) {
 }
 
 
-int numOfPawnHoles(U8 stm, Thread *th) {
+U64 pawnHoles(U8 stm, Thread *th) {
 
 	U64 pawnsBB = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 
@@ -939,34 +1043,28 @@ int numOfPawnHoles(U8 stm, Thread *th) {
 	U64 holes = ~frontAttackSpans & EXTENDED_CENTER
 		& (stm ? (RANK_5 | RANK_6) : (RANK_3 | RANK_4)); 
 
-	return POPCOUNT(holes);
+	return holes;
 }
 
 	
-int isolatedPawns(U8 stm, Thread *th) {
+U64 isolatedPawns(U8 stm, Thread *th) {
 
-	return POPCOUNT(isolanis(stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS]));
+	return isolanis(stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS]);
 }
 
-int numOfDoublePawns(U8 stm, Thread *th) {
+U64 doublePawns(U8 stm, Thread *th) {
 
 	U64 pawnsBB = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 
 	U64 doublePawnsBB = stm ? bPawnsInfrontOwn(pawnsBB) : wPawnsInfrontOwn(pawnsBB); 
 
-	return POPCOUNT(doublePawnsBB);
+	return doublePawnsBB;	
 }
 
-int countBackWardPawns(U8 stm, Thread *th) {
+U64 backwardPawns(U8 stm, Thread *th) {
 
-	return stm ? POPCOUNT(bBackward(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS])) : 
-		POPCOUNT(wBackward(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]));
-}
-
-int countPassedPawns(U8 stm, Thread *th) {
-
-	return stm ? POPCOUNT(bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS])) : 
-		POPCOUNT(wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]));
+	return stm ? 	bBackward(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS])
+				:	wBackward(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
 }
 
 int countDefendedPawns(U8 stm, Thread *th) {

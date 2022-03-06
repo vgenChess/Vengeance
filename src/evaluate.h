@@ -22,21 +22,35 @@ public:
 	int weight_val_rook[U8_MAX_SIDES];
 	int weight_val_queen[U8_MAX_SIDES];
 	
+
+	// Pawns
+
+	int pawnChain[U8_MAX_SIDES];
 	int isolatedPawns[U8_MAX_SIDES];
 	int backwardPawns[U8_MAX_SIDES];
 	int doublePawns[U8_MAX_SIDES];
 	int defendedPawns[U8_MAX_SIDES];
 	int pawnHoles[U8_MAX_SIDES];
+	int pawnPhalanx[8][U8_MAX_SIDES];
 	int passedPawn[U8_MAX_SIDES][8];
 	int defendedPassedPawn[U8_MAX_SIDES][8];
 	
+	// Knights
+
 	int knightAllPawnsCount[U8_MAX_SIDES];
 	int knightOutpost[U8_MAX_SIDES];
 	int undefendedKnight[U8_MAX_SIDES];
 	int knightDefendedByPawn[U8_MAX_SIDES];
 	
+	
+	// Bishops
+
 	int bishopPair[U8_MAX_SIDES];
 
+
+	// Rooks
+
+	int rookBehindPassedPawn[U8_MAX_SIDES];
 	int rookFlankOutpost[U8_MAX_SIDES];
 	int halfOpenFile[U8_MAX_SIDES];
 	int openFile[U8_MAX_SIDES];
@@ -44,8 +58,14 @@ public:
 	int rookSupportingFriendlyRook[U8_MAX_SIDES];
 	int rookOnSeventhRank[U8_MAX_SIDES];
 	int rookOnEightRank[U8_MAX_SIDES];
+	
+
+	// Queen
 
 	int queenUnderdevelopedPieces[U8_MAX_SIDES];
+
+
+	// King 
 
 	int kingPawnShield[U8_MAX_SIDES];
 	int kingEnemyPawnStorm[U8_MAX_SIDES];
@@ -58,6 +78,9 @@ public:
 	int rookMobility[U8_MAX_SIDES][16];
 	int queenMobility[U8_MAX_SIDES][32];
 
+	
+	// Piece Square Tables
+
 	int kingPSQT[U8_MAX_SQUARES][U8_MAX_SIDES];
 	int pawnPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES][U8_MAX_SIDES];
 	int knightPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES][U8_MAX_SIDES];
@@ -65,6 +88,9 @@ public:
 	int rookPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES][U8_MAX_SIDES];
 	int queenPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES][U8_MAX_SIDES];
 	
+
+	// King Safety
+
 	int knightAttack[U8_MAX_SIDES];
 	int bishopAttack[U8_MAX_SIDES];
 	int rookAttack[U8_MAX_SIDES];
@@ -85,6 +111,9 @@ public:
 
 	int safety[U8_MAX_SIDES];
 
+
+	// General Board features
+
 	int centerControl[U8_MAX_SIDES];
 
 	void clear() {
@@ -103,6 +132,7 @@ public:
 		
 		for (int i = 0; i < U8_MAX_SIDES; i++) {
 
+			pawnChain[i] = 0;
 			isolatedPawns[i] = 0;
 			backwardPawns[i] = 0;
 			doublePawns[i] = 0;
@@ -111,6 +141,7 @@ public:
 
 			for (int j = 0; j < 8; j++) {
 
+				pawnPhalanx[j][i] = 0;
 				passedPawn[i][j] = 0;	
 				defendedPassedPawn[i][j] = 0;			
 			}
@@ -130,7 +161,8 @@ public:
 		}
 
 		for (int i = 0; i < U8_MAX_SIDES; i++) {
-
+			
+			rookBehindPassedPawn[i] = 0;
 			rookFlankOutpost[i] = 0;
 			halfOpenFile[i] = 0;
 			openFile[i] = 0;
@@ -220,12 +252,13 @@ int evalBoard(U8 stm, Thread *th);
 
 void initPSQT();
 
-int numOfPawnHoles(U8 stm, Thread *th);
-int isolatedPawns(U8 stm, Thread *th);
 int numOfDoublePawns(U8 stm, Thread *th);
-int countBackWardPawns(U8 stm, Thread *th);
-int countPassedPawns(U8 stm, Thread *th);
 int countDefendedPawns(U8 stm, Thread *th);
+
+U64 isolatedPawns(U8 stm, Thread *th);
+U64 doublePawns(U8 stm, Thread *th);
+U64 backwardPawns(U8 stm, Thread *th);
+U64 pawnHoles(U8 stm, Thread *th);
 
 U64 wPawnsBehindOwn(U64 wpawns);
 U64 bPawnsBehindOwn(U64 bpawns); 
