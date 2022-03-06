@@ -12,6 +12,8 @@ weight_val_bishop = S(416, 293),
 weight_val_rook = S(532, 528),
 weight_val_queen = S(1243, 1005), 
 
+
+weight_pawn_island = S(-2, 6),
 weight_pawn_chain = S(-2, 6),
 weight_isolated_pawn = S(-8, -5),
 weight_backward_pawn = S(-7, -5),

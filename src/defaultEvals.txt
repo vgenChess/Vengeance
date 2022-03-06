@@ -8,6 +8,7 @@ weight_val_bishop = S(300, 300),
 weight_val_rook = S(500, 500),
 weight_val_queen = S(900, 900), 
 
+weight_pawn_island = S(0, 0),
 weight_pawn_chain = S(0 , 0),
 weight_isolated_pawn = S(0, 0),
 weight_backward_pawn = S(0, 0),

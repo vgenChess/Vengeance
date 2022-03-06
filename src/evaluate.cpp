@@ -264,6 +264,23 @@ int fullEval(U8 stm, Thread *th) {
 	return stm == WHITE ? score : -score;
 }
 
+
+// Pawn eval terms implemented
+/*
+-> Pawn PSQT
+-> Pawn Islands
+-> Isolated Pawns
+-> Double Pawns
+-> Backward Pawns
+-> Defended Pawns
+-> Pawn Holes
+-> Pawn Chain
+-> Pawn Phalanx
+-> Passed Pawns
+-> Defended Passed Pawns
+-> Rook supporting a passed pawns
+*/
+
 int pawnsEval(U8 stm, Thread *th) {
 
 	int score = 0;
@@ -283,12 +300,64 @@ int pawnsEval(U8 stm, Thread *th) {
 		score += stm ? PSQT[Mirror64[kingSq]][PAWNS][Mirror64[sq]] : PSQT[kingSq][PAWNS][sq];
 	}
 
-	
-	// Pawn Phalanx
-	// A pawn-phalanx occurs when 2 or more pawns are placed alongside each other. 
-	// They are usually quite useful in attack since together they control a lot of squares in front of them 
-	// and the one pawn will support the advance of the other.
 
+	// Pawn islands
+	/*
+		At the start of a new game all the pawns are connected, but as the game continue and some exchanges are made, 
+		the pawns may become disconnected. When a group of pawns gets disconnected from the rest of the pawn-structure 
+		they become a pawn-island. Generally, the more pawn-islands you have, the harder it is to defend them all. 
+		Therefore, more pawn-island usually implies a weaker pawn-structure.
+	*/
+
+	ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+	
+	bool foundPawn = false, hasOneOpenOrSemiOpenFile = false;
+	U8 pawnIslands = 0;
+	U64 fileBB;
+	for (int i = 0; i < 8; i++) {
+
+		fileBB = arrFiles[i];
+		if (fileBB & ~ourPawns) { // check for open or semi-open file
+
+			hasOneOpenOrSemiOpenFile = true;
+
+			if (foundPawn) {
+
+				pawnIslands++;
+				foundPawn = false;
+			}
+		}
+
+		if (fileBB & ourPawns) {
+			
+			// file has pawns
+			foundPawn = true;
+		} 
+	}
+
+	if (foundPawn & hasOneOpenOrSemiOpenFile) {
+
+		pawnIslands++;
+	}
+
+	score += pawnIslands * weight_pawn_island;
+
+	#if defined(TUNE)
+
+		T->pawnIsland[stm] = pawnIslands;
+	#endif
+
+
+	// Pawn phalanx
+	/*
+		A pawn-phalanx occurs when 2 or more pawns are placed alongside each other. 
+		They are usually quite useful in attack since together they control a lot of 
+		squares in front of them and the one pawn will support the advance of the other. 
+		However, a pawn-phalanx can also become vulnerable since they’re not defending each another 
+		and you will need to use your pieces to defend them. 
+		In such a case they are sometimes referred to as “hanging pawns.”
+	*/
+	
 	// TODO check logic
 	ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 	U64 phalanxPawns = pawnsWithEastNeighbors(ourPawns) | pawnsWithWestNeighbors(ourPawns);
@@ -308,8 +377,14 @@ int pawnsEval(U8 stm, Thread *th) {
 	}
 
 
-
-	// Pawn Chain
+	// Pawn chain
+	/*
+		A pawn chain refers to pawns that protect one another on a diagonal. 
+		A pawn chain is often a fairly strong defensive setup. 
+		One downside of a pawn-chain is that the pawns cover either light squares or dark squares, not both. 
+		This implies you will need your pieces to protect the squares not covered by the pawns. 
+		A pawn-chain could also be problematic to a bishop that moves on the same color squares.
+	*/
 	// TODO check logic
 	ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 	U8 chainCount = 0;
@@ -332,7 +407,13 @@ int pawnsEval(U8 stm, Thread *th) {
 	}
 
 
-	// Isolated Pawns
+	// Isolated pawns
+	/*
+		An isolated pawn is a pawn that does not have a pawn on either side of it. 
+		Generally an isolated pawn can be a weakness in your position but on the other hand it also means 
+		that your pieces will have better mobility around an isolated pawn since there movements aren’t restricted as much. 
+		For this reason an isolated pawn is not at weak in the middle-game as it is in the endgame stage.
+	*/
 
 	score += POPCOUNT(isolatedPawns(stm, th)) * weight_isolated_pawn;
 
@@ -342,7 +423,7 @@ int pawnsEval(U8 stm, Thread *th) {
 	#endif
 
 
-	// Double Pawns
+	// Double pawns
 	
 	score += POPCOUNT(doublePawns(stm, th)) * weight_double_pawn;
 
@@ -352,7 +433,12 @@ int pawnsEval(U8 stm, Thread *th) {
 	#endif
 
 
-	// Backward Pawns	
+	// Backward pawns	
+	/*
+		A backward pawn is a pawn that is behind the pawns next to him and cannot move forward without being captured. 
+		At the same time this pawn is on a semi-open file that makes it vulnerable to being attacked, particularly by rooks. 
+		Backward pawns are often a significant weakness in your position.
+	*/
 	
 	score += POPCOUNT(backwardPawns(stm, th)) * weight_backward_pawn;
 
@@ -362,7 +448,7 @@ int pawnsEval(U8 stm, Thread *th) {
 	#endif
 
 
-	// Defended Pawns (TODO check logic)
+	// Defended pawns (TODO check logic)
 	
 	U64 defendedPawns = stm ? 
 		th->blackPieceBB[PAWNS] & th->evalInfo.allPawnAttacks[BLACK]
@@ -376,7 +462,14 @@ int pawnsEval(U8 stm, Thread *th) {
 	#endif
 
 
-	// Pawn Holes
+	// Pawn holes
+	/*
+		Weak squares generally refer to squares on the 5th or 6th rank (inside enemy territory) that cannot be defended by pawns. 
+		A Square that cannot be defended by a pawn can more easily be occupied by a piece. 
+		Therefore, weak squares are often an opportunity to further improve the development of your pieces.
+		Naturally it should also be noted that, in most cases, 
+		weak squares near or in the center are more useful than weak squares on the sides of the board
+	*/
 	
 	score += POPCOUNT(pawnHoles(stm, th)) * weight_pawn_hole;
 
@@ -386,7 +479,12 @@ int pawnsEval(U8 stm, Thread *th) {
 	#endif
 
 
-	// Passed Pawns
+	// Passed pawns
+	/*
+		A passed pawn refers to a pawn that cannot be stopped by enemy pawns from reaching the other side. 
+		This often means your opponent will have to use a piece to stop the passed pawn. 
+		This can give you an advantage since your opponent will have a piece that is tied down in a defensive task.
+	*/
 
 	U64 passedPawns = stm ? bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]) :
 							wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
@@ -402,7 +500,9 @@ int pawnsEval(U8 stm, Thread *th) {
 
 		assert(rank+1 >= 1 && rank+1 <= 8);
 		
+		// Defended passed pawn
 		// Check if the passed pawn is defended by another pawn
+
 		if ((1ULL << sq) & th->evalInfo.allPawnAttacks[stm]) {
 
 			score += arr_weight_defended_passed_pawn[rank];
@@ -424,7 +524,7 @@ int pawnsEval(U8 stm, Thread *th) {
 		}	
 
 
-		// rook behind a passed pawn
+		// Rook behind a passed pawn
 
 		if ((1ULL << sq) & th->evalInfo.allRookAttacks[stm]) {
 
@@ -903,6 +1003,10 @@ int kingEval(U8 stm, Thread *th) {
 	U64 pawnStormZone = th->evalInfo.kingZoneBB[stm];
 
 	pawnStormZone |= stm ? pawnStormZone >> 8 : pawnStormZone << 8;
+
+	// Anything strictly pawn related can be stored in the Pawn Hash Table, 
+	// including pawn shield terms to be used dynamically for king safety.
+	// TODO implement this in Pawn Hash Table
 
 	score += POPCOUNT(th->evalInfo.kingZoneBB[stm] & ourPawns) * weight_king_pawn_shield;
 	score += POPCOUNT(pawnStormZone & theirPawns) * weight_king_enemy_pawn_storm;

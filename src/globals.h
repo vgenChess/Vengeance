@@ -77,6 +77,7 @@ extern int weight_val_bishop;
 extern int weight_val_rook;
 extern int weight_val_queen; 
 
+extern int weight_pawn_island;
 extern int weight_pawn_chain;
 extern int weight_isolated_pawn;
 extern int weight_backward_pawn;
