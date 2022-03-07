@@ -9,6 +9,8 @@
 
 #include "globals.h"
 #include "constants.h"
+#include "classes.h"
+#include "structs.h"
 
 class Thread {
 	

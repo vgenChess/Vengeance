@@ -13,6 +13,7 @@
 
 #include "types.h"
 #include "thread.h"
+#include "structs.h"
 
 U32 createMove(U32 promotion_type, U32 castle_dir, U32 move_type, U32 color, U32 c_piece, U32 piece, U32 from, U32 to);
 

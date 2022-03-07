@@ -5,12 +5,9 @@
 
 #include "thread.h"
 #include "evaluate.h"
-			
-#define NTERMS 64 + 20480 + 130 + 4 + 8 + 8
-#define KPRECISION 10
 
-enum { NORMAL, SAFETY };
-enum { MG, EG };
+#define NTERMS 64 + 20480 + 130 + 5 + 8 + 8
+#define KPRECISION 10
 
 typedef int TArray[NTERMS];
 
@@ -20,29 +17,6 @@ typedef struct TGradientData {
     double wsafetymg, bsafetymg;
     double wsafetyeg, bsafetyeg;
 } TGradientData;
-
-struct CoefficientsInfo {
-	
-	uint16_t index;
-
-    int8_t wcoeff;
-    int8_t bcoeff;
-
-    int8_t type;
-};
-
-struct Data {
-	
-	float result;
-
-	std::vector<CoefficientsInfo> coefficientsInfoList;
-	float pfactors[2];
-
-	int phase;
-	int eval;
-	int sEval;
-	int safety[2];
-};
 
 double sigmoid(double K, double E);
 

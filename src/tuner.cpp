@@ -161,8 +161,12 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
     // Rooks                     
 
 	loadCoeff->type[i] = NORMAL;
-	loadCoeff->coeffs[WHITE][i] = T->rookBehindPassedPawn[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->rookBehindPassedPawn[BLACK];                         
+	loadCoeff->coeffs[WHITE][i] = T->rookBehindStmPassedPawn[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->rookBehindStmPassedPawn[BLACK];                         
+
+	loadCoeff->type[i] = NORMAL;
+	loadCoeff->coeffs[WHITE][i] = T->rookBehindOppPassedPawn[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->rookBehindOppPassedPawn[BLACK];                         
 
 	loadCoeff->type[i] = NORMAL;
 	loadCoeff->coeffs[WHITE][i] = T->rookFlankOutpost[WHITE];                         
@@ -436,8 +440,11 @@ void startTuner() {
 
 
 
-	cparams[MG][count] = ScoreMG(weight_rook_behind_a_passed_pawn);
-	cparams[EG][count++] = ScoreEG(weight_rook_behind_a_passed_pawn);
+	cparams[MG][count] = ScoreMG(weight_rook_behind_stm_passed_pawn);
+	cparams[EG][count++] = ScoreEG(weight_rook_behind_stm_passed_pawn);
+
+	cparams[MG][count] = ScoreMG(weight_rook_behind_opp_passed_pawn);
+	cparams[EG][count++] = ScoreEG(weight_rook_behind_opp_passed_pawn);
 
 	cparams[MG][count] = ScoreMG(weight_rook_flank_outpost);
 	cparams[EG][count++] = ScoreEG(weight_rook_flank_outpost);
@@ -1038,20 +1045,20 @@ void saveWeights(TVector params, TVector cparams) {
 	myfile << "int" << "\n\n";
 
 	myfile 
-		<< "weight_val_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
-		<< ",\nweight_val_knight = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
-		<< ",\nweight_val_bishop = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
-		<< ",\nweight_val_rook = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")"
-		<< ",\nweight_val_queen = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")";
+		<< "weight_val_pawn = " 		<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
+		<< ",\nweight_val_knight = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
+		<< ",\nweight_val_bishop = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
+		<< ",\nweight_val_rook = " 		<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")"
+		<< ",\nweight_val_queen = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")";
 	
 	myfile <<", \n";
 
 	myfile 
-		<< "\nweight_pawn_island = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
+		<< "\nweight_pawn_island = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
 		<< ",\nweight_isolated_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
 		<< ",\nweight_backward_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
-		<< ",\nweight_double_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
-		<< ",\nweight_pawn_hole = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")";
+		<< ",\nweight_double_pawn = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
+		<< ",\nweight_pawn_hole = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")";
 	
 
 	myfile <<", \n" << "arr_weight_pawn_phalanx[8] = { "; 
@@ -1069,22 +1076,22 @@ void saveWeights(TVector params, TVector cparams) {
 	myfile <<"}, \n" << "arr_weight_passed_pawn[8] = { "; 
 	for(int i = 0; i < 8; i++) {
 
-		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", "; 
+		myfile << "S(" <<(int)weights[MG][count] << ", "<< (int)weights[EG][count++]<<")" << ", "; 
 	}
 	
 	myfile << "}, \n" << "arr_weight_defended_passed_pawn[8] = { "; 
 	for(int i = 0; i < 8; i++) {
 
-		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", ";
+		myfile << "S(" <<(int)weights[MG][count] << ", "<< (int)weights[EG][count++]<<")" << ", ";
 	}
    	
    	myfile << "}, \n\n";
 	
 	
-	myfile << "weight_knight_all_pawns_count = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
-	myfile << "weight_knight_outpost = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
-	myfile << "weight_undefended_knight = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
-	myfile << "weight_knight_defended_by_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", ";
+	myfile << "weight_knight_all_pawns_count = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
+	myfile << "weight_knight_outpost = " 			<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
+	myfile << "weight_undefended_knight = " 		<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
+	myfile << "weight_knight_defended_by_pawn = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", ";
 	myfile << "\n\n";
 
 
@@ -1093,20 +1100,21 @@ void saveWeights(TVector params, TVector cparams) {
 
 
  	myfile <<
- 		"weight_rook_behind_a_passed_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
- 		"\nweight_rook_flank_outpost = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " << 
- 		"\nweight_rook_half_open_file = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_rook_open_file = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_rook_enemy_queen_same_file = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_rook_on_seventh_rank = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-		"\nweight_rook_on_eight_rank = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+ 		"weight_rook_behind_stm_passed_pawn = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+ 		"\nweight_rook_behind_opp_passed_pawn = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+ 		"\nweight_rook_flank_outpost = " 			<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " << 
+ 		"\nweight_rook_half_open_file = " 			<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+   		"\nweight_rook_open_file = " 				<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+   		"\nweight_rook_enemy_queen_same_file = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+   		"\nweight_rook_on_seventh_rank = " 			<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
+		"\nweight_rook_on_eight_rank = " 			<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
    		"\nweight_rook_supporting_friendly_rook = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n\n";
 
   
    	myfile << "weight_queen_underdeveloped_pieces = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n\n";
 
 
-	myfile << "weight_king_pawn_shield = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";   	
+	myfile << "weight_king_pawn_shield = " 		<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";   	
 	myfile << "weight_king_enemy_pawn_storm = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
 	myfile << "\n\n";
 

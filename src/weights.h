@@ -30,7 +30,8 @@ weight_knight_defended_by_pawn = S(-9, 4),
 
 weight_bishop_pair = S(20, 67),
 
-weight_rook_behind_a_passed_pawn = S(11, -2), 
+weight_rook_behind_stm_passed_pawn = S(0, 0),
+weight_rook_behind_opp_passed_pawn = S(0, 0), 
 weight_rook_flank_outpost = S(4, 4), 
 weight_rook_half_open_file = S(13, 13), 
 weight_rook_open_file = S(34, 11), 

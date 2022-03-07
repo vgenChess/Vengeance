@@ -16,6 +16,7 @@
 #include "functions.h"
 #include "fen.h"
 #include "utility.h"
+#include "structs.h"
 
 using namespace std;
 

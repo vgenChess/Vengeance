@@ -2,6 +2,7 @@
 #define TYPES_H
 
 #include <vector>
+
 /*
 
 The primitive data types available in C++ are as follows:
@@ -52,7 +53,16 @@ typedef unsigned short 		U16;
 typedef unsigned long 		U32;
 typedef unsigned long long	U64;
 
+typedef signed char 		S8;
+typedef signed short 		S16;
+typedef signed long 		S32;
+typedef signed long long	S64;
+
+enum { NORMAL, SAFETY };
+enum { MG, EG };
+
 enum {
+
 	WHITE = 0, BLACK = 1
 };
 
@@ -105,177 +115,6 @@ enum Stage {
 
 enum {
 	hashfEXACT, hashfALPHA, hashfBETA
-};
-
-
-typedef struct {
-    
-    U64 key; 
-    int score;
-} PAWNS_HASH;
-
-typedef struct {
-    
-    U64 key; 
-    int score;
-} EVAL_HASH;
-
-
-typedef struct {
-	
-	U32 move;
-	int score;
-} Move;
-
-typedef struct {
-	
-    U8 castleFlags;
-	U8 epFlag;
-	U8 epSquare;
-
-	U32 move;
-	U32 ttMove;
-    U32 killerMoves[2];
-
-    int sEval;
-
-    float extension; 
-} MOVE_STACK;
-
-typedef struct {
-
-	U8 castleFlags;
-	U8 epFlag;
-	U8 epSquare;
-	int fiftyMovesCounter;	
-	int material;
-	U64 hashKey;
-	U64 pawnsHashKey;
-} UNDO_MOVE_STACK;
-
-typedef struct {
-
-	int fiftyMovesCounter;
-	U64 hashKey;
-} MOVES_HISTORY;
-
-typedef struct {
-
-	U8 flags; 
-	int depth;
-	int value;
-	int sEval;
-    U32 bestMove;    
-    U64 key;
-} HASHE;
-
-typedef struct {
-
-	bool skipQuiets;
-	int stage;
-	U32 ttMove, counterMove;
-
-	std::vector<Move> moves;
-	std::vector<Move> badCaptures;
-} MOVE_LIST;
-
-class PV {
-
-public:
-	int score;
-	std::vector<U32> line;
-};
-
-class EvalInfo {
-	
-public:
-	
-	U64 openFilesBB;
-	U64 halfOpenFilesBB[2]; 
-
-	U64 knightAttacks[2][64];
-	U64 bishopAttacks[2][64];
-	U64 rookAttacks[2][64];
-	U64 queenAttacks[2][64];
-
-	U64 allPawnAttacks[2];
-	U64 allKnightAttacks[2];
-	U64 allBishopAttacks[2];
-	U64 allRookAttacks[2];
-	U64 allQueenAttacks[2];
-	U64 kingAttacks[2];
-	U64 attacks[2];
-
-	U64 kingZoneBB[2];
-	int kingSq[2];
-	int kingAttackersCount[2];
-	int kingAttackersWeight[2];
-	int kingAdjacentZoneAttacksCount[2];
-
-    void clear() {
-
-		this->openFilesBB = 0ULL;
-
-		for (int i = 0; i < 2; i++) {
-	
-			this->halfOpenFilesBB[i] = 0ULL;
-
-			this->allPawnAttacks[i] = 0ULL;
-			this->allKnightAttacks[i] = 0ULL;
-			this->allBishopAttacks[i] = 0ULL;
-			this->allRookAttacks[i] = 0ULL;
-			this->allQueenAttacks[i] = 0ULL;
-			this->kingAttacks[i] = 0ULL;
-
-			for (int j = 0; j < 64; j++) {
-
-				this->knightAttacks[i][j] = 0ULL;
-				this->bishopAttacks[i][j] = 0ULL;
-				this->rookAttacks[i][j] = 0ULL;
-				this->queenAttacks[i][j] = 0ULL;
-			}
-
-			this->attacks[i] = 0ULL;
-
-			this->kingZoneBB[i] = 0ULL;
-
-			this->kingSq[i] = 0;
-
-			this->kingAttackersCount[i] = 0;
-			this->kingAttackersWeight[i] = 0;
-
-			this->kingAdjacentZoneAttacksCount[i] = 0;
-		} 
-	}
-};
-
-class SearchInfo {
-
-public:
-		
-	U8 side;
-	int ply;
-	int depth;
-	int realDepth;
-	
-	bool isNullMoveAllowed;	 
-
-	U32 skipMove;
-
-	std::vector<U32> pline;
-
-	SearchInfo() {
-		
-		side = WHITE;
-		ply = 0;
-		depth = 0;
-	
-		isNullMoveAllowed = false;
-
-		skipMove = 0UL;
-
-		pline.clear();
-	}
 };
 
 #endif

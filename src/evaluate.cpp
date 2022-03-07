@@ -127,10 +127,11 @@ void initEvalInfo(Thread *th) {
 	th->evalInfo.kingSq[WHITE] = GET_POSITION(th->whitePieceBB[KING]);	
 	th->evalInfo.kingSq[BLACK] = GET_POSITION(th->blackPieceBB[KING]);	
 
-	
+
+	// King Safety 
+		
 	th->evalInfo.kingZoneBB[WHITE] = th->evalInfo.kingAttacks[WHITE] | (th->evalInfo.kingAttacks[WHITE] >> 8);
 	th->evalInfo.kingZoneBB[BLACK] = th->evalInfo.kingAttacks[BLACK] | (th->evalInfo.kingAttacks[BLACK] << 8);
-
 
 	th->evalInfo.kingAttackersCount[WHITE] = 0;
     th->evalInfo.kingAttackersCount[BLACK] = 0;
@@ -140,6 +141,12 @@ void initEvalInfo(Thread *th) {
 
   	th->evalInfo.kingAdjacentZoneAttacksCount[WHITE] = 0;
   	th->evalInfo.kingAdjacentZoneAttacksCount[BLACK] = 0;	
+
+
+  	// Pawn Related 
+
+  	th->evalInfo.passedPawns[WHITE] = wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
+	th->evalInfo.passedPawns[BLACK] = bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]);
 }
 
 int traceFullEval(TraceCoefficients *traceCoefficients, U8 stm, Thread *th) {
@@ -221,6 +228,7 @@ int fullEval(U8 stm, Thread *th) {
 	#endif
 */
 
+	eval += evalBoard(WHITE, th) 	- 	evalBoard(BLACK, th);
 	eval += pawnsEval(WHITE, th) 	- 	pawnsEval(BLACK, th);
 	eval += knightsEval(WHITE, th) 	- 	knightsEval(BLACK, th);
 	eval += bishopsEval(WHITE, th) 	-	bishopsEval(BLACK, th);
@@ -230,7 +238,6 @@ int fullEval(U8 stm, Thread *th) {
 	// evaluation of other pieces other than king needs to be done first
 	// before king eval because of values needed for king safety calculation
 	eval += kingEval(WHITE, th) 	- 	kingEval(BLACK, th);
-	eval += evalBoard(WHITE, th) 	- 	evalBoard(BLACK, th);
 
 
 	// Tapered evaluation 
@@ -271,6 +278,8 @@ int fullEval(U8 stm, Thread *th) {
 
 int pawnsEval(U8 stm, Thread *th) {
 
+	U8 opp = stm ^ 1;
+	
 	int score = 0;
 	int sq = -1, rank = -1;
 	
@@ -359,6 +368,7 @@ int pawnsEval(U8 stm, Thread *th) {
 		
 		rank = stm ? Mirror64[sq] >> 3 : sq >> 3; // = sq / 8
 
+		// add the score based on the rank of the member
 		score += arr_weight_pawn_chain[rank];
 		
 		#if defined(TUNE)	
@@ -426,6 +436,7 @@ int pawnsEval(U8 stm, Thread *th) {
 	#endif
 
 
+
 	// Passed pawns
 	/*
 		A passed pawn refers to a pawn that cannot be stopped by enemy pawns from reaching the other side. 
@@ -433,13 +444,31 @@ int pawnsEval(U8 stm, Thread *th) {
 		This can give you an advantage since your opponent will have a piece that is tied down in a defensive task.
 	*/
 
-	U64 passedPawns = stm ? bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]) :
-							wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
+	U64 stmPassedPawns = th->evalInfo.passedPawns[stm];
+	U64 oppPassedPawns = th->evalInfo.passedPawns[opp];
+
+	// Tarrasch rule
+	/*	
+		Rooks should be placed behind passed pawns – either the player's or the opponent's
+		The idea behind the guideline is that (1) if a player's rook is behind his passed pawn,
+		the rook protects it as it advances, and (2) if it is behind an opponent's passed pawn, 
+		the pawn cannot advance unless it is protected along its way.
+	*/
+
+	score += POPCOUNT(th->evalInfo.allRookAttacks[stm] & stmPassedPawns) * weight_rook_behind_stm_passed_pawn;
+	score += POPCOUNT(th->evalInfo.allRookAttacks[stm] & oppPassedPawns) * weight_rook_behind_opp_passed_pawn;
 	
-	while (passedPawns) {
+	#if defined(TUNE) 
+
+		T->rookBehindStmPassedPawn[stm] = POPCOUNT(th->evalInfo.allRookAttacks[stm] & stmPassedPawns);
+		T->rookBehindOppPassedPawn[stm] = POPCOUNT(th->evalInfo.allRookAttacks[stm] & oppPassedPawns);
+	#endif
+
+
+	while (stmPassedPawns) {
 		
-		sq = GET_POSITION(passedPawns);
-		POP_POSITION(passedPawns);
+		sq = GET_POSITION(stmPassedPawns);
+		POP_POSITION(stmPassedPawns);
 
 		assert(sq >= 0 && sq <= 63);
 
@@ -447,11 +476,11 @@ int pawnsEval(U8 stm, Thread *th) {
 
 		assert(rank+1 >= 1 && rank+1 <= 8);
 		
-		// Defended passed pawn
 		// Check if the passed pawn is defended by another pawn
-
-		if ((1ULL << sq) & th->evalInfo.allPawnAttacks[stm]) {
-
+		if (th->evalInfo.allPawnAttacks[stm] & (1ULL << sq)) {
+			
+			// Defended passed pawn
+		
 			score += arr_weight_defended_passed_pawn[rank];
 			
 			#if defined(TUNE)	
@@ -460,26 +489,13 @@ int pawnsEval(U8 stm, Thread *th) {
 			#endif
 		} else {
 			
-			// Passed pawn is not defended by another pawn
+			// Normal passed pawn
 
 			score += arr_weight_passed_pawn[rank];
 
 			#if defined(TUNE)	
 			
 				T->passedPawn[stm][rank]++;
-			#endif
-		}	
-
-
-		// Rook behind a passed pawn
-
-		if ((1ULL << sq) & th->evalInfo.allRookAttacks[stm]) {
-
-			score += weight_rook_behind_a_passed_pawn;
-
-			#if defined(TUNE) 
-
-				T->rookBehindPassedPawn[stm]++;
 			#endif
 		}	
 	}

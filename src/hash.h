@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "thread.h"
+#include "structs.h"
 
 bool probeHash(HASHE *tt, Thread *th);
 void recordHash(U32 bestMove, int depth, int value, int hashf, int eval_static, Thread *th);
