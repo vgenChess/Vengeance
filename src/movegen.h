@@ -15,23 +15,20 @@
 #include "thread.h"
 #include "structs.h"
 
-U32 createMove(U32 promotion_type, U32 castle_dir, U32 move_type, U32 color, U32 c_piece, U32 piece, U32 from, U32 to);
+void genMoves(U8 stm, int ply, std::vector<Move> &moves, Thread *th);
+template<Side stm> void genPushes(std::vector<Move> &moves, Thread *th);
+template<Side stm> void genAttacks(int ply, std::vector<Move> &moves, Thread *th);
+template<Side stm> void generateCaptures(std::vector<Move> &moves, Thread *th);
+template<Side stm> void generatePushes(std::vector<Move> &moves, Thread *th);
+template<Side stm> void genSpecialMoves(int ply, std::vector<Move> &moves, Thread *th);
 
-void genMoves(int ply, std::vector<Move> &moves, U8 color, Thread *th);
+template<Side stm> void genCastlingMoves(int ply, std::vector<Move> &moves, Thread *th);
+template<Side stm> void genEnpassantMoves(int ply, std::vector<Move> &moves, Thread *th);
+template<Side stm> void genPromotionsNormal(std::vector<Move> &moves, Thread *th);
+template<Side stm> void genPromotionsAttacks(std::vector<Move> &moves, Thread *th);
 
-void genPushes(std::vector<Move> &moves, U8 color, Thread *th);
-void genAttacks(int ply, std::vector<Move> &moves, U8 color, Thread *th);
+Move getNextMove(Side stm, int ply, Thread *th, MOVE_LIST *moveList);
 
-void generateCaptures(U8 side, std::vector<Move> &moves, Thread *th);
-void generatePushes(U8 side, std::vector<Move> &moves, Thread *th);
-
-void genSpecialMoves(int ply, std::vector<Move> &moves, U8 sideToMove, Thread *th);
-
-void genCastlingMoves(int ply, std::vector<Move> &moves, U8 color, Thread *th);
-void genEnpassantMoves(int ply, std::vector<Move> &moves, U8 color, Thread *th);
-void genPromotionsNormal(std::vector<Move> &moves, U8 sideToMove, Thread *th);
-void genPromotionsAttacks(std::vector<Move> &moves, U8 sideToMove, Thread *th);
-
-Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *searchInfo);
+template<Side stm> U32 createMove(U32 promotion_type, U32 castle_dir, U32 move_type, U32 c_piece, U32 piece, U32 from, U32 to);
 
 #endif /* movegen_h */

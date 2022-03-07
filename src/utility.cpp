@@ -222,9 +222,10 @@ U64 getAttacks(const U8 stm, Thread *th) {
     return attacks;
 } 
 
-bool isKingInCheck(U8 side, Thread *th) {
+template<Side side>
+bool isKingInCheck(Thread *th) {
     
-    const U8 opponent = side ^ 1;      
+    const auto opponent = side ^ 1;      
     const int kingSq = GET_POSITION(side ? th->blackPieceBB[KING] : th->whitePieceBB[KING]);
     
     // Staggered check to return early saving time
@@ -769,7 +770,8 @@ int divide(U8 depth, U8 sideToMove, Thread *th) {
     std::vector<Move> moves;
 
     int ply = 0;
-    genMoves(ply, moves, sideToMove, th);
+    genMoves(sideToMove, ply, moves, th);
+        
     U8 count = 0;
 
     clock_t start, end;
@@ -817,7 +819,7 @@ int divide(U8 depth, U8 sideToMove, Thread *th) {
         
         nodes = 0;
 
-        if (!isKingInCheck(sideToMove, th)) {
+        if (sideToMove ? !isKingInCheck<BLACK>(th) : !isKingInCheck<WHITE>(th)) {
 
             count++;
 

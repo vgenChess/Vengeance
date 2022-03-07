@@ -61,14 +61,18 @@ void initLMR() {
 }
 
 //TODO refactor logic
-void startSearch(U8 side) {
+void startSearch(U8 stm) {
 
 
 	abortSearch = false;
 
 	Threads.start_searching(); // start non-main threads
-	iterativeDeepeningSearch(side, Threads.main()); // main thread start searching
-
+	
+	if (stm)
+		iterativeDeepeningSearch(BLACK, Threads.main()); // main thread start searching
+	else
+		iterativeDeepeningSearch(WHITE, Threads.main()); // main thread start searching
+	
 	abortSearch = true;
 
 	// When we reach the maximum depth, we can arrive here without a raise of
@@ -95,7 +99,7 @@ void startSearch(U8 side) {
 	stopped = false;
 }
 
-void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
+void iterativeDeepeningSearch(U8 stm, SearchThread *th) {
 	
 	th->nodes = 0;
 	th->ttHits = 0;	
@@ -131,9 +135,10 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
 
 		th->depth = depth;
 
-
-		aspirationWindowSearch(sideToMove, th);
-
+		if (stm)
+			aspirationWindowSearch<BLACK>(th);
+		else
+			aspirationWindowSearch<WHITE>(th);
 
 		if (Threads.stop)
 			break;
@@ -186,8 +191,8 @@ void iterativeDeepeningSearch(int sideToMove, SearchThread *th) {
 	Threads.stop = true;
 }
 
-
-void aspirationWindowSearch(U8 side, SearchThread *th) {
+template<Side stm>
+void aspirationWindowSearch(SearchThread *th) {
 
 	int32_t window = I32_MATE;
 
@@ -210,7 +215,6 @@ void aspirationWindowSearch(U8 side, SearchThread *th) {
 
 	SearchInfo searchInfo;
 
-	searchInfo.side = side;
 	searchInfo.ply = 0;
 	searchInfo.realDepth = th->depth;
 	searchInfo.isNullMoveAllowed = false;
@@ -225,7 +229,7 @@ void aspirationWindowSearch(U8 side, SearchThread *th) {
 		th->selDepth = I16_NO_DEPTH;	
 		searchInfo.pline.clear();
 		
-		score = alphabetaSearch(alpha, beta, I32_MATE, th, &searchInfo);
+		score = alphabetaSearch<stm>(alpha, beta, I32_MATE, th, &searchInfo);
 
 		if (Threads.stop)
         	break;
@@ -294,7 +298,7 @@ void checkTime() {
 	}	
 }
 
-
+template<Side stm>
 int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo *si) {
 
 
@@ -303,12 +307,9 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 	// 	std::cout<<alpha<<","<<beta<<std::endl;
 	// }
 
-
 	assert(alpha < beta); 
 
-
-	const U8 SIDE = si->side;
-	const U8 OPP = SIDE ^ 1;
+	const auto OPP = stm == WHITE ? BLACK : WHITE;
 
 	const int PLY = si->ply;
 	
@@ -326,10 +327,14 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 	if (depth <= 0 || PLY >= U16_MAX_PLY) {
 
 		si->pline.clear();
-		return quiescenseSearch(PLY, SIDE, alpha, beta, th, &si->pline);
+ 
+		int score = stm == WHITE ? 
+					quiescenseSearch<WHITE>(PLY, alpha, beta, th, &si->pline) : 
+					quiescenseSearch<BLACK>(PLY, alpha, beta, th, &si->pline);
+		
+		return score;
 	}
 	
-
 
 	// Check time spent		
 
@@ -409,7 +414,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 
 
 
-	const bool IS_IN_CHECK = isKingInCheck(SIDE, th);
+	const bool IS_IN_CHECK = isKingInCheck<stm>(th);
     bool improving = false;
 
 	int32_t sEval = I32_UNKNOWN;
@@ -425,10 +430,10 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
         
         sEval = tt->sEval;
         if (sEval == I32_UNKNOWN)
-            sEval = fullEval(SIDE, th); // Do not save sEval to the TT since it can overwrite the previous hash entry
+            sEval = fullEval(stm, th); // Do not save sEval to the TT since it can overwrite the previous hash entry
     } else {
 
-        sEval = fullEval(SIDE, th);
+        sEval = fullEval(stm, th);
 
         recordHash(NO_MOVE, I16_NO_DEPTH, I32_UNKNOWN, U8_NO_BOUND, sEval, th);		
     }
@@ -502,14 +507,15 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 		int r = depth > 9 ? 3 : 2;	
 
 	
-		searchInfo.side = OPP;
 		searchInfo.ply = PLY + 1;
 		searchInfo.depth = depth - r;
 		searchInfo.isNullMoveAllowed = false;
 		
 		searchInfo.pline.clear();
-		int score = -alphabetaSearch(-beta, -beta + 1, mate - 1, th, &searchInfo);
-
+		
+		int score = stm == WHITE ? 
+					-alphabetaSearch<BLACK>(-beta, -beta + 1, mate - 1, th, &searchInfo) :
+					-alphabetaSearch<WHITE>(-beta, -beta + 1, mate - 1, th, &searchInfo);
 
 		unmakeNullMove(PLY, th);
 
@@ -561,12 +567,13 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 		int sDepth = depth / 2 - 1;
 
 		searchInfo.skipMove = ttMove;
-		searchInfo.side = SIDE;
 		searchInfo.ply = PLY;
 		searchInfo.depth = sDepth;
 		searchInfo.pline.clear();
 
-		int32_t score = alphabetaSearch(sBeta - 1, sBeta, mate, th, &searchInfo);
+		int32_t score =	stm == WHITE ? 
+					alphabetaSearch<WHITE>(sBeta - 1, sBeta, mate, th, &searchInfo) :
+					alphabetaSearch<BLACK>(sBeta - 1, sBeta, mate, th, &searchInfo);
 
 		searchInfo.skipMove = NO_MOVE;
 
@@ -600,14 +607,14 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 	th->moveList[PLY].stage = PLAY_HASH_MOVE;
 	th->moveList[PLY].ttMove = ttMove;
 	th->moveList[PLY].counterMove = previousMove == NO_MOVE ? 
-		NO_MOVE : th->counterMove[SIDE][from_sq(previousMove)][to_sq(previousMove)];
+		NO_MOVE : th->counterMove[stm][from_sq(previousMove)][to_sq(previousMove)];
 	th->moveList[PLY].moves.clear();
 	th->moveList[PLY].badCaptures.clear();
 
 	while (true) {
 
 		// fetch next psuedo-legal move
-		currentMove = getNextMove(PLY, SIDE, th, &th->moveList[PLY]);
+		currentMove = getNextMove(stm, PLY, th, &th->moveList[PLY]);
 
 		if (th->moveList[PLY].stage == STAGE_DONE) 
 			break;
@@ -623,7 +630,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 		make_move(PLY, currentMove.move, th);
 
 		// check if psuedo-legal move is valid
-		if (isKingInCheck(SIDE, th)) {
+		if (isKingInCheck<stm>(th)) {
 			
 			unmake_move(PLY, currentMove.move, th);
 			continue;
@@ -717,7 +724,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 			if (currentMoveType == MOVE_PROMOTION) 
 				extension += F_PROMOTION_EXT;	// Promotion extension
 			
-			bool isPrank = SIDE ? 
+			bool isPrank = stm ? 
 				currentMoveToSq >= 8 && currentMoveToSq <= 15 : 
 				currentMoveToSq >= 48 && currentMoveToSq <= 55;
 			
@@ -753,7 +760,6 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 		reduce = 0;
 
 
-		searchInfo.side = OPP;
 		searchInfo.ply = PLY + 1;
 		searchInfo.isNullMoveAllowed = true;
 
@@ -763,7 +769,9 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 			searchInfo.depth = newDepth;
 			searchInfo.pline.clear();
 
-			score = -alphabetaSearch(-beta, -alpha, mate - 1, th, &searchInfo);
+			score = stm == WHITE ?
+					-alphabetaSearch<BLACK>(-beta, -alpha, mate - 1, th, &searchInfo) :
+					-alphabetaSearch<WHITE>(-beta, -alpha, mate - 1, th, &searchInfo);
 		} else {
 			
 			// Late Move Reductions (Under observation)
@@ -794,7 +802,9 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 	        	searchInfo.depth = newDepth - reduce;	
 				searchInfo.pline.clear();
 				
-				score = -alphabetaSearch(-alpha - 1, -alpha, mate - 1, th, &searchInfo);			
+				score = stm == WHITE ? 
+						-alphabetaSearch<BLACK>(-alpha - 1, -alpha, mate - 1, th, &searchInfo) : 
+						-alphabetaSearch<WHITE>(-alpha - 1, -alpha, mate - 1, th, &searchInfo);			
 
 			} else {
 
@@ -806,10 +816,16 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 				searchInfo.depth = newDepth;
 				searchInfo.pline.clear();
 
-				score = -alphabetaSearch(-alpha - 1, -alpha, mate - 1, th, &searchInfo);					
+				score = stm == WHITE ? 
+						-alphabetaSearch<BLACK>(-alpha - 1, -alpha, mate - 1, th, &searchInfo) : 
+						-alphabetaSearch<WHITE>(-alpha - 1, -alpha, mate - 1, th, &searchInfo);					
 		
-				if (score > alpha && score < beta)
-					score = -alphabetaSearch(-beta, -alpha, mate - 1, th, &searchInfo);					
+				if (score > alpha && score < beta) {
+
+					score = stm == WHITE ? 
+							-alphabetaSearch<BLACK>(-beta, -alpha, mate - 1, th, &searchInfo) : 
+							-alphabetaSearch<WHITE>(-beta, -alpha, mate - 1, th, &searchInfo);					
+				}
 			}
 		}
 
@@ -858,7 +874,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 				th->moveStack[PLY].killerMoves[0] = bestMove;
 			}
 
-			updateHistory(PLY, SIDE, depth, bestMove, quietMovesPlayed, th);				
+			updateHistory(stm, PLY, depth, bestMove, quietMovesPlayed, th);				
 		} 
 
 		updateCaptureHistory(depth, bestMove, captureMovesPlayed, th);
@@ -880,14 +896,15 @@ int seeVal[8] = {	VALUE_DUMMY, VALUE_PAWN, VALUE_KNIGHT, VALUE_BISHOP,
 					VALUE_ROOK, VALUE_QUEEN, VALUE_KING, VALUE_DUMMY };
 					
 // TODO should limit Quiescense search explosion
-int quiescenseSearch(int ply, int side, int alpha, int beta, SearchThread *th, std::vector<U32> *pline) {
+template<Side stm>
+int quiescenseSearch(int ply, int alpha, int beta, SearchThread *th, std::vector<U32> *pline) {
 
 
 	assert (alpha < beta);
 	assert (ply > 0);
 
 
-	const U8 OPP = side ^ 1;
+	const U8 OPP = stm ^ 1;
 
 	const bool IS_MAIN_THREAD = th == Threads.main();
 
@@ -928,7 +945,7 @@ int quiescenseSearch(int ply, int side, int alpha, int beta, SearchThread *th, s
 		return 0;
 
 	if (ply >= U16_MAX_PLY - 1) 
-		return fullEval(side, th);
+		return fullEval(stm, th);
 
 
 
@@ -960,10 +977,10 @@ int quiescenseSearch(int ply, int side, int alpha, int beta, SearchThread *th, s
         
         sEval = tt->sEval;
         if (sEval == I32_UNKNOWN)
-            sEval = fullEval(side, th); // Do not save sEval to the TT since it can overwrite the previous hash entry
+            sEval = fullEval(stm, th); // Do not save sEval to the TT since it can overwrite the previous hash entry
     } else {
 
-        sEval = fullEval(side, th);
+        sEval = fullEval(stm, th);
 
         recordHash(NO_MOVE, I16_NO_DEPTH, I32_UNKNOWN, U8_NO_BOUND, sEval, th);		
     }
@@ -1001,7 +1018,7 @@ int quiescenseSearch(int ply, int side, int alpha, int beta, SearchThread *th, s
 
 	while (true) {
 
-		currentMove = getNextMove(ply, side, th, &th->moveList[ply]);
+		currentMove = getNextMove(stm, ply, th, &th->moveList[ply]);
 
 		if (th->moveList[ply].stage >= PLAY_BAD_CAPTURES) 
 			break;
@@ -1010,7 +1027,7 @@ int quiescenseSearch(int ply, int side, int alpha, int beta, SearchThread *th, s
 
 		make_move(ply, currentMove.move, th);
 
-		if (isKingInCheck(side, th)) {
+		if (isKingInCheck<stm>(th)) {
 
 			unmake_move(ply, currentMove.move, th);
 
@@ -1037,7 +1054,9 @@ int quiescenseSearch(int ply, int side, int alpha, int beta, SearchThread *th, s
  		}
 
 
-		score = -quiescenseSearch(ply + 1, OPP, -beta, -alpha, th, &line);
+		score = stm == WHITE ? 
+				-quiescenseSearch<BLACK>(ply + 1, -beta, -alpha, th, &line) :
+				-quiescenseSearch<WHITE>(ply + 1, -beta, -alpha, th, &line);
 
 
 		unmake_move(ply, currentMove.move, th);

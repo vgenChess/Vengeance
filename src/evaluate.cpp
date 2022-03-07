@@ -149,12 +149,14 @@ void initEvalInfo(Thread *th) {
 	th->evalInfo.passedPawns[BLACK] = bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]);
 }
 
-int traceFullEval(TraceCoefficients *traceCoefficients, U8 stm, Thread *th) {
+template<Side stm>
+int traceFullEval(TraceCoefficients *traceCoefficients, Thread *th) {
 
 	T = traceCoefficients;
 
-	return fullEval(stm, th);
+	return stm ? fullEval(BLACK, th) : fullEval(WHITE, th);
 }
+
 
 int fullEval(U8 stm, Thread *th) {
 	

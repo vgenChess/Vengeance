@@ -14,7 +14,7 @@
 #include "types.h"
 #include "thread.h"
 
-U8 parseFen(std::string str, Thread* th);
+Side parseFen(std::string str, Thread* th);
 size_t split(const std::string &txt, std::vector<std::string> &strs, char ch);
 
 #endif /* fen_h */

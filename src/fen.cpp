@@ -41,12 +41,12 @@ size_t split(const std::string &txt, std::vector<std::string> &strs, char ch) {
 }
 
 
-U8 parseFen(std::string str, Thread *th) {
+Side parseFen(std::string str, Thread *th) {
 
 
     th->hashKey = 0ULL;
             
-	U8 side = -1;
+	Side side = WHITE;
 
     vector <string> tokens1; 
 

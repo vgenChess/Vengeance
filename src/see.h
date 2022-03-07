@@ -7,6 +7,6 @@
 #include "magicmoves.h"
 #include "thread.h"
 
-int SEE(U32 move, U8 sideToMove, Thread *th);
+template<Side sideToMove> int SEE(U32 move, Thread *th);
 void debugSEE(char ch, int square);
 #endif

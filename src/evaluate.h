@@ -16,7 +16,7 @@ void setDist();
 
 void initTableDoublePawns();
 
-int traceFullEval(TraceCoefficients *traceCoefficients, U8 stm, Thread *th);
+template<Side stm> int traceFullEval(TraceCoefficients *traceCoefficients, Thread *th);
 
 int fullEval(U8 stm, Thread *th);
 

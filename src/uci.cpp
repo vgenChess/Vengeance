@@ -135,7 +135,8 @@ void UciLoop() {
             while (is>>token) {
 
                 moves.clear();
-                genMoves(0, moves, sideToMove, &initThread);
+
+                genMoves(sideToMove, 0, moves, &initThread);
                 
                 for (Move m : moves) {
 

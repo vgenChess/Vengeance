@@ -85,7 +85,6 @@ public:
 	
 	bool isNullMoveAllowed;	 
 	
-	U8 side;
 	int ply;
 	int depth;
 	int realDepth;
@@ -98,7 +97,6 @@ public:
 	
 		isNullMoveAllowed = false;
 	
-		side = WHITE;
 		ply = 0;
 		depth = 0;
 	

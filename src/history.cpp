@@ -5,7 +5,7 @@
 #include "globals.h"
 #include "functions.h"
 
-void updateHistory(int ply, int side, int depth, U32 bestMove, std::vector<U32> &quietMovesPlayed, Thread *th) {
+void updateHistory(Side stm, int ply, int depth, U32 bestMove, std::vector<U32> &quietMovesPlayed, Thread *th) {
 
 	int32_t hScore;
 	int32_t bonus = std::min(400, depth * depth), delta = 0;
@@ -16,9 +16,9 @@ void updateHistory(int ply, int side, int depth, U32 bestMove, std::vector<U32> 
 	for (auto &move : quietMovesPlayed) { 
 
 		delta = (move == bestMove) ? bonus : -bonus;
-		hScore = th->historyScore[side][from_sq(move)][to_sq(move)];
+		hScore = th->historyScore[stm][from_sq(move)][to_sq(move)];
 
-		th->historyScore[side][from_sq(move)][to_sq(move)] += 32 * delta - hScore * std::abs(delta) / 512;
+		th->historyScore[stm][from_sq(move)][to_sq(move)] += 32 * delta - hScore * std::abs(delta) / 512;
 
 		// mtx.lock();
 		// if (th->historyScore[side][from_sq(move)][to_sq(move)] > 10000)
@@ -31,7 +31,7 @@ void updateHistory(int ply, int side, int depth, U32 bestMove, std::vector<U32> 
 
 	if (previousMove != NO_MOVE) {
 
-		th->counterMove[side][from_sq(previousMove)][to_sq(previousMove)] = bestMove;
+		th->counterMove[stm][from_sq(previousMove)][to_sq(previousMove)] = bestMove;
 	}
 }
 

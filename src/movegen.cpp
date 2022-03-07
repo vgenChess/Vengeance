@@ -21,27 +21,36 @@
 
 typedef unsigned char U8;
 
-void genMoves(int ply, std::vector<Move> &moves, U8 side, Thread *th) {
+/*
+ *    Move Type
+ *
+ *    0 -> quiet moves
+ *    1 -> captures
+ *    2 -> pawn double moves
+ *    3 -> en_passant
+ *    4 -> castling
+ *    5 -> promotions
+ *    6 -> king moves
+ */
+
+/*
+ *    Promotion Type
+ *
+ *    0 - Queen
+ *    1 - Rook
+ *    2 - Knight
+ *    3 - Bishop
+ **/
+
+template<Side stm>
+U32 createMove(U32 promotion_type, U32 castleDir, U32 move_type, U32 c_piece, U32 piece, U32 from, U32 to) {
     
-    genSpecialMoves(ply, moves, side, th);
-    genAttacks(ply, moves, side, th);
-	generatePushes(side, moves, th);
+    return (0ULL | promotion_type << 24 | castleDir << 22 | move_type << 19 
+        | stm << 18 | c_piece << 15 | piece << 12 | from << 6 | to);
 }
 
-void genAttacks(int ply, std::vector<Move> &moves, U8 side, Thread *th) {
-    
-    genEnpassantMoves(ply, moves, side, th);
-    generateCaptures(side, moves, th);
-}
-
-void genSpecialMoves(int ply, std::vector<Move> &moves, U8 side, Thread *th) {
-	 
-    genPromotionsAttacks(moves, side, th);
-	genPromotionsNormal(moves, side, th);
-    genCastlingMoves(ply, moves, side, th);	
-}
-
-void generatePushes(U8 side, std::vector<Move> &moves, Thread *th) {
+template<Side stm>
+void generatePushes(std::vector<Move> &moves, Thread *th) {
     
     U8 from, to; 
     U64 bitboard, pushes, empty = th->empty; 
@@ -49,11 +58,11 @@ void generatePushes(U8 side, std::vector<Move> &moves, Thread *th) {
 
     for (U8 piece = PAWNS; piece <= KING; piece++) {
 
-        bitboard = side ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
+        bitboard = stm ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
 
         if (piece == PAWNS) {
 
-            U64 pawns = bitboard & (side ? NOT_RANK_2 : NOT_RANK_7);
+            U64 pawns = bitboard & (stm ? NOT_RANK_2 : NOT_RANK_7);
 
             while (pawns) {
 
@@ -61,33 +70,33 @@ void generatePushes(U8 side, std::vector<Move> &moves, Thread *th) {
                 pawns &= pawns - 1;
 
                 // single push
-                to = side ? from - 8 : from + 8;
+                to = stm ? from - 8 : from + 8;
 
                 if ((1ULL << to) & empty) {
 
-                    move.move = createMove(0, 0, MOVE_NORMAL, side, DUMMY, PAWNS, from, to);
+                    move.move = createMove<stm>(0, 0, MOVE_NORMAL, DUMMY, PAWNS, from, to);
                     moves.push_back(move);
                 }
             }
 
-            pawns = bitboard & (side ? RANK_7 : RANK_2);
+            pawns = bitboard & (stm ? RANK_7 : RANK_2);
 
             while (pawns) {
                 
                 from = __builtin_ctzll(pawns);
                 pawns &= pawns - 1;
 
-                to = side ? from - 8 : from + 8;
+                to = stm ? from - 8 : from + 8;
                 // check for inbetween square is empty before double push
                 if ((1ULL << to) & empty) {
 
                     // get the double push target square
-                    to = side ? from - 16 : from + 16;
+                    to = stm ? from - 16 : from + 16;
 
                     // check if target square is empty for the double push
                     if ((1ULL << to) & empty) {
 
-                        move.move = createMove(0, 0, MOVE_DOUBLE_PUSH, side, DUMMY, PAWNS, from, to);
+                        move.move = createMove<stm>(0, 0, MOVE_DOUBLE_PUSH, DUMMY, PAWNS, from, to);
                         moves.push_back(move);
                     }
                 }
@@ -114,28 +123,29 @@ void generatePushes(U8 side, std::vector<Move> &moves, Thread *th) {
                 to = __builtin_ctzll(pushes);
                 pushes &= pushes - 1;
 
-                move.move = createMove(0, 0, MOVE_NORMAL, side, DUMMY, piece, from, to);
+                move.move = createMove<stm>(0, 0, MOVE_NORMAL, DUMMY, piece, from, to);
                 moves.push_back(move);
             }
         }
     }
 }
 
-void generateCaptures(U8 side, std::vector<Move> &moves, Thread *th) {
+template<Side stm>
+void generateCaptures(std::vector<Move> &moves, Thread *th) {
     
     short from, to; 
     U64 cPieceBB;
 
-    U64 oppPieces = side ^ 1 ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES];
+    U64 oppPieces = stm ^ 1 ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES];
 
     U64 b, attacks;
     Move move;
     for (int p = PAWNS; p <= KING; p++) {
 
-        b = side ? th->blackPieceBB[p] : th->whitePieceBB[p];
+        b = stm ? th->blackPieceBB[p] : th->whitePieceBB[p];
         attacks = 0ULL;
 
-        if (p == PAWNS) b &= side ? NOT_RANK_2 : NOT_RANK_7;
+        if (p == PAWNS) b &= stm ? NOT_RANK_2 : NOT_RANK_7;
         
         while (b) {
 
@@ -144,7 +154,7 @@ void generateCaptures(U8 side, std::vector<Move> &moves, Thread *th) {
 
             assert(from >= 0 && from <= 63);
 
-            if (p == PAWNS) attacks = side ? 
+            if (p == PAWNS) attacks = stm ? 
                     ((index_bb[from] >> 7) & NOT_A_FILE) | ((index_bb[from] >> 9) & NOT_H_FILE) :
                     ((index_bb[from] << 7) & NOT_H_FILE) | ((index_bb[from] << 9) & NOT_A_FILE);
             else if (p == KNIGHTS) attacks |= get_knight_attacks(from);            
@@ -162,11 +172,11 @@ void generateCaptures(U8 side, std::vector<Move> &moves, Thread *th) {
 
                 for (U8 cPieceType = PAWNS; cPieceType < KING; cPieceType++) {
 
-                    cPieceBB = (side ^ 1) ? th->blackPieceBB[cPieceType] : th->whitePieceBB[cPieceType];
+                    cPieceBB = (stm ^ 1) ? th->blackPieceBB[cPieceType] : th->whitePieceBB[cPieceType];
 
                     if (cPieceBB & (1ULL << to)) {
 
-                        move.move = createMove(0, 0, MOVE_CAPTURE, side, cPieceType, p, from, to);
+                        move.move = createMove<stm>(0, 0, MOVE_CAPTURE, cPieceType, p, from, to);
                         moves.push_back(move);
                     }
                 }
@@ -175,14 +185,14 @@ void generateCaptures(U8 side, std::vector<Move> &moves, Thread *th) {
     }
 }
 
-
-void genCastlingMoves(int ply, std::vector<Move> &moves, U8 side, Thread *th) {
+template<Side stm>
+void genCastlingMoves(int ply, std::vector<Move> &moves, Thread *th) {
 
     Move move;
 
     U8 castleFlags = th->moveStack[ply].castleFlags;
 
-    if (side == WHITE) {
+    if (stm == WHITE) {
         
         if (castleFlags & CASTLE_FLAG_WHITE_QUEEN) {
            
@@ -193,7 +203,7 @@ void genCastlingMoves(int ply, std::vector<Move> &moves, U8 side, Thread *th) {
                         ||  isSqAttacked(3, WHITE, th) 
                         ||  isSqAttacked(4, WHITE, th))) {
                     
-                move.move = createMove(0, 0, MOVE_CASTLE, WHITE, ROOKS, KING, 4, 2);
+                move.move = createMove<stm>(0, 0, MOVE_CASTLE, ROOKS, KING, 4, 2);
                 moves.push_back(move);
             }
         }
@@ -208,7 +218,7 @@ void genCastlingMoves(int ply, std::vector<Move> &moves, U8 side, Thread *th) {
                         ||  isSqAttacked(5, WHITE, th)
                         ||  isSqAttacked(6, WHITE, th))) {
 
-                move.move = createMove(0, 1, MOVE_CASTLE, WHITE, ROOKS, KING, 4, 6);
+                move.move = createMove<stm>(0, 1, MOVE_CASTLE, ROOKS, KING, 4, 6);
                 moves.push_back(move);
             }
         }
@@ -224,7 +234,7 @@ void genCastlingMoves(int ply, std::vector<Move> &moves, U8 side, Thread *th) {
                         ||  isSqAttacked(59, BLACK, th)
                         ||  isSqAttacked(60, BLACK, th))) {
                     
-                move.move = createMove(0, 2, MOVE_CASTLE, BLACK, ROOKS, KING, 60, 58);
+                move.move = createMove<stm>(0, 2, MOVE_CASTLE, ROOKS, KING, 60, 58);
                 moves.push_back(move);
             }
         }
@@ -240,14 +250,15 @@ void genCastlingMoves(int ply, std::vector<Move> &moves, U8 side, Thread *th) {
                         ||  isSqAttacked(61, BLACK, th) 
                         ||  isSqAttacked(62, BLACK, th))) {
             
-                move.move = createMove(0, 3, MOVE_CASTLE, BLACK, ROOKS, KING, 60, 62);
+                move.move = createMove<stm>(0, 3, MOVE_CASTLE, ROOKS, KING, 60, 62);
                 moves.push_back(move);
             }
         }
     }
 }
 
-void genEnpassantMoves(int ply, std::vector<Move> &moves, U8 side, Thread *th) {
+template<Side stm>
+void genEnpassantMoves(int ply, std::vector<Move> &moves, Thread *th) {
     
     if (th->moveStack[ply].epFlag) {
         
@@ -255,11 +266,11 @@ void genEnpassantMoves(int ply, std::vector<Move> &moves, U8 side, Thread *th) {
         U8 to = th->moveStack[ply].epSquare;
         U64 target_sqs;
         U64 target_pawns;
-        U64 pawns = side ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+        U64 pawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
         
         U64 epSquareBB = 1ULL << to;
 
-        if (side == WHITE) {
+        if (stm == WHITE) {
 
             target_sqs = ((epSquareBB >> 7) & NOT_A_FILE) | ((epSquareBB >> 9) & NOT_H_FILE);
         } else {
@@ -276,22 +287,23 @@ void genEnpassantMoves(int ply, std::vector<Move> &moves, U8 side, Thread *th) {
             
             target_pawns &= target_pawns - 1;
             
-            move.move = createMove(0, 0, MOVE_ENPASSANT, side, PAWNS, PAWNS, from, to);
+            move.move = createMove<stm>(0, 0, MOVE_ENPASSANT, PAWNS, PAWNS, from, to);
 
             moves.push_back(move);
         }
     }
 }
 
-void genPromotionsNormal(std::vector<Move> &moves, U8 side, Thread *th) {
+template<Side stm>
+void genPromotionsNormal(std::vector<Move> &moves, Thread *th) {
     
     U8 from;
     U8 to;
-	U64 pawns = side ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS]; 
+	U64 pawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS]; 
     U64 pawnsToPromote;
     U64 empty = th->empty;
     
-    if (side == WHITE) {
+    if (stm == WHITE) {
         
         pawnsToPromote = pawns & RANK_7;
     } else {
@@ -305,36 +317,37 @@ void genPromotionsNormal(std::vector<Move> &moves, U8 side, Thread *th) {
         from = __builtin_ctzll(pawnsToPromote);
         pawnsToPromote &= pawnsToPromote - 1;
 
-        to = side ? from - 8 : from + 8;
+        to = stm ? from - 8 : from + 8;
 
         if ((1ULL << to) & empty) {
 
-            move.move = createMove(PROMOTE_TO_QUEEN, 0, MOVE_PROMOTION, side, DUMMY, PAWNS, from, to);
+            move.move = createMove<stm>(PROMOTE_TO_QUEEN, 0, MOVE_PROMOTION, DUMMY, PAWNS, from, to);
             moves.push_back(move);
 
-            move.move = createMove(PROMOTE_TO_ROOK, 0, MOVE_PROMOTION, side, DUMMY, PAWNS, from, to);
+            move.move = createMove<stm>(PROMOTE_TO_ROOK, 0, MOVE_PROMOTION, DUMMY, PAWNS, from, to);
             moves.push_back(move);
             
-            move.move = createMove(PROMOTE_TO_BISHOP, 0, MOVE_PROMOTION, side, DUMMY, PAWNS, from, to);
+            move.move = createMove<stm>(PROMOTE_TO_BISHOP, 0, MOVE_PROMOTION, DUMMY, PAWNS, from, to);
             moves.push_back(move);
             
-            move.move = createMove(PROMOTE_TO_KNIGHT, 0, MOVE_PROMOTION, side, DUMMY, PAWNS, from, to);
+            move.move = createMove<stm>(PROMOTE_TO_KNIGHT, 0, MOVE_PROMOTION, DUMMY, PAWNS, from, to);
             moves.push_back(move);
         } 
     }
 }
 
-void genPromotionsAttacks(std::vector<Move> &moves, U8 side, Thread *th) {
+template<Side stm>
+void genPromotionsAttacks(std::vector<Move> &moves, Thread *th) {
     
     U8 from;
     U8 to;
     U64 toAttack;
     U64 fromBB;
-    U64 pawns = side ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+    U64 pawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
     U64 pawnsToPromote;
     U64 cPieceBB;
     
-    pawnsToPromote = side ? (pawns & RANK_2) : (pawns & RANK_7);
+    pawnsToPromote = stm ? (pawns & RANK_2) : (pawns & RANK_7);
 
     Move move;
     while (pawnsToPromote) {
@@ -344,7 +357,7 @@ void genPromotionsAttacks(std::vector<Move> &moves, U8 side, Thread *th) {
 
         fromBB = 1ULL << from;
         
-        if (side == WHITE) {
+        if (stm == WHITE) {
             
             toAttack = (((fromBB << 7) & NOT_H_FILE) | ((fromBB << 9) & NOT_A_FILE));
         } else {
@@ -359,20 +372,20 @@ void genPromotionsAttacks(std::vector<Move> &moves, U8 side, Thread *th) {
              
             for (int cPiece = KNIGHTS; cPiece <= QUEEN; cPiece++) {
 
-                cPieceBB = side ^ 1 ? th->blackPieceBB[cPiece] : th->whitePieceBB[cPiece];
+                cPieceBB = stm ^ 1 ? th->blackPieceBB[cPiece] : th->whitePieceBB[cPiece];
 
                 if (cPieceBB & (1ULL << to)) {
 
-                    move.move = createMove(PROMOTE_TO_QUEEN, 0, MOVE_PROMOTION, side, cPiece, PAWNS, from, to);
+                    move.move = createMove<stm>(PROMOTE_TO_QUEEN, 0, MOVE_PROMOTION, cPiece, PAWNS, from, to);
                     moves.push_back(move);
                     
-                    move.move = createMove(PROMOTE_TO_ROOK, 0, MOVE_PROMOTION, side, cPiece, PAWNS, from, to);
+                    move.move = createMove<stm>(PROMOTE_TO_ROOK, 0, MOVE_PROMOTION, cPiece, PAWNS, from, to);
                     moves.push_back(move);
                     
-                    move.move = createMove(PROMOTE_TO_BISHOP, 0, MOVE_PROMOTION, side, cPiece, PAWNS, from, to);
+                    move.move = createMove<stm>(PROMOTE_TO_BISHOP, 0, MOVE_PROMOTION, cPiece, PAWNS, from, to);
                     moves.push_back(move);
 
-                    move.move = createMove(PROMOTE_TO_KNIGHT, 0, MOVE_PROMOTION, side, cPiece, PAWNS, from, to);
+                    move.move = createMove<stm>(PROMOTE_TO_KNIGHT, 0, MOVE_PROMOTION, cPiece, PAWNS, from, to);
                     moves.push_back(move);
                 }
             }
@@ -401,12 +414,13 @@ Move getNoMove() {
     return noMove;
 }
 
-bool isValidMove(const U8 side, const int ply, const U32 move, Thread *th) {
+template<Side stm>
+bool isValidMove(const int ply, const U32 move, Thread *th) {
     
     if (move == NO_MOVE) 
         return false;
     
-    U8 opponent = side ^ 1;
+    U8 opponent = stm ^ 1;
 
     U8 fromSq = from_sq(move);
     U8 toSq = to_sq(move);
@@ -414,7 +428,7 @@ bool isValidMove(const U8 side, const int ply, const U32 move, Thread *th) {
     U8 piece = pieceType(move);
     U8 capturePiece = cPieceType(move);
     
-    U64 pieceBB = side ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
+    U64 pieceBB = stm ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
     U64 capturePieceBB = opponent ? th->blackPieceBB[capturePiece] : th->whitePieceBB[capturePiece];
 
     int moveType = move_type(move);
@@ -527,6 +541,36 @@ bool isValidMove(const U8 side, const int ply, const U32 move, Thread *th) {
 }
 
 
+template<Side stm>
+void genSpecialMoves(int ply, std::vector<Move> &moves, Thread *th) {
+     
+    genPromotionsAttacks<stm>(moves, th);
+    genPromotionsNormal<stm>(moves, th);
+    genCastlingMoves<stm>(ply, moves, th);  
+}
+
+template<Side stm>
+void genAttacks(int ply, std::vector<Move> &moves, Thread *th) {
+    
+    genEnpassantMoves<stm>(ply, moves, th);
+    generateCaptures<stm>(moves, th);
+}
+
+void genMoves(U8 stm, int ply, std::vector<Move> &moves, Thread *th) {
+   
+   if (stm) {
+    
+        genSpecialMoves<BLACK>(ply, moves, th);
+        genAttacks<BLACK>(ply, moves, th);
+        generatePushes<BLACK>(moves, th);
+   } else {
+
+        genSpecialMoves<WHITE>(ply, moves, th);
+        genAttacks<WHITE>(ply, moves, th);
+        generatePushes<WHITE>(moves, th);
+   }
+}
+
 int getTopIndex(std::vector<Move> &moves) {
   
     int m = 0;
@@ -562,24 +606,25 @@ void scoreCaptureMoves(Thread *th, MOVE_LIST *moveList) {
     }
 }
 
-void scoreNormalMoves(int side, int ply, Thread *th, MOVE_LIST *moveList) {
+template<Side stm>
+void scoreNormalMoves(int ply, Thread *th, MOVE_LIST *moveList) {
 
     U32 previousMove = ply == 0 ? NO_MOVE : th->moveStack[ply - 1].move;
 
     for (auto &m : moveList->moves) {
 
-        m.score = th->historyScore[side][from_sq(m.move)][to_sq(m.move)];
+        m.score = th->historyScore[stm][from_sq(m.move)][to_sq(m.move)];
 
         if (    previousMove != NO_MOVE    
-            &&  m.move == th->counterMove[side][from_sq(previousMove)][to_sq(previousMove)]) {
+            &&  m.move == th->counterMove[stm][from_sq(previousMove)][to_sq(previousMove)]) {
 
             m.score += U16_COUNTER_MOVE_BONUS; // TODO check logic
         }
     }
 }
 
-
-Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
+template<Side stm>
+inline Move getNextMove(int ply, Thread *th, MOVE_LIST *moveList) {
 
 
     switch (moveList->stage) {
@@ -588,7 +633,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
             moveList->stage = GEN_CAPTURES;
 
-            if (isValidMove(side, ply, moveList->ttMove, th)) {
+            if (isValidMove<stm>(ply, moveList->ttMove, th)) {
                     
                 Move m;
 
@@ -604,7 +649,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
         case GEN_CAPTURES : {
 
             moveList->moves.clear();
-            genAttacks(ply, moveList->moves, side, th);
+            genAttacks<stm>(ply, moveList->moves, th);
 
             scoreCaptureMoves(th, moveList);
             
@@ -625,14 +670,14 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
                 
                 if (m.move == moveList->ttMove) {
     
-                    return getNextMove(ply, side, th, moveList);
+                    return getNextMove<stm>(ply, th, moveList);
                 }
 
-                if (SEE(m.move, side, th) < 0) { // bad capture
+                if (SEE<stm>(m.move, th) < 0) { // bad capture
 
                     moveList->badCaptures.push_back(m);
                     
-                    return getNextMove(ply, side, th, moveList);
+                    return getNextMove<stm>(ply, th, moveList);
                 } 
 
                 return m;
@@ -651,7 +696,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
             if (    !moveList->skipQuiets
                 &&  killerMove1 != moveList->ttMove
-                &&  isValidMove(side, ply, killerMove1, th)) {
+                &&  isValidMove<stm>(ply, killerMove1, th)) {
                     
                 Move m;
 
@@ -671,7 +716,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
             if (    !moveList->skipQuiets    
                 &&  killerMove2 != moveList->ttMove
-                &&  isValidMove(side, ply, killerMove2, th)) {
+                &&  isValidMove<stm>(ply, killerMove2, th)) {
                     
                 Move m;
 
@@ -689,7 +734,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
             moveList->stage = GEN_PROMOTIONS;
 
             if (    !moveList->skipQuiets
-                &&  isValidMove(side, ply, moveList->counterMove, th)) {
+                &&  isValidMove<stm>(ply, moveList->counterMove, th)) {
 
                 Move m;
 
@@ -706,8 +751,8 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
             moveList->moves.clear();
 
-            genPromotionsAttacks(moveList->moves, side, th);
-            genPromotionsNormal(moveList->moves, side, th);
+            genPromotionsAttacks<stm>(moveList->moves, th);
+            genPromotionsNormal<stm>(moveList->moves, th);
 
             for (auto &m : moveList->moves) {
 
@@ -731,7 +776,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
                     
                 if (m.move == moveList->ttMove) {
     
-                    return getNextMove(ply, side, th, moveList);
+                    return getNextMove<stm>(ply, th, moveList);
                 }
 
                 return m;
@@ -753,7 +798,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
                 moveList->badCaptures.erase(moveList->badCaptures.begin() + index);
 
-                return m.move == moveList->ttMove ? getNextMove(ply, side, th, moveList) : m;
+                return m.move == moveList->ttMove ? getNextMove<stm>(ply, th, moveList) : m;
             }
 
             moveList->stage = GEN_QUIETS;
@@ -768,10 +813,10 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
 
                 moveList->moves.clear();
 
-                genCastlingMoves(ply, moveList->moves, side, th);
-                generatePushes(side, moveList->moves, th);
+                genCastlingMoves<stm>(ply, moveList->moves, th);
+                generatePushes<stm>(moveList->moves, th);
                 
-                scoreNormalMoves(side, ply, th, moveList);                 
+                scoreNormalMoves<stm>(ply, th, moveList);                 
             }
 
             moveList->stage = PLAY_QUIETS;
@@ -795,7 +840,7 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
                     ||  m.move == th->moveStack[ply].killerMoves[0] 
                     ||  m.move == th->moveStack[ply].killerMoves[1]) {
                   
-                    return getNextMove(ply, side, th, moveList);
+                    return getNextMove<stm>(ply, th, moveList);
                 }
 
                 return m;
@@ -814,32 +859,8 @@ Move getNextMove(int ply, int side, Thread *th, MOVE_LIST *moveList) {
     return getNoMove();
 }
 
+Move getNextMove(Side stm, int ply, Thread *th, MOVE_LIST *moveList) {
 
-/*
- *    Move Type
- *
- *    0 -> quiet moves
- *    1 -> captures
- *    2 -> pawn double moves
- *    3 -> en_passant
- *    4 -> castling
- *    5 -> promotions
- *    6 -> king moves
- */
-
-/*
- *    Promotion Type
- *
- *    0 - Queen
- *    1 - Rook
- *    2 - Knight
- *    3 - Bishop
- **/
-
-U32 createMove(U32 promotion_type, U32 castleDir, U32 move_type, U32 side,
-               U32 c_piece, U32 piece, U32 from, U32 to) {
-    
-    return (0ULL | promotion_type << 24 | castleDir << 22 | move_type << 19 
-        | side << 18 | c_piece << 15 | piece << 12 | from << 6 | to);
+    return stm == WHITE ? getNextMove<WHITE>(ply, th, moveList)
+                        : getNextMove<BLACK>(ply, th, moveList);
 }
-

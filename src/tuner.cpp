@@ -681,8 +681,11 @@ void startTuner() {
 	
 			side = parseFen(fen, th);
 			
-			data.sEval = traceFullEval(T, side, th);
-
+			if (side)
+				data.sEval = traceFullEval<BLACK>(T, th);
+			else
+				data.sEval = traceFullEval<WHITE>(T, th);
+				
 			delete th; // free resources after use
 
 			if (side == BLACK) {

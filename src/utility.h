@@ -18,7 +18,7 @@ void print_board(U64 board, Thread *th);
 
 int bitScanForward(U64 board);
 
-bool isKingInCheck(U8 sideToMove, Thread *th);
+template<Side stm> bool isKingInCheck(Thread *th);
 
 bool isSqAttacked(U8 sq, const U8 color, Thread *th);
 
