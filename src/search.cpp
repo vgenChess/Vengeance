@@ -68,10 +68,10 @@ void startSearch(U8 stm) {
 
 	Threads.start_searching(); // start non-main threads
 	
-	if (stm)
-		iterativeDeepeningSearch(BLACK, Threads.main()); // main thread start searching
-	else
+	if (stm == WHITE)
 		iterativeDeepeningSearch(WHITE, Threads.main()); // main thread start searching
+	else
+		iterativeDeepeningSearch(BLACK, Threads.main()); // main thread start searching
 	
 	abortSearch = true;
 
@@ -135,10 +135,10 @@ void iterativeDeepeningSearch(U8 stm, SearchThread *th) {
 
 		th->depth = depth;
 
-		if (stm)
-			aspirationWindowSearch<BLACK>(th);
-		else
+		if (stm == WHITE)
 			aspirationWindowSearch<WHITE>(th);
+		else
+			aspirationWindowSearch<BLACK>(th);
 
 		if (Threads.stop)
 			break;
@@ -229,7 +229,9 @@ void aspirationWindowSearch(SearchThread *th) {
 		th->selDepth = I16_NO_DEPTH;	
 		searchInfo.pline.clear();
 		
-		score = alphabetaSearch<stm>(alpha, beta, I32_MATE, th, &searchInfo);
+		score = stm == WHITE ?
+				alphabetaSearch<WHITE>(alpha, beta, I32_MATE, th, &searchInfo):
+				alphabetaSearch<BLACK>(alpha, beta, I32_MATE, th, &searchInfo);
 
 		if (Threads.stop)
         	break;
@@ -590,7 +592,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 	bool isQuietMove = false;
 	
 	int8_t hashf = hashfALPHA;
-	int16_t currentMoveType, currentMoveFromSq, currentMoveToSq;
+	int16_t currentMoveType, currentMoveToSq;
 	int32_t reduce = 0, extend = 0, movesPlayed = 0, newDepth = 0;
 	int32_t score = -I32_MATE, bestScore = -I32_MATE;
 
@@ -642,7 +644,6 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 
 		currentMoveType = move_type(currentMove.move);
 		currentMoveToSq = to_sq(currentMove.move);
-		currentMoveFromSq = from_sq(currentMove.move);
 
 
 		isQuietMove = currentMoveType == MOVE_NORMAL || currentMoveType == MOVE_CASTLE 
