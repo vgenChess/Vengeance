@@ -88,10 +88,6 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
     loadCoeff->coeffs[BLACK][i++] = T->pawnIsland[BLACK]; 
 
 	loadCoeff->type[i] = NORMAL;
-    loadCoeff->coeffs[WHITE][i] = T->pawnChain[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->pawnChain[BLACK]; 
-
-	loadCoeff->type[i] = NORMAL;
     loadCoeff->coeffs[WHITE][i] = T->isolatedPawns[WHITE];                         
     loadCoeff->coeffs[BLACK][i++] = T->isolatedPawns[BLACK];  
 
@@ -112,6 +108,13 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
 		loadCoeff->type[i] = NORMAL;
 	    loadCoeff->coeffs[WHITE][i] = T->pawnPhalanx[k][WHITE];                         
 	    loadCoeff->coeffs[BLACK][i++] = T->pawnPhalanx[k][BLACK];                         
+	}
+    
+    for (int k = 0; k < 8; k++) {
+	
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->pawnChain[k][WHITE];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->pawnChain[k][BLACK];                         
 	}
     
     for (int k = 0; k < 8; k++) {
@@ -376,9 +379,6 @@ void startTuner() {
 	cparams[MG][count] = ScoreMG(weight_pawn_island);
 	cparams[EG][count++] = ScoreEG(weight_pawn_island);
 
-	cparams[MG][count] = ScoreMG(weight_pawn_chain);
-	cparams[EG][count++] = ScoreEG(weight_pawn_chain);
-
 	cparams[MG][count] = ScoreMG(weight_isolated_pawn);
 	cparams[EG][count++] = ScoreEG(weight_isolated_pawn);
 	
@@ -395,6 +395,12 @@ void startTuner() {
  		
 		cparams[MG][count] = ScoreMG(arr_weight_pawn_phalanx[i]);
 		cparams[EG][count++] = ScoreEG(arr_weight_pawn_phalanx[i]);
+	}
+
+	for (int i = 0; i < 8; i++) {
+ 		
+		cparams[MG][count] = ScoreMG(arr_weight_pawn_chain[i]);
+		cparams[EG][count++] = ScoreEG(arr_weight_pawn_chain[i]);
 	}
 
 	for (int i = 0; i < 8; i++) {
@@ -1038,28 +1044,42 @@ void saveWeights(TVector params, TVector cparams) {
 		<< ",\nweight_val_rook = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")"
 		<< ",\nweight_val_queen = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")";
 	
-	myfile<<", \n";
+	myfile <<", \n";
 
 	myfile 
 		<< "\nweight_pawn_island = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
-		<< ",\nweight_pawn_chain = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
 		<< ",\nweight_isolated_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
 		<< ",\nweight_backward_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
 		<< ",\nweight_double_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
 		<< ",\nweight_pawn_hole = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")";
 	
+
 	myfile <<", \n" << "arr_weight_pawn_phalanx[8] = { "; 
-    	for(int i = 0; i < 8; i++) 
-    		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", "; 
+	for(int i = 0; i < 8; i++) {
+
+		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", "; 
+	}
+
+	myfile <<"}, \n" << "arr_weight_pawn_chain[8] = { "; 
+	for(int i = 0; i < 8; i++) {
+
+		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", "; 
+	}
 	
 	myfile <<"}, \n" << "arr_weight_passed_pawn[8] = { "; 
-    	for(int i = 0; i < 8; i++) 
-    		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", "; 
+	for(int i = 0; i < 8; i++) {
+
+		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", "; 
+	}
 	
 	myfile << "}, \n" << "arr_weight_defended_passed_pawn[8] = { "; 
-    	for(int i = 0; i < 8; i++) 
-    		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", ";
+	for(int i = 0; i < 8; i++) {
+
+		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", ";
+	}
+   	
    	myfile << "}, \n\n";
+	
 	
 	myfile << "weight_knight_all_pawns_count = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";
 	myfile << "weight_knight_outpost = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n";

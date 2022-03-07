@@ -26,11 +26,11 @@ public:
 	// Pawns
 
 	int pawnIsland[U8_MAX_SIDES];
-	int pawnChain[U8_MAX_SIDES];
 	int isolatedPawns[U8_MAX_SIDES];
 	int backwardPawns[U8_MAX_SIDES];
 	int doublePawns[U8_MAX_SIDES];
 	int pawnHoles[U8_MAX_SIDES];
+	int pawnChain[8][U8_MAX_SIDES];
 	int pawnPhalanx[8][U8_MAX_SIDES];
 	int passedPawn[U8_MAX_SIDES][8];
 	int defendedPassedPawn[U8_MAX_SIDES][8];
@@ -133,14 +133,14 @@ public:
 		for (int i = 0; i < U8_MAX_SIDES; i++) {
 
 			pawnIsland[i] = 0;
-			pawnChain[i] = 0;
 			isolatedPawns[i] = 0;
 			backwardPawns[i] = 0;
 			doublePawns[i] = 0;
 			pawnHoles[i] = 0;
 
 			for (int j = 0; j < 8; j++) {
-
+				
+				pawnChain[j][i] = 0;
 				pawnPhalanx[j][i] = 0;
 				passedPawn[i][j] = 0;	
 				defendedPassedPawn[i][j] = 0;			

@@ -1032,6 +1032,9 @@ U64 pawnsWithWestNeighbors(U64 pawns) {
 U64 islandsEastFiles(U64 f) {return f & (f ^ (f >> 1));}
 U64 islandsWestFiles(U64 f) {return f & (f ^ (f << 1));} // ... (f+f)
 
+U64 defendedDefenders1 (U64 b) {return b & soWeOne(b) & noEaOne(b);}
+U64 defendedDefenders2 (U64 b) {return b & soEaOne(b) & noWeOne(b);}
+
 U64 inBetweenOnTheFly(U8 sq1, U8 sq2) {
 
    const U64 m1   = C64(-1);

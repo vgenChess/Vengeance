@@ -49,17 +49,6 @@ U64 arrRanks[8] = {
 	RANK_5, RANK_6, RANK_7, RANK_8
 };
 
-std::vector<U64> patternsForPawnChains = {
-	// https://gekomad.github.io/Cinnamon/BitboardCalculator/
-	// Layout 2
-
-	0x0804020100000000U, 0x1008040201000000U, 0x2010080402010000U, 0x4020100804020100U, 
-	0x8040201008040201U, 0x0080402010080402U, 0x0000804020100804U, 0x0000008040201008U, 
-	0x0000000080402010U, 0x0000000000804020U, 0x1020408000000000U, 0x0810204080000000U, 
-	0x0408102040800000U, 0x0204081020408000U, 0x0102040810204080U, 0x0001020408102040U, 
-	0x0000010204081020U, 0x0000000102040810U, 0x0000000001020408U
-};
-
 
 int PSQT[U8_MAX_SQUARES][U8_MAX_PIECES][U8_MAX_SQUARES];
 
@@ -267,17 +256,17 @@ int fullEval(U8 stm, Thread *th) {
 
 // Pawn eval terms implemented
 /*
--> Pawn PSQT
--> Pawn Islands
--> Isolated Pawns
--> Double Pawns
--> Backward Pawns
--> Pawn Holes
--> Pawn Chain
--> Pawn Phalanx
--> Passed Pawns
--> Defended Passed Pawns
--> Rook supporting a passed pawns
+->	Pawn PSQT
+->	Pawn Islands
+->	Isolated Pawns
+->	Double Pawns
+->	Backward Pawns
+->	Pawn Holes
+->	Pawn Chain
+->	Pawn Phalanx
+->	Passed Pawns
+->	Defended Passed Pawns
+->	Rook supporting a passed pawns
 */
 
 int pawnsEval(U8 stm, Thread *th) {
@@ -356,25 +345,26 @@ int pawnsEval(U8 stm, Thread *th) {
 		This implies you will need your pieces to protect the squares not covered by the pawns. 
 		A pawn-chain could also be problematic to a bishop that moves on the same color squares.
 	*/
+
 	// TODO check logic
-	ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
-	U8 chainCount = 0;
-	for (U64 pattern: patternsForPawnChains) { // TODO optimise code
+	U64 p = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+	// get the member (center) of at least triple chains
+	// http://www.talkchess.com/forum3/viewtopic.php?t=55477
+	U64 b = defendedDefenders1(p) | defendedDefenders2(p);
 
-		if (pattern & ourPawns) {
-			
-			chainCount = POPCOUNT(pattern & ourPawns);
-			
-			if (chainCount >= 3) {
+	while (b) {
 
-				score += weight_pawn_chain;
-				
-				#if defined(TUNE) 
+		sq = GET_POSITION(b);
+		POP_POSITION(b);
+		
+		rank = stm ? Mirror64[sq] >> 3 : sq >> 3; // = sq / 8
 
-					T->pawnChain[stm]++;
-				#endif	
-			}
-		}
+		score += arr_weight_pawn_chain[rank];
+		
+		#if defined(TUNE)	
+		
+			T->pawnChain[rank][stm]++;
+		#endif
 	}
 
 

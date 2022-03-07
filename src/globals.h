@@ -78,12 +78,12 @@ extern int weight_val_rook;
 extern int weight_val_queen; 
 
 extern int weight_pawn_island;
-extern int weight_pawn_chain;
 extern int weight_isolated_pawn;
 extern int weight_backward_pawn;
 extern int weight_double_pawn;
 extern int weight_pawn_hole;
 
+extern int arr_weight_pawn_chain[8];
 extern int arr_weight_pawn_phalanx[8];
 extern int arr_weight_passed_pawn[8];
 extern int arr_weight_defended_passed_pawn[8];
