@@ -1073,19 +1073,19 @@ void saveWeights(TVector params, TVector cparams) {
 		<< ",\nweight_double_pawn = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
 		<< ",\nweight_pawn_hole = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")";
 	
-	myfile <<"}, \n" << "arr_weight_pawn_chain[8] = { "; 
+	myfile <<", \n" << "arr_weight_pawn_chain[8] = { "; 
 	for(int i = 0; i < 8; i++) {
 
 		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", "; 
 	}
 	
-	myfile <<", \n" << "arr_weight_phalanx_pawn[8] = { "; 
+	myfile <<"}, \n" << "arr_weight_phalanx_pawn[8] = { "; 
 	for(int i = 0; i < 8; i++) {
 
 		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", "; 
 	}
 
-	myfile <<", \n" << "arr_weight_defended_phalanx_pawns[8] = { "; 
+	myfile <<"}, \n" << "arr_weight_defended_phalanx_pawns[8] = { "; 
 	for(int i = 0; i < 8; i++) {
 
 		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", "; 
