@@ -273,7 +273,7 @@ int fullEval(U8 stm, Thread *th) {
 ->	Pawn Phalanx
 ->	Passed Pawns
 ->	Defended Passed Pawns
-->	Rook supporting a passed pawns
+->	Tarrasch rule
 */
 
 int pawnsEval(U8 stm, Thread *th) {
@@ -325,7 +325,7 @@ int pawnsEval(U8 stm, Thread *th) {
 		X  	|  	|
 		  X	P P P --------->	Defended phalanx pawn 
 		X P X   X P ------->	Member of a pawn chain 
-		P X   X   X P ----->	Base of pawn chain
+		P X   X   X P ----->	Base of a pawn chain
 		X   X   X   X  
 	*/
 
@@ -404,6 +404,11 @@ int pawnsEval(U8 stm, Thread *th) {
 			T->pawnChain[rank][stm]++;
 		#endif
 	}
+
+	// Base pawns of a chain(not defended by another pawns) are not scored.
+	// Since unprotected pawns are likely to be captured which results in a pawn loss for the side,
+	// they are most likely to be protected by the side to avoid it.
+
 
 	// Isolated pawns
 	/*

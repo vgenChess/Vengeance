@@ -13,21 +13,11 @@ weight_isolated_pawn = S(0, 0),
 weight_backward_pawn = S(0, 0),
 weight_double_pawn = S(0, 0),
 weight_pawn_hole = S(0, 0), 
-arr_weight_pawn_chain[8] = { 
- S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) 
-}, 
-arr_weight_phalanx_pawn[8] = { 
- S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) 
-},
-arr_weight_defended_phalanx_pawn[8] = { 
- S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) 
-}, 
-arr_weight_passed_pawn[8] = { 
- S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) 
-}, 
-arr_weight_defended_passed_pawn[8] = { 
- S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) 
-}, 
+arr_weight_pawn_chain[8] = { S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) }, 
+arr_weight_phalanx_pawn[8] = { S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) },
+arr_weight_defended_phalanx_pawn[8] = { S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) }, 
+arr_weight_passed_pawn[8] = { S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) }, 
+arr_weight_defended_passed_pawn[8] = { S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) }, 
 
 weight_knight_all_pawns_count = S(0, 0),
 weight_knight_outpost = S(0, 0),
