@@ -61,7 +61,7 @@ typedef signed long long	S64;
 enum { NORMAL, SAFETY };
 enum { MG, EG };
 
-enum {
+enum Side {
 
 	WHITE = 0, BLACK = 1
 };

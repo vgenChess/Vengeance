@@ -1,6 +1,8 @@
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
+#include <cstdint>
+
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
 #define BYTE_TO_BINARY(byte)  \
 (byte & 0x80 ? '1' : '0'), \
@@ -68,9 +70,12 @@
 #define ScoreMG(s) ((int16_t)((uint16_t)((unsigned)((s)))))
 #define ScoreEG(s) ((int16_t)((uint16_t)((unsigned)((s) + 0x8000) >> 16)))
 
+constexpr int S(const int mg, const int eg) {
+
+	return static_cast<int>(static_cast<unsigned int>(eg) << 16) + mg;
+}
+
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
 #define MAX(A, B) ((A) > (B) ? (A) : (B))
-
-#define S(mg, eg) (MakeScore((mg), (eg)))
 
 #endif

@@ -1,6 +1,8 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+#include <cstdint>
+
 const uint8_t U8_MAX_SIDES = 2;
 const uint8_t U8_MAX_PIECES = 8;
 const uint8_t U8_MAX_SQUARES = 64;

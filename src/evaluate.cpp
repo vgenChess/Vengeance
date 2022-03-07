@@ -227,18 +227,19 @@ int fullEval(U8 stm, Thread *th) {
 		score += pawnsScore;
 	#endif
 */
+	
+	eval += evalBoard<WHITE>(th) 	- 	evalBoard<BLACK>(th);
 
-	eval += evalBoard(WHITE, th) 	- 	evalBoard(BLACK, th);
-	eval += pawnsEval(WHITE, th) 	- 	pawnsEval(BLACK, th);
-	eval += knightsEval(WHITE, th) 	- 	knightsEval(BLACK, th);
-	eval += bishopsEval(WHITE, th) 	-	bishopsEval(BLACK, th);
-	eval += rooksEval(WHITE, th) 	- 	rooksEval(BLACK, th);
-	eval += queenEval(WHITE, th) 	- 	queenEval(BLACK, th);
+	eval += pawnsEval<WHITE>(th) 	- 	pawnsEval<BLACK>(th);
+	eval += knightsEval<WHITE>(th) 	- 	knightsEval<BLACK>(th);
+	eval += bishopsEval<WHITE>(th) 	-	bishopsEval<BLACK>(th);
+	eval += rooksEval<WHITE>(th) 	- 	rooksEval<BLACK>(th);
+	eval += queenEval<WHITE>(th) 	- 	queenEval<BLACK>(th);
 
 	// evaluation of other pieces other than king needs to be done first
 	// before king eval because of values needed for king safety calculation
-	eval += kingEval(WHITE, th) 	- 	kingEval(BLACK, th);
-
+	eval += kingEval<WHITE>(th) 	- 	kingEval<BLACK>(th);
+	
 
 	// Tapered evaluation 
 	int phase = 	4 * POPCOUNT(th->whitePieceBB[QUEEN] 	| 	th->blackPieceBB[QUEEN]) 
@@ -276,9 +277,10 @@ int fullEval(U8 stm, Thread *th) {
 ->	Tarrasch rule
 */
 
-int pawnsEval(U8 stm, Thread *th) {
+template <Side stm>
+int pawnsEval(Thread *th) {
 
-	U8 opp = stm ^ 1;
+	const auto opp = stm ^ 1;
 	
 	int score = 0;
 	int sq = -1, rank = -1;
@@ -550,10 +552,10 @@ int pawnsEval(U8 stm, Thread *th) {
 }
 
 
+template <Side stm>
+int knightsEval(Thread *th) {
 
-int knightsEval(U8 stm, Thread *th) {
-
-	U8 opp = stm ^ 1;
+	const auto opp = stm ^ 1;
 
 	int score = 0;
 	int mobilityCount = 0;
@@ -681,10 +683,10 @@ int knightsEval(U8 stm, Thread *th) {
 	return score;
 }
 
+template <Side stm>
+int bishopsEval(Thread *th) {
 
-int bishopsEval(U8 stm, Thread *th) {
-
-	U8 opp = stm ^ 1;
+	const auto opp = stm ^ 1;
 
 	int score = 0;
 	int mobilityCount = 0;
@@ -761,9 +763,10 @@ int bishopsEval(U8 stm, Thread *th) {
 Increasing value as pawns disappear 
 Tarrasch Rule
 */
-int rooksEval(U8 stm, Thread *th) {
+template <Side stm>
+int rooksEval(Thread *th) {
 	
-	const U8 opp = stm ^ 1;
+	const auto opp = stm ^ 1;
 
 	int score = 0;
 	int sq = -1;
@@ -908,10 +911,10 @@ int rooksEval(U8 stm, Thread *th) {
 }
 
 
+template <Side stm>
+int queenEval(Thread *th) {
 
-int queenEval(U8 stm, Thread *th) {
-
-	U8 opp = stm ^ 1;
+	const auto opp = stm ^ 1;
 
 	int score = 0;
 
@@ -992,10 +995,10 @@ int queenEval(U8 stm, Thread *th) {
 	return score;
 }
 
-
-int kingEval(U8 stm, Thread *th) {
+template <Side stm>
+int kingEval(Thread *th) {
 	
-	U8 opp = stm ^ 1;
+	const auto opp = stm ^ 1;
 
 	int kingSq = th->evalInfo.kingSq[stm];
 	
@@ -1106,6 +1109,25 @@ int kingEval(U8 stm, Thread *th) {
 	return score;
 }
 
+template <Side stm>
+int evalBoard(Thread *th) {
+
+	int score = 0;
+
+	int nCenterControl = POPCOUNT(CENTER & th->evalInfo.attacks[stm]);
+
+	score += nCenterControl * weight_center_control;
+
+	#if defined(TUNE)	
+		T->centerControl[stm] = nCenterControl;
+	#endif
+
+
+	// Evaluate trapped pieces
+
+
+	return score;
+}
 
 // Helper functions
 
@@ -1122,27 +1144,6 @@ void initPSQT() {
 			PSQT[kingSq][QUEEN][sq] 	= 	queenPSQT[kingSq][sq]	+ 	weight_val_queen; 
 		}
 	}
-}
-
-
-int evalBoard(U8 stm, Thread *th) {
-
-	int score = 0;
-
-	int nCenterControl = POPCOUNT(CENTER & th->evalInfo.attacks[stm]);
-
-	score += nCenterControl * weight_center_control;
-
-	#if defined(TUNE)	
-		T->centerControl[stm] = nCenterControl;
-	#endif
-
-
-	// Evaluate trapped pieces
-
-
-
-	return score;
 }
 
 

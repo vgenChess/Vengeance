@@ -20,14 +20,13 @@ int traceFullEval(TraceCoefficients *traceCoefficients, U8 stm, Thread *th);
 
 int fullEval(U8 stm, Thread *th);
 
-int pawnsEval(U8 stm, Thread *th);
-int knightsEval(U8 stm, Thread *th);
-int bishopsEval(U8 stm, Thread *th);
-int rooksEval(U8 stm, Thread *th);
-int queenEval(U8 stm, Thread *th);
-int kingEval(U8 stm, Thread *th);
-
-int evalBoard(U8 stm, Thread *th); 
+template<Side stm> int pawnsEval(Thread *th);
+template<Side stm> int knightsEval(Thread *th);
+template<Side stm> int bishopsEval(Thread *th);
+template<Side stm> int rooksEval(Thread *th);
+template<Side stm> int queenEval(Thread *th);
+template<Side stm> int kingEval(Thread *th);
+template<Side stm> int evalBoard(Thread *th); 
 
 void initPSQT();
 
