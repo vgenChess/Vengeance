@@ -618,7 +618,7 @@ void startTuner() {
 	// read data from file to a vector
 	if (newfile.is_open()) {   
 		
-		short side;
+		Side side;
 		std::string tp;
 		double result;
 		std::string fen;
@@ -681,10 +681,7 @@ void startTuner() {
 	
 			side = parseFen(fen, th);
 			
-			if (side)
-				data.sEval = traceFullEval<BLACK>(T, th);
-			else
-				data.sEval = traceFullEval<WHITE>(T, th);
+			data.sEval = traceFullEval(side, T, th);
 				
 			delete th; // free resources after use
 

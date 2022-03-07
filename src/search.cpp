@@ -573,7 +573,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 		searchInfo.depth = sDepth;
 		searchInfo.pline.clear();
 
-		int32_t score =	stm == WHITE ? 
+		int score =	stm == WHITE ? 
 					alphabetaSearch<WHITE>(sBeta - 1, sBeta, mate, th, &searchInfo) :
 					alphabetaSearch<BLACK>(sBeta - 1, sBeta, mate, th, &searchInfo);
 
