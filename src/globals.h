@@ -85,7 +85,8 @@ extern int weight_double_pawn;
 extern int weight_pawn_hole;
 
 extern int arr_weight_pawn_chain[8];
-extern int arr_weight_pawn_phalanx[8];
+extern int arr_weight_phalanx_pawn[8];
+extern int arr_weight_defended_phalanx_pawn[8];
 extern int arr_weight_passed_pawn[8];
 extern int arr_weight_defended_passed_pawn[8];
 

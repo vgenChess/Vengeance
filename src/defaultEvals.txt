@@ -16,7 +16,10 @@ weight_pawn_hole = S(0, 0),
 arr_weight_pawn_chain[8] = { 
  S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) 
 }, 
-arr_weight_pawn_phalanx[8] = { 
+arr_weight_phalanx_pawn[8] = { 
+ S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) 
+},
+arr_weight_defended_phalanx_pawn[8] = { 
  S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) 
 }, 
 arr_weight_passed_pawn[8] = { 

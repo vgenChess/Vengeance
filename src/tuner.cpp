@@ -102,19 +102,26 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
 	loadCoeff->type[i] = NORMAL;
 	loadCoeff->coeffs[WHITE][i] = T->pawnHoles[WHITE];                         
     loadCoeff->coeffs[BLACK][i++] = T->pawnHoles[BLACK];                         
-	
-	for (int k = 0; k < 8; k++) {
-	
-		loadCoeff->type[i] = NORMAL;
-	    loadCoeff->coeffs[WHITE][i] = T->pawnPhalanx[k][WHITE];                         
-	    loadCoeff->coeffs[BLACK][i++] = T->pawnPhalanx[k][BLACK];                         
-	}
     
     for (int k = 0; k < 8; k++) {
 	
 		loadCoeff->type[i] = NORMAL;
 	    loadCoeff->coeffs[WHITE][i] = T->pawnChain[k][WHITE];                         
 	    loadCoeff->coeffs[BLACK][i++] = T->pawnChain[k][BLACK];                         
+	}
+
+	for (int k = 0; k < 8; k++) {
+	
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->phalanxPawn[k][WHITE];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->phalanxPawn[k][BLACK];                         
+	}
+
+	for (int k = 0; k < 8; k++) {
+	
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->defendedPhalanxPawn[k][WHITE];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->defendedPhalanxPawn[k][BLACK];                         
 	}
     
     for (int k = 0; k < 8; k++) {
@@ -397,14 +404,20 @@ void startTuner() {
 
 	for (int i = 0; i < 8; i++) {
  		
-		cparams[MG][count] = ScoreMG(arr_weight_pawn_phalanx[i]);
-		cparams[EG][count++] = ScoreEG(arr_weight_pawn_phalanx[i]);
+		cparams[MG][count] = ScoreMG(arr_weight_pawn_chain[i]);
+		cparams[EG][count++] = ScoreEG(arr_weight_pawn_chain[i]);
 	}
 
 	for (int i = 0; i < 8; i++) {
  		
-		cparams[MG][count] = ScoreMG(arr_weight_pawn_chain[i]);
-		cparams[EG][count++] = ScoreEG(arr_weight_pawn_chain[i]);
+		cparams[MG][count] = ScoreMG(arr_weight_phalanx_pawn[i]);
+		cparams[EG][count++] = ScoreEG(arr_weight_phalanx_pawn[i]);
+	}
+
+	for (int i = 0; i < 8; i++) {
+ 		
+		cparams[MG][count] = ScoreMG(arr_weight_defended_phalanx_pawn[i]);
+		cparams[EG][count++] = ScoreEG(arr_weight_defended_phalanx_pawn[i]);
 	}
 
 	for (int i = 0; i < 8; i++) {
@@ -595,8 +608,8 @@ void startTuner() {
 	assert(count == NTERMS);
 
 	std::fstream newfile;
-   	newfile.open ("lichess-big3-resolved.book", std::ios::in); // 7150000
-	// newfile.open ("quiet-labeled.epd", std::ios::in); 
+   	newfile.open ("lichess-big3-resolved.book", std::ios::in);	// NPOSITIONS = 7150000 roughly
+	// newfile.open ("quiet-labeled.epd", std::ios::in); 			// NPOSITIONS = 725000 exact
 	
 	count = 0;
 
@@ -1060,19 +1073,24 @@ void saveWeights(TVector params, TVector cparams) {
 		<< ",\nweight_double_pawn = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
 		<< ",\nweight_pawn_hole = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")";
 	
-
-	myfile <<", \n" << "arr_weight_pawn_phalanx[8] = { "; 
-	for(int i = 0; i < 8; i++) {
-
-		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", "; 
-	}
-
 	myfile <<"}, \n" << "arr_weight_pawn_chain[8] = { "; 
 	for(int i = 0; i < 8; i++) {
 
 		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", "; 
 	}
 	
+	myfile <<", \n" << "arr_weight_phalanx_pawn[8] = { "; 
+	for(int i = 0; i < 8; i++) {
+
+		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", "; 
+	}
+
+	myfile <<", \n" << "arr_weight_defended_phalanx_pawns[8] = { "; 
+	for(int i = 0; i < 8; i++) {
+
+		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", "; 
+	}
+
 	myfile <<"}, \n" << "arr_weight_passed_pawn[8] = { "; 
 	for(int i = 0; i < 8; i++) {
 

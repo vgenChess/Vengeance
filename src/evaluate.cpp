@@ -317,6 +317,18 @@ int pawnsEval(U8 stm, Thread *th) {
 	#endif
 
 
+	/*
+			Pawn Structures
+          X   X   X   
+		X  	   __________________A phalanx
+		  X	 _|_
+		X  	|  	|
+		  X	P P P --------->	Defended phalanx pawn 
+		X P X   X P ------->	Member of a pawn chain 
+		P X   X   X P ----->	Base of pawn chain
+		X   X   X   X  
+	*/
+
 	// Pawn phalanx
 	/*
 		A pawn-phalanx occurs when 2 or more pawns are placed alongside each other. 
@@ -337,12 +349,28 @@ int pawnsEval(U8 stm, Thread *th) {
 
 		rank = stm ? Mirror64[sq] >> 3 : sq >> 3; // = sq / 8
 
-		score += arr_weight_pawn_phalanx[rank];
-
-		#if defined(TUNE)	
+		// Check if the phalanx pawn is defended by another pawn
+		if (th->evalInfo.allPawnAttacks[stm] & (1ULL << sq)) {
+			
+			// Defended phalanx pawn
 		
-			T->pawnPhalanx[rank][stm]++;
-		#endif
+			score += arr_weight_defended_phalanx_pawn[rank];
+			
+			#if defined(TUNE)	
+			
+				T->defendedPhalanxPawn[rank][stm]++;
+			#endif
+		} else {
+			
+			// Normal phalanx pawn
+
+			score += arr_weight_phalanx_pawn[rank];
+
+			#if defined(TUNE)	
+			
+				T->phalanxPawn[rank][stm]++;
+			#endif
+		}	
 	}
 
 
@@ -376,7 +404,6 @@ int pawnsEval(U8 stm, Thread *th) {
 			T->pawnChain[rank][stm]++;
 		#endif
 	}
-
 
 	// Isolated pawns
 	/*
@@ -455,15 +482,28 @@ int pawnsEval(U8 stm, Thread *th) {
 		the pawn cannot advance unless it is protected along its way.
 	*/
 
-	score += POPCOUNT(th->evalInfo.allRookAttacks[stm] & stmPassedPawns) * weight_rook_behind_stm_passed_pawn;
-	score += POPCOUNT(th->evalInfo.allRookAttacks[stm] & oppPassedPawns) * weight_rook_behind_opp_passed_pawn;
-	
-	#if defined(TUNE) 
+	for (int file = 1; file <= 8; file++) {
 
-		T->rookBehindStmPassedPawn[stm] = POPCOUNT(th->evalInfo.allRookAttacks[stm] & stmPassedPawns);
-		T->rookBehindOppPassedPawn[stm] = POPCOUNT(th->evalInfo.allRookAttacks[stm] & oppPassedPawns);
-	#endif
+		if (arrFiles[file - 1] & th->evalInfo.allRookAttacks[stm] & stmPassedPawns) {
+			
+			score += weight_rook_behind_stm_passed_pawn;
+			
+			#if defined(TUNE) 
 
+				T->rookBehindStmPassedPawn[stm]++;
+			#endif
+		}
+		
+		if (arrFiles[file - 1] & th->evalInfo.allRookAttacks[stm] & oppPassedPawns) {
+			
+			score += weight_rook_behind_opp_passed_pawn;
+			
+			#if defined(TUNE) 
+			
+				T->rookBehindOppPassedPawn[stm]++;
+			#endif
+		}
+	}
 
 	while (stmPassedPawns) {
 		
@@ -739,6 +779,7 @@ int rooksEval(U8 stm, Thread *th) {
 
 
 		score += stm ? PSQT[Mirror64[kingSq]][ROOKS][Mirror64[sq]] : PSQT[kingSq][ROOKS][sq];
+
 
 		// Nimzowitsch argued when the outpost is in one of the flank (a-, b-, g- and h-) files 
 		// the ideal piece to make use of the outpost is a rook. 
