@@ -3,7 +3,7 @@
 
 #include "functions.h"
 
-int
+inline int
 
 weight_val_pawn = S(72, 105),
 weight_val_knight = S(295, 282),

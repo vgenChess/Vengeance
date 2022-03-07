@@ -1055,7 +1055,7 @@ void saveWeights(TVector params, TVector cparams) {
 
 	myfile << "\n";
 
-	myfile << "int" << "\n\n";
+	myfile << "inline int" << "\n\n";
 
 	myfile 
 		<< "weight_val_pawn = " 		<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
