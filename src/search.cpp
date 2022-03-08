@@ -217,7 +217,6 @@ void aspirationWindowSearch(SearchThread *th) {
 
 	searchInfo.ply = 0;
 	searchInfo.realDepth = th->depth;
-	searchInfo.isNullMoveAllowed = false;
 	searchInfo.pline = line;
 	searchInfo.skipMove = NO_MOVE;		
 
@@ -230,8 +229,8 @@ void aspirationWindowSearch(SearchThread *th) {
 		searchInfo.pline.clear();
 		
 		score = stm == WHITE ?
-				alphabetaSearch<WHITE>(alpha, beta, I32_MATE, th, &searchInfo):
-				alphabetaSearch<BLACK>(alpha, beta, I32_MATE, th, &searchInfo);
+				alphabetaSearch<WHITE, NO_NULL, NON_SING>(alpha, beta, I32_MATE, th, &searchInfo):
+				alphabetaSearch<BLACK, NO_NULL, NON_SING>(alpha, beta, I32_MATE, th, &searchInfo);
 
 		if (Threads.stop)
         	break;
@@ -300,7 +299,7 @@ void checkTime() {
 	}	
 }
 
-template<Side stm>
+template<Side stm, bool isNullMoveAllowed, bool isSingularSearch>
 int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo *si) {
 
 
@@ -310,17 +309,17 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 	// }
 
 	assert(alpha < beta); 
-
-	constexpr auto OPP = stm == WHITE ? BLACK : WHITE;
-
-	const int PLY = si->ply;
 	
-	const bool IS_ROOT_NODE = PLY == 0;
-  	const bool IS_MAIN_THREAD = th == Threads.main();
-  	const bool IS_SINGULAR_SEARCH = si->skipMove != NO_MOVE;
-	const bool CAN_NULL_MOVE = si->isNullMoveAllowed;
-	const bool IS_PV_NODE = alpha != beta - 1;
+	constexpr auto OPP = stm == WHITE ? BLACK : WHITE;
+	
+	const int PLY = si->ply;
 
+	const auto IS_ROOT_NODE = PLY == 0;
+  	const auto IS_MAIN_THREAD = th == Threads.main();
+  	const auto IS_SINGULAR_SEARCH = isSingularSearch;
+	const auto CAN_NULL_MOVE = isNullMoveAllowed;
+	const auto IS_PV_NODE = alpha != beta - 1;
+	
 
 	int depth = si->depth;
 
@@ -490,7 +489,8 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 	searchInfo.skipMove = NO_MOVE;
 
 
-	bool mateThreat = false;	 
+	bool mateThreat = false;
+
 	// Null Move pruning 
 	if (	!IS_ROOT_NODE 
 		&&	!IS_PV_NODE 
@@ -510,11 +510,10 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 	
 		searchInfo.ply = PLY + 1;
 		searchInfo.depth = depth - r;
-		searchInfo.isNullMoveAllowed = false;
 		
 		searchInfo.pline.clear();
 		
-		int score = -alphabetaSearch<OPP>(-beta, -beta + 1, mate - 1, th, &searchInfo);
+		int score = -alphabetaSearch<OPP, NO_NULL, NON_SING>(-beta, -beta + 1, mate - 1, th, &searchInfo);
 
 		unmakeNullMove(PLY, th);
 
@@ -570,7 +569,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 		searchInfo.depth = sDepth;
 		searchInfo.pline.clear();
 
-		int score =	alphabetaSearch<stm>(sBeta - 1, sBeta, mate, th, &searchInfo);
+		int score =	alphabetaSearch<stm, NO_NULL, SING>(sBeta - 1, sBeta, mate, th, &searchInfo);
 
 		searchInfo.skipMove = NO_MOVE;
 
@@ -757,7 +756,6 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 
 
 		searchInfo.ply = PLY + 1;
-		searchInfo.isNullMoveAllowed = true;
 
 
 		if (movesPlayed <= 1) {	// Principal Variation Search
@@ -765,7 +763,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 			searchInfo.depth = newDepth;
 			searchInfo.pline.clear();
 
-			score = -alphabetaSearch<OPP>(-beta, -alpha, mate - 1, th, &searchInfo);
+			score = -alphabetaSearch<OPP, NUL, NON_SING>(-beta, -alpha, mate - 1, th, &searchInfo);
 		} else {
 			
 			// Late Move Reductions (Under observation)
@@ -796,7 +794,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 	        	searchInfo.depth = newDepth - reduce;	
 				searchInfo.pline.clear();
 				
-				score = -alphabetaSearch<OPP>(-alpha - 1, -alpha, mate - 1, th, &searchInfo);			
+				score = -alphabetaSearch<OPP, NUL, NON_SING>(-alpha - 1, -alpha, mate - 1, th, &searchInfo);			
 
 			} else {
 
@@ -808,11 +806,11 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 				searchInfo.depth = newDepth;
 				searchInfo.pline.clear();
 
-				score = -alphabetaSearch<OPP>(-alpha - 1, -alpha, mate - 1, th, &searchInfo);					
+				score = -alphabetaSearch<OPP, NUL, NON_SING>(-alpha - 1, -alpha, mate - 1, th, &searchInfo);					
 		
 				if (score > alpha && score < beta) {
 
-					score = -alphabetaSearch<OPP>(-beta, -alpha, mate - 1, th, &searchInfo);					
+					score = -alphabetaSearch<OPP, NUL, NON_SING>(-beta, -alpha, mate - 1, th, &searchInfo);					
 				}
 			}
 		}

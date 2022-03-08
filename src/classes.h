@@ -82,9 +82,7 @@ public:
 class SearchInfo {
 
 public:
-	
-	bool isNullMoveAllowed;	 
-	
+		
 	int ply;
 	int depth;
 	int realDepth;
@@ -94,8 +92,6 @@ public:
 	std::vector<U32> pline;
 
 	SearchInfo() {
-	
-		isNullMoveAllowed = false;
 	
 		ply = 0;
 		depth = 0;

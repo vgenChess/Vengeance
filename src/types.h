@@ -66,6 +66,12 @@ enum Side {
 	WHITE = 0, BLACK = 1
 };
 
+enum {
+
+	NUL = true, NO_NULL = false,
+	SING = true, NON_SING = false
+};
+
 enum Piece {
 	DUMMY = 0, PAWNS = 1, KNIGHTS = 2, BISHOPS = 3, 
 	ROOKS = 4, QUEEN = 5, KING = 6, PIECES = 7
