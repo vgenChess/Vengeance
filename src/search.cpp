@@ -288,7 +288,6 @@ void aspirationWindowSearch(SearchThread *th) {
 	}
 }
 
-
 void checkTime() {
 
 	std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
@@ -312,8 +311,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 	
 	constexpr auto OPP = stm == WHITE ? BLACK : WHITE;
 	
-	const int PLY = si->ply;
-
+	const auto PLY = si->ply;
 	const auto IS_ROOT_NODE = PLY == 0;
   	const auto IS_MAIN_THREAD = th == Threads.main();
   	const auto IS_SINGULAR_SEARCH = isSingularSearch;
@@ -362,7 +360,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 	th->moveStack[PLY + 1].killerMoves[1] = NO_MOVE;
 
 
-	const int16_t I16_ALL_PIECES = POPCOUNT(th->occupied);
+	const auto ALL_PIECES_COUNT = POPCOUNT(th->occupied);
 
 
 	if (!IS_ROOT_NODE) {
@@ -370,8 +368,8 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 		// Repetition detection
 		if (isRepetition(PLY, th)) {
 
-			if (I16_ALL_PIECES > 22)	return -50;
-			if (I16_ALL_PIECES > 12)	return -25;	// middlegame
+			if (ALL_PIECES_COUNT > 22)	return -50;
+			if (ALL_PIECES_COUNT > 12)	return -25;	// middlegame
 									 	return   0;	// endgame
 		}
 
@@ -445,7 +443,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 
 
 
-	const int16_t I16_OPP_PIECES = POPCOUNT(
+	const auto OPP_PIECES_COUNT = POPCOUNT(
 		OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);	
 
 	// Reverse Futility Pruning
@@ -455,7 +453,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 		&&	!IS_SINGULAR_SEARCH
 		&&	std::abs(alpha) < U16_WIN_SCORE
 		&&	std::abs(beta) < U16_WIN_SCORE 
-		&&	I16_OPP_PIECES > 3) { 
+		&&	OPP_PIECES_COUNT > 3) { 
 
 		assert(sEval != I32_UNKNOWN);
 		
@@ -496,7 +494,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 		&&	!IS_PV_NODE 
 		&&	!IS_IN_CHECK 
 		&&	!IS_SINGULAR_SEARCH
-		&&	I16_OPP_PIECES > 3 // Check the logic for endgame
+		&&	OPP_PIECES_COUNT > 3 // Check the logic for endgame
 		&&	CAN_NULL_MOVE 
 		&&	depth > 2 
 		&&	sEval >= beta) { 
@@ -533,7 +531,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 		&&	!IS_SINGULAR_SEARCH
 		&&	std::abs(alpha) < U16_WIN_SCORE
 		&&	std::abs(beta) < U16_WIN_SCORE 
-		&&	I16_OPP_PIECES > 3)	{ 
+		&&	OPP_PIECES_COUNT > 3)	{ 
 			
 		assert(sEval != I32_UNKNOWN);
 
@@ -890,7 +888,7 @@ int quiescenseSearch(int ply, int alpha, int beta, SearchThread *th, std::vector
 	assert (ply > 0);
 
 
-	const U8 OPP = stm ^ 1;
+	const auto OPP = stm == WHITE ? BLACK : WHITE;
 
 	const bool IS_MAIN_THREAD = th == Threads.main();
 
@@ -910,15 +908,15 @@ int quiescenseSearch(int ply, int alpha, int beta, SearchThread *th, std::vector
 	th->nodes++;
 
 
-	const char VAL_ALL_PIECES = POPCOUNT(th->occupied);
+	const auto ALL_PIECES_COUNT = POPCOUNT(th->occupied);
 
 	// Repetition detection
 	if (isRepetition(ply, th)) {
 
-		if (VAL_ALL_PIECES > 22)	
+		if (ALL_PIECES_COUNT > 22)	
 			return -50;	// earlygame
 		
-		if (VAL_ALL_PIECES > 12)	
+		if (ALL_PIECES_COUNT > 12)	
 			return -25;	// middlegame
 		
 		return 0; // endgame
@@ -991,8 +989,8 @@ int quiescenseSearch(int ply, int alpha, int beta, SearchThread *th, std::vector
 	th->moveList[ply].moves.clear();
 	th->moveList[ply].badCaptures.clear();
 
-	const U8 VAL_OPP_PIECES = POPCOUNT(OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
-	const int Q_FUTILITY_BASE = sEval + U16_Q_DELTA; 
+	const auto OPP_PIECES_COUNT = POPCOUNT(OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
+	const auto Q_FUTILITY_BASE = sEval + U16_Q_DELTA; 
 
 	U8 hashf = hashfALPHA, capPiece = DUMMY;
 	short movesPlayed = 0; 
@@ -1031,7 +1029,7 @@ int quiescenseSearch(int ply, int alpha, int beta, SearchThread *th, std::vector
  			&&	move_type(currentMove.move) != MOVE_PROMOTION) {
 
 			// Delta pruning
-	 		if (VAL_OPP_PIECES > 3 && Q_FUTILITY_BASE + seeVal[capPiece] <= alpha) {
+	 		if (OPP_PIECES_COUNT > 3 && Q_FUTILITY_BASE + seeVal[capPiece] <= alpha) {
 
 				unmake_move(ply, currentMove.move, th);
 
@@ -1040,9 +1038,7 @@ int quiescenseSearch(int ply, int alpha, int beta, SearchThread *th, std::vector
  		}
 
 
-		score = stm == WHITE ? 
-				-quiescenseSearch<BLACK>(ply + 1, -beta, -alpha, th, &line) :
-				-quiescenseSearch<WHITE>(ply + 1, -beta, -alpha, th, &line);
+		score = -quiescenseSearch<OPP>(ply + 1, -beta, -alpha, th, &line);
 
 
 		unmake_move(ply, currentMove.move, th);
