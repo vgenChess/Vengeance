@@ -311,7 +311,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 
 	assert(alpha < beta); 
 
-	const auto OPP = stm == WHITE ? BLACK : WHITE;
+	constexpr auto OPP = stm == WHITE ? BLACK : WHITE;
 
 	const int PLY = si->ply;
 	
@@ -319,6 +319,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
   	const bool IS_MAIN_THREAD = th == Threads.main();
   	const bool IS_SINGULAR_SEARCH = si->skipMove != NO_MOVE;
 	const bool CAN_NULL_MOVE = si->isNullMoveAllowed;
+	const bool IS_PV_NODE = alpha != beta - 1;
 
 
 	int depth = si->depth;
@@ -330,9 +331,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 
 		si->pline.clear();
  
-		int score = stm == WHITE ? 
-					quiescenseSearch<WHITE>(PLY, alpha, beta, th, &si->pline) : 
-					quiescenseSearch<BLACK>(PLY, alpha, beta, th, &si->pline);
+		int score = quiescenseSearch<stm>(PLY, alpha, beta, th, &si->pline);
 		
 		return score;
 	}
@@ -363,8 +362,6 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 	th->moveStack[PLY + 1].killerMoves[0] = NO_MOVE;
 	th->moveStack[PLY + 1].killerMoves[1] = NO_MOVE;
 
-
-	const bool IS_PV_NODE = alpha != beta - 1;
 
 	const int16_t I16_ALL_PIECES = POPCOUNT(th->occupied);
 
@@ -490,6 +487,8 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 
 	SearchInfo searchInfo;	
 	searchInfo.pline = line;
+	searchInfo.skipMove = NO_MOVE;
+
 
 	bool mateThreat = false;	 
 	// Null Move pruning 
@@ -515,9 +514,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 		
 		searchInfo.pline.clear();
 		
-		int score = stm == WHITE ? 
-					-alphabetaSearch<BLACK>(-beta, -beta + 1, mate - 1, th, &searchInfo) :
-					-alphabetaSearch<WHITE>(-beta, -beta + 1, mate - 1, th, &searchInfo);
+		int score = -alphabetaSearch<OPP>(-beta, -beta + 1, mate - 1, th, &searchInfo);
 
 		unmakeNullMove(PLY, th);
 
@@ -573,9 +570,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 		searchInfo.depth = sDepth;
 		searchInfo.pline.clear();
 
-		int score =	stm == WHITE ? 
-					alphabetaSearch<WHITE>(sBeta - 1, sBeta, mate, th, &searchInfo) :
-					alphabetaSearch<BLACK>(sBeta - 1, sBeta, mate, th, &searchInfo);
+		int score =	alphabetaSearch<stm>(sBeta - 1, sBeta, mate, th, &searchInfo);
 
 		searchInfo.skipMove = NO_MOVE;
 
@@ -770,9 +765,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 			searchInfo.depth = newDepth;
 			searchInfo.pline.clear();
 
-			score = stm == WHITE ?
-					-alphabetaSearch<BLACK>(-beta, -alpha, mate - 1, th, &searchInfo) :
-					-alphabetaSearch<WHITE>(-beta, -alpha, mate - 1, th, &searchInfo);
+			score = -alphabetaSearch<OPP>(-beta, -alpha, mate - 1, th, &searchInfo);
 		} else {
 			
 			// Late Move Reductions (Under observation)
@@ -803,9 +796,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 	        	searchInfo.depth = newDepth - reduce;	
 				searchInfo.pline.clear();
 				
-				score = stm == WHITE ? 
-						-alphabetaSearch<BLACK>(-alpha - 1, -alpha, mate - 1, th, &searchInfo) : 
-						-alphabetaSearch<WHITE>(-alpha - 1, -alpha, mate - 1, th, &searchInfo);			
+				score = -alphabetaSearch<OPP>(-alpha - 1, -alpha, mate - 1, th, &searchInfo);			
 
 			} else {
 
@@ -817,15 +808,11 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 				searchInfo.depth = newDepth;
 				searchInfo.pline.clear();
 
-				score = stm == WHITE ? 
-						-alphabetaSearch<BLACK>(-alpha - 1, -alpha, mate - 1, th, &searchInfo) : 
-						-alphabetaSearch<WHITE>(-alpha - 1, -alpha, mate - 1, th, &searchInfo);					
+				score = -alphabetaSearch<OPP>(-alpha - 1, -alpha, mate - 1, th, &searchInfo);					
 		
 				if (score > alpha && score < beta) {
 
-					score = stm == WHITE ? 
-							-alphabetaSearch<BLACK>(-beta, -alpha, mate - 1, th, &searchInfo) : 
-							-alphabetaSearch<WHITE>(-beta, -alpha, mate - 1, th, &searchInfo);					
+					score = -alphabetaSearch<OPP>(-beta, -alpha, mate - 1, th, &searchInfo);					
 				}
 			}
 		}
@@ -893,8 +880,8 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 	return bestScore;
 }	
 
-int seeVal[8] = {	VALUE_DUMMY, VALUE_PAWN, VALUE_KNIGHT, VALUE_BISHOP,
-					VALUE_ROOK, VALUE_QUEEN, VALUE_KING, VALUE_DUMMY };
+constexpr int seeVal[8] = {	VALUE_DUMMY, VALUE_PAWN, VALUE_KNIGHT, VALUE_BISHOP,
+							VALUE_ROOK, VALUE_QUEEN, VALUE_KING, VALUE_DUMMY };
 					
 // TODO should limit Quiescense search explosion
 template<Side stm>
