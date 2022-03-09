@@ -16,16 +16,16 @@ void setDist();
 
 void initTableDoublePawns();
 
-int32_t traceFullEval(Side stm, TraceCoefficients *traceCoefficients, Thread *th);
-int32_t fullEval(U8 stm, Thread *th);
+int traceFullEval(Side stm, TraceCoefficients *traceCoefficients, Thread *th);
+int fullEval(U8 stm, Thread *th);
 
-template<Side stm> int32_t pawnsEval(Thread *th);
-template<Side stm> int32_t knightsEval(Thread *th);
-template<Side stm> int32_t bishopsEval(Thread *th);
-template<Side stm> int32_t rooksEval(Thread *th);
-template<Side stm> int32_t queenEval(Thread *th);
-template<Side stm> int32_t kingEval(Thread *th);
-template<Side stm> int32_t evalBoard(Thread *th); 
+template<Side stm> int pawnsEval(Thread *th);
+template<Side stm> int knightsEval(Thread *th);
+template<Side stm> int bishopsEval(Thread *th);
+template<Side stm> int rooksEval(Thread *th);
+template<Side stm> int queenEval(Thread *th);
+template<Side stm> int kingEval(Thread *th);
+template<Side stm> int evalBoard(Thread *th); 
 
 void initPSQT();
 

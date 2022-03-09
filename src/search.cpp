@@ -151,8 +151,8 @@ void iterativeDeepeningSearch(Side stm, SearchThread *th) {
 
 
 			// score change
-			int32_t prevScore = th->pvLine.at(th->completedDepth-3).score;
- 			int32_t currentScore = th->pvLine.at(th->completedDepth).score;
+			int prevScore = th->pvLine.at(th->completedDepth-3).score;
+ 			int currentScore = th->pvLine.at(th->completedDepth).score;
 
 			const auto scoreChangeFactor = prevScore > currentScore ? 
  				fmax(0.5, fmin(1.5, ((prevScore - currentScore) * 0.05))) : 0.5;
@@ -193,16 +193,16 @@ void iterativeDeepeningSearch(Side stm, SearchThread *th) {
 template<Side stm>
 void aspirationWindowSearch(SearchThread *th) {
 
-	int32_t window = I32_MATE;
+	int window = I32_MATE;
 
-	int32_t score = -I32_MATE;
-	int32_t alpha = -I32_MATE, beta = I32_MATE;
+	int score = -I32_MATE;
+	int alpha = -I32_MATE, beta = I32_MATE;
 	
 	if (th->depth > 4 && th->completedDepth > 0) {
 
 		window = U8_AP_WINDOW;
 
-		int32_t scoreKnown = th->pvLine.at(th->completedDepth).score;
+		int scoreKnown = th->pvLine.at(th->completedDepth).score;
 
   		alpha = std::max(-I32_MATE, scoreKnown - window);
 	  	beta  = std::min( I32_MATE, scoreKnown + window);	
@@ -295,7 +295,7 @@ void checkTime() {
 }
 
 template<Side stm, bool isNullMoveAllowed, bool isSingularSearch>
-int32_t alphabetaSearch(int32_t alpha, int32_t beta, const int32_t mate, SearchThread *th, SearchInfo *si) {
+int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, SearchInfo *si) {
 
 
 	// if (alpha >= beta) {
@@ -370,7 +370,8 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, const int32_t mate, SearchT
 		th->movesHistory[th->moves_history_counter + PLY + 1].hashKey = th->hashKey;
 
 		// Check for drawish endgame
-		if (isPositionDraw(th)) return 0;
+		if (isPositionDraw(th)) 
+			return 0;
 	}
 
 
@@ -378,8 +379,8 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, const int32_t mate, SearchT
 	
 	HASHE *tt = IS_SINGULAR_SEARCH ? NULL : &hashTable[th->hashKey % HASH_TABLE_SIZE];
 	
-	bool ttMatch = probeHash(tt, th);
-	int32_t ttScore = ttMatch ? tt->value : I32_UNKNOWN;
+	const auto ttMatch = probeHash(tt, th);
+	int ttScore = ttMatch ? tt->value : I32_UNKNOWN;
 	U32 ttMove =  ttMatch ? tt->bestMove : NO_MOVE;
 
 	if (ttMatch) 
@@ -407,7 +408,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, const int32_t mate, SearchT
 	const bool IS_IN_CHECK = isKingInCheck<stm>(th);
     bool improving = false;
 
-	int32_t sEval = I32_UNKNOWN;
+	int sEval = I32_UNKNOWN;
 
 	if (IS_SINGULAR_SEARCH) {
 
@@ -505,7 +506,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, const int32_t mate, SearchT
 		
 		searchInfo.pline.clear();
 		
-		const int32_t score = -alphabetaSearch<OPP, NO_NULL, NON_SING>(-beta, -beta + 1, mate - 1, th, &searchInfo);
+		const auto score = -alphabetaSearch<OPP, NO_NULL, NON_SING>(-beta, -beta + 1, mate - 1, th, &searchInfo);
 
 		unmakeNullMove(PLY, th);
 
@@ -561,7 +562,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, const int32_t mate, SearchT
 		searchInfo.depth = sDepth;
 		searchInfo.pline.clear();
 
-		const int32_t score = alphabetaSearch<stm, NO_NULL, SING>(sBeta - 1, sBeta, mate, th, &searchInfo);
+		const auto score = alphabetaSearch<stm, NO_NULL, SING>(sBeta - 1, sBeta, mate, th, &searchInfo);
 
 		searchInfo.skipMove = NO_MOVE;
 
@@ -580,7 +581,7 @@ int32_t alphabetaSearch(int32_t alpha, int32_t beta, const int32_t mate, SearchT
 	U8 hashf = hashfALPHA;
 	int currentMoveType, currentMoveToSq;
 	int reduce = 0, extend = 0, movesPlayed = 0, newDepth = 0;
-	int32_t score = -I32_MATE, bestScore = -I32_MATE;
+	int score = -I32_MATE, bestScore = -I32_MATE;
 
 	U32 bestMove = NO_MOVE, previousMove = IS_ROOT_NODE ? NO_MOVE : th->moveStack[PLY - 1].move;
 
@@ -876,7 +877,7 @@ constexpr int seeVal[8] = {	VALUE_DUMMY, VALUE_PAWN, VALUE_KNIGHT, VALUE_BISHOP,
 					
 // TODO should limit Quiescense search explosion
 template<Side stm>
-int32_t quiescenseSearch(int ply, int32_t alpha, int32_t beta, SearchThread *th, std::vector<U32> *pline) {
+int quiescenseSearch(int ply, int alpha, int beta, SearchThread *th, std::vector<U32> *pline) {
 
 
 	assert (alpha < beta);
@@ -931,7 +932,7 @@ int32_t quiescenseSearch(int ply, int32_t alpha, int32_t beta, SearchThread *th,
 	HASHE *tt = &hashTable[th->hashKey % HASH_TABLE_SIZE];
 
 	bool ttMatch = probeHash(tt, th);  
-	int32_t ttScore = I32_UNKNOWN;
+	int ttScore = I32_UNKNOWN;
 
 	if (ttMatch) { // no depth check required since its 0 in quiescense search
 
@@ -950,7 +951,7 @@ int32_t quiescenseSearch(int ply, int32_t alpha, int32_t beta, SearchThread *th,
 
 
 	U32 bestMove = NO_MOVE;
-	int32_t sEval, bestScore = -I32_MATE;
+	int sEval, bestScore = -I32_MATE;
 	
 	if (ttMatch) {
         
@@ -989,7 +990,7 @@ int32_t quiescenseSearch(int ply, int32_t alpha, int32_t beta, SearchThread *th,
 
 	U8 hashf = hashfALPHA, capPiece = DUMMY;
 	int movesPlayed = 0; 
-	int32_t score = -I32_MATE;
+	int score = -I32_MATE;
 
 	Move currentMove;
 	

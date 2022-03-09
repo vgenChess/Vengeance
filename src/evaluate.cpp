@@ -137,14 +137,14 @@ void initEvalInfo(Thread *th) {
 								bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]);
 }
 
-int32_t traceFullEval(Side stm, TraceCoefficients *traceCoefficients, Thread *th) {
+int traceFullEval(Side stm, TraceCoefficients *traceCoefficients, Thread *th) {
 
 	T = traceCoefficients;
 
 	return stm ? fullEval(BLACK, th) : fullEval(WHITE, th);
 }
 
-int32_t fullEval(U8 stm, Thread *th) {
+int fullEval(U8 stm, Thread *th) {
 	
 	#if defined(TUNE)
 	
@@ -269,14 +269,14 @@ int32_t fullEval(U8 stm, Thread *th) {
 */
 
 template <Side stm>
-int32_t pawnsEval(Thread *th) {
+int pawnsEval(Thread *th) {
 
 	const auto opp = stm ^ 1;
 	const auto kingSq = th->evalInfo.kingSq[stm];
 
 	int sq = -1, rank = -1;
 	
-	int32_t score = 0;
+	int score = 0;
 	
 
 	// Piece Square Tables
@@ -544,7 +544,7 @@ int32_t pawnsEval(Thread *th) {
 
 
 template <Side stm>
-int32_t knightsEval(Thread *th) {
+int knightsEval(Thread *th) {
 
 	const auto opp = stm ^ 1;
 	const auto kingSq = th->evalInfo.kingSq[stm];
@@ -555,7 +555,7 @@ int32_t knightsEval(Thread *th) {
 	
 	int mobilityCount = 0, sq = -1;
 
-	int32_t score = 0;
+	int score = 0;
 	
 	U64 attacksBB;
 	
@@ -664,7 +664,7 @@ int32_t knightsEval(Thread *th) {
 }
 
 template <Side stm>
-int32_t bishopsEval(Thread *th) {
+int bishopsEval(Thread *th) {
 
 	const auto opp = stm ^ 1;
 	const auto kingSq = th->evalInfo.kingSq[stm];
@@ -673,7 +673,7 @@ int32_t bishopsEval(Thread *th) {
 
 	int mobilityCount = 0, sq = -1;
 	
-	int32_t score = 0;
+	int score = 0;
 	
 	auto bishopBB = stm ? th->blackPieceBB[BISHOPS] : th->whitePieceBB[BISHOPS];
 
@@ -760,7 +760,7 @@ Increasing value as pawns disappear
 Tarrasch Rule
 */
 template <Side stm>
-int32_t rooksEval(Thread *th) {
+int rooksEval(Thread *th) {
 	
 	const auto opp = stm ^ 1;
 	const auto kingSq = th->evalInfo.kingSq[stm];
@@ -773,7 +773,7 @@ int32_t rooksEval(Thread *th) {
 	
 	U64 attacksBB;
 
-	int32_t score = 0;
+	int score = 0;
 	int sq = -1, mobilityCount = 0;
 
 	while (rooksBB) {
@@ -928,14 +928,14 @@ int32_t rooksEval(Thread *th) {
 
 
 template <Side stm>
-int32_t queenEval(Thread *th) {
+int queenEval(Thread *th) {
 
 	const auto opp = stm ^ 1;
 	const auto kingSq = th->evalInfo.kingSq[stm];
 	auto queenBB = stm ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN];
 	
-	int32_t score = 0;
-	int sq = -1, mobilityCount = 0;
+	int score = 0;
+	int sq = -1;
 
 	U64 attacksBB;
 
@@ -1003,7 +1003,7 @@ int32_t queenEval(Thread *th) {
 }
 
 template <Side stm>
-int32_t kingEval(Thread *th) {
+int kingEval(Thread *th) {
 	
 	const auto opp = stm ^ 1;
 	const auto kingSq = th->evalInfo.kingSq[stm];
@@ -1012,7 +1012,7 @@ int32_t kingEval(Thread *th) {
 
 	auto pawnStormZone = th->evalInfo.kingZoneBB[stm];
 	
-	int32_t score = 0;	
+	int score = 0;	
 	
 	assert(kingSq >= 0 && kingSq < 64);
 
@@ -1114,9 +1114,9 @@ int32_t kingEval(Thread *th) {
 }
 
 template <Side stm>
-int32_t evalBoard(Thread *th) {
+int evalBoard(Thread *th) {
 
-	int32_t score = 0;
+	int score = 0;
 
 	score += POPCOUNT(CENTER & th->evalInfo.attacks[stm]) * weight_center_control;
 

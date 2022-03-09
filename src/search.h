@@ -19,9 +19,9 @@ template<Side stm>
 void aspirationWindowSearch(SearchThread *th);
 
 template<Side stm, bool isNullMoveAllowed, bool isSingularSearch>
-int32_t alphabetaSearch(int32_t alpha, int32_t beta, const int32_t mate, SearchThread *th, SearchInfo *si);
+int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, SearchInfo *si);
 
 template<Side stm> 
-int32_t quiescenseSearch(int ply, int32_t alpha, int32_t beta, SearchThread *th, std::vector<U32> *pline);
+int quiescenseSearch(int ply, int alpha, int beta, SearchThread *th, std::vector<U32> *pline);
 
 #endif /* search_h */
