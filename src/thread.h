@@ -18,7 +18,7 @@ public:
 
 	bool isInit = false;
 
-	U8 side;
+	Side side;
 
 	U16 moves_history_counter;
 	
@@ -79,7 +79,7 @@ public:
 	void idle_loop();
 	void start_searching();
 	void wait_for_search_finished();
-	void search();
+	template<Side stm> void search();
 };
 
 struct SearchThreadPool : public std::vector<SearchThread*> {

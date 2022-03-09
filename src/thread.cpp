@@ -176,7 +176,14 @@ void SearchThread::idle_loop() {
 
 		lk.unlock();
 
-		search();
+		if (this->side == WHITE) {
+			
+			search<WHITE>();
+		}
+		else {
+
+			search<BLACK>();
+		}
 	}
 }
 
@@ -220,14 +227,15 @@ void SearchThread::init() {
 	pawnsHashKey = initThread.pawnsHashKey;
 }
 
+template<Side stm>
 void SearchThread::search() {
 
 	if (this == Threads.main()) {
 
-		startSearch(this->side == WHITE ? WHITE : BLACK);
+		startSearch(stm);
 	} else {
 
-		iterativeDeepeningSearch(this->side == WHITE ? WHITE : BLACK, this);
+		iterativeDeepeningSearch(stm, this);
 	}
 }
 

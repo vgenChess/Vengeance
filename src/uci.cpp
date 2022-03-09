@@ -111,8 +111,6 @@ void UciLoop() {
             initThread.movesHistory[0].hashKey = initThread.hashKey;
             initThread.movesHistory[0].fiftyMovesCounter = 0;
 
-            U8 sideToMove = WHITE;
-
             is>>token;
 
             std::string fen;
@@ -128,7 +126,7 @@ void UciLoop() {
                     fen += token + " ";
             }
 
-            sideToMove = parseFen(fen, &initThread);
+            U8 sideToMove = parseFen(fen, &initThread);
 
             std::vector<Move> moves;
 
@@ -154,7 +152,7 @@ void UciLoop() {
                 }
             }
 
-            initThread.side = sideToMove;
+            initThread.side = sideToMove == WHITE ? WHITE : BLACK;
             
         } else if (token == "isready") {
 
