@@ -120,7 +120,8 @@ enum Stage {
 };
 
 enum {
-	hashfEXACT, hashfALPHA, hashfBETA
+	
+	hashfEXACT = 5, hashfALPHA = 10, hashfBETA = 15
 };
 
 #endif

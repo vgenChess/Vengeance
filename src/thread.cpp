@@ -224,10 +224,10 @@ void SearchThread::search() {
 
 	if (this == Threads.main()) {
 
-		startSearch(this->side);
+		startSearch(this->side == WHITE ? WHITE : BLACK);
 	} else {
 
-		iterativeDeepeningSearch(this->side, this);
+		iterativeDeepeningSearch(this->side == WHITE ? WHITE : BLACK, this);
 	}
 }
 

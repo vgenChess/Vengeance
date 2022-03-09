@@ -61,17 +61,14 @@ void initLMR() {
 }
 
 //TODO refactor logic
-void startSearch(U8 stm) {
+void startSearch(Side stm) {
 
 
 	abortSearch = false;
 
 	Threads.start_searching(); // start non-main threads
 	
-	if (stm == WHITE)
-		iterativeDeepeningSearch(WHITE, Threads.main()); // main thread start searching
-	else
-		iterativeDeepeningSearch(BLACK, Threads.main()); // main thread start searching
+	iterativeDeepeningSearch(stm, Threads.main()); // main thread start searching
 	
 	abortSearch = true;
 
@@ -99,7 +96,7 @@ void startSearch(U8 stm) {
 	stopped = false;
 }
 
-void iterativeDeepeningSearch(U8 stm, SearchThread *th) {
+void iterativeDeepeningSearch(Side stm, SearchThread *th) {
 	
 	th->nodes = 0;
 	th->ttHits = 0;	
@@ -116,7 +113,7 @@ void iterativeDeepeningSearch(U8 stm, SearchThread *th) {
 			// Mutex will automatically be unlocked when lck goes out of scope
 			std::lock_guard<std::mutex> lck {mtx}; 
 
-			uint8_t count = 0;
+			U16 count = 0;
 
 			for (SearchThread *thread : Threads) {
 
@@ -139,6 +136,7 @@ void iterativeDeepeningSearch(U8 stm, SearchThread *th) {
 			aspirationWindowSearch<WHITE>(th);
 		else
 			aspirationWindowSearch<BLACK>(th);
+		
 
 		if (Threads.stop)
 			break;
@@ -155,7 +153,7 @@ void iterativeDeepeningSearch(U8 stm, SearchThread *th) {
 			int32_t prevScore = th->pvLine.at(th->completedDepth-3).score;
  			int32_t currentScore = th->pvLine.at(th->completedDepth).score;
 
-			float scoreChangeFactor = prevScore > currentScore ? 
+			const auto scoreChangeFactor = prevScore > currentScore ? 
  				fmax(0.5, fmin(1.5, ((prevScore - currentScore) * 0.05))) : 0.5;
 			
 
@@ -169,11 +167,11 @@ void iterativeDeepeningSearch(U8 stm, SearchThread *th) {
  			stableMoveCount = previousMove == currentMove ? stableMoveCount + 1 : 0;
  			stableMoveCount = std::min(10, stableMoveCount);
 
- 			float stableMoveFactor =  1.25 - stableMoveCount * 0.05;
+ 			const auto stableMoveFactor =  1.25 - stableMoveCount * 0.05;
 
 			
 			// win factor
-			float winFactor = currentScore >= U16_WIN_SCORE ? 0.5 : 1;
+			const auto winFactor = currentScore >= U16_WIN_SCORE ? 0.5 : 1;
 			
 		    
 		    // Check for time 
@@ -290,16 +288,13 @@ void aspirationWindowSearch(SearchThread *th) {
 
 void checkTime() {
 
-	std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
+	const auto timeNow = std::chrono::steady_clock::now();
 
-    if (timeNow.time_since_epoch() >= stopTime.time_since_epoch()) {
-
-		Threads.stop = true;
-	}	
+	Threads.stop = timeNow.time_since_epoch() >= stopTime.time_since_epoch();
 }
 
 template<Side stm, bool isNullMoveAllowed, bool isSingularSearch>
-int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo *si) {
+int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, SearchInfo *si) {
 
 
 	// if (alpha >= beta) {
@@ -503,15 +498,15 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 		makeNullMove(PLY, th);
 
 
-		int r = depth > 9 ? 3 : 2;	
+		const auto R = depth > 9 ? 3 : 2;	
 
 	
 		searchInfo.ply = PLY + 1;
-		searchInfo.depth = depth - r;
+		searchInfo.depth = depth - R - 1;
 		
 		searchInfo.pline.clear();
 		
-		int score = -alphabetaSearch<OPP, NO_NULL, NON_SING>(-beta, -beta + 1, mate - 1, th, &searchInfo);
+		const auto score = -alphabetaSearch<OPP, NO_NULL, NON_SING>(-beta, -beta + 1, mate - 1, th, &searchInfo);
 
 		unmakeNullMove(PLY, th);
 
@@ -559,15 +554,15 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 		&&  tt->depth >= depth - 3) {
 
 
-		int sBeta = ttScore - 4 * depth;
-		int sDepth = depth / 2 - 1;
+		const auto sBeta = ttScore - 4 * depth;
+		const auto sDepth = depth / 2 - 1;
 
 		searchInfo.skipMove = ttMove;
 		searchInfo.ply = PLY;
 		searchInfo.depth = sDepth;
 		searchInfo.pline.clear();
 
-		int score =	alphabetaSearch<stm, NO_NULL, SING>(sBeta - 1, sBeta, mate, th, &searchInfo);
+		const auto score = alphabetaSearch<stm, NO_NULL, SING>(sBeta - 1, sBeta, mate, th, &searchInfo);
 
 		searchInfo.skipMove = NO_MOVE;
 
@@ -583,10 +578,10 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 
 	bool isQuietMove = false;
 	
-	int8_t hashf = hashfALPHA;
-	int16_t currentMoveType, currentMoveToSq;
-	int32_t reduce = 0, extend = 0, movesPlayed = 0, newDepth = 0;
-	int32_t score = -I32_MATE, bestScore = -I32_MATE;
+	U8 hashf = hashfALPHA;
+	int currentMoveType, currentMoveToSq;
+	int reduce = 0, extend = 0, movesPlayed = 0, newDepth = 0;
+	int score = -I32_MATE, bestScore = -I32_MATE;
 
 	U32 bestMove = NO_MOVE, previousMove = IS_ROOT_NODE ? NO_MOVE : th->moveStack[PLY - 1].move;
 
@@ -595,7 +590,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 
 	Move currentMove;
 
-	std::vector<U32> quietMovesPlayed, captureMovesPlayed;
+	std::vector<U32> quietsPlayed, capturesPlayed;
 	
 	th->moveList[PLY].skipQuiets = false;
 	th->moveList[PLY].stage = PLAY_HASH_MOVE;
@@ -643,11 +638,11 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 
 		if (isQuietMove) {
 
-			quietMovesPlayed.push_back(currentMove.move);
+			quietsPlayed.push_back(currentMove.move);
 		} else if (currentMoveType != MOVE_PROMOTION) { 
 			// all promotions are scored equal and ordered differently from capture moves
 			
-			captureMovesPlayed.push_back(currentMove.move);
+			capturesPlayed.push_back(currentMove.move);
 		}
 
 
@@ -858,10 +853,10 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 				th->moveStack[PLY].killerMoves[0] = bestMove;
 			}
 
-			updateHistory(stm, PLY, depth, bestMove, quietMovesPlayed, th);				
+			updateHistory(stm, PLY, depth, bestMove, quietsPlayed, th);				
 		} 
 
-		updateCaptureHistory(depth, bestMove, captureMovesPlayed, th);
+		updateCaptureHistory(depth, bestMove, capturesPlayed, th);
 	}
 
 
@@ -875,6 +870,7 @@ int alphabetaSearch(int alpha, int beta, int mate, SearchThread *th, SearchInfo 
 
 	return bestScore;
 }	
+
 
 constexpr int seeVal[8] = {	VALUE_DUMMY, VALUE_PAWN, VALUE_KNIGHT, VALUE_BISHOP,
 							VALUE_ROOK, VALUE_QUEEN, VALUE_KING, VALUE_DUMMY };
