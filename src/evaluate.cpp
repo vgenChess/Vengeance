@@ -49,104 +49,91 @@ U64 arrRanks[8] = {
 	RANK_5, RANK_6, RANK_7, RANK_8
 };
 
-
 int PSQT[U8_MAX_SQUARES][U8_MAX_PIECES][U8_MAX_SQUARES];
 
 
+template<Side stm>
 void initEvalInfo(Thread *th) {
 
-	th->evalInfo.clear();
+	if (!th->evalInfo.openFilesBB)
+		th->evalInfo.openFilesBB = openFiles(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
 
 
-	th->evalInfo.openFilesBB = openFiles(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
+	th->evalInfo.halfOpenFilesBB[stm] = stm == WHITE ? 
+									halfOpenOrOpenFile(th->whitePieceBB[PAWNS]) ^ th->evalInfo.openFilesBB :	
+									halfOpenOrOpenFile(th->blackPieceBB[PAWNS]) ^ th->evalInfo.openFilesBB;
 
+	th->evalInfo.allPawnAttacks[stm] = stm == WHITE ? 
+									wPawnWestAttacks(th->whitePieceBB[PAWNS]) | wPawnEastAttacks(th->whitePieceBB[PAWNS]) :
+									bPawnWestAttacks(th->blackPieceBB[PAWNS]) | bPawnEastAttacks(th->blackPieceBB[PAWNS]);
 
-	th->evalInfo.halfOpenFilesBB[WHITE] 
-		= halfOpenOrOpenFile(th->whitePieceBB[PAWNS]) ^ th->evalInfo.openFilesBB;	
-	th->evalInfo.halfOpenFilesBB[BLACK] 
-		= halfOpenOrOpenFile(th->blackPieceBB[PAWNS]) ^ th->evalInfo.openFilesBB;
-
-
-	th->evalInfo.allPawnAttacks[WHITE] = 
-		wPawnWestAttacks(th->whitePieceBB[PAWNS]) | wPawnEastAttacks(th->whitePieceBB[PAWNS]);
-	th->evalInfo.allPawnAttacks[BLACK] = 
-		bPawnWestAttacks(th->blackPieceBB[PAWNS]) | bPawnEastAttacks(th->blackPieceBB[PAWNS]);
-	
-	th->evalInfo.attacks[WHITE] |= th->evalInfo.allPawnAttacks[WHITE];
-	th->evalInfo.attacks[BLACK] |= th->evalInfo.allPawnAttacks[BLACK];
+	th->evalInfo.attacks[stm] |= stm == WHITE ? 
+							th->evalInfo.allPawnAttacks[WHITE] : th->evalInfo.allPawnAttacks[BLACK];
 	
 	int sq = -1;
 	U64 bb = 0ULL;
 	for (int p = KNIGHTS; p <= KING; p++) {
 
-		for (U8 stm = WHITE; stm <= BLACK; stm++) {
+		bb = stm ? th->blackPieceBB[p] : th->whitePieceBB[p];
+		
+		while (bb) {
 
-			bb = stm ? th->blackPieceBB[p] : th->whitePieceBB[p];
-			
-			while (bb) {
+			sq = GET_POSITION(bb);
+			POP_POSITION(bb);
 
-				sq = GET_POSITION(bb);
-				POP_POSITION(bb);
+			assert(sq >= 0 && sq <= 63);
 
-				assert(sq >= 0 && sq <= 63);
+			if (p == KNIGHTS) {
 
-				if (p == KNIGHTS) {
-
-					th->evalInfo.knightAttacks[stm][sq] = get_knight_attacks(sq);
-					th->evalInfo.allKnightAttacks[stm] |= th->evalInfo.knightAttacks[stm][sq];
-					th->evalInfo.attacks[stm] |= th->evalInfo.knightAttacks[stm][sq];		
-				}	
-				else if (p == BISHOPS) {
-
-					th->evalInfo.bishopAttacks[stm][sq] = Bmagic(sq, th->occupied);
-					th->evalInfo.allBishopAttacks[stm] |= th->evalInfo.bishopAttacks[stm][sq];		
-					th->evalInfo.attacks[stm] |= th->evalInfo.bishopAttacks[stm][sq];		
-				}
-				else if (p == ROOKS) {
-					
-					th->evalInfo.rookAttacks[stm][sq] = Rmagic(sq, th->occupied);
-					th->evalInfo.allRookAttacks[stm] |= th->evalInfo.rookAttacks[stm][sq];						
-					th->evalInfo.attacks[stm] |= th->evalInfo.rookAttacks[stm][sq];				
-				}	
-				else if (p == QUEEN) {
-
-					th->evalInfo.queenAttacks[stm][sq] = Qmagic(sq, th->occupied);
-					th->evalInfo.allQueenAttacks[stm] |= th->evalInfo.queenAttacks[stm][sq];
-					th->evalInfo.attacks[stm] |= th->evalInfo.queenAttacks[stm][sq];		
-				}
-				else if (p == KING)	{
-					
-					th->evalInfo.kingAttacks[stm] = get_king_attacks(sq);			
-					th->evalInfo.attacks[stm] |= th->evalInfo.kingAttacks[stm];
-				}	
+				th->evalInfo.knightAttacks[stm][sq] = get_knight_attacks(sq);
+				th->evalInfo.allKnightAttacks[stm] |= th->evalInfo.knightAttacks[stm][sq];
+				th->evalInfo.attacks[stm] |= th->evalInfo.knightAttacks[stm][sq];		
 			}	
-		}
+			else if (p == BISHOPS) {
+
+				th->evalInfo.bishopAttacks[stm][sq] = Bmagic(sq, th->occupied);
+				th->evalInfo.allBishopAttacks[stm] |= th->evalInfo.bishopAttacks[stm][sq];		
+				th->evalInfo.attacks[stm] |= th->evalInfo.bishopAttacks[stm][sq];		
+			}
+			else if (p == ROOKS) {
+				
+				th->evalInfo.rookAttacks[stm][sq] = Rmagic(sq, th->occupied);
+				th->evalInfo.allRookAttacks[stm] |= th->evalInfo.rookAttacks[stm][sq];						
+				th->evalInfo.attacks[stm] |= th->evalInfo.rookAttacks[stm][sq];				
+			}	
+			else if (p == QUEEN) {
+
+				th->evalInfo.queenAttacks[stm][sq] = Qmagic(sq, th->occupied);
+				th->evalInfo.allQueenAttacks[stm] |= th->evalInfo.queenAttacks[stm][sq];
+				th->evalInfo.attacks[stm] |= th->evalInfo.queenAttacks[stm][sq];		
+			}
+			else if (p == KING)	{
+				
+				th->evalInfo.kingAttacks[stm] = get_king_attacks(sq);			
+				th->evalInfo.attacks[stm] |= th->evalInfo.kingAttacks[stm];
+			}	
+		}	
 	}
 
 
-	th->evalInfo.kingSq[WHITE] = GET_POSITION(th->whitePieceBB[KING]);	
-	th->evalInfo.kingSq[BLACK] = GET_POSITION(th->blackPieceBB[KING]);	
-
+	th->evalInfo.kingSq[stm] = stm == WHITE ? 
+							GET_POSITION(th->whitePieceBB[KING]) : GET_POSITION(th->blackPieceBB[KING]);	
 
 	// King Safety 
 		
-	th->evalInfo.kingZoneBB[WHITE] = th->evalInfo.kingAttacks[WHITE] | (th->evalInfo.kingAttacks[WHITE] >> 8);
-	th->evalInfo.kingZoneBB[BLACK] = th->evalInfo.kingAttacks[BLACK] | (th->evalInfo.kingAttacks[BLACK] << 8);
+	th->evalInfo.kingZoneBB[stm] = stm == WHITE ? 
+								th->evalInfo.kingAttacks[WHITE] | (th->evalInfo.kingAttacks[WHITE] >> 8) :
+								th->evalInfo.kingAttacks[BLACK] | (th->evalInfo.kingAttacks[BLACK] << 8);
 
-	th->evalInfo.kingAttackersCount[WHITE] = 0;
-    th->evalInfo.kingAttackersCount[BLACK] = 0;
-    
-    th->evalInfo.kingAttackersWeight[WHITE] = 0;
-	th->evalInfo.kingAttackersWeight[BLACK] = 0;
-
-  	th->evalInfo.kingAdjacentZoneAttacksCount[WHITE] = 0;
-  	th->evalInfo.kingAdjacentZoneAttacksCount[BLACK] = 0;	
-
+	th->evalInfo.kingAttackersCount[stm] = 0;
+    th->evalInfo.kingAttackersWeight[stm] = 0;
+  	th->evalInfo.kingAdjacentZoneAttacksCount[stm] = 0;
 
   	// Pawn Related 
 
-  	th->evalInfo.passedPawns[WHITE] = wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
-	th->evalInfo.passedPawns[BLACK] = bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]);
+  	th->evalInfo.passedPawns[stm] = stm == WHITE ? 
+								wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]) :
+								bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]);
 }
 
 int traceFullEval(Side stm, TraceCoefficients *traceCoefficients, Thread *th) {
@@ -205,7 +192,10 @@ int fullEval(U8 stm, Thread *th) {
 	#endif
 
 
-	initEvalInfo(th);
+	th->evalInfo.clear();	
+	
+	initEvalInfo<WHITE>(th);	
+	initEvalInfo<BLACK>(th);
 
 
 	int eval = 0;
