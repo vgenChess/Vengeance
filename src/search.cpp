@@ -35,7 +35,7 @@
 #include "history.h"
 #include "ucireport.h"
 
-bool timeSet, stopped, abortSearch;
+bool timeSet, stopped;
 
 int option_thread_count;
 
@@ -44,7 +44,6 @@ std::mutex mtx;
 
 int timePerMove;
 int stableMoveCount = 0;
-
 
 int MAX_DEPTH = 100;
 
@@ -61,43 +60,55 @@ void initLMR() {
     }
 }
 
+bool SearchThread::abortSearch;
+
 //TODO refactor logic
-void startSearch(Side stm) {
+void startSearch(Side stm, SearchThread *th) {
 
+	if (th == Threads.main()) {
 
-	abortSearch = false;
+		SearchThread::abortSearch = false;
 
-	Threads.start_searching(); // start non-main threads
-	
-	iterativeDeepeningSearch(stm, Threads.main()); // main thread start searching
-	
-	abortSearch = true;
+		Threads.start_searching(); // start non-main threads
+		
+		if (stm == WHITE)
+			iterativeDeepeningSearch<WHITE>(th); // main thread start searching
+		else
+			iterativeDeepeningSearch<BLACK>(th); // main thread start searching
+			
+		SearchThread::abortSearch = true;
 
-	// When we reach the maximum depth, we can arrive here without a raise of
-	// Threads.stop. However, if we are pondering or in an infinite search,
-	// the UCI protocol states that we shouldn't print the best move before the
-	// GUI sends a "stop" or "ponderhit" command. We therefore simply wait here
-	// until the GUI sends one of those commands.
+		// When we reach the maximum depth, we can arrive here without a raise of
+		// Threads.stop. However, if we are pondering or in an infinite search,
+		// the UCI protocol states that we shouldn't print the best move before the
+		// GUI sends a "stop" or "ponderhit" command. We therefore simply wait here
+		// until the GUI sends one of those commands.
 
-	while (!Threads.stop)
-	{} // Busy wait for a stop or a ponder reset
+		while (!Threads.stop)
+		{} // Busy wait for a stop or a ponder reset
 
-	// Stop the threads if not already stopped (also raise the stop if
-	// "ponderhit" just reset Threads.ponder).
-	Threads.stop = true;
+		// Stop the threads if not already stopped (also raise the stop if
+		// "ponderhit" just reset Threads.ponder).
+		Threads.stop = true;
 
-	// Wait until all threads have finished
-	Threads.wait_for_search_finished();
+		// Wait until all threads have finished
+		Threads.wait_for_search_finished();
 
+		reportBestMove();
 
-	reportBestMove();
+		timeSet = false;
+		stopped = false;
+	} else {
 
-	
-	timeSet = false;
-	stopped = false;
+		if (stm == WHITE)
+			iterativeDeepeningSearch<WHITE>(th); // main thread start searching
+		else
+			iterativeDeepeningSearch<BLACK>(th); // main thread start searching
+	}
 }
 
-void iterativeDeepeningSearch(Side stm, SearchThread *th) {
+template<Side stm>
+void iterativeDeepeningSearch(SearchThread *th) {
 	
 	th->nodes = 0;
 	th->ttHits = 0;	
@@ -336,7 +347,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
 	if (IS_MAIN_THREAD && Threads.stop) 
 		return 0;
 
-	if (abortSearch) 
+	if (SearchThread::abortSearch) 
 		return 0; 
 
 
@@ -896,7 +907,7 @@ int quiescenseSearch(int ply, int alpha, int beta, SearchThread *th, std::vector
 	if (IS_MAIN_THREAD && Threads.stop) 
 		return 0;
 
-	if (abortSearch) 
+	if (SearchThread::abortSearch) 
 		return 0; 
 
 

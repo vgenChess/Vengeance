@@ -178,11 +178,11 @@ void SearchThread::idle_loop() {
 
 		if (this->side == WHITE) {
 			
-			search<WHITE>();
+			startSearch(WHITE, this);
 		}
 		else {
 
-			search<BLACK>();
+			startSearch(BLACK, this);
 		}
 	}
 }
@@ -226,19 +226,6 @@ void SearchThread::init() {
 	hashKey = initThread.hashKey;
 	pawnsHashKey = initThread.pawnsHashKey;
 }
-
-template<Side stm>
-void SearchThread::search() {
-
-	if (this == Threads.main()) {
-
-		startSearch(stm);
-	} else {
-
-		iterativeDeepeningSearch(stm, this);
-	}
-}
-
 
 void SearchThreadPool::set(size_t requested) {
 

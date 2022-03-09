@@ -12,11 +12,9 @@
 
 void initLMR();
 
-void startSearch(Side stm);
-void iterativeDeepeningSearch(Side stm, SearchThread *thread);
-
-template<Side stm> 
-void aspirationWindowSearch(SearchThread *th);
+void startSearch(Side stm, SearchThread *th);
+template<Side stm> void iterativeDeepeningSearch(SearchThread *th);
+template<Side stm> void aspirationWindowSearch(SearchThread *th);
 
 template<Side stm, bool isNullMoveAllowed, bool isSingularSearch>
 int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, SearchInfo *si);

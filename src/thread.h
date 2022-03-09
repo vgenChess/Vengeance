@@ -58,6 +58,8 @@ class SearchThread : public Thread {
 
 public:
 
+	static bool abortSearch;
+
 	bool exit = false, searching = true; // Set before starting std::thread
 	bool canReportCurrMove;
 
@@ -76,10 +78,9 @@ public:
 	int index() { return idx; }
 	
 	void init();
-	void idle_loop();
 	void start_searching();
 	void wait_for_search_finished();
-	template<Side stm> void search();
+	void idle_loop();
 };
 
 struct SearchThreadPool : public std::vector<SearchThread*> {
