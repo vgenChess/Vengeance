@@ -70,7 +70,7 @@
 #define ScoreMG(s) ((int16_t)((uint16_t)((unsigned)((s)))))
 #define ScoreEG(s) ((int16_t)((uint16_t)((unsigned)((s) + 0x8000) >> 16)))
 
-constexpr int S(const int mg, const int eg) {
+constexpr inline int S(const int mg, const int eg) {
 
 	return static_cast<int>(static_cast<unsigned int>(eg) << 16) + mg;
 }
