@@ -70,7 +70,7 @@ void initEvalInfo(Thread *th) {
 	th->evalInfo.attacks[stm] |= stm == WHITE ? 
 							th->evalInfo.allPawnAttacks[WHITE] : th->evalInfo.allPawnAttacks[BLACK];
 	
-	
+
 	int sq = -1;
 	U64 bb = 0ULL;
 	for (int p = KNIGHTS; p <= KING; p++) {
@@ -547,20 +547,16 @@ template <Side stm>
 int knightsEval(Thread *th) {
 
 	const auto opp = stm ^ 1;
-
+	const auto kingSq = th->evalInfo.kingSq[stm];
 	const auto allPawnsCount = POPCOUNT(th->blackPieceBB[PAWNS] | th->whitePieceBB[PAWNS]);
-
-	int score = 0;
-	int mobilityCount = 0;
-
-	int sq = -1; 
-	int kingSq = th->evalInfo.kingSq[stm];
 	
-	U64 knightsBB = stm ? th->blackPieceBB[KNIGHTS] : th->whitePieceBB[KNIGHTS];
+	auto knightsBB = stm ? th->blackPieceBB[KNIGHTS] : th->whitePieceBB[KNIGHTS];
+	auto oppPawnHoles = ~th->evalInfo.allPawnAttacks[opp] & EXTENDED_CENTER;
+
+	int score = 0, mobilityCount = 0, sq = -1;
+
 	U64 attacksBB;
-
-	U64 oppPawnHoles = ~th->evalInfo.allPawnAttacks[opp] & EXTENDED_CENTER;
-
+	
 	while (knightsBB) {
 
 		sq = GET_POSITION(knightsBB);
@@ -672,16 +668,17 @@ template <Side stm>
 int bishopsEval(Thread *th) {
 
 	const auto opp = stm ^ 1;
+	const auto kingSq = th->evalInfo.kingSq[stm];
 
 	bool isDefended;
 
 	int score = 0;
 	int mobilityCount = 0;
 	int sq = -1;
-
-	int kingSq = th->evalInfo.kingSq[stm];
 	
-	U64 bishopBB = stm ? th->blackPieceBB[BISHOPS] : th->whitePieceBB[BISHOPS];
+	auto bishopBB = stm ? th->blackPieceBB[BISHOPS] : th->whitePieceBB[BISHOPS];
+
+	U64 attacksBB;
 	
 	// Bishop pair
 	if (POPCOUNT(bishopBB) == 2) {	
@@ -701,13 +698,10 @@ int bishopsEval(Thread *th) {
 
 		assert(sq >= 0 && sq <= 63);
 		
+		attacksBB = th->evalInfo.bishopAttacks[stm][sq];		
 
 
 		score += stm ? PSQT[Mirror64[kingSq]][BISHOPS][Mirror64[sq]] : PSQT[kingSq][BISHOPS][sq];
-
-
-		U64 attacksBB = th->evalInfo.bishopAttacks[stm][sq];
-
 
 
 		// Penalty for an undefended minor piece
@@ -725,11 +719,9 @@ int bishopsEval(Thread *th) {
 		}
 
 
-
 		// Bishop mobility
-		U64 mobilityBB = attacksBB & th->empty;
 
-		mobilityCount = POPCOUNT(mobilityBB);
+		mobilityCount = POPCOUNT(attacksBB & th->empty);
 
 		score += arr_weight_bishop_mobility[mobilityCount];
 
@@ -739,7 +731,9 @@ int bishopsEval(Thread *th) {
 		#endif
 
 
+
 		// Update values required for King safety 
+
 		if (attacksBB & th->evalInfo.kingZoneBB[opp]) {
  			
  			th->evalInfo.kingAttackersCount[opp]++;
@@ -770,19 +764,17 @@ template <Side stm>
 int rooksEval(Thread *th) {
 	
 	const auto opp = stm ^ 1;
-	
 	const auto kingSq = th->evalInfo.kingSq[stm];
-
 	const auto allPawnsCount = POPCOUNT(th->blackPieceBB[PAWNS] | th->whitePieceBB[PAWNS]);
 
-	int score = 0;
-	int sq = -1;
-
-	int mobilityCount = 0;
-
+	const auto oppFlankPawnHoles = ~th->evalInfo.allPawnAttacks[opp] 
+								& ~EXTENDED_CENTER & ~(RANK_1 | RANK_2 | RANK_7 | RANK_8);
 	
-	U64 rooksBB = stm ? th->blackPieceBB[ROOKS] : th->whitePieceBB[ROOKS];
-	U64 oppFlankPawnHoles = ~th->evalInfo.allPawnAttacks[opp] & ~EXTENDED_CENTER & ~(RANK_1 | RANK_2 | RANK_7 | RANK_8);
+	auto rooksBB = stm ? th->blackPieceBB[ROOKS] : th->whitePieceBB[ROOKS];
+	
+	U64 attacksBB;
+
+	int score = 0, sq = -1, mobilityCount = 0;
 
 	while (rooksBB) {
 
@@ -792,12 +784,16 @@ int rooksEval(Thread *th) {
 		assert(sq >= 0 && sq <= 63);
 
 
+		attacksBB = th->evalInfo.rookAttacks[stm][sq];		
+
+
 		score += stm ? PSQT[Mirror64[kingSq]][ROOKS][Mirror64[sq]] : PSQT[kingSq][ROOKS][sq];
 
 
 		// Nimzowitsch argued when the outpost is in one of the flank (a-, b-, g- and h-) files 
 		// the ideal piece to make use of the outpost is a rook. 
 		// This is because the rook can put pressure on all the squares along the rank
+		
 		if (oppFlankPawnHoles & (1ULL << sq) & th->evalInfo.allPawnAttacks[stm]) {
 
 			score += weight_rook_flank_outpost;
@@ -810,6 +806,7 @@ int rooksEval(Thread *th) {
 
 
 		// Rook on half open file
+		
 		if ((1ULL << sq) & th->evalInfo.halfOpenFilesBB[stm]) {
 
 			score += weight_rook_half_open_file;
@@ -821,6 +818,7 @@ int rooksEval(Thread *th) {
 		}
 
 		// Rook on open file
+		
 		if ((1ULL << sq) & th->evalInfo.openFilesBB) {
 
 			score += weight_rook_open_file;
@@ -832,6 +830,7 @@ int rooksEval(Thread *th) {
 		}
 
 		// Rook on same file as enemy Queen
+		
 		if (arrFiles[sq & 7] & 
 			(opp ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN])) {
 
@@ -844,6 +843,7 @@ int rooksEval(Thread *th) {
 		}
 
 		// Rook on Seventh rank
+		
 		if ((1ULL << sq) & (stm ? RANK_2 : RANK_7)) {
 
 			score += weight_rook_on_seventh_rank;
@@ -855,6 +855,7 @@ int rooksEval(Thread *th) {
 		}
 
 		// Rook on Eight rank
+		
 		if ((1ULL << sq) & (stm ? RANK_1 : RANK_8)) {
 
 			score += weight_rook_on_eight_rank;
@@ -866,10 +867,8 @@ int rooksEval(Thread *th) {
 		} 	
 
 
-		U64 attacksBB = th->evalInfo.rookAttacks[stm][sq];
-
-
 		// Connected Rooks
+
 		if (attacksBB & rooksBB) {
 
 			score += weight_rook_supporting_friendly_rook;
@@ -893,9 +892,8 @@ int rooksEval(Thread *th) {
 
 
 		// Rook mobility
-		U64 mobilityBB = attacksBB & th->empty;
-
-		mobilityCount = POPCOUNT(mobilityBB);
+		
+		mobilityCount = POPCOUNT(attacksBB & th->empty);
 
 		score += arr_weight_rook_mobility[mobilityCount]; 
 
@@ -906,6 +904,7 @@ int rooksEval(Thread *th) {
 
 
 		// Update values required for King safety later in kingEval
+		
 		if (attacksBB & th->evalInfo.kingZoneBB[opp]) {
  			
  			th->evalInfo.kingAttackersCount[opp]++;
@@ -932,16 +931,12 @@ template <Side stm>
 int queenEval(Thread *th) {
 
 	const auto opp = stm ^ 1;
+	const auto kingSq = th->evalInfo.kingSq[stm];
+	auto queenBB = stm ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN];
+	
+	int score = 0, sq = -1, mobilityCount = 0;
 
-	int score = 0;
-
-	int sq = -1;
-	int mobilityCount = 0;
-
-	U64 attacksBB = 0ULL, mobilityBB = 0ULL; 	
-	U64 queenBB = stm ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN];
-
-	const int kingSq = th->evalInfo.kingSq[stm];
+	U64 attacksBB;
 
 	while (queenBB) {
 
@@ -950,13 +945,12 @@ int queenEval(Thread *th) {
 
 		assert(sq >= 0 && sq <= 63);
 
+		attacksBB = th->evalInfo.queenAttacks[stm][sq];
+
 
 		score += stm ? PSQT[Mirror64[kingSq]][QUEEN][Mirror64[sq]] : PSQT[kingSq][QUEEN][sq];
 
 
-		attacksBB = th->evalInfo.queenAttacks[stm][sq];
-			
-	
 		if (	POPCOUNT(th->occupied) >= 22	// early game
 			&&	(stm ? sq <= 48 : sq >= 15)) { 
 
@@ -978,9 +972,8 @@ int queenEval(Thread *th) {
 
 
 		// Queen mobility
-		mobilityBB = attacksBB & th->empty;
-
-		mobilityCount = POPCOUNT(mobilityBB);
+		
+		mobilityCount = POPCOUNT(attacksBB & th->empty);
 
 		score += arr_weight_queen_mobility[mobilityCount];
 
@@ -1016,20 +1009,17 @@ template <Side stm>
 int kingEval(Thread *th) {
 	
 	const auto opp = stm ^ 1;
+	const auto kingSq = th->evalInfo.kingSq[stm];
+	const auto ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+	const auto theirPawns = opp ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 
-	int kingSq = th->evalInfo.kingSq[stm];
+	auto pawnStormZone = th->evalInfo.kingZoneBB[stm];
 	
 	int score = 0;	
 	
 	assert(kingSq >= 0 && kingSq < 64);
 
-
 	score += stm ? kingPSQT[Mirror64[kingSq]] : kingPSQT[kingSq];
-
-
-	U64 ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
-	U64 theirPawns = opp ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
-	U64 pawnStormZone = th->evalInfo.kingZoneBB[stm];
 
 	pawnStormZone |= stm ? pawnStormZone >> 8 : pawnStormZone << 8;
 
@@ -1053,31 +1043,31 @@ int kingEval(Thread *th) {
 		int safetyScore = th->evalInfo.kingAttackersWeight[stm];
 
         U64 kingUndefendedSquares = th->evalInfo.attacks[opp]
-        		&	th->evalInfo.kingAttacks[stm]
-        		&	~(		th->evalInfo.allPawnAttacks[stm] 
-        				| 	th->evalInfo.allKnightAttacks[stm] 
-        				|	th->evalInfo.allBishopAttacks[stm] 
-        				|	th->evalInfo.allRookAttacks[stm] 
-        				|	th->evalInfo.allQueenAttacks[stm]);
+        						&	th->evalInfo.kingAttacks[stm]
+        						&	~(		th->evalInfo.allPawnAttacks[stm] 
+        								| 	th->evalInfo.allKnightAttacks[stm] 
+        								|	th->evalInfo.allBishopAttacks[stm] 
+        								|	th->evalInfo.allRookAttacks[stm] 
+        								|	th->evalInfo.allQueenAttacks[stm]);
 
 		U64 enemyPieces = opp ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES];
 
 		U64 queenSafeContactCheck = kingUndefendedSquares 
-			&	th->evalInfo.allQueenAttacks[opp] 
-			& 	~enemyPieces
-			& 	(		th->evalInfo.allPawnAttacks[opp] 
-					|	th->evalInfo.allKnightAttacks[opp] 
-					|	th->evalInfo.allBishopAttacks[opp] 
-					|	th->evalInfo.allRookAttacks[opp]);
+								&	th->evalInfo.allQueenAttacks[opp] 
+								& 	~enemyPieces
+								& 	(		th->evalInfo.allPawnAttacks[opp] 
+										|	th->evalInfo.allKnightAttacks[opp] 
+										|	th->evalInfo.allBishopAttacks[opp] 
+										|	th->evalInfo.allRookAttacks[opp]);
 
 		U64 rookSafeContactCheck = kingUndefendedSquares 
-			& th->evalInfo.allRookAttacks[opp] 
-			& ~enemyPieces
-			& (		th->evalInfo.allPawnAttacks[opp] 
-				|	th->evalInfo.allKnightAttacks[opp] 
-				|	th->evalInfo.allBishopAttacks[opp] 
-				|	th->evalInfo.allQueenAttacks[opp]);
-		
+								&	th->evalInfo.allRookAttacks[opp] 
+								&	~enemyPieces
+								&	(		th->evalInfo.allPawnAttacks[opp] 
+										|	th->evalInfo.allKnightAttacks[opp] 
+										|	th->evalInfo.allBishopAttacks[opp] 
+										|	th->evalInfo.allQueenAttacks[opp]);
+							
 		U64 safe 	= 	~(enemyPieces | th->evalInfo.attacks[stm]);
 		U64 b1 		= 	Rmagic(kingSq, th->occupied) & safe;
 		U64 b2 		= 	Bmagic(kingSq, th->occupied) & safe;
@@ -1131,16 +1121,11 @@ int evalBoard(Thread *th) {
 
 	int score = 0;
 
-	int nCenterControl = POPCOUNT(CENTER & th->evalInfo.attacks[stm]);
-
-	score += nCenterControl * weight_center_control;
+	score += POPCOUNT(CENTER & th->evalInfo.attacks[stm]) * weight_center_control;
 
 	#if defined(TUNE)	
-		T->centerControl[stm] = nCenterControl;
+		T->centerControl[stm] = POPCOUNT(CENTER & th->evalInfo.attacks[stm]);
 	#endif
-
-
-	// Evaluate trapped pieces
 
 
 	return score;
