@@ -39,8 +39,8 @@ weight_rook_open_file = S(33, 8),
 weight_rook_enemy_queen_same_file = S(11, -10), 
 weight_rook_on_seventh_rank = S(0, 8), 
 weight_rook_on_eight_rank = S(8, 11), 
-weight_rook_all_pawns_count = S(9, 25), 
-weight_rook_supporting_friendly_rook = S(0, 5), 
+weight_rook_supporting_friendly_rook = S(9, 25), 
+weight_rook_all_pawns_count = S(0, 5),
 
 weight_queen_underdeveloped_pieces = S(-5, -10), 
 
