@@ -70,6 +70,7 @@ void initEvalInfo(Thread *th) {
 	th->evalInfo.attacks[stm] |= stm == WHITE ? 
 							th->evalInfo.allPawnAttacks[WHITE] : th->evalInfo.allPawnAttacks[BLACK];
 	
+	
 	int sq = -1;
 	U64 bb = 0ULL;
 	for (int p = KNIGHTS; p <= KING; p++) {
@@ -193,7 +194,7 @@ int fullEval(U8 stm, Thread *th) {
 
 
 	th->evalInfo.clear();	
-	
+
 	initEvalInfo<WHITE>(th);	
 	initEvalInfo<BLACK>(th);
 
