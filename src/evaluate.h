@@ -16,27 +16,23 @@ void setDist();
 
 void initTableDoublePawns();
 
-int traceFullEval(Side stm, TraceCoefficients *traceCoefficients, Thread *th);
+int32_t traceFullEval(Side stm, TraceCoefficients *traceCoefficients, Thread *th);
+int32_t fullEval(U8 stm, Thread *th);
 
-int fullEval(U8 stm, Thread *th);
-
-template<Side stm> int pawnsEval(Thread *th);
-template<Side stm> int knightsEval(Thread *th);
-template<Side stm> int bishopsEval(Thread *th);
-template<Side stm> int rooksEval(Thread *th);
-template<Side stm> int queenEval(Thread *th);
-template<Side stm> int kingEval(Thread *th);
-template<Side stm> int evalBoard(Thread *th); 
+template<Side stm> int32_t pawnsEval(Thread *th);
+template<Side stm> int32_t knightsEval(Thread *th);
+template<Side stm> int32_t bishopsEval(Thread *th);
+template<Side stm> int32_t rooksEval(Thread *th);
+template<Side stm> int32_t queenEval(Thread *th);
+template<Side stm> int32_t kingEval(Thread *th);
+template<Side stm> int32_t evalBoard(Thread *th); 
 
 void initPSQT();
 
-int numOfDoublePawns(U8 stm, Thread *th);
-int countDefendedPawns(U8 stm, Thread *th);
-
-U64 isolatedPawns(U8 stm, Thread *th);
-U64 doublePawns(U8 stm, Thread *th);
-U64 backwardPawns(U8 stm, Thread *th);
-U64 pawnHoles(U8 stm, Thread *th);
+template<Side stm> U64 isolatedPawns(Thread *th);
+template<Side stm> U64 doublePawns(Thread *th);
+template<Side stm> U64 backwardPawns(Thread *th);
+template<Side stm> U64 pawnHoles(Thread *th);
 
 U64 wPawnsBehindOwn(U64 wpawns);
 U64 bPawnsBehindOwn(U64 bpawns); 

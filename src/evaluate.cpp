@@ -49,8 +49,8 @@ U64 arrRanks[8] = {
 	RANK_5, RANK_6, RANK_7, RANK_8
 };
 
+// TODO check datatype
 int PSQT[U8_MAX_SQUARES][U8_MAX_PIECES][U8_MAX_SQUARES];
-
 
 template<Side stm>
 void initEvalInfo(Thread *th) {
@@ -137,14 +137,14 @@ void initEvalInfo(Thread *th) {
 								bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]);
 }
 
-int traceFullEval(Side stm, TraceCoefficients *traceCoefficients, Thread *th) {
+int32_t traceFullEval(Side stm, TraceCoefficients *traceCoefficients, Thread *th) {
 
 	T = traceCoefficients;
 
 	return stm ? fullEval(BLACK, th) : fullEval(WHITE, th);
 }
 
-int fullEval(U8 stm, Thread *th) {
+int32_t fullEval(U8 stm, Thread *th) {
 	
 	#if defined(TUNE)
 	
@@ -269,19 +269,19 @@ int fullEval(U8 stm, Thread *th) {
 */
 
 template <Side stm>
-int pawnsEval(Thread *th) {
+int32_t pawnsEval(Thread *th) {
 
 	const auto opp = stm ^ 1;
-	
-	int score = 0;
+	const auto kingSq = th->evalInfo.kingSq[stm];
+
 	int sq = -1, rank = -1;
 	
-	int kingSq = th->evalInfo.kingSq[stm];
-
+	int32_t score = 0;
+	
 
 	// Piece Square Tables
 	
-	U64 ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+	auto ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 	while (ourPawns) {
 
 		sq = GET_POSITION(ourPawns);
@@ -334,7 +334,7 @@ int pawnsEval(Thread *th) {
 	
 	// TODO check logic
 	ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
-	U64 phalanxPawns = pawnsWithEastNeighbors(ourPawns) | pawnsWithWestNeighbors(ourPawns);
+	auto phalanxPawns = pawnsWithEastNeighbors(ourPawns) | pawnsWithWestNeighbors(ourPawns);
 	while (phalanxPawns) {
 
 		sq = GET_POSITION(phalanxPawns);
@@ -377,10 +377,10 @@ int pawnsEval(Thread *th) {
 	*/
 
 	// TODO check logic
-	U64 p = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+	auto p = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 	// get the member (center) of at least triple chains
 	// http://www.talkchess.com/forum3/viewtopic.php?t=55477
-	U64 b = defendedDefenders1(p) | defendedDefenders2(p);
+	auto b = defendedDefenders1(p) | defendedDefenders2(p);
 
 	while (b) {
 
@@ -411,21 +411,21 @@ int pawnsEval(Thread *th) {
 		For this reason an isolated pawn is not at weak in the middle-game as it is in the endgame stage.
 	*/
 
-	score += POPCOUNT(isolatedPawns(stm, th)) * weight_isolated_pawn;
+	score += POPCOUNT(isolatedPawns<stm>(th)) * weight_isolated_pawn;
 
 	#if defined(TUNE)	
 		
-		T->isolatedPawns[stm] = POPCOUNT(isolatedPawns(stm, th));
+		T->isolatedPawns[stm] = POPCOUNT(isolatedPawns<stm>(th));
 	#endif
 
 
 	// Double pawns
 	
-	score += POPCOUNT(doublePawns(stm, th)) * weight_double_pawn;
+	score += POPCOUNT(doublePawns<stm>(th)) * weight_double_pawn;
 
 	#if defined(TUNE)	
 		
-		T->doublePawns[stm] = POPCOUNT(doublePawns(stm, th));
+		T->doublePawns[stm] = POPCOUNT(doublePawns<stm>(th));
 	#endif
 
 
@@ -436,11 +436,11 @@ int pawnsEval(Thread *th) {
 		Backward pawns are often a significant weakness in your position.
 	*/
 	
-	score += POPCOUNT(backwardPawns(stm, th)) * weight_backward_pawn;
+	score += POPCOUNT(backwardPawns<stm>(th)) * weight_backward_pawn;
 
 	#if defined(TUNE)	
 		
-		T->backwardPawns[stm] = POPCOUNT(backwardPawns(stm, th));
+		T->backwardPawns[stm] = POPCOUNT(backwardPawns<stm>(th));
 	#endif
 
 
@@ -453,11 +453,11 @@ int pawnsEval(Thread *th) {
 		weak squares near or in the center are more useful than weak squares on the sides of the board
 	*/
 	
-	score += POPCOUNT(pawnHoles(stm, th)) * weight_pawn_hole;
+	score += POPCOUNT(pawnHoles<stm>(th)) * weight_pawn_hole;
 
 	#if defined(TUNE)	
 		
-		T->pawnHoles[stm] = POPCOUNT(pawnHoles(stm, th));
+		T->pawnHoles[stm] = POPCOUNT(pawnHoles<stm>(th));
 	#endif
 
 
@@ -469,8 +469,8 @@ int pawnsEval(Thread *th) {
 		This can give you an advantage since your opponent will have a piece that is tied down in a defensive task.
 	*/
 
-	U64 stmPassedPawns = th->evalInfo.passedPawns[stm];
-	U64 oppPassedPawns = th->evalInfo.passedPawns[opp];
+	auto stmPassedPawns = th->evalInfo.passedPawns[stm];
+	auto oppPassedPawns = th->evalInfo.passedPawns[opp];
 
 	// Tarrasch rule
 	/*	
@@ -544,17 +544,19 @@ int pawnsEval(Thread *th) {
 
 
 template <Side stm>
-int knightsEval(Thread *th) {
+int32_t knightsEval(Thread *th) {
 
 	const auto opp = stm ^ 1;
 	const auto kingSq = th->evalInfo.kingSq[stm];
 	const auto allPawnsCount = POPCOUNT(th->blackPieceBB[PAWNS] | th->whitePieceBB[PAWNS]);
+	const auto oppPawnHoles = ~th->evalInfo.allPawnAttacks[opp] & EXTENDED_CENTER;
 	
 	auto knightsBB = stm ? th->blackPieceBB[KNIGHTS] : th->whitePieceBB[KNIGHTS];
-	auto oppPawnHoles = ~th->evalInfo.allPawnAttacks[opp] & EXTENDED_CENTER;
+	
+	int mobilityCount = 0, sq = -1;
 
-	int score = 0, mobilityCount = 0, sq = -1;
-
+	int32_t score = 0;
+	
 	U64 attacksBB;
 	
 	while (knightsBB) {
@@ -564,13 +566,10 @@ int knightsEval(Thread *th) {
 
 		assert(sq >= 0 && sq <= 63);
 		
-
 		score += stm ? PSQT[Mirror64[kingSq]][KNIGHTS][Mirror64[sq]] : PSQT[kingSq][KNIGHTS][sq];
 
 
-
 		attacksBB = th->evalInfo.knightAttacks[stm][sq];
-
 
 
 		// Decreasing value as pawns disappear
@@ -653,7 +652,7 @@ int knightsEval(Thread *th) {
             	T->knightAttack[opp]++; 
             #endif
 
-            U64 bb = attacksBB & th->evalInfo.kingAttacks[opp];
+            const auto bb = attacksBB & th->evalInfo.kingAttacks[opp];
             if (bb) {
 
            		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
@@ -665,16 +664,16 @@ int knightsEval(Thread *th) {
 }
 
 template <Side stm>
-int bishopsEval(Thread *th) {
+int32_t bishopsEval(Thread *th) {
 
 	const auto opp = stm ^ 1;
 	const auto kingSq = th->evalInfo.kingSq[stm];
 
 	bool isDefended;
 
-	int score = 0;
-	int mobilityCount = 0;
-	int sq = -1;
+	int mobilityCount = 0, sq = -1;
+	
+	int32_t score = 0;
 	
 	auto bishopBB = stm ? th->blackPieceBB[BISHOPS] : th->whitePieceBB[BISHOPS];
 
@@ -744,7 +743,7 @@ int bishopsEval(Thread *th) {
             	T->bishopAttack[opp]++; 
             #endif
             	
-            U64 bb = (attacksBB & th->evalInfo.kingAttacks[opp]);
+            const auto bb = (attacksBB & th->evalInfo.kingAttacks[opp]);
             if (bb)	{
 
            		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
@@ -761,7 +760,7 @@ Increasing value as pawns disappear
 Tarrasch Rule
 */
 template <Side stm>
-int rooksEval(Thread *th) {
+int32_t rooksEval(Thread *th) {
 	
 	const auto opp = stm ^ 1;
 	const auto kingSq = th->evalInfo.kingSq[stm];
@@ -774,7 +773,8 @@ int rooksEval(Thread *th) {
 	
 	U64 attacksBB;
 
-	int score = 0, sq = -1, mobilityCount = 0;
+	int32_t score = 0;
+	int sq = -1, mobilityCount = 0;
 
 	while (rooksBB) {
 
@@ -915,7 +915,7 @@ int rooksEval(Thread *th) {
             	T->rookAttack[opp]++; 
             #endif
 
-            U64 bb = attacksBB & th->evalInfo.kingAttacks[opp];
+            const auto bb = attacksBB & th->evalInfo.kingAttacks[opp];
             if (bb)	{
             	
            		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
@@ -928,13 +928,14 @@ int rooksEval(Thread *th) {
 
 
 template <Side stm>
-int queenEval(Thread *th) {
+int32_t queenEval(Thread *th) {
 
 	const auto opp = stm ^ 1;
 	const auto kingSq = th->evalInfo.kingSq[stm];
 	auto queenBB = stm ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN];
 	
-	int score = 0, sq = -1, mobilityCount = 0;
+	int32_t score = 0;
+	int sq = -1, mobilityCount = 0;
 
 	U64 attacksBB;
 
@@ -954,32 +955,28 @@ int queenEval(Thread *th) {
 		if (	POPCOUNT(th->occupied) >= 22	// early game
 			&&	(stm ? sq <= 48 : sq >= 15)) { 
 
-			U64 minorPiecesBB = stm ? 
-				th->blackPieceBB[KNIGHTS] | th->blackPieceBB[BISHOPS] :
-				th->whitePieceBB[KNIGHTS] | th->whitePieceBB[BISHOPS];
+			const auto minorPiecesBB = stm ? 
+									th->blackPieceBB[KNIGHTS] | th->blackPieceBB[BISHOPS] :
+									th->whitePieceBB[KNIGHTS] | th->whitePieceBB[BISHOPS];
 
-			U64 underdevelopedPiecesBB = (stm ? RANK_8 : RANK_1) & minorPiecesBB; 
+			const auto underdevelopedPiecesBB = (stm ? RANK_8 : RANK_1) & minorPiecesBB; 
 
-			int count = POPCOUNT(underdevelopedPiecesBB);
-			
-			score += count * weight_queen_underdeveloped_pieces;
+			score += POPCOUNT(underdevelopedPiecesBB) * weight_queen_underdeveloped_pieces;
 			
 			#if defined(TUNE)	
 	
-				T->queenUnderdevelopedPieces[stm] += count;
+				T->queenUnderdevelopedPieces[stm] += POPCOUNT(underdevelopedPiecesBB);
 			#endif
 		}
 
 
 		// Queen mobility
 		
-		mobilityCount = POPCOUNT(attacksBB & th->empty);
-
-		score += arr_weight_queen_mobility[mobilityCount];
+		score += arr_weight_queen_mobility[POPCOUNT(attacksBB & th->empty)];
 
 		#if defined(TUNE)	
 	
-			T->queenMobility[stm][mobilityCount]++;
+			T->queenMobility[stm][POPCOUNT(attacksBB & th->empty)]++;
 		#endif
 
 
@@ -994,7 +991,7 @@ int queenEval(Thread *th) {
             	T->queenAttack[opp]++; 
             #endif
 
-            U64 bb = attacksBB & th->evalInfo.kingAttacks[opp];
+            const auto bb = attacksBB & th->evalInfo.kingAttacks[opp];
             if (bb)	{
 
            		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
@@ -1006,7 +1003,7 @@ int queenEval(Thread *th) {
 }
 
 template <Side stm>
-int kingEval(Thread *th) {
+int32_t kingEval(Thread *th) {
 	
 	const auto opp = stm ^ 1;
 	const auto kingSq = th->evalInfo.kingSq[stm];
@@ -1015,7 +1012,7 @@ int kingEval(Thread *th) {
 
 	auto pawnStormZone = th->evalInfo.kingZoneBB[stm];
 	
-	int score = 0;	
+	int32_t score = 0;	
 	
 	assert(kingSq >= 0 && kingSq < 64);
 
@@ -1098,7 +1095,7 @@ int kingEval(Thread *th) {
 
 		#endif
 	
- 		int mg = ScoreMG(safetyScore), eg = ScoreEG(safetyScore);
+ 		const auto mg = ScoreMG(safetyScore), eg = ScoreEG(safetyScore);
 
         score += MakeScore(-mg * MAX(0, mg) / 720, -MAX(0, eg) / 20); 
 	} 
@@ -1117,9 +1114,9 @@ int kingEval(Thread *th) {
 }
 
 template <Side stm>
-int evalBoard(Thread *th) {
+int32_t evalBoard(Thread *th) {
 
-	int score = 0;
+	int32_t score = 0;
 
 	score += POPCOUNT(CENTER & th->evalInfo.attacks[stm]) * weight_center_control;
 
@@ -1148,8 +1145,8 @@ void initPSQT() {
 	}
 }
 
-
-U64 pawnHoles(U8 stm, Thread *th) {
+template<Side stm>
+U64 pawnHoles(Thread *th) {
 
 	U64 pawnsBB = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 
@@ -1163,13 +1160,14 @@ U64 pawnHoles(U8 stm, Thread *th) {
 	return holes;
 }
 
-	
-U64 isolatedPawns(U8 stm, Thread *th) {
+template<Side stm>	
+U64 isolatedPawns(Thread *th) {
 
 	return isolanis(stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS]);
 }
 
-U64 doublePawns(U8 stm, Thread *th) {
+template<Side stm> 
+U64 doublePawns(Thread *th) {
 
 	U64 pawnsBB = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 
@@ -1178,16 +1176,12 @@ U64 doublePawns(U8 stm, Thread *th) {
 	return doublePawnsBB;	
 }
 
-U64 backwardPawns(U8 stm, Thread *th) {
+template<Side stm>
+U64 backwardPawns(Thread *th) {
 
-	return stm ? 	bBackward(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS])
-				:	wBackward(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
-}
-
-int countDefendedPawns(U8 stm, Thread *th) {
-
-	return stm ? POPCOUNT(bPawnDefendedFromWest(th->blackPieceBB[PAWNS])) + POPCOUNT(bPawnDefendedFromEast(th->blackPieceBB[PAWNS])) : 
-		POPCOUNT(wPawnDefendedFromWest(th->whitePieceBB[PAWNS])) + POPCOUNT(wPawnDefendedFromEast(th->whitePieceBB[PAWNS]));
+	return stm == WHITE ? 
+			wBackward(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]) :
+			bBackward(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]);
 }
 
 // pawns with at least one pawn in front on the same file
