@@ -57,25 +57,29 @@
 #define POP_POSITION(pieces) pieces &= pieces - 1
 
 /* Extract data from a move structure */
-#define promType(move)		(move & 0x3000000) >> 24
-#define castleDir(move)		(move & 0xC00000) >> 22
-#define move_type(move)     (move & 0x380000) >> 19
-#define colorType(move)     (move & 0x40000) >> 18
-#define cPieceType(move)    (move & 0x38000) >> 15
-#define pieceType(move)     (move & 0x7000) >> 12
-#define from_sq(move)       (move & 0xFC0) >> 6
+#define promType(move)		(move & 0x3000000)	>> 24
+#define castleDir(move)		(move & 0xC00000) 	>> 22
+#define move_type(move)     (move & 0x380000)	>> 19
+#define colorType(move)     (move & 0x40000) 	>> 18
+#define cPieceType(move)    (move & 0x38000) 	>> 15
+#define pieceType(move)     (move & 0x7000) 	>> 12
+#define from_sq(move)       (move & 0xFC0) 		>> 6
 #define to_sq(move)          move & 0x3F
 
-#define MakeScore(mg, eg) ((int)((unsigned int)(eg) << 16) + (mg))
 #define ScoreMG(s) ((int16_t)((uint16_t)((unsigned)((s)))))
 #define ScoreEG(s) ((int16_t)((uint16_t)((unsigned)((s) + 0x8000) >> 16)))
 
-constexpr inline int S(const int mg, const int eg) {
-
-	return static_cast<int>(static_cast<unsigned int>(eg) << 16) + mg;
-}
-
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
 #define MAX(A, B) ((A) > (B) ? (A) : (B))
+
+inline int MakeScore(int mg, int eg) {
+
+	return (int)((unsigned int)eg << 16) + mg;
+}
+
+constexpr int S(const int mg, const int eg) {
+
+	return (int)((unsigned int)eg << 16) + mg;
+}
 
 #endif

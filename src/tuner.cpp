@@ -1068,7 +1068,7 @@ void saveWeights(TVector params, TVector cparams) {
 
 	myfile << "\n";
 
-	myfile << "inline int" << "\n\n";
+	myfile << "constexpr int" << "\n\n";
 
 	myfile 
 		<< "weight_val_pawn = " 		<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
@@ -1221,94 +1221,46 @@ void saveWeights(TVector params, TVector cparams) {
 
 
 	// PSQT weights
-
-	myfile <<"\n"<< "int kingPSQT[U8_MAX_SQUARES] = {" <<"\n\n";
+	
+	myfile << "\n" << "kingPSQT[U8_MAX_SQUARES] = {" 	<<	"\n\n";	
 	for (int i = 0; i < U8_MAX_SQUARES; i++) { 
 
-		myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-			std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-			
-		if(((i + 1) % 8) == 0) 
-			myfile<<"\n";
+		myfile << "S(" 
+				<< std::setw(4) << (int)weights[MG][count] << "," 
+				<< std::setw(4) << (int)weights[EG][count++] << ")" << ", "; 
+
+		if (((i + 1) % 8) == 0) 
+			myfile << "\n";
 	}	
-	myfile <<"};"<<"\n"; 
+	myfile << "};" << "\n"; 	
 	
+	for (int piece = PAWNS; piece < KING; piece++) {
 
-	myfile <<"\n"<< "int pawnPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {" <<"\n\n";
-	for (int j = 0; j < U8_MAX_SQUARES; j++) { 
+		if (piece == PAWNS)
+			myfile << "\n" << "pawnPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {" 	<<	"\n\n";
+		if (piece == KNIGHTS)
+			myfile << "\n" << "knightPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {" <<	"\n\n";
+		if (piece == BISHOPS)
+			myfile << "\n" << "bishopPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {" <<	"\n\n";
+		if (piece == ROOKS)
+			myfile << "\n" << "rookPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {" 	<<	"\n\n";
+		if (piece == QUEEN)
+			myfile << "\n" << "queenPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {" 	<<	"\n\n";
 
-		for (int i = 0; i < U8_MAX_SQUARES; i++) { 
+		for (int j = 0; j < U8_MAX_SQUARES; j++) { 
+			for (int i = 0; i < U8_MAX_SQUARES; i++) { 
 
-			myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-				std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-				
-			if(((i + 1) % 16) == 0) 
-				myfile<<"\n";
-		}  
-	}	
-	myfile <<"};"<<"\n"; 
-	
+				myfile << "S(" 
+						<< std::setw(4) << (int)weights[MG][count] << "," 
+						<< std::setw(4) << (int)weights[EG][count++] << ")" << ", "; 
+					
+				if (((i + 1) % 16) == 0) 
+					myfile << "\n";
+			}  
+		}	
 
-	myfile <<"\n"<< "int knightPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {" <<"\n\n";
-	for (int j = 0; j < U8_MAX_SQUARES; j++) { 
-
-		for (int i = 0; i < U8_MAX_SQUARES; i++) { 
-
-			myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-				std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-				
-			if(((i + 1) % 16) == 0) 
-				myfile<<"\n";
-		}  
-	}	
-	myfile <<"};"<<"\n"; 
-
-
-	myfile <<"\n"<< "int bishopPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {" <<"\n\n";
-	for (int j = 0; j < U8_MAX_SQUARES; j++) { 
-
-		for (int i = 0; i < U8_MAX_SQUARES; i++) { 
-
-			myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-				std::setw(4) <<(int)weights[EG][count++]<<")" << ", "; 
-				
-			if(((i + 1) % 16) == 0) 
-				myfile<<"\n";
-		}  
-	}	
-	myfile <<"};"<<"\n"; 
-
-
-
-	myfile <<"\n"<< "int rookPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {" <<"\n\n";
-	for (int j = 0; j < U8_MAX_SQUARES; j++) { 
-
-		for (int i = 0; i < U8_MAX_SQUARES; i++) { 
-
-			myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-				std::setw(4) <<	(int)weights[EG][count++]<<")" << ", "; 
-				
-			if(((i + 1) % 16) == 0) 
-				myfile<<"\n";
-		}  
-	}	
-	myfile <<"};"<<"\n"; 
-
-
-	myfile <<"\n"<< "int queenPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {" <<"\n\n";
-	for (int j = 0; j < U8_MAX_SQUARES; j++) { 
-
-		for (int i = 0; i < U8_MAX_SQUARES; i++) { 
-
-			myfile << "S(" << std::setw(4) << (int)weights[MG][count]<<"," << 
-				std::setw(4) <<	(int)weights[EG][count++]<<")" << ", "; 
-				
-			if(((i + 1) % 16) == 0) 
-				myfile<<"\n";
-		}  
-	}	
-	myfile <<"};"<<"\n"; 
-
+		myfile << "};" << "\n"; 	
+	}
 
 	myfile.close();
 
