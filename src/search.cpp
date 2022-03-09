@@ -19,6 +19,7 @@
 #include <future>
 #include <atomic>
 #include <ostream>
+#include <cstdint>
 
 #include "search.h"
 #include "evaluate.h"
@@ -201,7 +202,7 @@ void aspirationWindowSearch(SearchThread *th) {
 
 		window = U8_AP_WINDOW;
 
-		int scoreKnown = th->pvLine.at(th->completedDepth).score;
+		int32_t scoreKnown = th->pvLine.at(th->completedDepth).score;
 
   		alpha = std::max(-I32_MATE, scoreKnown - window);
 	  	beta  = std::min( I32_MATE, scoreKnown + window);	
@@ -294,7 +295,7 @@ void checkTime() {
 }
 
 template<Side stm, bool isNullMoveAllowed, bool isSingularSearch>
-int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, SearchInfo *si) {
+int32_t alphabetaSearch(int32_t alpha, int32_t beta, const int32_t mate, SearchThread *th, SearchInfo *si) {
 
 
 	// if (alpha >= beta) {
@@ -323,9 +324,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
 
 		si->pline.clear();
  
-		int score = quiescenseSearch<stm>(PLY, alpha, beta, th, &si->pline);
-		
-		return score;
+		return quiescenseSearch<stm>(PLY, alpha, beta, th, &si->pline);
 	}
 	
 
@@ -506,7 +505,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
 		
 		searchInfo.pline.clear();
 		
-		const auto score = -alphabetaSearch<OPP, NO_NULL, NON_SING>(-beta, -beta + 1, mate - 1, th, &searchInfo);
+		const int32_t score = -alphabetaSearch<OPP, NO_NULL, NON_SING>(-beta, -beta + 1, mate - 1, th, &searchInfo);
 
 		unmakeNullMove(PLY, th);
 
@@ -562,7 +561,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
 		searchInfo.depth = sDepth;
 		searchInfo.pline.clear();
 
-		const auto score = alphabetaSearch<stm, NO_NULL, SING>(sBeta - 1, sBeta, mate, th, &searchInfo);
+		const int32_t score = alphabetaSearch<stm, NO_NULL, SING>(sBeta - 1, sBeta, mate, th, &searchInfo);
 
 		searchInfo.skipMove = NO_MOVE;
 
@@ -581,7 +580,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
 	U8 hashf = hashfALPHA;
 	int currentMoveType, currentMoveToSq;
 	int reduce = 0, extend = 0, movesPlayed = 0, newDepth = 0;
-	int score = -I32_MATE, bestScore = -I32_MATE;
+	int32_t score = -I32_MATE, bestScore = -I32_MATE;
 
 	U32 bestMove = NO_MOVE, previousMove = IS_ROOT_NODE ? NO_MOVE : th->moveStack[PLY - 1].move;
 
@@ -877,7 +876,7 @@ constexpr int seeVal[8] = {	VALUE_DUMMY, VALUE_PAWN, VALUE_KNIGHT, VALUE_BISHOP,
 					
 // TODO should limit Quiescense search explosion
 template<Side stm>
-int quiescenseSearch(int ply, int alpha, int beta, SearchThread *th, std::vector<U32> *pline) {
+int32_t quiescenseSearch(int ply, int32_t alpha, int32_t beta, SearchThread *th, std::vector<U32> *pline) {
 
 
 	assert (alpha < beta);
@@ -989,8 +988,8 @@ int quiescenseSearch(int ply, int alpha, int beta, SearchThread *th, std::vector
 	const auto Q_FUTILITY_BASE = sEval + U16_Q_DELTA; 
 
 	U8 hashf = hashfALPHA, capPiece = DUMMY;
-	short movesPlayed = 0; 
-	int score = -I32_MATE;
+	int movesPlayed = 0; 
+	int32_t score = -I32_MATE;
 
 	Move currentMove;
 	
