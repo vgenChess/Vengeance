@@ -96,6 +96,7 @@ extern int weight_undefended_knight;
 extern int weight_knight_defended_by_pawn;
 
 extern int weight_bishop_pair;
+extern int weight_undefended_bishop;
 
 extern int weight_rook_behind_stm_passed_pawn;
 extern int weight_rook_behind_opp_passed_pawn;
@@ -106,6 +107,7 @@ extern int weight_rook_enemy_queen_same_file;
 extern int weight_rook_supporting_friendly_rook;
 extern int weight_rook_on_seventh_rank;
 extern int weight_rook_on_eight_rank;
+extern int weight_rook_all_pawns_count;
 
 extern int weight_queen_underdeveloped_pieces;
 

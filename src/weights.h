@@ -28,6 +28,7 @@ weight_undefended_knight = S(-10, 1),
 weight_knight_defended_by_pawn = S(-9, 7), 
 
 weight_bishop_pair = S(19, 64),
+weight_undefended_bishop = S(0, 0),
 
 weight_rook_behind_stm_passed_pawn = S(12, -4), 
 weight_rook_behind_opp_passed_pawn = S(-16, 11), 
@@ -38,6 +39,7 @@ weight_rook_enemy_queen_same_file = S(11, -9),
 weight_rook_on_seventh_rank = S(-1, 9), 
 weight_rook_on_eight_rank = S(8, 12), 
 weight_rook_supporting_friendly_rook = S(8, 23), 
+weight_rook_all_pawns_count = S(0, 0), 
 
 weight_queen_underdeveloped_pieces = S(-6, -9), 
 

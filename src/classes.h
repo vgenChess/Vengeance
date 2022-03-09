@@ -138,7 +138,7 @@ public:
 	// Bishops
 
 	int bishopPair[U8_MAX_SIDES];
-
+	int undefendedBishop[U8_MAX_SIDES];
 
 	// Rooks
 
@@ -151,8 +151,8 @@ public:
 	int rookSupportingFriendlyRook[U8_MAX_SIDES];
 	int rookOnSeventhRank[U8_MAX_SIDES];
 	int rookOnEightRank[U8_MAX_SIDES];
+	int rookAllPawnsCount[U8_MAX_SIDES];
 	
-
 	// Queen
 
 	int queenUnderdevelopedPieces[U8_MAX_SIDES];
@@ -252,6 +252,7 @@ public:
 		for (int i = 0; i < U8_MAX_SIDES; i++) {
 
 			bishopPair[i] = 0;
+			undefendedBishop[i] = 0;
 		}
 
 		for (int i = 0; i < U8_MAX_SIDES; i++) {
@@ -265,6 +266,7 @@ public:
 			rookSupportingFriendlyRook[i] = 0;
 			rookOnSeventhRank[i] = 0;
 			rookOnEightRank[i] = 0;		
+			rookAllPawnsCount[i] = 0;
 		}
 	
 		for (int i = 0; i < U8_MAX_SIDES; i++) {

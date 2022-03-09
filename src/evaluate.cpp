@@ -557,10 +557,10 @@ int knightsEval(Thread *th) {
 
 	const auto opp = stm ^ 1;
 
+	const auto allPawnsCount = POPCOUNT(th->blackPieceBB[PAWNS] | th->whitePieceBB[PAWNS]);
+
 	int score = 0;
 	int mobilityCount = 0;
-
-	int allPawnsCount = POPCOUNT(th->blackPieceBB[PAWNS] | th->whitePieceBB[PAWNS]);
 
 	int sq = -1; 
 	int kingSq = th->evalInfo.kingSq[stm];
@@ -581,14 +581,8 @@ int knightsEval(Thread *th) {
 		score += stm ? PSQT[Mirror64[kingSq]][KNIGHTS][Mirror64[sq]] : PSQT[kingSq][KNIGHTS][sq];
 
 
+
 		attacksBB = th->evalInfo.knightAttacks[stm][sq];
-
-		
-
-		// Penalty for blocking a C-pawn in closed openings 
-		// (Crafty defines it as follows: white knight on c3, white pawns on c2 and d4, no white pawn on e4)
-		// TODO implement logic
-
 
 
 
@@ -688,13 +682,14 @@ int bishopsEval(Thread *th) {
 
 	const auto opp = stm ^ 1;
 
+	bool isDefended;
+
 	int score = 0;
 	int mobilityCount = 0;
 	int sq = -1;
 
 	int kingSq = th->evalInfo.kingSq[stm];
 	
-
 	U64 bishopBB = stm ? th->blackPieceBB[BISHOPS] : th->whitePieceBB[BISHOPS];
 	
 	// Bishop pair
@@ -721,6 +716,23 @@ int bishopsEval(Thread *th) {
 
 
 		U64 attacksBB = th->evalInfo.bishopAttacks[stm][sq];
+
+
+
+		// Penalty for an undefended minor piece
+		
+		isDefended = (1ULL << sq) & th->evalInfo.attacks[stm]; 
+
+		if (!isDefended) {
+
+			score += weight_undefended_bishop;
+
+			#if defined(TUNE)	
+			
+				T->undefendedBishop[stm]++;			
+			#endif
+		}
+
 
 
 		// Bishop mobility
@@ -767,14 +779,17 @@ template <Side stm>
 int rooksEval(Thread *th) {
 	
 	const auto opp = stm ^ 1;
+	
+	const auto kingSq = th->evalInfo.kingSq[stm];
+
+	const auto allPawnsCount = POPCOUNT(th->blackPieceBB[PAWNS] | th->whitePieceBB[PAWNS]);
 
 	int score = 0;
 	int sq = -1;
 
 	int mobilityCount = 0;
 
-	const int kingSq = th->evalInfo.kingSq[stm];
-
+	
 	U64 rooksBB = stm ? th->blackPieceBB[ROOKS] : th->whitePieceBB[ROOKS];
 	U64 oppFlankPawnHoles = ~th->evalInfo.allPawnAttacks[opp] & ~EXTENDED_CENTER & ~(RANK_1 | RANK_2 | RANK_7 | RANK_8);
 
@@ -873,6 +888,17 @@ int rooksEval(Thread *th) {
 				T->rookSupportingFriendlyRook[stm] = 1;
 			#endif
 		}
+
+
+		// Increasing value as pawns disappear
+
+		score += weight_rook_all_pawns_count * allPawnsCount;
+
+		#if defined (TUNE)
+
+			T->rookAllPawnsCount[stm] += allPawnsCount; 	
+		#endif
+
 
 
 		// Rook mobility
