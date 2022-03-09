@@ -112,11 +112,13 @@ void Thread::clear() {
 /// Thread constructor launches the thread and waits until it goes to sleep
 /// in idle_loop(). Note that 'searching' and 'exit' should be already set.
 
-SearchThread::SearchThread(int index) : stdThread(&SearchThread::idle_loop, this) {
+SearchThread::SearchThread(int index) {
 
 	this->idx = index;
 	this->side = WHITE;
 	this->canReportCurrMove = false;
+
+	stdThread = std::thread(&SearchThread::idle_loop, this);
 
 	this->wait_for_search_finished();
 }
