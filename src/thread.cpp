@@ -103,7 +103,6 @@ void Thread::clear() {
 		this->blackPieceBB[i] = 0;
 	}
 
-
 	this->occupied = 0;
 	this->empty = 0;	
 }
@@ -163,7 +162,6 @@ SearchThread::~SearchThread() {
 
 
 
-
 /// Thread::start_searching() wakes up the thread that will start the search
 
 void SearchThread::start_searching() {
@@ -173,8 +171,6 @@ void SearchThread::start_searching() {
 
 	cv.notify_one(); // Wake up the thread in idle_loop()
 }
-
-
 
 
 /// Thread::wait_for_search_finished() blocks on the condition variable
@@ -227,84 +223,72 @@ void SearchThread::init() {
 	pawnsHashKey = initThread.pawnsHashKey;
 }
 
-void SearchThreadPool::set(size_t requested) {
 
-	if (size() > 0)   // destroy any existing thread(s)
-	{
-		main()->wait_for_search_finished();
+void SearchThreadPool::createThreadPool(U16 nThreads) {
 
-		while (size() > 0)
-			delete back(), pop_back();
-	}
+	if (searchThreads.size() > 0) {
 
-	if (requested > 0)   // create new thread(s)
-	{
-		push_back(new SearchThread(0));
+		getMainSearchThread()->wait_for_search_finished();
+		
+		for (U16 i = 0; i < searchThreads.size(); i++) {
 
-		while (size() < requested)
-			push_back(new SearchThread(size()));		
+			delete searchThreads.at(i);
+		}
+	
+		searchThreads.clear();
+    }
 
-		clear();
+    if (nThreads > 0) {
 
-		// Reallocate the hash with the new threadpool size
-		// TT.resize(size_t(Options["Hash"]));
-
-		// Init thread number dependent search params.
-		// Search::init();
-	}
+		searchThreads.push_back(new SearchThread(0));
+		
+		for (U16 i = 1; i < nThreads; i++)
+			searchThreads.push_back(new SearchThread(i));
+    }		
 }
 
-/// ThreadPool::clear() sets threadPool data to initial values
 
 void SearchThreadPool::clear() {
 
-	for (SearchThread* th : *this)
+	for (SearchThread* th : searchThreads)
 		th->clear();
 }
 
-/// ThreadPool::start_thinking() wakes up main thread waiting in idle_loop() and
-/// returns immediately. Main thread will wake up other threads and start the search.
 
 void SearchThreadPool::start_thinking() {
 
-	main()->wait_for_search_finished();
+	getMainSearchThread()->wait_for_search_finished();
 
-	stop = false;
+	SearchThreadPool::stop = false;
 
-	for (SearchThread* th : *this) {
-
+	for (SearchThread* th : searchThreads)
 		th->init();
-	}
 
-	main()->start_searching();
+	getMainSearchThread()->start_searching();
 }
-
-/// Start non-main threads
 
 void SearchThreadPool::start_searching() {
 
-    for (SearchThread* th : *this)
-        if (th != front()) 
-            th->start_searching();
-}
+    for (SearchThread* th : searchThreads) {
 
-/// Wait for non-main threads
+    	if (th != getMainSearchThread())
+            th->start_searching();    	
+    }
+}
 
 void SearchThreadPool::wait_for_search_finished() {
 
-    for (SearchThread* th : *this) {
+    for (SearchThread* th : searchThreads) {
 
-        if (th != front())
+        if (th != getMainSearchThread())
             th->wait_for_search_finished();
     }
 }
 
-
-
 U64 SearchThreadPool::totalNodes() {
 
 	U64 total = 0;
-	for (SearchThread *thread : Threads)
+	for (SearchThread *thread : searchThreads)
 		total += thread->nodes;
 
 	return total;
@@ -314,8 +298,11 @@ U64 SearchThreadPool::totalTTHits() {
 
 	U64 total = 0;
 
-	for (SearchThread *thread : Threads) 
+	for (SearchThread *thread : searchThreads) 
 		total += thread->ttHits;
 
 	return total;
 }
+
+
+

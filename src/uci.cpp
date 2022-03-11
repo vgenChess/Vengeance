@@ -55,7 +55,7 @@ void setOption(std::string &line) {
 
         option_thread_count = std::stoi(line.substr(29, std::string::npos));
 
-        Threads.set(option_thread_count);
+        Threads.createThreadPool(option_thread_count);
 
         std::cout<<"info string set Threads to " << option_thread_count << "\n";
     } 
@@ -98,7 +98,7 @@ void UciLoop() {
 
             clearHashTable();
 
-            for (Thread *thread : Threads)
+            for (Thread *thread : Threads.getSearchThreads())
                 thread->clear();
 
             initThread.clear();

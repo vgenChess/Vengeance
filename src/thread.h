@@ -76,28 +76,37 @@ public:
 	explicit SearchThread(int);
 	virtual ~SearchThread();
 
-	int index() { return idx; }
+	int getIndex() { return idx; }
 	
 	void init();
 	void start_searching();
 	void wait_for_search_finished();
 };
 
-struct SearchThreadPool : public std::vector<SearchThread*> {
 
-	std::atomic_bool stop;
+class SearchThreadPool {
 
-	void set(size_t);
+std::vector<SearchThread*> searchThreads;
+
+public:
+
+	static bool stop;
+
+	void createThreadPool();
+
+	void createThreadPool(U16 nThreads);
 	void clear();
 
 	void start_thinking();
 	void start_searching();
 	void wait_for_search_finished();
 
-	SearchThread* main() const { return front(); }
+	SearchThread* getMainSearchThread() const { return searchThreads.at(0); }
 
 	U64 totalNodes();
 	U64 totalTTHits();
+
+	std::vector<SearchThread*> getSearchThreads() { return searchThreads; }
 };
 
 

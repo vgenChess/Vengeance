@@ -60,12 +60,13 @@ void initLMR() {
     }
 }
 
-bool SearchThread::abortSearch;
+bool SearchThread::abortSearch = false;
+bool SearchThreadPool::stop = false;
 
 //TODO refactor logic
 void startSearch(Side stm, SearchThread *th) {
 
-	if (th == Threads.main()) {
+	if (th == Threads.getMainSearchThread()) {
 
 		SearchThread::abortSearch = false;
 
@@ -79,17 +80,17 @@ void startSearch(Side stm, SearchThread *th) {
 		SearchThread::abortSearch = true;
 
 		// When we reach the maximum depth, we can arrive here without a raise of
-		// Threads.stop. However, if we are pondering or in an infinite search,
+		// SearchThreadPool::stop. However, if we are pondering or in an infinite search,
 		// the UCI protocol states that we shouldn't print the best move before the
 		// GUI sends a "stop" or "ponderhit" command. We therefore simply wait here
 		// until the GUI sends one of those commands.
 
-		while (!Threads.stop)
+		while (!SearchThreadPool::stop)
 		{} // Busy wait for a stop or a ponder reset
 
 		// Stop the threads if not already stopped (also raise the stop if
 		// "ponderhit" just reset Threads.ponder).
-		Threads.stop = true;
+		SearchThreadPool::stop = true;
 
 		// Wait until all threads have finished
 		Threads.wait_for_search_finished();
@@ -120,14 +121,14 @@ void iterativeDeepeningSearch(SearchThread *th) {
 
 	for (int depth = 1; depth < MAX_DEPTH; depth++) {
 
-		if (th != Threads.main()) { 
+		if (th != Threads.getMainSearchThread()) { 
 
 			// Mutex will automatically be unlocked when lck goes out of scope
 			std::lock_guard<std::mutex> lck {mtx}; 
 
 			U16 count = 0;
 
-			for (SearchThread *thread : Threads) {
+			for (SearchThread *thread : Threads.getSearchThreads()) {
 
 				if (th != thread && depth == thread->depth) {
 				
@@ -135,7 +136,7 @@ void iterativeDeepeningSearch(SearchThread *th) {
 	            }
 			}
 
-			if (count >= (Threads.size() / 2)) {
+			if (count >= (option_thread_count / 2)) {
 
 				continue;
 			}
@@ -150,11 +151,11 @@ void iterativeDeepeningSearch(SearchThread *th) {
 			aspirationWindowSearch<BLACK>(th);
 		
 
-		if (Threads.stop)
+		if (SearchThreadPool::stop)
 			break;
 
 
-		if (th != Threads.main())
+		if (th != Threads.getMainSearchThread())
 			continue;
 
 
@@ -189,13 +190,13 @@ void iterativeDeepeningSearch(SearchThread *th) {
 	    	if (	vgen::time_elapsed_milliseconds(startTime) 
 	    		>	(timePerMove * scoreChangeFactor * stableMoveFactor * winFactor)) {
 
-				Threads.stop = true;
+				SearchThreadPool::stop = true;
 				break;	
 			}
 		}
 	} 
 
-	Threads.stop = true;
+	SearchThreadPool::stop = true;
 }
 
 template<Side stm>
@@ -239,7 +240,7 @@ void aspirationWindowSearch(SearchThread *th) {
 				alphabetaSearch<WHITE, NO_NULL, NON_SING>(alpha, beta, I32_MATE, th, &searchInfo):
 				alphabetaSearch<BLACK, NO_NULL, NON_SING>(alpha, beta, I32_MATE, th, &searchInfo);
 
-		if (Threads.stop)
+		if (SearchThreadPool::stop)
         	break;
 
 		if (score <= alpha)	{
@@ -273,14 +274,14 @@ void aspirationWindowSearch(SearchThread *th) {
 	}
 
 	
-	if (Threads.stop)
+	if (SearchThreadPool::stop)
     	return;
 
 
 	assert (score > alpha && score < beta);
 
 
-	if (th != Threads.main()) 
+	if (th != Threads.getMainSearchThread()) 
 		return;
 
 	reportPV(th);
@@ -288,7 +289,7 @@ void aspirationWindowSearch(SearchThread *th) {
 
 void checkTime() {
 
-	Threads.stop = vgen::time_now().time_since_epoch() >= stopTime.time_since_epoch();
+	SearchThreadPool::stop = vgen::time_now().time_since_epoch() >= stopTime.time_since_epoch();
 }
 
 template<Side stm, bool isNullMoveAllowed, bool isSingularSearch>
@@ -306,7 +307,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
 	
 	const auto PLY = si->ply;
 	const auto IS_ROOT_NODE = PLY == 0;
-  	const auto IS_MAIN_THREAD = th == Threads.main();
+  	const auto IS_MAIN_THREAD = th == Threads.getMainSearchThread();
   	const auto IS_SINGULAR_SEARCH = isSingularSearch;
 	const auto CAN_NULL_MOVE = isNullMoveAllowed;
 	const auto IS_PV_NODE = alpha != beta - 1;
@@ -330,7 +331,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
 	if (timeSet && IS_MAIN_THREAD && th->nodes % U16_CHECK_NODES == 0)
 		checkTime();
 	
-	if (IS_MAIN_THREAD && Threads.stop) 
+	if (IS_MAIN_THREAD && SearchThreadPool::stop) 
 		return 0;
 
 	if (SearchThread::abortSearch) 
@@ -888,14 +889,14 @@ int quiescenseSearch(int ply, int alpha, int beta, SearchThread *th, std::vector
 
 	const auto OPP = stm == WHITE ? BLACK : WHITE;
 
-	const bool IS_MAIN_THREAD = th == Threads.main();
+	const bool IS_MAIN_THREAD = th == Threads.getMainSearchThread();
 
 
 	// Check if time limit has been reached
 	if (timeSet && IS_MAIN_THREAD && th->nodes % U16_CHECK_NODES == 0) 
 		checkTime();	
 	
-	if (IS_MAIN_THREAD && Threads.stop) 
+	if (IS_MAIN_THREAD && SearchThreadPool::stop) 
 		return 0;
 
 	if (SearchThread::abortSearch) 
