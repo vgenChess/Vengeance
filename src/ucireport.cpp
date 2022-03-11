@@ -49,13 +49,6 @@ void reportBestMove() {
 
 	std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
 }
-
-void reportCurrentMove(int depth, int currentMoveNumber, U32 move) {
-
-	std::cout << "info depth " << depth << " currmove ";
-
-	std::cout << getMoveNotation(move) << " currmovenumber " << currentMoveNumber << std::endl;
-}
 	
 void reportPV(SearchThread *th) {
 

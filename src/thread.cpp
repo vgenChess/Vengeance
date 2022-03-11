@@ -120,7 +120,6 @@ SearchThread::SearchThread(int index) {
 
 	this->idx = index;
 	this->side = WHITE;
-	this->canReportCurrMove = false;
 
 	stdThread = std::thread(&SearchThread::idle_loop, this);
 

@@ -63,7 +63,6 @@ public:
 	ThreadState state = SLEEP;
 	
 	bool terminate = false;
-	bool canReportCurrMove;
 
 	int idx, depth, completedDepth, selDepth;
 

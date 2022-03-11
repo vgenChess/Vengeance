@@ -9,7 +9,6 @@
 
 std::string getMoveNotation(const U32 move);
 void reportBestMove();
-void reportCurrentMove(int depth, int currentMoveNumber, U32 move);
 void reportPV(SearchThread *th);
 
 #endif

@@ -287,15 +287,6 @@ void aspirationWindowSearch(SearchThread *th) {
 		return;
 
 	reportPV(th);
-
-	if (!th->canReportCurrMove) {
-
-		int interval = std::chrono::duration_cast<std::chrono::milliseconds>(
-		    std::chrono::steady_clock::now() - startTime).count();    	
-
-		if (interval > 3000) 
-			th->canReportCurrMove = true;
-	}
 }
 
 void checkTime() {
@@ -640,6 +631,19 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
 		movesPlayed++;
 
 
+		// report current depth, moves played and current move being searched
+		if (IS_ROOT_NODE && IS_MAIN_THREAD) {
+		
+			const auto timeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+		   		std::chrono::steady_clock::now() - startTime).count();
+			if (timeElapsed > U16_CURRMOVE_INTERVAL) {
+
+				std::cout << "info depth " << si->realDepth << " currmove ";
+				std::cout << getMoveNotation(currentMove.move) << " currmovenumber " << movesPlayed << std::endl;
+			}
+		}
+
+
 		currentMoveType = move_type(currentMove.move);
 		currentMoveToSq = to_sq(currentMove.move);
 
@@ -694,12 +698,6 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
 				}
 			}	
 		}
-
-
-        // report current move being searched
-        if (IS_ROOT_NODE &&	IS_MAIN_THREAD && th->canReportCurrMove)
-        	reportCurrentMove(si->realDepth, movesPlayed, currentMove.move);
-        
         
         th->moveStack[PLY].move = currentMove.move;
 

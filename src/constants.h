@@ -28,6 +28,7 @@ const uint16_t U16_RVRFPRUNE = 265;
 const uint16_t U16_EXT_RVRFPRUNE = 515;
 const uint16_t U16_LTD_RVRRAZOR = 915;
 const uint16_t U16_Q_DELTA = 150;
+const uint16_t U16_CURRMOVE_INTERVAL = 4000;
 
 const int16_t I16_NO_DEPTH = -127;
 const int16_t I16_HISTORY_PRUNING = -5000;   
