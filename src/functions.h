@@ -2,6 +2,8 @@
 #define FUNCTIONS_H
 
 #include <cstdint>
+#include <ctime>
+#include <chrono>
 
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
 #define BYTE_TO_BINARY(byte)  \
@@ -80,6 +82,24 @@ inline int MakeScore(int mg, int eg) {
 constexpr int S(const int mg, const int eg) {
 
 	return (int)((unsigned int)eg << 16) + mg;
+}
+
+namespace vgen {
+
+	inline std::chrono::time_point<std::chrono::steady_clock> time_now() {
+	 	
+	 	return std::chrono::steady_clock::now();
+	} 	
+
+	inline int time_elapsed_milliseconds(std::chrono::time_point<std::chrono::steady_clock> t) {
+	 	
+	 	return std::chrono::duration_cast<std::chrono::milliseconds>(vgen::time_now() - t).count();
+	} 	
+
+	inline int time_elapsed_seconds(std::chrono::time_point<std::chrono::steady_clock> t) {
+	 	
+	 	return std::chrono::duration_cast<std::chrono::seconds>(vgen::time_now() - t).count();
+	} 	
 }
 
 #endif

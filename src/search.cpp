@@ -185,12 +185,9 @@ void iterativeDeepeningSearch(SearchThread *th) {
 			// win factor
 			const auto winFactor = currentScore >= U16_WIN_SCORE ? 0.5 : 1;
 			
-		    
 		    // Check for time 
-		    std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
-		    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
-
-	    	if (timeSpent > (timePerMove * scoreChangeFactor * stableMoveFactor * winFactor)) {
+	    	if (	vgen::time_elapsed_milliseconds(startTime) 
+	    		>	(timePerMove * scoreChangeFactor * stableMoveFactor * winFactor)) {
 
 				Threads.stop = true;
 				break;	
@@ -291,9 +288,7 @@ void aspirationWindowSearch(SearchThread *th) {
 
 void checkTime() {
 
-	const auto timeNow = std::chrono::steady_clock::now();
-
-	Threads.stop = timeNow.time_since_epoch() >= stopTime.time_since_epoch();
+	Threads.stop = vgen::time_now().time_since_epoch() >= stopTime.time_since_epoch();
 }
 
 template<Side stm, bool isNullMoveAllowed, bool isSingularSearch>
@@ -634,9 +629,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
 		// report current depth, moves played and current move being searched
 		if (IS_ROOT_NODE && IS_MAIN_THREAD) {
 		
-			const auto timeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-		   		std::chrono::steady_clock::now() - startTime).count();
-			if (timeElapsed > U16_CURRMOVE_INTERVAL) {
+			if (vgen::time_elapsed_milliseconds(startTime) > U16_CURRMOVE_INTERVAL) {
 
 				std::cout << "info depth " << si->realDepth << " currmove ";
 				std::cout << getMoveNotation(currentMove.move) << " currmovenumber " << movesPlayed << std::endl;
