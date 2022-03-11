@@ -304,5 +304,14 @@ U64 SearchThreadPool::totalTTHits() {
 	return total;
 }
 
+SearchThread* SearchThreadPool::getMainSearchThread() { 
+
+	return searchThreads.at(0); 
+}
+
+std::vector<SearchThread*> SearchThreadPool::getSearchThreads() { 
+
+	return searchThreads;	
+}
 
 

@@ -66,7 +66,7 @@ public:
 
 	int idx, depth, completedDepth, selDepth;
 
-	std::atomic<uint64_t> nodes, ttHits;
+	std::atomic<U64> nodes, ttHits;
     
     std::thread stdThread;
 
@@ -92,8 +92,6 @@ public:
 
 	static bool stop;
 
-	void createThreadPool();
-
 	void createThreadPool(U16 nThreads);
 	void clear();
 
@@ -101,12 +99,12 @@ public:
 	void start_searching();
 	void wait_for_search_finished();
 
-	SearchThread* getMainSearchThread() const { return searchThreads.at(0); }
-
 	U64 totalNodes();
 	U64 totalTTHits();
 
-	std::vector<SearchThread*> getSearchThreads() { return searchThreads; }
+	SearchThread* getMainSearchThread();
+	
+	std::vector<SearchThread*> getSearchThreads();
 };
 
 
