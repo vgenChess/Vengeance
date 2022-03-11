@@ -22,8 +22,8 @@ public:
 
 	U16 moves_history_counter;
 	
-	int32_t historyScore[2][64][64];
-	int32_t captureHistoryScore[8][64][8]; // [piece][to][c_piece]
+	int historyScore[2][64][64];
+	int captureHistoryScore[8][64][8]; // [piece][to][c_piece]
 
 	U32 counterMove[2][64][64];
 	
@@ -81,7 +81,6 @@ public:
 	void init();
 	void start_searching();
 	void wait_for_search_finished();
-	void idle_loop();
 };
 
 struct SearchThreadPool : public std::vector<SearchThread*> {

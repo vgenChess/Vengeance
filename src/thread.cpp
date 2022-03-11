@@ -4,7 +4,7 @@
 #include "search.h"
 
 Thread initThread;
-SearchThreadPool Threads; // TODO rename
+SearchThreadPool Threads;
 
 Thread::Thread() {
 
@@ -114,7 +114,7 @@ SearchThread::SearchThread(int index) {
 	side = WHITE;
 	state = SLEEP;
 
-	stdThread = std::thread([this](){
+	stdThread = std::thread([this]() {
 
 		while (true) {
 
@@ -187,35 +187,9 @@ void SearchThread::wait_for_search_finished() {
 }
 
 
-
-
-void SearchThread::idle_loop() {
-
-	while (true) {
-
-		std::unique_lock<std::mutex> lk(mutex);
-
-		state = SLEEP;
-
-		cv.notify_one(); // Wake up anyone waiting for search finished
-		cv.wait(lk, [&]{ return state != SLEEP; });
-
-		if (terminate) 
-			break;
-
-		state = SEARCH;
-
-		lk.unlock();
-
-		startSearch(this->side, this);
-	}
-}
-
-
-
 void SearchThread::init() {
 
-	this->side = initThread.side;
+	side = initThread.side;
 
 	pvLine.clear();
 	moveStack.clear();	
@@ -324,6 +298,8 @@ void SearchThreadPool::wait_for_search_finished() {
             th->wait_for_search_finished();
     }
 }
+
+
 
 U64 SearchThreadPool::totalNodes() {
 

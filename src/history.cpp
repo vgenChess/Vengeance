@@ -7,8 +7,11 @@
 
 void updateHistory(Side stm, int ply, int depth, U32 bestMove, std::vector<U32> &quietMovesPlayed, Thread *th) {
 
-	int32_t hScore;
-	int32_t bonus = std::min(400, depth * depth), delta = 0;
+	// For debugging
+	// std::lock_guard<std::mutex> lk(mtx);
+
+	int hScore;
+	int bonus = std::min(400, depth * depth), delta = 0;
 
 	U32 previousMove;
 
@@ -20,10 +23,8 @@ void updateHistory(Side stm, int ply, int depth, U32 bestMove, std::vector<U32> 
 
 		th->historyScore[stm][from_sq(move)][to_sq(move)] += 32 * delta - hScore * std::abs(delta) / 512;
 
-		// mtx.lock();
 		// if (th->historyScore[side][from_sq(move)][to_sq(move)] > 10000)
 		//     std::cout << th->historyScore[side][from_sq(move)][to_sq(move)] << ", ";
-		// mtx.unlock();
 	}
 
 	// Counter move heuristics
@@ -37,9 +38,12 @@ void updateHistory(Side stm, int ply, int depth, U32 bestMove, std::vector<U32> 
 
 void updateCaptureHistory(int depth, U32 bestMove,std::vector<U32>&captureMovesPlayed, Thread *th) {
 
-	int32_t bonus = std::min(400, depth * depth), delta = 0;
+	// For debugging
+	// std::lock_guard<std::mutex> lk(mtx);
 
-	int32_t score;
+	int bonus = std::min(400, depth * depth), delta = 0;
+
+	int score;
 
 	uint16_t atk_piece, to, cap_piece;
 	
@@ -63,9 +67,7 @@ void updateCaptureHistory(int depth, U32 bestMove,std::vector<U32>&captureMovesP
 
 		th->captureHistoryScore[atk_piece][to][cap_piece] += 32 * delta - score * std::abs(delta) / 512;
 
-		// mtx.lock();
 		// if (th->captureHistoryScore[atk_piece][to][cap_piece] > 1000)
 		//     std::cout << th->captureHistoryScore[atk_piece][to][cap_piece] << ", ";
-		// mtx.unlock();
 	}
 }
