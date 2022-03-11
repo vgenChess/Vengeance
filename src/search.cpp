@@ -61,7 +61,7 @@ void initLMR() {
 }
 
 bool SearchThread::abortSearch = false;
-bool SearchThreadPool::stop = false;
+bool SearchThread::stop = false;
 
 //TODO refactor logic
 void startSearch(Side stm, SearchThread *th) {
@@ -80,17 +80,17 @@ void startSearch(Side stm, SearchThread *th) {
 		SearchThread::abortSearch = true;
 
 		// When we reach the maximum depth, we can arrive here without a raise of
-		// SearchThreadPool::stop. However, if we are pondering or in an infinite search,
+		// SearchThread::stop. However, if we are pondering or in an infinite search,
 		// the UCI protocol states that we shouldn't print the best move before the
 		// GUI sends a "stop" or "ponderhit" command. We therefore simply wait here
 		// until the GUI sends one of those commands.
 
-		while (!SearchThreadPool::stop)
+		while (!SearchThread::stop)
 		{} // Busy wait for a stop or a ponder reset
 
 		// Stop the threads if not already stopped (also raise the stop if
 		// "ponderhit" just reset Threads.ponder).
-		SearchThreadPool::stop = true;
+		SearchThread::stop = true;
 
 		// Wait until all threads have finished
 		Threads.wait_for_search_finished();
@@ -151,7 +151,7 @@ void iterativeDeepeningSearch(SearchThread *th) {
 			aspirationWindowSearch<BLACK>(th);
 		
 
-		if (SearchThreadPool::stop)
+		if (SearchThread::stop)
 			break;
 
 
@@ -190,13 +190,13 @@ void iterativeDeepeningSearch(SearchThread *th) {
 	    	if (	vgen::time_elapsed_milliseconds(startTime) 
 	    		>	(timePerMove * scoreChangeFactor * stableMoveFactor * winFactor)) {
 
-				SearchThreadPool::stop = true;
+				SearchThread::stop = true;
 				break;	
 			}
 		}
 	} 
 
-	SearchThreadPool::stop = true;
+	SearchThread::stop = true;
 }
 
 template<Side stm>
@@ -240,7 +240,7 @@ void aspirationWindowSearch(SearchThread *th) {
 				alphabetaSearch<WHITE, NO_NULL, NON_SING>(alpha, beta, I32_MATE, th, &searchInfo):
 				alphabetaSearch<BLACK, NO_NULL, NON_SING>(alpha, beta, I32_MATE, th, &searchInfo);
 
-		if (SearchThreadPool::stop)
+		if (SearchThread::stop)
         	break;
 
 		if (score <= alpha)	{
@@ -274,7 +274,7 @@ void aspirationWindowSearch(SearchThread *th) {
 	}
 
 	
-	if (SearchThreadPool::stop)
+	if (SearchThread::stop)
     	return;
 
 
@@ -289,7 +289,7 @@ void aspirationWindowSearch(SearchThread *th) {
 
 void checkTime() {
 
-	SearchThreadPool::stop = vgen::time_now().time_since_epoch() >= stopTime.time_since_epoch();
+	SearchThread::stop = vgen::time_now().time_since_epoch() >= stopTime.time_since_epoch();
 }
 
 template<Side stm, bool isNullMoveAllowed, bool isSingularSearch>
@@ -331,7 +331,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
 	if (timeSet && IS_MAIN_THREAD && th->nodes % U16_CHECK_NODES == 0)
 		checkTime();
 	
-	if (IS_MAIN_THREAD && SearchThreadPool::stop) 
+	if (IS_MAIN_THREAD && SearchThread::stop) 
 		return 0;
 
 	if (SearchThread::abortSearch) 
@@ -896,7 +896,7 @@ int quiescenseSearch(int ply, int alpha, int beta, SearchThread *th, std::vector
 	if (timeSet && IS_MAIN_THREAD && th->nodes % U16_CHECK_NODES == 0) 
 		checkTime();	
 	
-	if (IS_MAIN_THREAD && SearchThreadPool::stop) 
+	if (IS_MAIN_THREAD && SearchThread::stop) 
 		return 0;
 
 	if (SearchThread::abortSearch) 

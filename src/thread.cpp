@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <cstring>
 
 #include "thread.h"
 #include "search.h"
@@ -8,103 +9,49 @@ SearchThreadPool Threads;
 
 Thread::Thread() {
 
-	this->moveList = std::vector<MOVE_LIST> (U16_MAX_MOVES);
-	this->pvLine = std::vector<PV> (U16_MAX_PLY);
-	this->moveStack = std::vector<MOVE_STACK> (U16_MAX_PLY + 4);
-	this->undoMoveStack = std::vector<UNDO_MOVE_STACK> (U16_MAX_PLY + 4);
-	this->movesHistory = std::vector<MOVES_HISTORY> (8192);
-	this->pawnHashTable = std::vector<PAWNS_HASH> (U32_PAWN_HASH_TABLE_SIZE);
-	this->evalHashTable = std::vector<EVAL_HASH> (U32_EVAL_HASH_TABLE_SIZE);
-
-	for (int i = 0; i < 2; ++i) {
-		for (int j = 0; j < 64; ++j) {
-			for (int k = 0; k < 64; ++k) {
-
-				this->historyScore[i][j][k] = 0;
-				this->counterMove[i][j][k] = 0;
-			}
-		}
-	}
-
-	for (int i = 0; i < U8_MAX_PIECES; ++i) {
-		
-		this->whitePieceBB[i] = 0;
-		this->blackPieceBB[i] = 0;
-	}
-
-	this->occupied = 0;
-	this->empty = 0;
+	init();
 }
 
-void Thread::initMembers() {
+void Thread::init() {
 
-	this->moveList = std::vector<MOVE_LIST> (U16_MAX_MOVES);
-	this->pvLine = std::vector<PV> (U16_MAX_PLY);
-	this->moveStack = std::vector<MOVE_STACK> (U16_MAX_PLY + 4);
-	this->undoMoveStack = std::vector<UNDO_MOVE_STACK> (U16_MAX_PLY + 4);
-	this->movesHistory = std::vector<MOVES_HISTORY> (8192);
-	this->pawnHashTable = std::vector<PAWNS_HASH> (U32_PAWN_HASH_TABLE_SIZE);
-	this->evalHashTable = std::vector<EVAL_HASH> (U32_EVAL_HASH_TABLE_SIZE);
+	moveList = 		std::vector<MOVE_LIST> (U16_MAX_MOVES);
+	pvLine = 		std::vector<PV> (U16_MAX_PLY);
+	moveStack = 	std::vector<MOVE_STACK> (U16_MAX_PLY + 4);
+	undoMoveStack = std::vector<UNDO_MOVE_STACK> (U16_MAX_PLY + 4);
+	movesHistory = 	std::vector<MOVES_HISTORY> (8192);
+	pawnHashTable = std::vector<PAWNS_HASH> (U32_PAWN_HASH_TABLE_SIZE);
+	evalHashTable = std::vector<EVAL_HASH> (U32_EVAL_HASH_TABLE_SIZE);	
+	
+	memset(captureHistoryScore, 0, sizeof(int) * 8 * 64 * 8);
+	memset(historyScore, 0, sizeof(int) * 2 * 64 * 64);
+	memset(counterMove, 0, sizeof(U32) * 2 * 64 * 64);
 
-	for (int i = 0; i < 2; ++i) {
-		for (int j = 0; j < 64; ++j) {
-			for (int k = 0; k < 64; ++k) {
+	memset(whitePieceBB, 0, sizeof(U64) * 8);
+	memset(blackPieceBB, 0, sizeof(U64) * 8);
 
-				this->historyScore[i][j][k] = 0;
-				this->counterMove[i][j][k] = 0;
-			}
-		}
-	}
-
-	for (int i = 0; i < U8_MAX_PIECES; ++i) {
-		
-		this->whitePieceBB[i] = 0;
-		this->blackPieceBB[i] = 0;
-	}
-
-	this->occupied = 0;
-	this->empty = 0;	
+	occupied = 0;
+	empty = 0;		
 }
 
 void Thread::clear() {
 
-	this->moveList.clear();
-	this->pvLine.clear();
-	this->moveStack.clear();
-	this->undoMoveStack.clear();
-	this->movesHistory.clear();
-	this->pawnHashTable.clear();
-	this->evalHashTable.clear();
+	moveList.clear();
+	pvLine.clear();
+	moveStack.clear();
+	undoMoveStack.clear();
+	movesHistory.clear();
+	pawnHashTable.clear();
+	evalHashTable.clear();
 
+	memset(captureHistoryScore, 0, sizeof(int) * 8 * 64 * 8);
+	memset(historyScore, 0, sizeof(int) * 2 * 64 * 64);
+	memset(counterMove, 0, sizeof(U32) * 2 * 64 * 64);
 
-	for (int i = 0; i < 8; ++i) {
-		for (int j = 0; j < 64; ++j) {
-			for (int k = 0; k < 8; ++k) {
+	memset(whitePieceBB, 0, sizeof(U64) * 8);
+	memset(blackPieceBB, 0, sizeof(U64) * 8);
 
-				this->captureHistoryScore[i][j][k] = 0;
-			}
-		}
-	}
-
-
-	for (int i = 0; i < 2; ++i) {
-		for (int j = 0; j < 64; ++j) {
-			for (int k = 0; k < 64; ++k) {
-
-				this->historyScore[i][j][k] = 0;
-				this->counterMove[i][j][k] = 0;
-			}
-		}
-	}
-
-	for (int i = 0; i < U8_MAX_PIECES; ++i) {
-
-		this->whitePieceBB[i] = 0;
-		this->blackPieceBB[i] = 0;
-	}
-
-	this->occupied = 0;
-	this->empty = 0;	
+	occupied = 0;
+	empty = 0;	
 }
 
 SearchThread::SearchThread(int index) {
@@ -115,7 +62,7 @@ SearchThread::SearchThread(int index) {
 
 	stdThread = std::thread([this]() {
 
-		while (true) {
+		while (!terminate) {
 
 			std::unique_lock<std::mutex> lk(mutex);
 
@@ -124,20 +71,17 @@ SearchThread::SearchThread(int index) {
 			cv.notify_one(); // Wake up anyone waiting for search finished
 			cv.wait(lk, [&]{ return state != SLEEP; });
 
-			if (terminate) 
-				break;
-
 			state = SEARCH;
 
 			lk.unlock();
 
-			startSearch(side, this);
+			if (!terminate)
+				startSearch(side, this);
 		}
 	});
 
 	wait_for_search_finished();
 }
-
 
 
 /// Thread destructor wakes up the thread in idle_loop() and waits
@@ -151,16 +95,7 @@ SearchThread::~SearchThread() {
 
 	start_searching();
 	stdThread.join();
-
-	this->pvLine.clear();
-	this->moveStack.clear();
-	this->undoMoveStack.clear();
-	this->movesHistory.clear();
-	this->pawnHashTable.clear();
-	this->evalHashTable.clear();
 }
-
-
 
 /// Thread::start_searching() wakes up the thread that will start the search
 
@@ -172,7 +107,6 @@ void SearchThread::start_searching() {
 	cv.notify_one(); // Wake up the thread in idle_loop()
 }
 
-
 /// Thread::wait_for_search_finished() blocks on the condition variable
 /// until the thread has finished searching.
 
@@ -181,7 +115,6 @@ void SearchThread::wait_for_search_finished() {
 	std::unique_lock<std::mutex> lk(mutex);
 	cv.wait(lk, [&]{ return state != SEARCH; });
 }
-
 
 void SearchThread::init() {
 
@@ -197,12 +130,11 @@ void SearchThread::init() {
 	undoMoveStack = std::vector<UNDO_MOVE_STACK> (U16_MAX_PLY + 4);
 	movesHistory = std::vector<MOVES_HISTORY> (8192);
 
-	//TODO use one line code to copy all the init struct to other struct, like memcopy etc
 	moveStack[0].castleFlags = initThread.moveStack[0].castleFlags;
 	moveStack[0].epFlag = initThread.moveStack[0].epFlag;
 	moveStack[0].epSquare = initThread.moveStack[0].epSquare;
 
-	for (int i = 0; i < 8192; i++) {
+    for (int i = 0; i < 8192; i++) {
 
 		movesHistory[i].hashKey = initThread.movesHistory[i].hashKey;
 		movesHistory[i].fiftyMovesCounter = initThread.movesHistory[i].fiftyMovesCounter;
@@ -222,7 +154,6 @@ void SearchThread::init() {
 	hashKey = initThread.hashKey;
 	pawnsHashKey = initThread.pawnsHashKey;
 }
-
 
 void SearchThreadPool::createThreadPool(U16 nThreads) {
 
@@ -259,7 +190,7 @@ void SearchThreadPool::start_thinking() {
 
 	getMainSearchThread()->wait_for_search_finished();
 
-	SearchThreadPool::stop = false;
+	SearchThread::stop = false;
 
 	for (SearchThread* th : searchThreads)
 		th->init();

@@ -21,7 +21,8 @@ public:
 	Side side;
 
 	U16 moves_history_counter;
-	
+
+
 	int historyScore[2][64][64];
 	int captureHistoryScore[8][64][8]; // [piece][to][c_piece]
 
@@ -29,14 +30,9 @@ public:
 	
 	std::vector<MOVE_LIST> moveList;
 	std::vector<PV> pvLine;
-
 	std::vector<MOVE_STACK> moveStack;
 	std::vector<UNDO_MOVE_STACK> undoMoveStack;
-	
-	// record of moves played
 	std::vector<MOVES_HISTORY> movesHistory;
-
-	// cache for evaluation
 	std::vector<PAWNS_HASH> pawnHashTable;
 	std::vector<EVAL_HASH> evalHashTable;
 
@@ -50,7 +46,7 @@ public:
 	
 	explicit Thread();
 
-	void initMembers();
+	void init();
 	void clear();
 };
 
@@ -59,10 +55,11 @@ class SearchThread : public Thread {
 public:
 
 	static bool abortSearch;
+	static bool stop;
 
 	ThreadState state;
 	
-	bool terminate = false;
+	bool terminate;
 
 	int idx, depth, completedDepth, selDepth;
 
@@ -79,6 +76,7 @@ public:
 	int getIndex() { return idx; }
 	
 	void init();
+	void loop();
 	void start_searching();
 	void wait_for_search_finished();
 };
@@ -89,8 +87,6 @@ class SearchThreadPool {
 std::vector<SearchThread*> searchThreads;
 
 public:
-
-	static bool stop;
 
 	void createThreadPool(U16 nThreads);
 	void clear();

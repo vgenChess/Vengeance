@@ -128,7 +128,7 @@ enum {
 
 enum ThreadState {
 
-	SLEEP, SEARCH
+	SLEEP, SEARCH, EXIT
 };
 
 #endif

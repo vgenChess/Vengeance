@@ -66,7 +66,7 @@ void UciLoop() {
 	initThread.isInit = true;
 
     initThread.clear();
-    initThread.initMembers();
+    initThread.init();
     parseFen(START_FEN, &initThread);
     
     quit = false;
@@ -105,7 +105,7 @@ void UciLoop() {
         } else if (token == "position") {
             
             initThread.clear();
-            initThread.initMembers();
+            initThread.init();
 
             initThread.moves_history_counter = 0;
             initThread.movesHistory[0].hashKey = initThread.hashKey;
@@ -215,12 +215,12 @@ void UciLoop() {
 
         else if (token == "stop") {
 
-            Threads.stop = true;
+            SearchThread::stop = true;
         }
 
         else if (token == "quit") {
         
-            Threads.stop = true;  
+            SearchThread::stop = true;  
         
             break;
         } 
