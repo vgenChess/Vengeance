@@ -60,7 +60,7 @@ public:
 
 	static bool abortSearch;
 
-	ThreadState state = SLEEP;
+	ThreadState state;
 	
 	bool terminate = false;
 
@@ -93,14 +93,12 @@ struct SearchThreadPool : public std::vector<SearchThread*> {
 
 	void start_thinking();
 	void start_searching();
-	void wait_for_search_finished() const;
-
+	void wait_for_search_finished();
 
 	SearchThread* main() const { return front(); }
 
-
-	U64 getTotalNodes() const;
-	U64 getTotalTTHits() const;
+	U64 totalNodes();
+	U64 totalTTHits();
 };
 
 

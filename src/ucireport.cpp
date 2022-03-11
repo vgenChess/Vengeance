@@ -52,18 +52,16 @@ void reportBestMove() {
 	
 void reportPV(SearchThread *th) {
 
-	int depth = th->completedDepth;
-	int selDepth = th->selDepth;
+	const auto depth = th->completedDepth;
+	const auto selDepth = th->selDepth;
+	const auto pvLine = th->pvLine[th->completedDepth].line;
+
 	int score = th->pvLine[th->completedDepth].score;
-	std::vector<U32> pvLine = th->pvLine[th->completedDepth].line;
-
-	std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
-    int timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - startTime).count();
-
-	std::cout 	<< "info depth " << depth << " seldepth " << selDepth 
-				<< " time " << timeSpent << " nodes " << Threads.getTotalNodes() 
-				/*<< " hashfull " << hashfull()*/ << " tbhits " << Threads.getTotalTTHits() 
-				<< " score cp " << score << " pv";
+	
+	std::cout << "info depth " << depth << " seldepth " << selDepth; 
+	std::cout << " time " << vgen::time_elapsed_milliseconds(startTime) << " nodes " << Threads.totalNodes();
+	std::cout/*<< " hashfull " << hashfull()*/ << " tbhits " << Threads.totalTTHits();
+	std::cout << " score cp " << score << " pv";
 
 	for (U32 move : pvLine)	
 		std::cout << " " << getMoveNotation(move);

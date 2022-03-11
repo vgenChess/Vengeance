@@ -4,7 +4,7 @@
 #include "search.h"
 
 Thread initThread;
-SearchThreadPool Threads; // Global object
+SearchThreadPool Threads; // TODO rename
 
 Thread::Thread() {
 
@@ -108,25 +108,36 @@ void Thread::clear() {
 	this->empty = 0;	
 }
 
-
-
-
-
-
-/// Thread constructor launches the thread and waits until it goes to sleep
-/// in idle_loop(). Note that 'searching' and 'exit' should be already set.
-
 SearchThread::SearchThread(int index) {
 
-	this->idx = index;
-	this->side = WHITE;
+	idx = index;
+	side = WHITE;
+	state = SLEEP;
 
-	stdThread = std::thread(&SearchThread::idle_loop, this);
+	stdThread = std::thread([this](){
 
-	this->wait_for_search_finished();
+		while (true) {
+
+			std::unique_lock<std::mutex> lk(mutex);
+
+			state = SLEEP;
+
+			cv.notify_one(); // Wake up anyone waiting for search finished
+			cv.wait(lk, [&]{ return state != SLEEP; });
+
+			if (terminate) 
+				break;
+
+			state = SEARCH;
+
+			lk.unlock();
+
+			startSearch(side, this);
+		}
+	});
+
+	wait_for_search_finished();
 }
-
-
 
 
 
@@ -305,31 +316,30 @@ void SearchThreadPool::start_searching() {
 
 /// Wait for non-main threads
 
-void SearchThreadPool::wait_for_search_finished() const {
+void SearchThreadPool::wait_for_search_finished() {
 
-    for (SearchThread* th : *this)
+    for (SearchThread* th : *this) {
+
         if (th != front())
             th->wait_for_search_finished();
+    }
 }
 
-U64 SearchThreadPool::getTotalNodes() const {
+U64 SearchThreadPool::totalNodes() {
 
-	U64 sum = 0;
-	for (SearchThread* thread : *this) {
+	U64 total = 0;
+	for (SearchThread *thread : Threads)
+		total += thread->nodes;
 
-		sum += thread->nodes;
-	}
-
-	return sum;
+	return total;
 }
 
-U64 SearchThreadPool::getTotalTTHits() const {
+U64 SearchThreadPool::totalTTHits() {
 
-	U64 sum = 0;
-	for (SearchThread* thread : *this) {
+	U64 total = 0;
 
-		sum += thread->ttHits;
-	}
+	for (SearchThread *thread : Threads) 
+		total += thread->ttHits;
 
-	return sum;
+	return total;
 }
