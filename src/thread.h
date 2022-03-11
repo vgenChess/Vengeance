@@ -60,7 +60,9 @@ public:
 
 	static bool abortSearch;
 
-	bool exit = false, searching = true; // Set before starting std::thread
+	ThreadState state = SLEEP;
+	
+	bool terminate = false;
 	bool canReportCurrMove;
 
 	int idx, depth, completedDepth, selDepth;

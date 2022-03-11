@@ -109,6 +109,10 @@ void Thread::clear() {
 }
 
 
+
+
+
+
 /// Thread constructor launches the thread and waits until it goes to sleep
 /// in idle_loop(). Note that 'searching' and 'exit' should be already set.
 
@@ -123,14 +127,19 @@ SearchThread::SearchThread(int index) {
 	this->wait_for_search_finished();
 }
 
+
+
+
+
 /// Thread destructor wakes up the thread in idle_loop() and waits
 /// for its termination. Thread should be already waiting.
 
 SearchThread::~SearchThread() {
 
-	assert(!searching);
+	assert(state != SEARCH);
 
-	exit = true;
+	terminate = true;
+
 	start_searching();
 	stdThread.join();
 
@@ -142,14 +151,21 @@ SearchThread::~SearchThread() {
 	this->evalHashTable.clear();
 }
 
+
+
+
 /// Thread::start_searching() wakes up the thread that will start the search
 
 void SearchThread::start_searching() {
 
 	std::lock_guard<std::mutex> lk(mutex);
-	searching = true;
+	state = SEARCH;
+
 	cv.notify_one(); // Wake up the thread in idle_loop()
 }
+
+
+
 
 /// Thread::wait_for_search_finished() blocks on the condition variable
 /// until the thread has finished searching.
@@ -157,37 +173,35 @@ void SearchThread::start_searching() {
 void SearchThread::wait_for_search_finished() {
 
 	std::unique_lock<std::mutex> lk(mutex);
-	cv.wait(lk, [&]{ return !searching; });
+	cv.wait(lk, [&]{ return state != SEARCH; });
 }
 
-/// Thread::idle_loop() is where the thread is parked, blocked on the
-/// condition variable, when it has no work to do.
+
+
 
 void SearchThread::idle_loop() {
 
 	while (true) {
 
 		std::unique_lock<std::mutex> lk(mutex);
-		searching = false;
+
+		state = SLEEP;
 
 		cv.notify_one(); // Wake up anyone waiting for search finished
-		cv.wait(lk, [&]{ return searching; });
+		cv.wait(lk, [&]{ return state != SLEEP; });
 
-		if (exit)
-			return;
+		if (terminate) 
+			break;
+
+		state = SEARCH;
 
 		lk.unlock();
 
-		if (this->side == WHITE) {
-			
-			startSearch(WHITE, this);
-		}
-		else {
-
-			startSearch(BLACK, this);
-		}
+		startSearch(this->side, this);
 	}
 }
+
+
 
 void SearchThread::init() {
 

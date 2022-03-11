@@ -121,7 +121,14 @@ enum Stage {
 
 enum {
 	
-	hashfEXACT = 5, hashfALPHA = 10, hashfBETA = 15
+	hashfEXACT = 5, 
+	hashfALPHA = 10, 
+	hashfBETA = 15
+};
+
+enum ThreadState {
+
+	SLEEP, SEARCH
 };
 
 #endif

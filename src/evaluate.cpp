@@ -1010,6 +1010,7 @@ int kingEval(Thread *th) {
 	const auto ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 	const auto theirPawns = opp ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 
+	// TODO redo logic
 	auto pawnStormZone = th->evalInfo.kingZoneBB[stm];
 	
 	int score = 0;	
