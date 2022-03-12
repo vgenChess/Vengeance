@@ -1215,7 +1215,7 @@ void saveWeights(TVector params, TVector cparams) {
    		"\nweight_bishop_check = " 				<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
    		"\nweight_rook_check = " 				<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
    		"\nweight_queen_check = " 				<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-  		"\nweight_safety_adjustment = " 		<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << "; ";
+  		"\nweight_safety_adjustment = " 		<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", ";
 
 	myfile << "\n\n";
 
@@ -1232,7 +1232,7 @@ void saveWeights(TVector params, TVector cparams) {
 		if (((i + 1) % 8) == 0) 
 			myfile << "\n";
 	}	
-	myfile << "};" << "\n"; 	
+	myfile << "}," << "\n"; 	
 	
 	for (int piece = PAWNS; piece < KING; piece++) {
 
@@ -1259,7 +1259,10 @@ void saveWeights(TVector params, TVector cparams) {
 			}  
 		}	
 
-		myfile << "};" << "\n"; 	
+		if (piece == QUEEN)
+			myfile << "};" << "\n"; 	
+		else 
+			myfile << "}," << "\n"; 	
 	}
 
 	myfile.close();
