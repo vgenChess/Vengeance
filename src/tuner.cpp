@@ -376,7 +376,7 @@ void startTuner() {
 
 	int count = 0;
 
-	TVector params = {0}, cparams = {0};
+	TVector params = {}, cparams = {};
 
 
 	cparams[MG][count] = ScoreMG(weight_val_pawn);
@@ -784,7 +784,8 @@ void optimise(TVector params, TVector cparams) {
 
 	double bestMae = 100, mae = 0, prevMae = 100;
 
-	TVector adagrad = {0}, cache = {0}, M = {0}, R = {0};
+// 	TVector adagrad = {}, cache = {};
+	TVector M = {}, R = {};
 
 	// For Adam optimiser
 	double beta1 = 0.9, beta2 = 0.999;
@@ -811,7 +812,7 @@ void optimise(TVector params, TVector cparams) {
     	index += BATCHSIZE;
 
 
-        TVector gradient = {0};
+        TVector gradient = {};
 
 		computeGradient(gradient, params, data_batch, K);
 
@@ -923,7 +924,7 @@ double linearEvaluation(TVector weights, Data data, TGradientData *gradientData)
 
     double midgame, endgame, wsafety[2], bsafety[2];
     double normal[2], safety[2];
-    double mg[2][2] = {0}, eg[2][2] = {0};
+    double mg[2][2] = {}, eg[2][2] = {};
 
     // Save any modifications for MG or EG for each evaluation type
 	for (auto info : data.coefficientsInfoList) {
@@ -931,7 +932,7 @@ double linearEvaluation(TVector weights, Data data, TGradientData *gradientData)
 		mg[info.type][WHITE] += (double) info.wcoeff * weights[MG][info.index];
         mg[info.type][BLACK] += (double) info.bcoeff * weights[MG][info.index];
         eg[info.type][WHITE] += (double) info.wcoeff * weights[EG][info.index];
-        eg[info.type][BLACK] += (double) info.bcoeff * weights[EG][info.index];		
+        eg[info.type][BLACK] += (double) info.bcoeff * weights[EG][info.index];
 	}
 
     // Grab the original "normal" evaluations and add the modified parameters
@@ -945,8 +946,8 @@ double linearEvaluation(TVector weights, Data data, TGradientData *gradientData)
     bsafety[EG] = (double) ScoreEG(data.safety[BLACK]) + eg[SAFETY][BLACK];
 
     // Remove the original "safety" evaluation that was double counted into the "normal" evaluation
-    normal[MG] -= MIN(0, -ScoreMG(data.safety[WHITE]) * fabs(ScoreMG(data.safety[WHITE])) / 720.0)
-                - MIN(0, -ScoreMG(data.safety[BLACK]) * fabs(ScoreMG(data.safety[BLACK])) / 720.0);
+    normal[MG] -= MIN(0, -ScoreMG(data.safety[WHITE]) * std::abs(ScoreMG(data.safety[WHITE])) / 720.0)
+                - MIN(0, -ScoreMG(data.safety[BLACK]) * std::abs(ScoreMG(data.safety[BLACK])) / 720.0);
     normal[EG] -= MIN(0, -ScoreEG(data.safety[WHITE]) / 20.0) - MIN(0, -ScoreEG(data.safety[BLACK]) / 20.0);
 
     // Compute the new, true "safety" evaluations for each side
@@ -1008,7 +1009,7 @@ void computeGradient(TVector gradient, TVector weights, std::vector<Data> data_b
 
 	#pragma omp parallel shared(gradient) 
     {
-        TVector local = {0};
+        TVector local = {};
 
 		#pragma omp for schedule(static, BATCHSIZE / NPARTITIONS)   
         for (int i = 0; i < data_batch.size(); i++) 
@@ -1053,7 +1054,7 @@ double computeOptimalK() {
 
 void saveWeights(TVector params, TVector cparams) {
 	
-	TVector weights = {0};
+	TVector weights = {};
 
     // Combine updated and current parameters
     for (int j = 0; j < NTERMS; j++) {
@@ -1070,8 +1071,7 @@ void saveWeights(TVector params, TVector cparams) {
 
 	myfile << "constexpr int" << "\n\n";
 
-	myfile 
-		<< "weight_val_pawn = " 		<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
+	myfile << "weight_val_pawn = " 		<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
 		<< ",\nweight_val_knight = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
 		<< ",\nweight_val_bishop = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" 
 		<< ",\nweight_val_rook = " 		<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")"
