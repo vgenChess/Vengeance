@@ -16,12 +16,9 @@ class Thread {
 	
 public:
 
-	bool isInit = false;
-
 	Side side;
 
 	U16 moves_history_counter;
-
 
 	int historyScore[2][64][64];
 	int captureHistoryScore[8][64][8]; // [piece][to][c_piece]
@@ -44,9 +41,10 @@ public:
 
 	EvalInfo evalInfo;
 	
-	explicit Thread();
+	Thread();
+    ~Thread();
 
-	void init();
+    void init();
 	void clear();
 };
 
@@ -75,7 +73,7 @@ public:
 
 	int getIndex() { return idx; }
 	
-	void init();
+	void initialise();
 	void loop();
 	void start_searching();
 	void wait_for_search_finished();
@@ -88,7 +86,7 @@ std::vector<SearchThread*> searchThreads;
 
 public:
 
-	void createThreadPool(U16 nThreads);
+	void createThreadPool(int nThreads);
 	void clear();
 
 	void start_thinking();

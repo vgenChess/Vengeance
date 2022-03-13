@@ -5,8 +5,40 @@
 #include "thread.h"
 #include "structs.h"
 
-bool probeHash(HASHE *tt, Thread *th);
-void recordHash(U32 bestMove, int depth, int value, int hashf, int eval_static, Thread *th);
+inline bool probeHash(HASHE *tt, Thread *th) {
+    
+    if (tt == NULL) 
+    	return false;
+
+    U32 dataKey = tt->bestMove ^ tt->value ^ tt->depth ^ tt->flags ^ tt->sEval;
+    
+    return (tt->key ^ dataKey) == th->hashKey; 
+}
+
+inline void recordHash(U32 bestMove, int depth, int value, int hashf, int sEval, Thread *th) {
+
+	HASHE *phashe = &hashTable[th->hashKey % HASH_TABLE_SIZE];
+    
+    U32 dataKey = phashe->bestMove ^ phashe->value ^ phashe->depth ^ phashe->flags ^ phashe->sEval;
+    
+    bool isValidHash = (phashe->key ^ dataKey) == th->hashKey; 
+
+    if (isValidHash && depth < phashe->depth) { // Check whether to overwrite previous information
+
+        return;           
+    }
+
+    // Overwrite the hash information 
+
+    dataKey = bestMove ^ depth ^ value ^ hashf ^ sEval;
+   
+    phashe->key = th->hashKey ^ dataKey;
+    phashe->value = value;
+    phashe->flags = hashf;
+    phashe->depth = depth;
+    phashe->bestMove = bestMove;
+    phashe->sEval = sEval;
+}
 
 bool probePawnHash(int *score, Thread *th);
 void recordPawnHash(int score, Thread *th);

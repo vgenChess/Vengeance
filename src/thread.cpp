@@ -8,29 +8,9 @@ Thread initThread;
 SearchThreadPool Threads;
 
 Thread::Thread() {
-
-	init();
-}
-
-void Thread::init() {
-
-	moveList = 		std::vector<MOVE_LIST> (U16_MAX_MOVES);
-	pvLine = 		std::vector<PV> (U16_MAX_PLY);
-	moveStack = 	std::vector<MOVE_STACK> (U16_MAX_PLY + 4);
-	undoMoveStack = std::vector<UNDO_MOVE_STACK> (U16_MAX_PLY + 4);
-	movesHistory = 	std::vector<MOVES_HISTORY> (8192);
-	pawnHashTable = std::vector<PAWNS_HASH> (U32_PAWN_HASH_TABLE_SIZE);
-	evalHashTable = std::vector<EVAL_HASH> (U32_EVAL_HASH_TABLE_SIZE);	
-	
-	memset(captureHistoryScore, 0, sizeof(int) * 8 * 64 * 8);
-	memset(historyScore, 0, sizeof(int) * 2 * 64 * 64);
-	memset(counterMove, 0, sizeof(U32) * 2 * 64 * 64);
-
-	memset(whitePieceBB, 0, sizeof(U64) * 8);
-	memset(blackPieceBB, 0, sizeof(U64) * 8);
-
-	occupied = 0;
-	empty = 0;		
+    
+    clear();
+    init();
 }
 
 void Thread::clear() {
@@ -43,16 +23,50 @@ void Thread::clear() {
 	pawnHashTable.clear();
 	evalHashTable.clear();
 
-	memset(captureHistoryScore, 0, sizeof(int) * 8 * 64 * 8);
+    memset(captureHistoryScore, 0, sizeof(int) * 8 * 64 * 8);
 	memset(historyScore, 0, sizeof(int) * 2 * 64 * 64);
 	memset(counterMove, 0, sizeof(U32) * 2 * 64 * 64);
-
+	memset(whitePieceBB, 0, sizeof(U64) * 8);
+	memset(blackPieceBB, 0, sizeof(U64) * 8);
 	memset(whitePieceBB, 0, sizeof(U64) * 8);
 	memset(blackPieceBB, 0, sizeof(U64) * 8);
 
 	occupied = 0;
-	empty = 0;	
+	empty = 0;
 }
+
+void Thread::init() {
+    
+    moveList = 		std::vector<MOVE_LIST> (U16_MAX_MOVES);
+	pvLine = 		std::vector<PV> (U16_MAX_PLY);
+	moveStack = 	std::vector<MOVE_STACK> (U16_MAX_PLY);
+	undoMoveStack = std::vector<UNDO_MOVE_STACK> (U16_MAX_PLY);
+	movesHistory  = std::vector<MOVES_HISTORY> (8192);
+	pawnHashTable = std::vector<PAWNS_HASH> (U32_PAWN_HASH_TABLE_SIZE);
+	evalHashTable = std::vector<EVAL_HASH> (U32_EVAL_HASH_TABLE_SIZE);
+    
+	memset(captureHistoryScore, 0, sizeof(int) * 8 * 64 * 8);
+	memset(historyScore, 0, sizeof(int) * 2 * 64 * 64);
+	memset(counterMove, 0, sizeof(U32) * 2 * 64 * 64);
+	memset(whitePieceBB, 0, sizeof(U64) * 8);
+	memset(blackPieceBB, 0, sizeof(U64) * 8);
+
+	occupied = 0;
+	empty = 0; 
+}
+
+
+Thread::~Thread() {
+
+	moveList.clear();
+	pvLine.clear();
+	moveStack.clear();
+	undoMoveStack.clear();
+	movesHistory.clear();
+	pawnHashTable.clear();
+	evalHashTable.clear();
+}
+
 
 SearchThread::SearchThread(int index) {
 
@@ -76,11 +90,12 @@ SearchThread::SearchThread(int index) {
 			lk.unlock();
 
 			if (!terminate)
-				startSearch(side, this);
-		}
-	});
-
-	wait_for_search_finished();
+                startSearch(side, this);
+        }
+        
+    });
+    
+    wait_for_search_finished();
 }
 
 
@@ -116,8 +131,9 @@ void SearchThread::wait_for_search_finished() {
 	cv.wait(lk, [&]{ return state != SEARCH; });
 }
 
-void SearchThread::init() {
 
+void SearchThread::initialise() {
+    
 	side = initThread.side;
 
 	pvLine.clear();
@@ -125,10 +141,10 @@ void SearchThread::init() {
 	undoMoveStack.clear();
 	movesHistory.clear();
 
-	pvLine = std::vector<PV> (U16_MAX_PLY);
-	moveStack = std::vector<MOVE_STACK> (U16_MAX_PLY + 4);
-	undoMoveStack = std::vector<UNDO_MOVE_STACK> (U16_MAX_PLY + 4);
-	movesHistory = std::vector<MOVES_HISTORY> (8192);
+	pvLine =           std::vector<PV> (U16_MAX_PLY);
+	moveStack =        std::vector<MOVE_STACK> (U16_MAX_PLY + 4);
+	undoMoveStack =    std::vector<UNDO_MOVE_STACK> (U16_MAX_PLY + 4);
+	movesHistory =     std::vector<MOVES_HISTORY> (8192);
 
 	moveStack[0].castleFlags = initThread.moveStack[0].castleFlags;
 	moveStack[0].epFlag = initThread.moveStack[0].epFlag;
@@ -155,25 +171,21 @@ void SearchThread::init() {
 	pawnsHashKey = initThread.pawnsHashKey;
 }
 
-void SearchThreadPool::createThreadPool(U16 nThreads) {
+void SearchThreadPool::createThreadPool(int nThreads) {
 
 	if (searchThreads.size() > 0) {
 
 		getMainSearchThread()->wait_for_search_finished();
 		
-		for (U16 i = 0; i < searchThreads.size(); i++) {
+		for (SearchThread *thread: searchThreads)
+			delete thread;
 
-			delete searchThreads.at(i);
-		}
-	
 		searchThreads.clear();
     }
 
     if (nThreads > 0) {
 
-		searchThreads.push_back(new SearchThread(0));
-		
-		for (U16 i = 1; i < nThreads; i++)
+		for (int i = 0; i < nThreads; i++)
 			searchThreads.push_back(new SearchThread(i));
     }		
 }
@@ -193,7 +205,7 @@ void SearchThreadPool::start_thinking() {
 	SearchThread::stop = false;
 
 	for (SearchThread* th : searchThreads)
-		th->init();
+		th->initialise();
 
 	getMainSearchThread()->start_searching();
 }
@@ -244,5 +256,6 @@ std::vector<SearchThread*> SearchThreadPool::getSearchThreads() {
 
 	return searchThreads;	
 }
+
 
 

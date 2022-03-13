@@ -63,12 +63,11 @@ void setOption(std::string &line) {
 
 void UciLoop() {
 
-	initThread.isInit = true;
-
     initThread.clear();
     initThread.init();
+
     parseFen(START_FEN, &initThread);
-    
+
     quit = false;
     
     std::string cmd, token;
