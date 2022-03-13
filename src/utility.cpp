@@ -225,76 +225,47 @@ U64 getAttacks(const U8 stm, Thread *th) {
 template<Side side>
 bool isKingInCheck(Thread *th) {
     
-    const auto opponent = side ^ 1;      
-    const int kingSq = GET_POSITION(side ? th->blackPieceBB[KING] : th->whitePieceBB[KING]);
+    const auto opp = side == WHITE ? BLACK : WHITE;      
+    const auto kingSq = GET_POSITION(side ? th->blackPieceBB[KING] : th->whitePieceBB[KING]);
     
     // Staggered check to return early saving time
 
-    U64 oppAttacks = 0ULL, b;
+    U64 attacks = 0ULL;
 
-    oppAttacks = opponent ?
-        bPawnWestAttacks(th->blackPieceBB[PAWNS]) | bPawnEastAttacks(th->blackPieceBB[PAWNS]): 
-        wPawnWestAttacks(th->whitePieceBB[PAWNS]) | wPawnEastAttacks(th->whitePieceBB[PAWNS]);
+    attacks = get_knight_attacks(kingSq);        
+    
+    if (attacks & (opp == WHITE ? th->whitePieceBB[KNIGHTS] : th->blackPieceBB[KNIGHTS]))
+        return true;
 
-    if (oppAttacks & (1ULL << kingSq)) return true;        
+
+    attacks = Bmagic(kingSq, th->occupied);
+
+    if (attacks & (opp == WHITE ? th->whitePieceBB[BISHOPS] : th->blackPieceBB[BISHOPS]))
+        return true;
+    if (attacks & (opp == WHITE ? th->whitePieceBB[QUEEN] : th->blackPieceBB[QUEEN]))
+        return true;
     
 
-    oppAttacks = 0ULL;        
-    
-    b = opponent ? th->blackPieceBB[KNIGHTS] : th->whitePieceBB[KNIGHTS];
-    while(b) {
-        
-        oppAttacks |= get_knight_attacks(GET_POSITION(b));
-        POP_POSITION(b);
-    }
+    attacks = Rmagic(kingSq, th->occupied);
 
-    if (oppAttacks & (1ULL << kingSq)) return true;        
-    
+    if (attacks & (opp == WHITE ? th->whitePieceBB[ROOKS] : th->blackPieceBB[ROOKS]))
+        return true;
+    if (attacks & (opp == WHITE ? th->whitePieceBB[QUEEN] : th->blackPieceBB[QUEEN]))
+        return true;
 
-    oppAttacks = 0ULL;        
-    
-    b = opponent ? th->blackPieceBB[BISHOPS] : th->whitePieceBB[BISHOPS];
-    while(b) {
 
-        oppAttacks |= Bmagic(GET_POSITION(b), th->occupied);
-        POP_POSITION(b);
-    }
-    
-    if (oppAttacks & (1ULL << kingSq)) return true;        
+    attacks = get_king_attacks(kingSq);
+
+    if (attacks & (opp == WHITE ? th->whitePieceBB[KING] : th->blackPieceBB[KING])) 
+        return true;        
     
 
-    oppAttacks = 0ULL;        
-    
-    b = opponent ? th->blackPieceBB[ROOKS] : th->whitePieceBB[ROOKS];
-    while(b) {
-        
-        oppAttacks |= Rmagic(GET_POSITION(b), th->occupied);
-        POP_POSITION(b);
-    }
-    
-    if (oppAttacks & (1ULL << kingSq)) return true;        
-    
+    attacks = opp == WHITE ? 
+            wPawnWestAttacks(th->whitePieceBB[PAWNS]) | wPawnEastAttacks(th->whitePieceBB[PAWNS]) :
+            bPawnWestAttacks(th->blackPieceBB[PAWNS]) | bPawnEastAttacks(th->blackPieceBB[PAWNS]);
 
-    oppAttacks = 0ULL;        
-    
-    b = opponent ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN];
-    while(b) {
-        
-        oppAttacks |= Qmagic(GET_POSITION(b), th->occupied);
-        POP_POSITION(b);
-    }  
-
-    if (oppAttacks & (1ULL << kingSq)) return true;        
-    
-
-    oppAttacks = 0ULL;        
-
-    int oppKingSq = GET_POSITION(opponent ? th->blackPieceBB[KING] : th->whitePieceBB[KING]);
-
-    oppAttacks = get_king_attacks(oppKingSq);
-
-    if (oppAttacks & (1ULL << kingSq)) return true;
-
+    if (attacks & (1ULL << kingSq))
+        return true;
 
     return false;
 }
