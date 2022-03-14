@@ -34,6 +34,7 @@
 #include "constants.h"
 #include "history.h"
 #include "ucireport.h"
+#include "misc.h"
 
 bool timeSet, stopped;
 
@@ -361,7 +362,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
     if (!IS_ROOT_NODE) {
 
         // Repetition detection
-        if (isRepetition(PLY, th)) {
+        if (misc::isRepetition(PLY, th)) {
             
             // earlygame
             if (ALL_PIECES_COUNT > 22)  return -50;
@@ -409,7 +410,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
 
 
 
-    const bool IS_IN_CHECK = isKingInCheck<stm>(th);
+    const bool IS_IN_CHECK = misc::isKingInCheck<stm>(th);
     bool improving = false;
 
     int sEval = I32_UNKNOWN;
@@ -620,7 +621,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
         make_move(PLY, currentMove.move, th);
 
         // check if psuedo-legal move is valid
-        if (isKingInCheck<stm>(th)) {
+        if (misc::isKingInCheck<stm>(th)) {
             
             unmake_move(PLY, currentMove.move, th);
             continue;
@@ -920,7 +921,7 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
     const auto ALL_PIECES_COUNT = POPCOUNT(th->occupied);
 
     // Repetition detection
-    if (isRepetition(ply, th)) {
+    if (misc::isRepetition(ply, th)) {
         
         // earlygame
         if (ALL_PIECES_COUNT > 22)  return -50;
@@ -1021,7 +1022,7 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
 
         make_move(ply, currentMove.move, th);
 
-        if (isKingInCheck<stm>(th)) {
+        if (misc::isKingInCheck<stm>(th)) {
 
             unmake_move(ply, currentMove.move, th);
 

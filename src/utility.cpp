@@ -21,6 +21,7 @@
 #include "perft.h"
 #include "functions.h"
 #include "zobrist.h"
+#include "misc.h"
 
 U64 arrInBetween[64][64];
 
@@ -161,25 +162,6 @@ U64 flipVertical(U64 x) {
             ( (x >> 56) );
 }
 
-void clearAllBitBoards(Thread *th) {
-    
-    th->whitePieceBB[KING] &= 0;
-    th->whitePieceBB[QUEEN] &= 0;
-    th->whitePieceBB[BISHOPS] &= 0;
-    th->whitePieceBB[KNIGHTS] &= 0;
-    th->whitePieceBB[ROOKS] &= 0;
-    th->whitePieceBB[PAWNS] &= 0;
-    th->whitePieceBB[PIECES] &= 0;
-    
-    th->blackPieceBB[KING] &= 0;
-    th->blackPieceBB[QUEEN] &= 0;
-    th->blackPieceBB[BISHOPS] &= 0;
-    th->blackPieceBB[KNIGHTS] &= 0;
-    th->blackPieceBB[ROOKS] &= 0;
-    th->blackPieceBB[PAWNS] &= 0;
-    th->blackPieceBB[PIECES] &= 0;
-}
-
 U64 getAttacks(const U8 stm, Thread *th) {
 
     U64 attacks = 0ULL, b;
@@ -222,69 +204,6 @@ U64 getAttacks(const U8 stm, Thread *th) {
 
     return attacks;
 } 
-
-template<Side side>
-bool isKingInCheck(Thread *th) {
-    
-    const auto opp = side == WHITE ? BLACK : WHITE;      
-    const auto kingSq = GET_POSITION(side ? th->blackPieceBB[KING] : th->whitePieceBB[KING]);
-    
-    // Staggered check to return early saving time
-
-    U64 attacks = 0ULL;
-
-    attacks = get_knight_attacks(kingSq);        
-    
-    if (attacks & (opp == WHITE ? th->whitePieceBB[KNIGHTS] : th->blackPieceBB[KNIGHTS]))
-        return true;
-
-
-    attacks = Bmagic(kingSq, th->occupied);
-
-    if (attacks & (opp == WHITE ? th->whitePieceBB[BISHOPS] : th->blackPieceBB[BISHOPS]))
-        return true;
-    if (attacks & (opp == WHITE ? th->whitePieceBB[QUEEN] : th->blackPieceBB[QUEEN]))
-        return true;
-    
-
-    attacks = Rmagic(kingSq, th->occupied);
-
-    if (attacks & (opp == WHITE ? th->whitePieceBB[ROOKS] : th->blackPieceBB[ROOKS]))
-        return true;
-    if (attacks & (opp == WHITE ? th->whitePieceBB[QUEEN] : th->blackPieceBB[QUEEN]))
-        return true;
-
-
-    attacks = get_king_attacks(kingSq);
-
-    if (attacks & (opp == WHITE ? th->whitePieceBB[KING] : th->blackPieceBB[KING])) 
-        return true;        
-    
-
-    attacks = opp == WHITE ? 
-            wPawnWestAttacks(th->whitePieceBB[PAWNS]) | wPawnEastAttacks(th->whitePieceBB[PAWNS]) :
-            bPawnWestAttacks(th->blackPieceBB[PAWNS]) | bPawnEastAttacks(th->blackPieceBB[PAWNS]);
-
-    if (attacks & (1ULL << kingSq))
-        return true;
-
-    return false;
-}
-
-bool isRepetition(const int ply, Thread *th) {
-
-    bool flag = false;
-    for (int i = th->moves_history_counter + ply; i >= 0; i--) {
-
-        if (th->movesHistory[i].hashKey == th->hashKey) {
-
-            flag = true;
-            break;
-        }
-    }
-
-    return flag;
-}
 
 /* function to check if a kingSq is attacked */
 
@@ -732,7 +651,7 @@ int divide(U8 depth, U8 sideToMove, Thread *th) {
         
         nodes = 0;
 
-        if (sideToMove ? !isKingInCheck<BLACK>(th) : !isKingInCheck<WHITE>(th)) {
+        if (sideToMove ? !(misc::isKingInCheck<BLACK>(th)) : !(misc::isKingInCheck<WHITE>(th))) {
 
             count++;
 

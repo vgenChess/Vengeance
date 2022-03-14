@@ -19,8 +19,6 @@ void print_board(U64 board, Thread *th);
 
 int bitScanForward(U64 board);
 
-template<Side stm> bool isKingInCheck(Thread *th);
-
 bool isSqAttacked(U8 sq, const U8 color, Thread *th);
 
 int divide(U8 depth, U8 sideToMove, Thread *th);
@@ -37,8 +35,6 @@ U64 flipVertical(U64 x);
 
 char* algebricPos(U8 sq);
 
-void clearAllBitBoards(Thread *th);
-
 void initHashTable(int size);
 
 void clearHashTable(void);
@@ -50,8 +46,6 @@ void clearHistoryTable(Thread *th);
 void initHashKey(Thread *th);
 void initPawnHashKey(U8 side, Thread *th);
 void initMovesHistoryTable(Thread *th);
-
-bool isRepetition(const int ply, Thread *th);
 
 U64 getAttacks(const U8 stm, Thread *th);
 
