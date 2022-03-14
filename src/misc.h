@@ -92,6 +92,102 @@ namespace misc {
         return false;
     }
     
+    
+    //TODO check logic, under observation
+    inline bool isPositionDraw(Thread *th) {
+        
+        if (POPCOUNT(th->occupied) > 4) 
+            return false;
+        
+        //Kk
+        if ((   th->whitePieceBB[KING] 
+            |   th->blackPieceBB[KING]) == th->occupied) {
+        
+            return true; 
+        }
+        
+        //KNNk or KNk
+        if ((   th->whitePieceBB[KING] 
+            |   th->blackPieceBB[KING] 
+            |   th->whitePieceBB[KNIGHTS]) == th->occupied) {
+            
+            return true; 
+        }
+        
+        //Knnk or Knk
+        if ((   th->whitePieceBB[KING] 
+            |   th->blackPieceBB[KING]
+            |   th->blackPieceBB[KNIGHTS]) == th->occupied) 
+        {
+            return true; 
+        }
+        
+        //KNkn
+        if ((   th->whitePieceBB[KING] 
+            |   th->blackPieceBB[KING] 
+            |   th->whitePieceBB[KNIGHTS] 
+            |   th->blackPieceBB[KNIGHTS]) == th->occupied 
+            && POPCOUNT(th->whitePieceBB[KNIGHTS]) == 1 
+            && POPCOUNT(th->blackPieceBB[KNIGHTS]) == 1)
+        {
+            return true; 
+        }
+        
+        //KBk
+        if ((   th->whitePieceBB[KING] 
+            |   th->blackPieceBB[KING] 
+            |   th->whitePieceBB[BISHOPS]) == th->occupied
+            && POPCOUNT(th->whitePieceBB[BISHOPS]) == 1)
+        {
+            return true; 
+        }
+        
+        //Kbk
+        if ((   th->whitePieceBB[KING] 
+            |   th->blackPieceBB[KING]
+            |   th->blackPieceBB[BISHOPS]) == th->occupied
+            &&  POPCOUNT(th->blackPieceBB[BISHOPS]) == 1)
+        {
+            return true; 
+        }   
+        
+        //KBkn
+        if ((   th->whitePieceBB[KING] 
+            |   th->blackPieceBB[KING]
+            |   th->whitePieceBB[BISHOPS]
+            |   th->blackPieceBB[KNIGHTS]) == th->occupied
+            &&  POPCOUNT(th->whitePieceBB[BISHOPS]) == 1
+            &&  POPCOUNT(th->blackPieceBB[KNIGHTS]) == 1) 
+        {
+            return true; 
+        }   
+        
+        //KNkb
+        if ((   th->whitePieceBB[KING] 
+            |   th->blackPieceBB[KING]
+            |   th->whitePieceBB[KNIGHTS]
+            |   th->blackPieceBB[BISHOPS]) == th->occupied
+            &&  POPCOUNT(th->whitePieceBB[KNIGHTS]) == 1
+            &&  POPCOUNT(th->blackPieceBB[BISHOPS]) == 1)   
+        {
+            return true; 
+        }     
+        
+        //KBkb
+        if ((   th->whitePieceBB[KING] 
+            |   th->blackPieceBB[KING]
+            |   th->whitePieceBB[BISHOPS]
+            |   th->blackPieceBB[BISHOPS]) == th->occupied
+            &&  POPCOUNT(th->whitePieceBB[BISHOPS]) == 1
+            &&  POPCOUNT(th->blackPieceBB[BISHOPS]) == 1) 
+        {
+            return true; 
+        }
+        
+        
+        return false;
+    }
+    
 }
 
 

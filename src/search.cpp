@@ -375,7 +375,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
         th->movesHistory[th->moves_history_counter + PLY + 1].hashKey = th->hashKey;
 
         // Check for drawish endgame
-        if (isPositionDraw(th)) 
+        if (misc::isPositionDraw(th)) 
             return 0;
     }
 
@@ -905,7 +905,7 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
 
     // Check if time limit has been reached
     if (timeSet && IS_MAIN_THREAD && th->nodes % U16_CHECK_NODES == 0) 
-        checkTime();	
+        checkTime();
     
     if (IS_MAIN_THREAD && SearchThread::stop) 
         return 0;
@@ -934,7 +934,7 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
     th->movesHistory[th->moves_history_counter + ply + 1].hashKey = th->hashKey;
 
     // Check for drawish endgame
-    if (isPositionDraw(th)) 
+    if (misc::isPositionDraw(th)) 
         return 0;
 
     if (ply >= U16_MAX_PLY - 1) 
@@ -1078,7 +1078,7 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
                     hashf = hashfBETA;
                     
                     break;
-                } 					
+                }
             } 
         }
     }
