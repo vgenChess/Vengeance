@@ -62,9 +62,15 @@ void reportPV(SearchThread *th) {
 	std::cout << " time " << vgen::time_elapsed_milliseconds(startTime) << " nodes " << Threads.totalNodes();
 	std::cout/*<< " hashfull " << hashfull()*/ << " tbhits " << Threads.totalTTHits();
 	std::cout << " score cp " << score << " pv";
-
-	for (U32 move : pvLine)	
-		std::cout << " " << getMoveNotation(move);
-	
+    
+    U32 move;
+    for (int i = 0; i < U16_MAX_PLY; i++) {
+        
+        move = pvLine[i];
+        if (move == NO_MOVE)
+            break;
+        std::cout << " " << getMoveNotation(move);
+    }
+    
 	std::cout << "\n";
 }

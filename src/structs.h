@@ -7,6 +7,12 @@
 
 typedef struct {
     
+    int score;
+    U32 line[U16_MAX_PLY];
+} PV;
+
+typedef struct {
+    
     U64 key; 
     int score;
 } PAWNS_HASH;

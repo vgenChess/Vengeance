@@ -12,14 +12,14 @@
 
 void initLMR();
 
-void startSearch(Side stm, SearchThread *th);
-template<Side stm> void iterativeDeepeningSearch(SearchThread *th);
-template<Side stm> void aspirationWindowSearch(SearchThread *th);
+void startSearch(Side stm, SearchThread* th);
+template<Side stm> void iterativeDeepeningSearch(SearchThread* th);
+template<Side stm> void aspirationWindowSearch(SearchThread* th);
 
 template<Side stm, bool isNullMoveAllowed, bool isSingularSearch>
-int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, SearchInfo *si);
+int alphabetaSearch(int alpha, int beta, const int mate, SearchThread* th, SearchInfo* si);
 
 template<Side stm> 
-int quiescenseSearch(int ply, int alpha, int beta, SearchThread *th, std::vector<U32> *pline);
+int quiescenseSearch(int alpha, int beta, SearchThread* th, SearchInfo* si);
 
 #endif /* search_h */

@@ -3,13 +3,7 @@
 
 #include "types.h"
 #include "constants.h"
-
-class PV {
-
-public:
-	int score;
-	std::vector<U32> line;
-};
+#include "functions.h"
 
 class EvalInfo {
 	
@@ -79,6 +73,7 @@ public:
 	}
 };
 
+
 class SearchInfo {
 
 public:
@@ -88,17 +83,17 @@ public:
 	int realDepth;
 	
 	U32 skipMove;
-
-	std::vector<U32> pline;
-
+    
+    U32 line[U16_MAX_PLY];
+    
 	SearchInfo() {
 	
 		ply = 0;
 		depth = 0;
 	
 		skipMove = 0UL;
-
-		pline.clear();
+        
+        line[0] = NO_MOVE;
 	}
 };
 
