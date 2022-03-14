@@ -1,7 +1,7 @@
 #ifndef MISC_H
 #define MISC_H
 
-namespace vgen_misc {
+namespace misc {
 
     void init_inbetween_bb() {
         for (int i = 0; i < 64; i++) {

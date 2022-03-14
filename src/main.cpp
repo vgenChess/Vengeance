@@ -28,6 +28,8 @@
 #include "zobrist.h"
 #include "misc.h"
 
+zobrist::Zobrist zobrist::Zobrist::objZobrist;
+
 int main(int argc, char **argv) {
     
     initLMR();
@@ -35,10 +37,10 @@ int main(int argc, char **argv) {
     init_king_attacks();
     init_knight_attacks();
     init_magic_moves();
-    vgen_zobrist::initZobristKeys();
-    vgen_zobrist::initPawnZobristKeys();  // should be called after initialising main zobrist keys
-    vgen_misc::initCastleMaskAndFlags();
-    vgen_misc::init_inbetween_bb(); 
+    zobrist::Zobrist::objZobrist.initZobristKeys();
+    zobrist::Zobrist::objZobrist.initPawnZobristKeys();  // should be called after initialising main zobrist keys
+    misc::initCastleMaskAndFlags();
+    misc::init_inbetween_bb(); 
     initPSQT();
     initHashTable(16);      // default hash size = 16 megabytes
     Threads.createThreadPool(1);         // default threads size = 1

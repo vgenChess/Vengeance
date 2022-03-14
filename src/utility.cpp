@@ -20,6 +20,7 @@
 #include "movegen.h"
 #include "perft.h"
 #include "functions.h"
+#include "zobrist.h"
 
 U64 arrInBetween[64][64];
 
@@ -776,15 +777,15 @@ void initHashKey(Thread *th) {
                     
                 assert(sq >= 0 && sq < 64);    
 
-				th->hashKey ^= zobrist[piece][side][sq];
+				th->hashKey ^= zobrist::Zobrist::objZobrist.zobristKey[piece][side][sq];
             }
         }
     }
 
-    th->hashKey ^= KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
-    th->hashKey ^= KEY_FLAG_WHITE_CASTLE_KING_SIDE;
-    th->hashKey ^= KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
-    th->hashKey ^= KEY_FLAG_BLACK_CASTLE_KING_SIDE; 
+    th->hashKey ^= zobrist::Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
+    th->hashKey ^= zobrist::Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
+    th->hashKey ^= zobrist::Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
+    th->hashKey ^= zobrist::Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE; 
 }
 
 void initPawnHashKey(U8 side, Thread *th) {
@@ -799,10 +800,11 @@ void initPawnHashKey(U8 side, Thread *th) {
         sq = GET_POSITION(bitboard);
         POP_POSITION(bitboard);
 
-        th->pawnsHashKey ^= pawnZobristKey[sq];
+        th->pawnsHashKey ^= zobrist::Zobrist::objZobrist.pawnZobristKey[sq];
     }
 
-    if (side) th->hashKey ^= KEY_SIDE_TO_MOVE;
+    if (side) 
+        th->hashKey ^= zobrist::Zobrist::objZobrist.KEY_SIDE_TO_MOVE;
 }
 
 
