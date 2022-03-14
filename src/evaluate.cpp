@@ -52,6 +52,8 @@ U64 arrRanks[8] = {
 // TODO check datatype
 int PSQT[U8_MAX_SQUARES][U8_MAX_PIECES][U8_MAX_SQUARES];
 
+//TODO remove weight_rook_all_pawns_count eval 
+
 template<Side stm>
 void initEvalInfo(Thread *th) {
 

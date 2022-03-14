@@ -110,7 +110,7 @@ template<Side stm>
 void iterativeDeepeningSearch(SearchThread *th) {
     
     th->nodes = 0;
-    th->ttHits = 0;	
+    th->ttHits = 0;
 
     th->depth = I16_NO_DEPTH;
     th->completedDepth = I16_NO_DEPTH;
@@ -156,24 +156,24 @@ void iterativeDeepeningSearch(SearchThread *th) {
         if (th != Threads.getMainSearchThread())
             continue;
 
-
-        if (TimeManager::timeManager.timeSet && th->completedDepth >= 4) {
-
-
+        
+        const auto completedDepth = th->completedDepth;
+        if (TimeManager::timeManager.timeSet && completedDepth >= 4) 
+        {
             // score change
-            int prevScore = th->pvLine.at(th->completedDepth-3).score;
-            int currentScore = th->pvLine.at(th->completedDepth).score;
+            int prevScore = th->pvLine.at(completedDepth-3).score;
+            int currentScore = th->pvLine.at(completedDepth).score;
 
             const auto scoreChangeFactor = prevScore > currentScore ? 
                 fmax(0.5, fmin(1.5, ((prevScore - currentScore) * 0.05))) : 0.5;
             
 
             // best move change
-            assert(th->pvLine.at(th->completedDepth).line[0] != NO_MOVE 
-                && th->pvLine.at(th->completedDepth-1).line[0] != NO_MOVE);
+            assert(th->pvLine.at(completedDepth).line[0] != NO_MOVE 
+                && th->pvLine.at(completedDepth-1).line[0] != NO_MOVE);
 
-            U32 previousMove = th->pvLine.at(th->completedDepth-1).line[0];
-            U32 currentMove = th->pvLine.at(th->completedDepth).line[0];
+            const auto previousMove = th->pvLine.at(completedDepth-1).line[0];
+            const auto currentMove = th->pvLine.at(completedDepth).line[0];
             
             stableMoveCount = previousMove == currentMove ? stableMoveCount + 1 : 0;
             stableMoveCount = std::min(10, stableMoveCount);
@@ -188,7 +188,7 @@ void iterativeDeepeningSearch(SearchThread *th) {
             const auto totalFactor = scoreChangeFactor * stableMoveFactor * winFactor;
             
             // Check for time 
-            if (    vgen::time_elapsed_milliseconds(TimeManager::timeManager.startTime) 
+            if (    TimeManager::time_elapsed_milliseconds(TimeManager::timeManager.startTime) 
                 >   (TimeManager::timeManager.timePerMove * totalFactor)) {
 
                 SearchThread::stop = true;
@@ -201,15 +201,15 @@ void iterativeDeepeningSearch(SearchThread *th) {
 }
 
 template<Side stm>
-void aspirationWindowSearch(SearchThread *th) {
-
+void aspirationWindowSearch(SearchThread *th) 
+{
     int window = I32_MATE;
 
     int score = -I32_MATE;
     int alpha = -I32_MATE, beta = I32_MATE;
     
-    if (th->depth > 4 && th->completedDepth > 0) {
-
+    if (th->depth > 4 && th->completedDepth > 0) 
+    {
         window = U8_AP_WINDOW;
 
         int scoreKnown = th->pvLine.at(th->completedDepth).score;
@@ -218,7 +218,6 @@ void aspirationWindowSearch(SearchThread *th) {
         beta  = std::min( I32_MATE, scoreKnown + window);	
     }
     
-
     SearchInfo searchInfo;
 
     searchInfo.ply = 0;
@@ -227,8 +226,8 @@ void aspirationWindowSearch(SearchThread *th) {
 
     int failHighCounter = 0;
 
-    while (true) {
-        
+    while (true) 
+    {
         searchInfo.depth = std::max(1, th->depth - failHighCounter);
         searchInfo.line[0] = NO_MOVE;
         
@@ -237,39 +236,44 @@ void aspirationWindowSearch(SearchThread *th) {
         score = alphabetaSearch<stm, NO_NULL, NON_SING>(alpha, beta, I32_MATE, th, &searchInfo);
 
         if (SearchThread::stop)
+        {
             break;
-
-        if (score <= alpha) {
-
+        }
+        
+        if (score <= alpha) 
+        {
             beta = (alpha + beta) / 2;
             alpha = std::max(score - window, -I32_MATE);
 
             failHighCounter = 0;
         }
-        else if (score >= beta) {
-
+        else if (score >= beta) 
+        {
             beta = std::min(score + window, I32_MATE);
             
             if (std::abs(score) < U16_WIN_SCORE)
                 failHighCounter++;
         }
-        else {
-
-            th->completedDepth = th->depth;
+        else 
+        {
+            const auto currentDepth = th->depth;
+            
+            th->completedDepth = currentDepth;
             
             PV pv;
             pv.score = score;
             
-            for (int i = 0; i < U16_MAX_PLY; i++) {
-                
+            for (int i = 0; i < U16_MAX_PLY; i++) 
+            {
                 pv.line[i] = searchInfo.line[i];
             
                 if (pv.line[i] == NO_MOVE)
+                {
                     break;
+                }
             }
             
-            
-            th->pvLine[th->completedDepth] = pv;
+            th->pvLine[currentDepth] = pv;
             
             break;
         }
@@ -279,27 +283,31 @@ void aspirationWindowSearch(SearchThread *th) {
 
     
     if (SearchThread::stop)
+    {
         return;
-
+    }
 
     assert (score > alpha && score < beta);
 
-
-    if (th != Threads.getMainSearchThread()) 
+    if (th != Threads.getMainSearchThread())
+    {
         return;
-
+    }
+    
     reportPV(th);
 }
 
-void checkTime() {
+void checkTime() 
+{
 
-    SearchThread::stop = vgen::time_now().time_since_epoch() 
+    SearchThread::stop = TimeManager::time_now().time_since_epoch() 
                     >= TimeManager::timeManager.stopTime.time_since_epoch();
 }
 
 template<Side stm, bool isNullMoveAllowed, bool isSingularSearch>
-int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, SearchInfo *si) {
-
+int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, SearchInfo *si) 
+{
+    
     // if (alpha >= beta) {
     // 	std::cout<<"realDepth=" << si->realDepth << ", depth=" << si->depth << ", ply =" << si->ply << "\n";
     // 	std::cout<<alpha<<","<<beta<<std::endl;
@@ -647,7 +655,8 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
         // report current depth, moves played and current move being searched
         if (IS_ROOT_NODE && IS_MAIN_THREAD) 
         {
-            if (vgen::time_elapsed_milliseconds(TimeManager::timeManager.startTime) > U16_CURRMOVE_INTERVAL) 
+            if (    TimeManager::time_elapsed_milliseconds(TimeManager::timeManager.startTime) 
+                >   U16_CURRMOVE_INTERVAL) 
             {
                 std::cout << "info depth " << si->realDepth << " currmove ";
                 std::cout << getMoveNotation(currentMove.move) << " currmovenumber " << movesPlayed << std::endl;

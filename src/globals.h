@@ -26,5 +26,4 @@ extern U8 rookCastleFlagMask[U8_MAX_SQUARES];
 
 extern U64 arrInBetween[U8_MAX_SQUARES][U8_MAX_SQUARES];
 
-
 #endif /* globals_h */

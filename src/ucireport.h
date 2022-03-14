@@ -58,8 +58,8 @@ inline void reportPV(SearchThread *th) {
     int score = th->pvLine[th->completedDepth].score;
     
     std::cout << "info depth " << depth << " seldepth " << selDepth; 
-    std::cout << " time " << vgen::time_elapsed_milliseconds(TimeManager::timeManager.startTime) 
-        << " nodes " << Threads.totalNodes();
+    std::cout << " time " << TimeManager::time_elapsed_milliseconds(TimeManager::timeManager.startTime); 
+    std::cout << " nodes " << Threads.totalNodes();
     std::cout/*<< " hashfull " << hashfull()*/ << " tbhits " << Threads.totalTTHits();
     std::cout << " score cp " << score << " pv";
     
@@ -67,8 +67,12 @@ inline void reportPV(SearchThread *th) {
     for (int i = 0; i < U16_MAX_PLY; i++) {
         
         move = pvLine[i];
+        
         if (move == NO_MOVE)
+        {
             break;
+        }
+        
         std::cout << " " << getMoveNotation(move);
     }
     
