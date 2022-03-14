@@ -18,7 +18,6 @@
 #include "utility.h"
 #include "magicmoves.h"
 #include "nonslidingmoves.h"
-#include "init.h"
 #include "perft.h"
 #include "evaluate.h"
 #include "search.h"
@@ -27,6 +26,7 @@
 #include "functions.h"
 #include "ucireport.h"
 #include "zobrist.h"
+#include "misc.h"
 
 int main(int argc, char **argv) {
     
@@ -35,15 +35,14 @@ int main(int argc, char **argv) {
     init_king_attacks();
     init_knight_attacks();
     init_magic_moves();
-    initCastleMaskAndFlags();
     vgen_zobrist::initZobristKeys();
     vgen_zobrist::initPawnZobristKeys();  // should be called after initialising main zobrist keys
-    init_inbetween_bb(); 
+    vgen_misc::initCastleMaskAndFlags();
+    vgen_misc::init_inbetween_bb(); 
     initPSQT();
     initHashTable(16);      // default hash size = 16 megabytes
     Threads.createThreadPool(1);         // default threads size = 1
     omp_set_num_threads(omp_get_max_threads()); // for tuning
-
 
     timeSet = false;
     stopped = false;
