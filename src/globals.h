@@ -12,9 +12,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <vector>
-#include <ctime>
-#include <ratio>
-#include <chrono>
 
 #include "constants.h"
 #include "types.h"
@@ -26,16 +23,6 @@ extern HASHE *hashTable;
 extern U32 HASH_TABLE_SIZE;
 
 extern U8 rookCastleFlagMask[U8_MAX_SQUARES];
-
-// for time management
-
-extern bool timeSet;
-extern bool stopped;
-
-extern int timePerMove;
-
-extern std::chrono::steady_clock::time_point startTime;
-extern std::chrono::steady_clock::time_point stopTime;
 
 extern U64 arrInBetween[U8_MAX_SQUARES][U8_MAX_SQUARES];
 

@@ -19,8 +19,6 @@
 #include "structs.h"
 #include "zobrist.h"
 
-using namespace std;
-
 size_t split(const std::string &txt, std::vector<std::string> &strs, char ch) {
 
     size_t pos = txt.find( ch );
@@ -49,14 +47,12 @@ Side parseFen(std::string str, Thread *th) {
             
 	Side side = WHITE;
 
-    vector <string> tokens1; 
+    std::vector <std::string> tokens1; 
 
     split(str, tokens1, ' ');
 
 
-
-
-
+    
     // parse side to move ------------------------------------
 
     std::string strSide = tokens1[1];
@@ -145,7 +141,7 @@ Side parseFen(std::string str, Thread *th) {
     //----------------------------------------------------------
 
     
-    vector <string> tokens2; 
+    std::vector <std::string> tokens2; 
 
     split(tokens1[0], tokens2, '/');
 
@@ -176,7 +172,7 @@ Side parseFen(std::string str, Thread *th) {
                     //Black side
                 case 'k':
                     
-                    th->blackPieceBB[KING] |= getBitboardFromSquare(pos);
+                    th->blackPieceBB[KING] |= (1ULL << pos);
                     
                     th->hashKey ^= zobrist::Zobrist::objZobrist.zobristKey[KING][BLACK][pos];
                         
@@ -184,35 +180,35 @@ Side parseFen(std::string str, Thread *th) {
                     break;
                 case 'q':
                     
-                    th->blackPieceBB[QUEEN] |= getBitboardFromSquare(pos);
+                    th->blackPieceBB[QUEEN] |= (1ULL << pos);
                     
                     th->hashKey ^= zobrist::Zobrist::objZobrist.zobristKey[QUEEN][BLACK][pos];
                         
                     pos--;
                     break;
                 case 'b':
-                    th->blackPieceBB[BISHOPS] |= getBitboardFromSquare(pos);
+                    th->blackPieceBB[BISHOPS] |= (1ULL << pos);
                     
                     th->hashKey ^= zobrist::Zobrist::objZobrist.zobristKey[BISHOPS][BLACK][pos];
                     
                     pos--;
                     break;
                 case 'n':
-                    th->blackPieceBB[KNIGHTS] |= getBitboardFromSquare(pos);
+                    th->blackPieceBB[KNIGHTS] |= (1ULL << pos);
                    
                     th->hashKey ^= zobrist::Zobrist::objZobrist.zobristKey[KNIGHTS][BLACK][pos];
                        
                     pos--;
                     break;
                 case 'r':
-                    th->blackPieceBB[ROOKS] |= getBitboardFromSquare(pos);
+                    th->blackPieceBB[ROOKS] |= (1ULL << pos);
                    
                     th->hashKey ^= zobrist::Zobrist::objZobrist.zobristKey[ROOKS][BLACK][pos];
                        
                     pos--;
                     break;
                 case 'p':
-                    th->blackPieceBB[PAWNS] |= getBitboardFromSquare(pos);
+                    th->blackPieceBB[PAWNS] |= (1ULL << pos);
                    
                     th->hashKey ^= zobrist::Zobrist::objZobrist.zobristKey[PAWNS][BLACK][pos];
                        
@@ -222,7 +218,7 @@ Side parseFen(std::string str, Thread *th) {
 
                     //White side
                 case 'K':
-                    th->whitePieceBB[KING] |= getBitboardFromSquare(pos);
+                    th->whitePieceBB[KING] |= (1ULL << pos);
                     
                     th->hashKey ^= zobrist::Zobrist::objZobrist.zobristKey[KING][WHITE][pos];
                      
@@ -230,7 +226,7 @@ Side parseFen(std::string str, Thread *th) {
                     break;
                 case 'Q':
 
-                    th->whitePieceBB[QUEEN] |= getBitboardFromSquare(pos);
+                    th->whitePieceBB[QUEEN] |= (1ULL << pos);
                 
                     th->hashKey ^= zobrist::Zobrist::objZobrist.zobristKey[QUEEN][WHITE][pos];
                  
@@ -238,7 +234,7 @@ Side parseFen(std::string str, Thread *th) {
                     break;
                 case 'B':
 
-                    th->whitePieceBB[BISHOPS] |= getBitboardFromSquare(pos);
+                    th->whitePieceBB[BISHOPS] |= (1ULL << pos);
                 
                     th->hashKey ^= zobrist::Zobrist::objZobrist.zobristKey[BISHOPS][WHITE][pos];
                          
@@ -246,7 +242,7 @@ Side parseFen(std::string str, Thread *th) {
                     break;
                 case 'N':
                 
-                    th->whitePieceBB[KNIGHTS] |= getBitboardFromSquare(pos);
+                    th->whitePieceBB[KNIGHTS] |= (1ULL << pos);
                 
                     th->hashKey ^= zobrist::Zobrist::objZobrist.zobristKey[KNIGHTS][WHITE][pos];
                      
@@ -254,7 +250,7 @@ Side parseFen(std::string str, Thread *th) {
                     break;
                 case 'R':
                 
-                    th->whitePieceBB[ROOKS] |= getBitboardFromSquare(pos);
+                    th->whitePieceBB[ROOKS] |= (1ULL << pos);
                 
                     th->hashKey ^= zobrist::Zobrist::objZobrist.zobristKey[ROOKS][WHITE][pos];
                     
@@ -262,7 +258,7 @@ Side parseFen(std::string str, Thread *th) {
                     break;
                 case 'P':
                 
-                    th->whitePieceBB[PAWNS] |= getBitboardFromSquare(pos);
+                    th->whitePieceBB[PAWNS] |= (1ULL << pos);
                     
                     th->hashKey ^= zobrist::Zobrist::objZobrist.zobristKey[PAWNS][WHITE][pos];
                     

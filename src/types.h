@@ -2,6 +2,7 @@
 #define TYPES_H
 
 #include <vector>
+#include <chrono>
 
 /*
 
@@ -57,6 +58,8 @@ typedef signed char 		S8;
 typedef signed short 		S16;
 typedef signed long 		S32;
 typedef signed long long	S64;
+
+typedef std::chrono::steady_clock::time_point TimePoint;
 
 enum { NORMAL, SAFETY };
 enum { MG, EG };

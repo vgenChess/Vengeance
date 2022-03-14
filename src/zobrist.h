@@ -25,11 +25,6 @@ namespace zobrist {
         U64 zobristKey[U8_MAX_PIECES][U8_MAX_SIDES][U8_MAX_SQUARES];
         U64 pawnZobristKey[U8_MAX_SQUARES];
         
-        U64 KEY_SIDE_TO_MOVE;
-        U64 KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
-        U64 KEY_FLAG_WHITE_CASTLE_KING_SIDE;
-        U64 KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
-        U64 KEY_FLAG_BLACK_CASTLE_KING_SIDE;
         U64 KEY_EP_A_FILE;
         U64 KEY_EP_B_FILE;
         U64 KEY_EP_C_FILE;
@@ -38,6 +33,11 @@ namespace zobrist {
         U64 KEY_EP_F_FILE;
         U64 KEY_EP_G_FILE;
         U64 KEY_EP_H_FILE;
+        U64 KEY_SIDE_TO_MOVE;
+        U64 KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
+        U64 KEY_FLAG_WHITE_CASTLE_KING_SIDE;
+        U64 KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
+        U64 KEY_FLAG_BLACK_CASTLE_KING_SIDE;
         
         void initZobristKeys() {
             

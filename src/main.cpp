@@ -29,6 +29,7 @@
 #include "misc.h"
 
 zobrist::Zobrist zobrist::Zobrist::objZobrist;
+TimeManager TimeManager::timeManager;
 
 int main(int argc, char **argv) {
     
@@ -46,8 +47,8 @@ int main(int argc, char **argv) {
     Threads.createThreadPool(1);         // default threads size = 1
     omp_set_num_threads(omp_get_max_threads()); // for tuning
 
-    timeSet = false;
-    stopped = false;
+    TimeManager::timeManager.timeSet = false;
+    TimeManager::timeManager.stopped = false;
     
     bool isBenchmark = argc > 1 && strcmp(argv[1], "bench") == 0;
 

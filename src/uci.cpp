@@ -31,12 +31,12 @@
 #include "ucireport.h"
 #include "functions.h"
 #include "see.h"
+#include "time.h"
 
 #define NAME "V0.9"
 #define START_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 bool quit;
-bool NNUE = false;
 
 int option_hash_size;
 
@@ -158,9 +158,9 @@ void UciLoop() {
             std::cout << "readyok\n";
         } else if (token == "go") {
 
-            startTime = std::chrono::steady_clock::now();
+            TimeManager::timeManager.startTime = std::chrono::steady_clock::now();
 
-            timeSet = false;
+            TimeManager::timeManager.timeSet = false;
 
             int32_t time = -1, moveTime = -1, nodes = 0, inc = 0, movesToGo = -1, depthCurrent = 0;
 
@@ -179,33 +179,36 @@ void UciLoop() {
 
             if (moveTime != -1) {
                 
-                timeSet = true;
+                TimeManager::timeManager.timeSet = true;
 
-                timePerMove = moveTime;
+                TimeManager::timeManager.timePerMove = moveTime;
 
-                stopTime = startTime + std::chrono::milliseconds(moveTime);
+                TimeManager::timeManager.stopTime = TimeManager::timeManager.startTime 
+                    + std::chrono::milliseconds(moveTime);
             } else {
 
                 if (time != -1) {
                 
-                    timeSet = true;
+                    TimeManager::timeManager.timeSet = true;
 
                     if (movesToGo == -1) {
 
                         int total = (int)fmax(1, time + 50 * inc - MOVE_OVERHEAD);
 
-                        timePerMove = (int)fmin(time * 0.33, total / 20.0);
+                        TimeManager::timeManager.timePerMove = (int)fmin(time * 0.33, total / 20.0);
                     } else {
                     
                         int total = (int)fmax(1, time + movesToGo * inc - MOVE_OVERHEAD);
 
-                        timePerMove = total / movesToGo;
+                        TimeManager::timeManager.timePerMove = total / movesToGo;
                     }
 
-                    stopTime = startTime + std::chrono::milliseconds((int)fmin(time * 0.75, timePerMove * 5.5));           
+                    TimeManager::timeManager.stopTime = 
+                        TimeManager::timeManager.startTime + std::chrono::milliseconds(
+                            (int)fmin(time * 0.75, TimeManager::timeManager.timePerMove * 5.5));           
                 } else {
 
-                    timeSet = false;
+                    TimeManager::timeManager.timeSet = false;
                 }
             }
 

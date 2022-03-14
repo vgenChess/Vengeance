@@ -6,6 +6,7 @@
 
 #include "globals.h"
 #include "thread.h"
+#include "time.h"
 
 inline std::string algebricSq[64] = {
 
@@ -57,7 +58,8 @@ inline void reportPV(SearchThread *th) {
     int score = th->pvLine[th->completedDepth].score;
     
     std::cout << "info depth " << depth << " seldepth " << selDepth; 
-    std::cout << " time " << vgen::time_elapsed_milliseconds(startTime) << " nodes " << Threads.totalNodes();
+    std::cout << " time " << vgen::time_elapsed_milliseconds(TimeManager::timeManager.startTime) 
+        << " nodes " << Threads.totalNodes();
     std::cout/*<< " hashfull " << hashfull()*/ << " tbhits " << Threads.totalTTHits();
     std::cout << " score cp " << score << " pv";
     
