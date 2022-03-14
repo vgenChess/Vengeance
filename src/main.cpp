@@ -26,19 +26,19 @@
 #include "fen.h"
 #include "functions.h"
 #include "ucireport.h"
+#include "zobrist.h"
 
 int main(int argc, char **argv) {
     
     initLMR();
 
-    init_index_bb();
     init_king_attacks();
     init_knight_attacks();
     init_magic_moves();
     initCastleMaskAndFlags();
-    initZobristKeys();
-    initPawnZobristKeys();  // should be called after initialising main zobrist keys
-	init_inbetween_bb(); 
+    vgen_zobrist::initZobristKeys();
+    vgen_zobrist::initPawnZobristKeys();  // should be called after initialising main zobrist keys
+    init_inbetween_bb(); 
     initPSQT();
     initHashTable(16);      // default hash size = 16 megabytes
     Threads.createThreadPool(1);         // default threads size = 1

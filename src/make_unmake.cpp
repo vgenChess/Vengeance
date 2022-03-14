@@ -39,7 +39,6 @@ U64 quiet, prevCap, cap, prevEp, ep, prevCas, cas, check, prom;
 U64 zobrist[U8_MAX_PIECES][U8_MAX_SIDES][U8_MAX_SQUARES];
 U64 pawnZobristKey[U8_MAX_SQUARES];
 
-U64 index_bb[U8_MAX_SQUARES];
 U8 rookCastleFlagMask[64];
 
 

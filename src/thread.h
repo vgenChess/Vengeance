@@ -17,14 +17,20 @@ class Thread {
 public:
 
 	Side side;
-
+    
 	U16 moves_history_counter;
 
 	int historyScore[2][64][64];
 	int captureHistoryScore[8][64][8]; // [piece][to][c_piece]
 
 	U32 counterMove[2][64][64];
-	
+    
+    U64 hashKey, pawnsHashKey;
+	U64 occupied, empty;
+
+    U64 whitePieceBB[U8_MAX_PIECES];
+	U64 blackPieceBB[U8_MAX_PIECES];
+
 	std::vector<MOVE_LIST> moveList;
 	std::vector<PV> pvLine;
 	std::vector<MOVE_STACK> moveStack;
@@ -32,14 +38,8 @@ public:
 	std::vector<MOVES_HISTORY> movesHistory;
 	std::vector<PAWNS_HASH> pawnHashTable;
 	std::vector<EVAL_HASH> evalHashTable;
-
-	U64 whitePieceBB[U8_MAX_PIECES];
-	U64 blackPieceBB[U8_MAX_PIECES];
-	U64 occupied, empty;
-
-	U64 hashKey, pawnsHashKey;
-
-	EvalInfo evalInfo;
+	
+    EvalInfo evalInfo;
 	
 	Thread();
     ~Thread();
@@ -54,10 +54,8 @@ public:
 
 	static bool abortSearch;
 	static bool stop;
-
-	ThreadState state;
-	
-	bool terminate;
+    
+    bool terminate;
 
 	int idx, depth, completedDepth, selDepth;
 
@@ -67,9 +65,11 @@ public:
 
 	std::mutex mutex;
 	std::condition_variable cv;
-
-	explicit SearchThread(int);
-	virtual ~SearchThread();
+    
+    ThreadState state;
+	
+	SearchThread(int);
+	~SearchThread();
 
 	int getIndex() { return idx; }
 	
@@ -100,7 +100,6 @@ public:
 	
 	std::vector<SearchThread*> getSearchThreads();
 };
-
 
 extern Thread initThread;
 extern SearchThreadPool Threads;

@@ -11,6 +11,9 @@
 
 #include <stdio.h>
 
+extern bool quit;
+extern int option_thread_count;
+
 void UciLoop(void);
 
 #endif /* uci_h */

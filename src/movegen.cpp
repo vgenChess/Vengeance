@@ -18,6 +18,7 @@
 #include "see.h"
 #include "constants.h"
 #include "functions.h"
+#include "utility.h"
 
 typedef unsigned char U8;
 
@@ -133,8 +134,8 @@ void generatePushes(std::vector<Move> &moves, Thread *th) {
 template<Side stm>
 void generateCaptures(std::vector<Move> &moves, Thread *th) {
     
-    short from, to; 
-    U64 cPieceBB;
+    int from, to; 
+    U64 cPieceBB, fromBB;
 
     U64 oppPieces = stm ^ 1 ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES];
 
@@ -154,9 +155,13 @@ void generateCaptures(std::vector<Move> &moves, Thread *th) {
 
             assert(from >= 0 && from <= 63);
 
-            if (p == PAWNS) attacks = stm ? 
-                    ((index_bb[from] >> 7) & NOT_A_FILE) | ((index_bb[from] >> 9) & NOT_H_FILE) :
-                    ((index_bb[from] << 7) & NOT_H_FILE) | ((index_bb[from] << 9) & NOT_A_FILE);
+            if (p == PAWNS) {
+                
+                fromBB = 1ULL << from;
+                attacks = stm ? 
+                    ((fromBB >> 7) & NOT_A_FILE) | ((fromBB >> 9) & NOT_H_FILE) :
+                    ((fromBB << 7) & NOT_H_FILE) | ((fromBB << 9) & NOT_A_FILE);
+            }
             else if (p == KNIGHTS) attacks |= get_knight_attacks(from);            
             else if (p == BISHOPS) attacks |= Bmagic(from, th->occupied);
             else if (p == ROOKS)   attacks |= Rmagic(from, th->occupied);
@@ -420,51 +425,52 @@ bool isValidMove(const int ply, const U32 move, Thread *th) {
     if (move == NO_MOVE) 
         return false;
     
-    U8 opponent = stm ^ 1;
+    constexpr auto opp = stm == WHITE ? BLACK : WHITE;
 
-    U8 fromSq = from_sq(move);
-    U8 toSq = to_sq(move);
+    const auto fromSq = from_sq(move);
+    const auto toSq = to_sq(move);
+    const auto fromSqBB = 1ULL << fromSq;
+    const auto toSqBB = 1ULL << toSq;
+    const auto moveType = move_type(move);
+    const auto piece = pieceType(move);
+    const auto capturePiece = cPieceType(move);
+    const auto pieceBB = stm ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
+    const auto capturePieceBB = opp ? th->blackPieceBB[capturePiece] : th->whitePieceBB[capturePiece];
 
-    U8 piece = pieceType(move);
-    U8 capturePiece = cPieceType(move);
     
-    U64 pieceBB = stm ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
-    U64 capturePieceBB = opponent ? th->blackPieceBB[capturePiece] : th->whitePieceBB[capturePiece];
-
-    int moveType = move_type(move);
-
     if (moveType == MOVE_NORMAL || moveType == MOVE_DOUBLE_PUSH || moveType == MOVE_CAPTURE) {
 
         if (moveType == MOVE_DOUBLE_PUSH && inBetween(fromSq, toSq) & th->occupied) 
             return false; // pawn's path is blocked       
 
-        if (piece == ROOKS && !(Rmagic(fromSq, th->occupied) & (1ULL << toSq))) 
+        if (piece == ROOKS && !(Rmagic(fromSq, th->occupied) & toSqBB)) 
             return false; // rook's path is blocked
 
-        if (piece == BISHOPS && !(Bmagic(fromSq , th->occupied) & (1ULL << toSq))) 
+        if (piece == BISHOPS && !(Bmagic(fromSq , th->occupied) & toSqBB)) 
             return false; // bishop's path is blocked
 
-        if (piece == QUEEN && !(Qmagic(fromSq, th->occupied) & (1ULL << toSq))) 
+        if (piece == QUEEN && !(Qmagic(fromSq, th->occupied) & toSqBB)) 
             return false; // queen's path is blocked
 
         // finally check for pieces on their squares
         return moveType == MOVE_CAPTURE ? 
-            ((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & capturePieceBB) :
-            ((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & th->empty);
+            (fromSqBB & pieceBB) && (toSqBB & capturePieceBB) :
+            (fromSqBB & pieceBB) && (toSqBB & th->empty);
     }
 
+    
     if (moveType == MOVE_CASTLE) { 
 
-        U8 castleFlags = th->moveStack[ply].castleFlags;
+        const auto castleFlags = th->moveStack[ply].castleFlags;
 
-        U8 castleDirection = castleDir(move);
-    
-        if (castleDirection == WHITE_CASTLE_QUEEN_SIDE) {
-
+        const auto castleDirection = castleDir(move);
+        
+        const auto oppAttacks = getAttacks(opp, th);
+        
+        if (castleDirection == WHITE_CASTLE_QUEEN_SIDE) { 
+      
             if (castleFlags & CASTLE_FLAG_WHITE_QUEEN) {
                 
-                U64 oppAttacks = getAttacks(opponent, th);
-
                 U64 wq_sqs = th->empty & WQ_SIDE_SQS;
                 if (    wq_sqs == WQ_SIDE_SQS 
                     &&  !(      oppAttacks & (1ULL << 2) 
@@ -479,8 +485,6 @@ bool isValidMove(const int ply, const U32 move, Thread *th) {
             
             if (castleFlags & CASTLE_FLAG_WHITE_KING) {
                 
-                U64 oppAttacks = getAttacks(opponent, th);
-       
                 U64 wk_sqs = th->empty & WK_SIDE_SQS;
                 if (    wk_sqs == WK_SIDE_SQS 
                     &&  !(      oppAttacks & (1ULL << 4) 
@@ -494,8 +498,6 @@ bool isValidMove(const int ply, const U32 move, Thread *th) {
         else if (castleDirection == BLACK_CASTLE_QUEEN_SIDE) {
             
             if (castleFlags & CASTLE_FLAG_BLACK_QUEEN) {
-        
-                U64 oppAttacks = getAttacks(opponent, th);
     
                 U64 bq_sqs = th->empty & BQ_SIDE_SQS;
                 if (    bq_sqs == BQ_SIDE_SQS 
@@ -511,8 +513,6 @@ bool isValidMove(const int ply, const U32 move, Thread *th) {
 
             if (castleFlags & CASTLE_FLAG_BLACK_KING) {
     
-                U64 oppAttacks = getAttacks(opponent, th);
-        
                 U64 bk_sqs = th->empty & BK_SIDE_SQS; 
                 if (    bk_sqs == BK_SIDE_SQS 
                     && !(       oppAttacks & (1ULL << 60) 
@@ -533,8 +533,8 @@ bool isValidMove(const int ply, const U32 move, Thread *th) {
     if (moveType == MOVE_PROMOTION) {
 
         return capturePiece == DUMMY ? 
-            ((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & th->empty) :
-            ((1ULL << fromSq) & pieceBB) && ((1ULL << toSq) & capturePieceBB);
+            (fromSqBB & pieceBB) && (toSqBB & th->empty) :
+            (fromSqBB & pieceBB) && (toSqBB & capturePieceBB);
     }
 
     return false;

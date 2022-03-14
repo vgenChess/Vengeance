@@ -49,13 +49,7 @@ extern U64 pawnZobristKey[U8_MAX_SQUARES];
 extern HASHE *hashTable;
 extern U32 HASH_TABLE_SIZE;
 
-extern U64 index_bb[U8_MAX_SQUARES];				
 extern U8 rookCastleFlagMask[U8_MAX_SQUARES];
-
-// uci
-
-extern bool quit;
-extern int option_thread_count;
 
 // for time management
 
@@ -68,5 +62,6 @@ extern std::chrono::steady_clock::time_point startTime;
 extern std::chrono::steady_clock::time_point stopTime;
 
 extern U64 arrInBetween[U8_MAX_SQUARES][U8_MAX_SQUARES];
+
 
 #endif /* globals_h */

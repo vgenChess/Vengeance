@@ -340,12 +340,10 @@ bool isSqAttacked(U8 sq, U8 side, Thread *th) {
     
     if (side == WHITE) {
         
-        attacks = ((index_bb[sq] << 7) & NOT_H_FILE)
-            | ((index_bb[sq] << 9) & NOT_A_FILE);
+        attacks = (((1ULL << sq) << 7) & NOT_H_FILE) | (((1ULL << sq) << 9) & NOT_A_FILE);
     } else {
 
-        attacks = ((index_bb[sq] >> 7) & NOT_A_FILE)
-            | ((index_bb[sq] >> 9) & NOT_H_FILE);
+        attacks = (((1ULL << sq) >> 7) & NOT_A_FILE) | (((1ULL << sq) >> 9) & NOT_H_FILE);
     }
     
     if (attacks & ((side ^ 1) ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS])) {
@@ -968,10 +966,6 @@ U64 inBetweenOnTheFly(U8 sq1, U8 sq2) {
    line += (((rank + file) & 15) - 1) & h1b7; /* h1b7 if same antidiag */
    line *= btwn & -btwn; /* mul acts like shift by smaller kingSq */
    return line & btwn;   /* return the bits on that line in-between */
-}
-
-U64 inBetween(U8 from, U8 to) {
-   return arrInBetween[from][to];
 }
 
 U64 xrayRookAttacks(U64 occ, U64 blockers, U8 rookSq) {
