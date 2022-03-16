@@ -5,6 +5,8 @@ LDFLAGS = -m64 -Wl,--no-as-needed -lpthread -Wall -Wcast-qual -fno-exceptions -s
 SRC = *.cpp
 EXE = Vengeance
 
+tune:
+	$(CXX) $(CXXFLAGS) $(SRC) -D TUNE -o $(EXE) $(LDFLAGS)
 
 debug:
 	$(CXX) $(CXXFLAGS) $(SRC) -g -D DEBUG -o $(EXE) $(LDFLAGS)
