@@ -35,31 +35,27 @@
 #include "history.h"
 #include "ucireport.h"
 #include "misc.h"
-#include "time.h"
+#include "TimeManagement.h"
+
+bool SearchThread::abortSearch = false;
+bool SearchThread::stop = false;
 
 int option_thread_count;
+int stableMoveCount = 0, MAX_DEPTH = 100, LMR[64][64];
 
 std::mutex mtx;
 
-int stableMoveCount = 0;
-
-int MAX_DEPTH = 100;
-
-int LMR[64][64];
-
-void initLMR() {
-
-    float a = 0.1, b = 2;
-    for (int depth = 1; depth < 64; depth++) {
-        for (int moves = 1; moves < 64; moves++) {
-
+void initLMR() 
+{
+    const float a = 0.1, b = 2;
+    for (int depth = 1; depth < 64; depth++) 
+    {
+        for (int moves = 1; moves < 64; moves++) 
+        {
             LMR[depth][moves] = a + log(depth) * log(moves) / b;
         }
     }
 }
-
-bool SearchThread::abortSearch = false;
-bool SearchThread::stop = false;
 
 //TODO refactor logic
 void startSearch(Side stm, SearchThread *th) {
@@ -95,8 +91,8 @@ void startSearch(Side stm, SearchThread *th) {
 
         reportBestMove();
 
-        TimeManager::timeManager.timeSet = false;
-        TimeManager::timeManager.stopped = false;
+        TimeManager::sTimeManager.updateTimeSet(false);
+        TimeManager::sTimeManager.updateStopped(false);
     } else {
 
         if (stm == WHITE)
@@ -117,25 +113,25 @@ void iterativeDeepeningSearch(SearchThread *th) {
 
     stableMoveCount = 0;
 
-    for (int depth = 1; depth < MAX_DEPTH; depth++) {
-
-        if (th != Threads.getMainSearchThread()) { 
-
+    for (int depth = 1; depth < MAX_DEPTH; depth++) 
+    {
+        if (th != Threads.getMainSearchThread()) 
+        { 
             // Mutex will automatically be unlocked when lck goes out of scope
             std::lock_guard<std::mutex> lck {mtx}; 
 
             U16 count = 0;
 
-            for (SearchThread *thread : Threads.getSearchThreads()) {
-
-                if (th != thread && depth == thread->depth) {
-                
-                    count++;	
+            for (SearchThread *thread : Threads.getSearchThreads()) 
+            {
+                if (th != thread && depth == thread->depth) 
+                {
+                    count++;
                 }
             }
 
-            if (count >= (option_thread_count / 2)) {
-
+            if (count >= (option_thread_count / 2)) 
+            {
                 continue;
             }
         } 
@@ -143,22 +139,20 @@ void iterativeDeepeningSearch(SearchThread *th) {
 
         th->depth = depth;
 
-        if (stm == WHITE)
-            aspirationWindowSearch<WHITE>(th);
-        else
-            aspirationWindowSearch<BLACK>(th);
-        
+        aspirationWindowSearch<stm>(th);
 
         if (SearchThread::stop)
+        {
             break;
-
+        }
 
         if (th != Threads.getMainSearchThread())
+        {
             continue;
-
+        }
         
         const auto completedDepth = th->completedDepth;
-        if (TimeManager::timeManager.timeSet && completedDepth >= 4) 
+        if (TimeManager::sTimeManager.isTimeSet() && completedDepth >= 4) 
         {
             // score change
             int prevScore = th->pvLine.at(completedDepth-3).score;
@@ -167,7 +161,6 @@ void iterativeDeepeningSearch(SearchThread *th) {
             const auto scoreChangeFactor = prevScore > currentScore ? 
                 fmax(0.5, fmin(1.5, ((prevScore - currentScore) * 0.05))) : 0.5;
             
-
             // best move change
             assert(th->pvLine.at(completedDepth).line[0] != NO_MOVE 
                 && th->pvLine.at(completedDepth-1).line[0] != NO_MOVE);
@@ -188,9 +181,10 @@ void iterativeDeepeningSearch(SearchThread *th) {
             const auto totalFactor = scoreChangeFactor * stableMoveFactor * winFactor;
             
             // Check for time 
-            if (    TimeManager::time_elapsed_milliseconds(TimeManager::timeManager.startTime) 
-                >   (TimeManager::timeManager.timePerMove * totalFactor)) {
-
+            if (TimeManager::sTimeManager.time_elapsed_milliseconds(
+                TimeManager::sTimeManager.getStartTime()) 
+                > (TimeManager::sTimeManager.getTimePerMove() * totalFactor)) 
+            {
                 SearchThread::stop = true;
                 break;
             }
@@ -252,7 +246,9 @@ void aspirationWindowSearch(SearchThread *th)
             beta = std::min(score + window, I32_MATE);
             
             if (std::abs(score) < U16_WIN_SCORE)
+            {
                 failHighCounter++;
+            }
         }
         else 
         {
@@ -297,17 +293,15 @@ void aspirationWindowSearch(SearchThread *th)
     reportPV(th);
 }
 
-void checkTime() 
+__always_inline void checkTime() 
 {
-
     SearchThread::stop = TimeManager::time_now().time_since_epoch() 
-                    >= TimeManager::timeManager.stopTime.time_since_epoch();
+                    >= TimeManager::sTimeManager.getStopTime().time_since_epoch();
 }
 
 template<Side stm, bool isNullMoveAllowed, bool isSingularSearch>
 int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, SearchInfo *si) 
 {
-    
     // if (alpha >= beta) {
     // 	std::cout<<"realDepth=" << si->realDepth << ", depth=" << si->depth << ", ply =" << si->ply << "\n";
     // 	std::cout<<alpha<<","<<beta<<std::endl;
@@ -340,7 +334,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
 
     // Check time spent
     if (    IS_MAIN_THREAD
-        &&  TimeManager::timeManager.timeSet 
+        &&  TimeManager::sTimeManager.isTimeSet()
         &&  th->nodes % U16_CHECK_NODES == 0) 
     {
         checkTime();
@@ -357,7 +351,6 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
     }
 
     
-
     th->selDepth = IS_ROOT_NODE ? 0 : std::max(th->selDepth, ply);
 
     th->nodes++;
@@ -373,7 +366,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
     
     if (!IS_ROOT_NODE) 
     {
-        if (misc::isRepetition(ply, th)) // Repetition detection
+        if (isRepetition(ply, th)) // Repetition detection
         {
             if (ALL_PIECES_COUNT > 22) // earlygame
             {
@@ -392,7 +385,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
         th->movesHistory[th->moves_history_counter + ply + 1].hashKey = th->hashKey;
         
         // Check for drawish endgame
-        if (misc::isPositionDraw(th)) 
+        if (isPositionDraw(th)) 
         { 
             return 0;
         }
@@ -429,7 +422,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
         depth--;	
     }
 
-    const bool IS_IN_CHECK = misc::isKingInCheck<stm>(th);
+    const bool IS_IN_CHECK = isKingInCheck<stm>(th);
     bool improving = false;
 
     int sEval = I32_UNKNOWN;
@@ -643,7 +636,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
         make_move(ply, currentMove.move, th);
 
         // check if psuedo-legal move is valid
-        if (misc::isKingInCheck<stm>(th)) 
+        if (isKingInCheck<stm>(th)) 
         {
             unmake_move(ply, currentMove.move, th);
             continue;
@@ -655,18 +648,17 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
         // report current depth, moves played and current move being searched
         if (IS_ROOT_NODE && IS_MAIN_THREAD) 
         {
-            if (    TimeManager::time_elapsed_milliseconds(TimeManager::timeManager.startTime) 
-                >   U16_CURRMOVE_INTERVAL) 
+            if (TimeManager::sTimeManager.time_elapsed_milliseconds(
+                TimeManager::sTimeManager.getStartTime()) > U16_CURRMOVE_INTERVAL) 
             {
                 std::cout << "info depth " << si->realDepth << " currmove ";
-                std::cout << getMoveNotation(currentMove.move) << " currmovenumber " << movesPlayed << std::endl;
+                std::cout << getMoveNotation(currentMove.move) << " currmovenumber " << movesPlayed << "\n";
             }
         }
 
 
         currentMoveType = move_type(currentMove.move);
         currentMoveToSq = to_sq(currentMove.move);
-
 
         isQuietMove = currentMoveType == MOVE_NORMAL || currentMoveType == MOVE_CASTLE 
             || currentMoveType == MOVE_DOUBLE_PUSH;
@@ -939,7 +931,6 @@ constexpr int seeVal[8] = {	VALUE_DUMMY, VALUE_PAWN, VALUE_KNIGHT, VALUE_BISHOP,
 template<Side stm>
 int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
 
-
     assert (alpha < beta);
     assert (si->ply > 0);
 
@@ -950,7 +941,8 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
     const auto ply = si->ply;
 
     // Check if time limit has been reached
-    if (TimeManager::timeManager.timeSet && IS_MAIN_THREAD && th->nodes % U16_CHECK_NODES == 0)
+    if (    TimeManager::sTimeManager.isTimeSet() 
+        &&  IS_MAIN_THREAD && th->nodes % U16_CHECK_NODES == 0)
     {
         checkTime();
     }
@@ -973,20 +965,29 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
     const auto ALL_PIECES_COUNT = POPCOUNT(th->occupied);
 
     // Repetition detection
-    if (misc::isRepetition(ply, th)) 
+    if (isRepetition(ply, th)) 
     {
         // earlygame
-        if (ALL_PIECES_COUNT > 22)  return -50;
+        if (ALL_PIECES_COUNT > 22)
+        {
+            return -50;
+        }
         // middlegame
-        else if (ALL_PIECES_COUNT > 12) return -25;
+        else if (ALL_PIECES_COUNT > 12)
+        {
+            return -25;
+        }
         // endgame
-        else return 0;
+        else
+        {
+            return 0;
+        }
     }
 
     th->movesHistory[th->moves_history_counter + ply + 1].hashKey = th->hashKey;
 
     // Check for drawish endgame
-    if (misc::isPositionDraw(th)) 
+    if (isPositionDraw(th)) 
     {
         return 0;
     }
@@ -1013,7 +1014,7 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
                 ||  (tt->flags == hashfBETA && ttScore >= beta)
                 ||  (tt->flags == hashfALPHA && ttScore <= alpha))) 
         {
-            return ttScore;	
+            return ttScore;
         }
     }
 
@@ -1083,7 +1084,7 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
 
         make_move(ply, currentMove.move, th);
 
-        if (misc::isKingInCheck<stm>(th)) 
+        if (isKingInCheck<stm>(th)) 
         {
             unmake_move(ply, currentMove.move, th);
 

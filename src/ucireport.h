@@ -6,9 +6,9 @@
 
 #include "globals.h"
 #include "thread.h"
-#include "time.h"
+#include "TimeManagement.h"
 
-inline std::string algebricSq[64] = {
+__always_inline std::string algebricSq[64] = {
 
     "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
     "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
@@ -20,7 +20,7 @@ inline std::string algebricSq[64] = {
     "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
 }; 
 
-inline std::string getMoveNotation(const U32 move) {
+__always_inline std::string getMoveNotation(const U32 move) {
 
     std::string str;
 
@@ -42,14 +42,14 @@ inline std::string getMoveNotation(const U32 move) {
     return str;
 }
 
-inline void reportBestMove() {
+__always_inline void reportBestMove() {
 
     U32 bestMove = Threads.getMainSearchThread()->pvLine[Threads.getMainSearchThread()->completedDepth].line[0];
 
     std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
 }
     
-inline void reportPV(SearchThread *th) {
+__always_inline void reportPV(SearchThread *th) {
 
     const auto depth = th->completedDepth;
     const auto selDepth = th->selDepth;
@@ -58,7 +58,8 @@ inline void reportPV(SearchThread *th) {
     int score = th->pvLine[th->completedDepth].score;
     
     std::cout << "info depth " << depth << " seldepth " << selDepth; 
-    std::cout << " time " << TimeManager::time_elapsed_milliseconds(TimeManager::timeManager.startTime); 
+    std::cout << " time " << TimeManager::time_elapsed_milliseconds(
+         TimeManager::sTimeManager.getStartTime()); 
     std::cout << " nodes " << Threads.totalNodes();
     std::cout/*<< " hashfull " << hashfull()*/ << " tbhits " << Threads.totalTTHits();
     std::cout << " score cp " << score << " pv";

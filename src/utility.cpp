@@ -464,7 +464,7 @@ int divide(U8 depth, U8 sideToMove, Thread *th) {
         
         nodes = 0;
 
-        if (sideToMove ? !(misc::isKingInCheck<BLACK>(th)) : !(misc::isKingInCheck<WHITE>(th))) {
+        if (sideToMove ? !(isKingInCheck<BLACK>(th)) : !(isKingInCheck<WHITE>(th))) {
 
             count++;
 
@@ -509,15 +509,15 @@ void initHashKey(Thread *th) {
                     
                 assert(sq >= 0 && sq < 64);    
 
-				th->hashKey ^= zobrist::Zobrist::objZobrist.zobristKey[piece][side][sq];
+				th->hashKey ^= Zobrist::objZobrist.zobristKey[piece][side][sq];
             }
         }
     }
 
-    th->hashKey ^= zobrist::Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
-    th->hashKey ^= zobrist::Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
-    th->hashKey ^= zobrist::Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
-    th->hashKey ^= zobrist::Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE; 
+    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
+    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
+    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
+    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE; 
 }
 
 void initPawnHashKey(U8 side, Thread *th) {
@@ -532,11 +532,11 @@ void initPawnHashKey(U8 side, Thread *th) {
         sq = GET_POSITION(bitboard);
         POP_POSITION(bitboard);
 
-        th->pawnsHashKey ^= zobrist::Zobrist::objZobrist.pawnZobristKey[sq];
+        th->pawnsHashKey ^= Zobrist::objZobrist.pawnZobristKey[sq];
     }
 
     if (side) 
-        th->hashKey ^= zobrist::Zobrist::objZobrist.KEY_SIDE_TO_MOVE;
+        th->hashKey ^= Zobrist::objZobrist.KEY_SIDE_TO_MOVE;
 }
 
 
@@ -703,11 +703,12 @@ U64 xrayBishopAttacks(U64 occ, U64 blockers, U8 bishopSq) {
 
 U64 pinners(U8 kingSq, U8 side, Thread *th) {
 
-    U64 pinners1 = xrayRookAttacks(th->occupied, side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES], kingSq)
-        & (side ^ 1 ? th->blackPieceBB[ROOKS] | th->blackPieceBB[QUEEN] : th->whitePieceBB[ROOKS] | th->whitePieceBB[QUEEN]);
+    U64 pinners1 = xrayRookAttacks(th->occupied, side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES],
+                                   kingSq) & (side ^ 1 ? th->blackPieceBB[ROOKS] | th->blackPieceBB[QUEEN] : th->whitePieceBB[ROOKS] | th->whitePieceBB[QUEEN]);
     
-    U64 pinners2 = xrayBishopAttacks(th->occupied, (side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]), kingSq) 
-        & (side ^ 1 ? th->blackPieceBB[BISHOPS] | th->blackPieceBB[QUEEN] : th->whitePieceBB[BISHOPS] | th->whitePieceBB[QUEEN]);
+    U64 pinners2 = xrayBishopAttacks(th->occupied, 
+                                     (side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]), 
+                                     kingSq) & (side ^ 1 ? th->blackPieceBB[BISHOPS] | th->blackPieceBB[QUEEN] : th->whitePieceBB[BISHOPS] | th->whitePieceBB[QUEEN]);
     
     return pinners1 | pinners2;
 }
@@ -716,18 +717,19 @@ U64 pinnedPieces(U8 kingSq, U8 side, Thread *th) {
 
     U64 pinned = 0ULL;
     
-    U64 pinner = xrayRookAttacks(th->occupied, side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES], kingSq)
-        & (side ^ 1 ? th->blackPieceBB[ROOKS] | th->blackPieceBB[QUEEN] : th->whitePieceBB[ROOKS] | th->whitePieceBB[QUEEN]);
-    while ( pinner ) {
+    U64 pinner = xrayRookAttacks(th->occupied, side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES],
+                                 kingSq) & (side ^ 1 ? th->blackPieceBB[ROOKS] | th->blackPieceBB[QUEEN] : th->whitePieceBB[ROOKS] | th->whitePieceBB[QUEEN]);
+    while (pinner) {
 
         int sq  = GET_POSITION(pinner);
         pinned |= inBetween(sq, kingSq) & (side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
         POP_POSITION(pinner);
     }
     
-    pinner = xrayBishopAttacks(th->occupied, (side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]), kingSq) 
-        & (side ^ 1 ? th->blackPieceBB[BISHOPS] | th->blackPieceBB[QUEEN] : th->whitePieceBB[BISHOPS] | th->whitePieceBB[QUEEN]);
-    while ( pinner ) {
+    pinner = xrayBishopAttacks(th->occupied, (side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]),
+                               kingSq) & (side ^ 1 ? th->blackPieceBB[BISHOPS] | th->blackPieceBB[QUEEN] : th->whitePieceBB[BISHOPS] | th->whitePieceBB[QUEEN]);
+    while ( pinner ) 
+    {
         int sq  = GET_POSITION(pinner);
         pinned |= inBetween(sq, kingSq) & (side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
         POP_POSITION(pinner);
@@ -736,12 +738,12 @@ U64 pinnedPieces(U8 kingSq, U8 side, Thread *th) {
     return pinned;
 }
 
-U64 pinned(U64 pinners, U8 kingSq, U8 side, Thread *th) {
-
+U64 pinned(U64 pinners, U8 kingSq, U8 side, Thread *th) 
+{
     U64 pinned = 0ULL;
     
-    while ( pinners ) {
-
+    while ( pinners ) 
+    {
         int sq  = GET_POSITION(pinners);
 
         pinned |= inBetween(sq, kingSq) & (side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
