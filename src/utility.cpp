@@ -540,32 +540,6 @@ void initPawnHashKey(U8 side, Thread *th) {
 }
 
 
-
-HASHE *hashTable;
-U32 HASH_TABLE_SIZE;
-
-void initHashTable(int size) {
-
-    if (sizeof(hashTable) > 0) {
-
-        delete[] hashTable; 
-    }
-
-    int sizeOfSingleEntry = sizeof(HASHE);
-    HASH_TABLE_SIZE = (size * 1024 * 1024) / sizeOfSingleEntry;
-
-    
-    hashTable = new HASHE[HASH_TABLE_SIZE];
-
-    clearHashTable();
-}
-
-
-void clearHashTable() {
-	
-    std::memset(hashTable, 0, HASH_TABLE_SIZE * sizeof(HASHE));
-}
-
 // void clearPawnHashTable(Thread *th) {
 
 //     std::memset(th->pawnHashTable, 0, PAWN_HASH_TABLE_SIZE * sizeof(PAWNS_HASH));

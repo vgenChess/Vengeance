@@ -19,9 +19,6 @@
 
 extern int MAX_DEPTH;
 
-extern HASHE *hashTable;
-extern U32 HASH_TABLE_SIZE;
-
 extern U8 rookCastleFlagMask[U8_MAX_SQUARES];
 
 extern U64 arrInBetween[U8_MAX_SQUARES][U8_MAX_SQUARES];

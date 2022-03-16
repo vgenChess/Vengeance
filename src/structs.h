@@ -70,7 +70,7 @@ typedef struct {
 	int sEval;
     U32 bestMove;    
     U64 key;
-} HASHE;
+} HashEntry;
 
 typedef struct {
 

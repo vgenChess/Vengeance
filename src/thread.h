@@ -11,9 +11,14 @@
 #include "constants.h"
 #include "classes.h"
 #include "structs.h"
+#include "HashManagement.h"
 
 class Thread {
-	
+
+private:
+    
+    HashManager hashManager;
+        
 public:
 
 	Side side;
@@ -40,10 +45,15 @@ public:
 	std::vector<EVAL_HASH> evalHashTable;
 	
     EvalInfo evalInfo;
-	
+
 	Thread();
     ~Thread();
 
+    __always_inline HashManager getHashManager() 
+    {
+        return hashManager;
+    }
+    
     void init();
 	void clear();
 };

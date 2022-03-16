@@ -11,7 +11,6 @@
 
 #include "make_unmake.h"
 #include "utility.h"
-#include "hash.h"
 #include "thread.h"
 #include "functions.h"
 #include "constants.h"
@@ -541,13 +540,12 @@ void make_move(int ply, U32 move, Thread *th) {
     
     
     th->occupied = th->whitePieceBB[PIECES] | th->blackPieceBB[PIECES];	
-    th->empty = ~(th->occupied);		
+    th->empty = ~(th->occupied);
     
     
     th->hashKey ^= Zobrist::objZobrist.KEY_SIDE_TO_MOVE;
     th->pawnsHashKey ^= Zobrist::objZobrist.KEY_SIDE_TO_MOVE;
 }
-
 
 
 

@@ -24,7 +24,6 @@
 #include "movegen.h"
 #include "search.h"
 #include "perft.h"
-#include "hash.h"
 #include "evaluate.h"
 #include "thread.h"
 #include "tuner.h"
@@ -48,7 +47,7 @@ void setOption(std::string &line) {
 
         int hash_size = std::stoi(line.substr(26, std::string::npos));
     
-        initHashTable(hash_size);
+        HashManager::initHashTable(hash_size);
      
         std::cout << "info string set Hash to " << hash_size << "MB\n";
     } else if (line.rfind("setoption name Threads value", 0) == 0) {
@@ -95,11 +94,13 @@ void UciLoop() {
             setOption(cmd);
         } else if (token == "ucinewgame") {
 
-            clearHashTable();
+            HashManager::clearHashTable();
 
             for (Thread *thread : Threads.getSearchThreads())
+            {
                 thread->clear();
-
+            }
+            
             initThread.clear();
         } else if (token == "position") {
             

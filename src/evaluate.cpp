@@ -16,7 +16,6 @@
 #include "utility.h"
 #include "movegen.h"
 #include "make_unmake.h"
-#include "hash.h"
 #include "magicmoves.h"
 #include "nonslidingmoves.h"
 #include "tuner.h"
@@ -187,7 +186,7 @@ int fullEval(U8 stm, Thread *th) {
 	#else
 	
 		int hashedEval;
-		if (probeEval(&hashedEval, th)) {
+		if (probeEval(&hashedEval, th->hashKey, &th->evalHashTable[0])) {
 
 			return stm == WHITE ? hashedEval : -hashedEval;
 		}
@@ -248,7 +247,7 @@ int fullEval(U8 stm, Thread *th) {
 		T->phase = phase;
 	#else
 
-		recordEval(score, th);
+		recordEval(score, th->hashKey, &th->evalHashTable[0]);
 	#endif
 
 	return stm == WHITE ? score : -score;

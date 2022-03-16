@@ -28,7 +28,6 @@
 #include "utility.h"
 #include "nonslidingmoves.h"
 #include "magicmoves.h"
-#include "hash.h"
 #include "thread.h"
 #include "see.h"
 #include "constants.h"
@@ -36,6 +35,7 @@
 #include "ucireport.h"
 #include "misc.h"
 #include "TimeManagement.h"
+#include "HashManagement.h"
 
 bool SearchThread::abortSearch = false;
 bool SearchThread::stop = false;
@@ -394,22 +394,27 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
 
     // Transposition Table lookup
     
-    HASHE *tt = IS_SINGULAR_SEARCH ? NULL : &hashTable[th->hashKey % HASH_TABLE_SIZE];
+    auto hashManager = th->getHashManager();
+    auto hashEntry = IS_SINGULAR_SEARCH ? nullptr : hashManager.getHashEntry(th->hashKey);
     
-    const auto ttMatch = probeHash(tt, th);
-    int ttScore = ttMatch ? tt->value : I32_UNKNOWN;
-    U32 ttMove =  ttMatch ? tt->bestMove : NO_MOVE;
-
-    if (ttMatch) 
+    const auto hashHit = hashManager.probeHash(hashEntry, th->hashKey);
+    
+    int ttScore = I32_UNKNOWN;
+    U32 ttMove = NO_MOVE;
+    
+    if (hashHit) 
     {
         th->ttHits++;
+        
+        ttScore = hashEntry->value;
+        ttMove =  hashEntry->bestMove;
     }
     
-    if (!IS_ROOT_NODE && !IS_PV_NODE && ttMatch && tt->depth >= depth && ttScore != I32_UNKNOWN) 
+    if (!IS_ROOT_NODE && !IS_PV_NODE && hashHit && hashEntry->depth >= depth && ttScore != I32_UNKNOWN) 
     {
-        if (	tt->flags == hashfEXACT 
-            ||	(tt->flags == hashfBETA && ttScore >= beta)
-            ||	(tt->flags == hashfALPHA && ttScore <= alpha)) 
+        if (    hashEntry->flags == hashfEXACT 
+            ||  (hashEntry->flags == hashfBETA && ttScore >= beta)
+            ||  (hashEntry->flags == hashfALPHA && ttScore <= alpha)) 
         {
             return ttScore;
         }
@@ -419,7 +424,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
     // Alternative to IID
     if (depth >= 4 && !ttMove && !IS_SINGULAR_SEARCH) 
     {
-        depth--;	
+        depth--;
     }
 
     const bool IS_IN_CHECK = isKingInCheck<stm>(th);
@@ -436,9 +441,9 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
         sEval = I32_UNKNOWN;
         improving = false;
     } 
-    else if (ttMatch) 
+    else if (hashHit) 
     {
-        sEval = tt->sEval;
+        sEval = hashEntry->sEval;
         if (sEval == I32_UNKNOWN)
         {
             sEval = fullEval(stm, th); 
@@ -449,7 +454,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
     {
         sEval = fullEval(stm, th);
 
-        recordHash(NO_MOVE, I16_NO_DEPTH, I32_UNKNOWN, U8_NO_BOUND, sEval, th);
+        hashManager.recordHash(th->hashKey, NO_MOVE, I16_NO_DEPTH, I32_UNKNOWN, U8_NO_BOUND, sEval);
     }
 
 
@@ -460,7 +465,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
 
 
     const auto OPP_PIECES_COUNT = POPCOUNT(
-        OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);	
+        OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 
     // Reverse Futility Pruning
     if (	!IS_ROOT_NODE 
@@ -471,14 +476,13 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
         &&	std::abs(beta) < U16_WIN_SCORE 
         &&	OPP_PIECES_COUNT > 3) 
     { 
-
         assert(sEval != I32_UNKNOWN);
         
         if (depth == 1 && sEval - U16_RVRFPRUNE >= beta) 
-            return beta; 	
+            return beta;
     
         if (depth == 2 && sEval - U16_EXT_RVRFPRUNE >= beta) 
-            return beta;		
+            return beta;
     
         if (depth == 3 && sEval - U16_LTD_RVRRAZOR >= beta) 
             depth--;
@@ -558,14 +562,14 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
     bool ttMoveIsSingular = false;
 
     // Singular search
-    if (	!IS_ROOT_NODE
-        &&	!IS_SINGULAR_SEARCH
+    if (    !IS_ROOT_NODE
+        &&  !IS_SINGULAR_SEARCH
         &&  depth >= 7
-        &&  ttMatch
+        &&  hashHit
         &&  ttMove != NO_MOVE 
         &&  std::abs(ttScore) < U16_WIN_SCORE
-        &&  tt->flags == hashfBETA
-        &&  tt->depth >= depth - 3) 
+        &&  hashEntry->flags == hashfBETA
+        &&  hashEntry->depth >= depth - 3) 
     {
         const auto sBeta = ttScore - 4 * depth;
         const auto sDepth = depth / 2 - 1;
@@ -916,10 +920,9 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
 
     if (!IS_SINGULAR_SEARCH)
     {
-        recordHash(bestMove, depth, bestScore, hashf, sEval, th);
+        hashManager.recordHash(th->hashKey, bestMove, depth, bestScore, hashf, sEval);
     }
 
-    
     return bestScore;
 }
 
@@ -996,23 +999,26 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
     {
         return fullEval(stm, th);
     }
-
-    HASHE *tt = &hashTable[th->hashKey % HASH_TABLE_SIZE];
-
-    bool ttMatch = probeHash(tt, th);  
+    
+    
+    auto hashManager = th->getHashManager();
+    auto hashEntry = hashManager.getHashEntry(th->hashKey);
+    
+    const auto hashHit = hashManager.probeHash(hashEntry, th->hashKey);  
+    
     int ttScore = I32_UNKNOWN;
 
-    if (ttMatch) 
+    if (hashHit) 
     { // no depth check required since its 0 in quiescense search
         
         th->ttHits++;
 
-        ttScore = tt->value;
+        ttScore = hashEntry->value;
 
         if (    ttScore != I32_UNKNOWN 
-            &&  (    tt->flags == hashfEXACT 
-                ||  (tt->flags == hashfBETA && ttScore >= beta)
-                ||  (tt->flags == hashfALPHA && ttScore <= alpha))) 
+            &&  (    hashEntry->flags == hashfEXACT 
+                ||  (hashEntry->flags == hashfBETA && ttScore >= beta)
+                ||  (hashEntry->flags == hashfALPHA && ttScore <= alpha))) 
         {
             return ttScore;
         }
@@ -1022,9 +1028,9 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
     U32 bestMove = NO_MOVE;
     int sEval, bestScore = -I32_MATE;
     
-    if (ttMatch) 
+    if (hashHit) 
     {
-        sEval = tt->sEval;
+        sEval = hashEntry->sEval;
         if (sEval == I32_UNKNOWN)
         {
             sEval = fullEval(stm, th); 
@@ -1035,7 +1041,7 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
     {
         sEval = fullEval(stm, th);
 
-        recordHash(NO_MOVE, I16_NO_DEPTH, I32_UNKNOWN, U8_NO_BOUND, sEval, th);
+        hashManager.recordHash(th->hashKey, NO_MOVE, I16_NO_DEPTH, I32_UNKNOWN, U8_NO_BOUND, sEval);
     }
 
 
@@ -1146,7 +1152,7 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
         }
     }
 
-    recordHash(bestMove, 0, bestScore, hashf, sEval, th);
+    hashManager.recordHash(th->hashKey, bestMove, 0, bestScore, hashf, sEval);
 
     return bestScore;
 }

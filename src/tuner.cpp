@@ -14,7 +14,6 @@
 #include <future> 
 
 #include "tuner.h"
-#include "hash.h"
 #include "search.h"
 #include "evaluate.h"
 #include "make_unmake.h"
