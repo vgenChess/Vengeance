@@ -211,7 +211,7 @@ void UciLoop() {
                 }
             }
 
-            Threads.start_thinking();
+            Threads.search<true>();
         } 
 
         else if (token == "stop") {

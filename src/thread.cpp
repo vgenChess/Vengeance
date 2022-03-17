@@ -82,8 +82,6 @@ SearchThread::SearchThread(int index)
             
             blockThreadIfState<SLEEP>();
             
-            mState = SEARCH;
-
             if (!terminate)
             {
                 startSearch(side, this);
@@ -102,17 +100,16 @@ SearchThread::~SearchThread()
 
     terminate = true;
 
-    start_searching();
+    search();
 
     thread.join();
 }
 
 
 
-
 /// Thread::start_searching() wakes up the thread that will start the search
 
-void SearchThread::start_searching()
+void SearchThread::search()
 {
     std::lock_guard<std::mutex> lk(mutex);
     
@@ -223,37 +220,6 @@ void SearchThread::blockThreadIfState()
     lk.unlock();
 }
 
-
-void SearchThreadPool::start_thinking()
-{
-    getMainSearchThread()->blockThreadIfState<SEARCH>();
-    
-    SearchThread::stopSearch = false;
-
-    for (SearchThread* th : searchThreads)
-    {
-        th->initialise();
-    }
-    
-    getMainSearchThread()->start_searching();
-}
-
-
-
-void SearchThreadPool::start_searching()
-{
-    for (SearchThread* th : searchThreads)
-    {
-        if (th != getMainSearchThread())
-        {
-            th->start_searching();
-        }
-    }
-}
-
-
-
-
 U64 SearchThreadPool::totalNodes()
 {
     U64 total = 0;
@@ -279,7 +245,7 @@ U64 SearchThreadPool::totalTTHits()
 
 SearchThread* SearchThreadPool::getMainSearchThread()
 {
-    return searchThreads.at(0);
+    return searchThreads[0];
 }
 
 std::vector<SearchThread*> SearchThreadPool::getSearchThreads()

@@ -63,8 +63,9 @@ void startSearch(Side stm, SearchThread *th)
     if (th == Threads.getMainSearchThread()) 
     {
         SearchThread::abortSearch = false;
-
-        Threads.start_searching(); // start non-main threads
+        SearchThread::stopSearch = false;
+        
+        Threads.search<false>(); // start non-main threads
         
         if (stm == WHITE)
             iterativeDeepeningSearch<WHITE>(th); // main thread start searching

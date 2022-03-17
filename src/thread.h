@@ -77,7 +77,7 @@ public:
 	int getIndex() { return idx; }
 	
 	void initialise();
-	void start_searching();
+	void search();
     
     template<ThreadState state>
     void blockThreadIfState();
@@ -93,9 +93,7 @@ public:
 
 	void createThreadPool(int nThreads);
 	void clear();
-
-	void start_thinking();
-	void start_searching();
+    
 	void wait_for_search_finished();
 
 	U64 totalNodes();
@@ -103,7 +101,35 @@ public:
 
 	SearchThread* getMainSearchThread();
 	
-	std::vector<SearchThread*> getSearchThreads();
+    std::vector<SearchThread*> getSearchThreads();
+    
+    template <bool isFromUci>
+    void search()
+    {
+        if (isFromUci) {
+            
+            getMainSearchThread()->blockThreadIfState<SEARCH>();
+            
+            SearchThread::stopSearch = false;
+            
+            for (SearchThread* th : searchThreads)
+            {
+                th->initialise();
+            }
+            
+            getMainSearchThread()->search();
+        } 
+        else 
+        {
+            for (SearchThread* th : searchThreads)
+            {
+                if (th != getMainSearchThread())
+                {
+                    th->search();
+                }
+            }
+        }
+    }
 };
 
 extern Thread initThread;
