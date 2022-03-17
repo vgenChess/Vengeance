@@ -12,7 +12,8 @@
 #include "structs.h"
 #include "HashManagement.h"
 
-class Thread {
+class Thread 
+{
 
 private:
     
@@ -51,7 +52,8 @@ public:
 	void clear();
 };
 
-class SearchThread : public Thread {
+class SearchThread : public Thread 
+{
 
 public:
 
@@ -84,7 +86,8 @@ public:
 };
 
 
-class SearchThreadPool {
+class SearchThreadPool 
+{
 
 std::vector<SearchThread*> searchThreads;
 

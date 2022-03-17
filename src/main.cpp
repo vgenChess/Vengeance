@@ -34,8 +34,8 @@ TimeManager TimeManager::sTimeManager;
 int HashManager::hashTableSize;
 std::vector<HashEntry> HashManager::hashTable; 
 
-int main(int argc, char **argv) {
-    
+int main(int argc, char **argv) 
+{    
     initLMR();
 
     init_king_attacks();

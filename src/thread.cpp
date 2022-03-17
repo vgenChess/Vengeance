@@ -78,17 +78,11 @@ SearchThread::SearchThread(int index)
     {
         while (!terminate)
         {
-            std::unique_lock<std::mutex> lck(mutex);
-
             cv.notify_one(); // Wake up anyone waiting for search finished
-            while(mState == SLEEP) 
-            {
-                cv.wait(lck);
-            }
+            
+            blockThreadForState<SLEEP>();
             
             mState = SEARCH;
-
-            lck.unlock();
 
             if (!terminate)
             {
