@@ -216,12 +216,12 @@ void UciLoop() {
 
         else if (token == "stop") {
 
-            SearchThread::stop = true;
+            SearchThread::stopSearch = true;
         }
 
         else if (token == "quit") {
         
-            SearchThread::stop = true;  
+            SearchThread::stopSearch = true;  
         
             break;
         } 

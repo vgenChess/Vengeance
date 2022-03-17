@@ -38,7 +38,7 @@
 #include "HashManagement.h"
 
 bool SearchThread::abortSearch = false;
-bool SearchThread::stop = false;
+bool SearchThread::stopSearch = false;
 
 int option_thread_count;
 int stableMoveCount = 0, MAX_DEPTH = 100, LMR[64][64];
@@ -79,12 +79,12 @@ void startSearch(Side stm, SearchThread *th)
         // GUI sends a "stop" or "ponderhit" command. We therefore simply wait here
         // until the GUI sends one of those commands.
 
-        while (!SearchThread::stop)
+        while (!SearchThread::stopSearch)
         {} // Busy wait for a stop or a ponder reset
 
         // Stop the threads if not already stopped (also raise the stop if
         // "ponderhit" just reset Threads.ponder).
-        SearchThread::stop = true;
+        SearchThread::stopSearch = true;
 
         // Wait until all threads have finished
         Threads.wait_for_search_finished();
@@ -143,7 +143,7 @@ void iterativeDeepeningSearch(SearchThread *th)
 
         aspirationWindowSearch<stm>(th);
 
-        if (SearchThread::stop)
+        if (SearchThread::stopSearch)
         {
             break;
         }
@@ -187,13 +187,13 @@ void iterativeDeepeningSearch(SearchThread *th)
                 TimeManager::sTimeManager.getStartTime()) 
                 > (TimeManager::sTimeManager.getTimePerMove() * totalFactor)) 
             {
-                SearchThread::stop = true;
+                SearchThread::stopSearch = true;
                 break;
             }
         }
     } 
 
-    SearchThread::stop = true;
+    SearchThread::stopSearch = true;
 }
 
 template<Side stm>
@@ -231,7 +231,7 @@ void aspirationWindowSearch(SearchThread *th)
         
         score = alphabetaSearch<stm, NO_NULL, NON_SING>(alpha, beta, I32_MATE, th, &searchInfo);
 
-        if (SearchThread::stop)
+        if (SearchThread::stopSearch)
         {
             break;
         }
@@ -280,7 +280,7 @@ void aspirationWindowSearch(SearchThread *th)
     }
 
     
-    if (SearchThread::stop)
+    if (SearchThread::stopSearch)
     {
         return;
     }
@@ -297,7 +297,7 @@ void aspirationWindowSearch(SearchThread *th)
 
 inline void checkTime() 
 {
-    SearchThread::stop = TimeManager::time_now().time_since_epoch() 
+    SearchThread::stopSearch = TimeManager::time_now().time_since_epoch() 
                     >= TimeManager::sTimeManager.getStopTime().time_since_epoch();
 }
 
@@ -342,7 +342,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
         checkTime();
     }
     
-    if (IS_MAIN_THREAD && SearchThread::stop) 
+    if (IS_MAIN_THREAD && SearchThread::stopSearch) 
     {
         return 0;
     }
@@ -951,7 +951,7 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
         checkTime();
     }
     
-    if (IS_MAIN_THREAD && SearchThread::stop) 
+    if (IS_MAIN_THREAD && SearchThread::stopSearch) 
     {
         return 0;
     }

@@ -15,8 +15,6 @@
 class Thread 
 {
 
-private:
-    
 public:
 
 	Side side;
@@ -58,7 +56,7 @@ class SearchThread : public Thread
 public:
 
 	static bool abortSearch;
-	static bool stop;
+	static bool stopSearch;
     
     bool terminate;
 

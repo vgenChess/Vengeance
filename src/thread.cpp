@@ -173,15 +173,19 @@ void SearchThreadPool::createThreadPool(int nThreads)
         getMainSearchThread()->blockThreadIfState<SEARCH>();
 
         for (SearchThread *thread: searchThreads)
+        {
             delete thread;
-
+        }
+        
         searchThreads.clear();
     }
 
     if (nThreads > 0)
     {
         for (int i = 0; i < nThreads; i++)
+        {
             searchThreads.push_back(new SearchThread(i));
+        }
     }
 }
 
@@ -189,7 +193,9 @@ void SearchThreadPool::createThreadPool(int nThreads)
 void SearchThreadPool::clear()
 {
     for (SearchThread* th : searchThreads)
+    {
         th->clear();
+    }
 }
 
 
@@ -198,7 +204,9 @@ void SearchThreadPool::wait_for_search_finished()
     for (SearchThread* th : searchThreads)
     {
         if (th != getMainSearchThread())
+        {
             th->blockThreadIfState<SEARCH>();
+        }
     }
 }
 
@@ -220,7 +228,7 @@ void SearchThreadPool::start_thinking()
 {
     getMainSearchThread()->blockThreadIfState<SEARCH>();
     
-    SearchThread::stop = false;
+    SearchThread::stopSearch = false;
 
     for (SearchThread* th : searchThreads)
     {
@@ -237,10 +245,11 @@ void SearchThreadPool::start_searching()
     for (SearchThread* th : searchThreads)
     {
         if (th != getMainSearchThread())
+        {
             th->start_searching();
+        }
     }
 }
-
 
 
 
@@ -249,8 +258,10 @@ U64 SearchThreadPool::totalNodes()
 {
     U64 total = 0;
     for (SearchThread *thread : searchThreads)
+    {
         total += thread->nodes;
-
+    }
+    
     return total;
 }
 
@@ -259,8 +270,10 @@ U64 SearchThreadPool::totalTTHits()
     U64 total = 0;
 
     for (SearchThread *thread : searchThreads)
+    {
         total += thread->ttHits;
-
+    }
+    
     return total;
 }
 
