@@ -43,7 +43,7 @@ bool SearchThread::stop = false;
 int option_thread_count;
 int stableMoveCount = 0, MAX_DEPTH = 100, LMR[64][64];
 
-std::mutex mtx;
+std::mutex mutex;
 
 void initLMR() 
 {
@@ -116,9 +116,8 @@ void iterativeDeepeningSearch(SearchThread *th) {
     for (int depth = 1; depth < MAX_DEPTH; depth++) 
     {
         if (th != Threads.getMainSearchThread()) 
-        { 
-            // Mutex will automatically be unlocked when lck goes out of scope
-            std::lock_guard<std::mutex> lck {mtx}; 
+        {  
+            std::unique_lock<std::mutex> lck(mutex);
 
             U16 count = 0;
 
@@ -129,6 +128,8 @@ void iterativeDeepeningSearch(SearchThread *th) {
                     count++;
                 }
             }
+
+            lck.unlock();
 
             if (count >= (option_thread_count / 2)) 
             {
