@@ -34,6 +34,7 @@ public:
     {
         return &hashTable[key % hashTableSize];
     }
+    
     __always_inline bool probeHash(HashEntry* entry, U64 key) 
     {
         if (entry == nullptr) 

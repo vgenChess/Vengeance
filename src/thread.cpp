@@ -140,7 +140,9 @@ void SearchThread::initialise() {
 	moveStack.clear();
 	undoMoveStack.clear();
 	movesHistory.clear();
-
+    pawnsHashTable.clear();
+    evalHashTable.clear();
+    
 	pvLine =           std::vector<PV> (U16_MAX_PLY);
 	moveStack =        std::vector<MOVE_STACK> (U16_MAX_PLY + 4);
 	undoMoveStack =    std::vector<UNDO_MOVE_STACK> (U16_MAX_PLY + 4);
@@ -257,7 +259,7 @@ SearchThread* SearchThreadPool::getMainSearchThread() {
 
 std::vector<SearchThread*> SearchThreadPool::getSearchThreads() { 
 
-	return searchThreads;	
+	return searchThreads;
 }
 
 
