@@ -80,7 +80,6 @@ public:
 	int getIndex() { return idx; }
 	
 	void initialise();
-	void loop();
 	void start_searching();
     
     void blockThreadForState(ThreadState state);
