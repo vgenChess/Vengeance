@@ -48,10 +48,7 @@ public:
 	Thread();
     ~Thread();
 
-    __always_inline HashManager getHashManager() 
-    {
-        return hashManager;
-    }
+    inline HashManager getHashManager() { return hashManager; }
     
     void init();
 	void clear();
@@ -70,12 +67,12 @@ public:
 
 	std::atomic<U64> nodes, ttHits;
     
-    std::thread stdThread;
+    std::thread thread;
 
 	std::mutex mutex;
 	std::condition_variable cv;
     
-    ThreadState state;
+    ThreadState mState;
 	
 	SearchThread(int);
 	~SearchThread();
@@ -85,7 +82,8 @@ public:
 	void initialise();
 	void loop();
 	void start_searching();
-	void wait_for_search_finished();
+    
+    void blockThreadForState(ThreadState state);
 };
 
 

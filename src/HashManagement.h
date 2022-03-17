@@ -5,8 +5,9 @@
 #include "structs.h"
 #include "constants.h"
 
-class HashManager {
-
+class HashManager 
+{
+    
 private:
         
     static int hashTableSize;
@@ -90,23 +91,23 @@ public:
 };
 
 
-inline int checkEvalHashTable(U64 key, EvalHashEntry* evalHashTable) {
-    
+inline int checkEvalHashTable(U64 key, EvalHashEntry* evalHashTable) 
+{    
     auto pEntry = &evalHashTable[key % U16_EVAL_HASH_TABLE_RECORDS];
     
     return pEntry->key == key ? pEntry->score : I32_UNKNOWN;
 }
 
-inline void recordEvalHashTable(int eval, U64 key, EvalHashEntry* evalHashTable) {
-    
+inline void recordEvalHashTable(int eval, U64 key, EvalHashEntry* evalHashTable) 
+{    
     auto pEntry = &evalHashTable[key % U16_EVAL_HASH_TABLE_RECORDS];
     
     pEntry->key = key;
     pEntry->score = eval;
 }
 
-inline bool probePawnHash(int *score, U64 key, PawnsHashEntry* pawnsHashTable) {
-    
+inline bool probePawnHash(int *score, U64 key, PawnsHashEntry* pawnsHashTable) 
+{    
     auto pEntry = &pawnsHashTable[key % U16_PAWN_HASH_TABLE_RECORDS];
     
     *score = pEntry->score;
@@ -114,8 +115,8 @@ inline bool probePawnHash(int *score, U64 key, PawnsHashEntry* pawnsHashTable) {
     return pEntry->key == key;
 }
 
-inline void recordPawnHash(int score, U64 key, PawnsHashEntry* pawnsHashTable) {
-    
+inline void recordPawnHash(int score, U64 key, PawnsHashEntry* pawnsHashTable) 
+{    
     auto pEntry = &pawnsHashTable[key % U16_PAWN_HASH_TABLE_RECORDS];
     
     pEntry->key = key;

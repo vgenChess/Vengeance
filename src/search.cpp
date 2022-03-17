@@ -58,10 +58,10 @@ void initLMR()
 }
 
 //TODO refactor logic
-void startSearch(Side stm, SearchThread *th) {
-
-    if (th == Threads.getMainSearchThread()) {
-
+void startSearch(Side stm, SearchThread *th) 
+{
+    if (th == Threads.getMainSearchThread()) 
+    {
         SearchThread::abortSearch = false;
 
         Threads.start_searching(); // start non-main threads
@@ -93,18 +93,19 @@ void startSearch(Side stm, SearchThread *th) {
 
         TimeManager::sTimeManager.updateTimeSet(false);
         TimeManager::sTimeManager.updateStopped(false);
-    } else {
-
+    } 
+    else 
+    {
         if (stm == WHITE)
-            iterativeDeepeningSearch<WHITE>(th); // main thread start searching
+            iterativeDeepeningSearch<WHITE>(th); 
         else
-            iterativeDeepeningSearch<BLACK>(th); // main thread start searching
+            iterativeDeepeningSearch<BLACK>(th); 
     }
 }
 
 template<Side stm>
-void iterativeDeepeningSearch(SearchThread *th) {
-    
+void iterativeDeepeningSearch(SearchThread *th) 
+{    
     th->nodes = 0;
     th->ttHits = 0;
 
@@ -210,7 +211,7 @@ void aspirationWindowSearch(SearchThread *th)
         int scoreKnown = th->pvLine.at(th->completedDepth).score;
 
         alpha = std::max(-I32_MATE, scoreKnown - window);
-        beta  = std::min( I32_MATE, scoreKnown + window);	
+        beta  = std::min( I32_MATE, scoreKnown + window);
     }
     
     SearchInfo searchInfo;
@@ -294,7 +295,7 @@ void aspirationWindowSearch(SearchThread *th)
     reportPV(th);
 }
 
-__always_inline void checkTime() 
+inline void checkTime() 
 {
     SearchThread::stop = TimeManager::time_now().time_since_epoch() 
                     >= TimeManager::sTimeManager.getStopTime().time_since_epoch();
