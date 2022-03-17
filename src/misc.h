@@ -6,7 +6,7 @@
 extern int MAX_DEPTH;
 extern U8 rookCastleFlagMask[U8_MAX_SQUARES];
 
-__always_inline bool isRepetition(int ply, Thread *th) 
+inline bool isRepetition(int ply, Thread *th) 
 {    
     bool flag = false;
     for (int i = th->moves_history_counter + ply; i >= 0; i--) 
@@ -22,7 +22,7 @@ __always_inline bool isRepetition(int ply, Thread *th)
 }
 
 template<Side side>
-__always_inline bool isKingInCheck(Thread *th) 
+inline bool isKingInCheck(Thread *th) 
 {    
     const auto opp = side == WHITE ? BLACK : WHITE;      
     const auto kingSq = GET_POSITION(side ? th->blackPieceBB[KING] : th->whitePieceBB[KING]);
@@ -80,7 +80,7 @@ __always_inline bool isKingInCheck(Thread *th)
 }
 
 //TODO check logic, under observation
-__always_inline bool isPositionDraw(Thread *th) 
+inline bool isPositionDraw(Thread *th) 
 {    
     if (POPCOUNT(th->occupied) > 4)
     {
