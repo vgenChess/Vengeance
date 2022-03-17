@@ -5,7 +5,6 @@
 #include <vector>
 #include <iostream>
 
-#include "globals.h"
 #include "thread.h"
 #include "TimeManagement.h"
 

@@ -7,7 +7,6 @@
 #include <thread>
 #include <vector>
 
-#include "globals.h"
 #include "constants.h"
 #include "classes.h"
 #include "structs.h"

@@ -645,8 +645,37 @@ U64 islandsWestFiles(U64 f) {return f & (f ^ (f << 1));} // ... (f+f)
 U64 defendedDefenders1 (U64 b) {return b & soWeOne(b) & noEaOne(b);}
 U64 defendedDefenders2 (U64 b) {return b & soEaOne(b) & noWeOne(b);}
 
-U64 inBetweenOnTheFly(U8 sq1, U8 sq2) {
+void initCastleMaskAndFlags() 
+{    
+    for (int i = 0; i < U8_MAX_SQUARES; i++) 
+    {
+        rookCastleFlagMask[i] = 15;
+    }
+    
+    rookCastleFlagMask[0] ^= CASTLE_FLAG_WHITE_QUEEN;
+    rookCastleFlagMask[7] ^= CASTLE_FLAG_WHITE_KING;
+    rookCastleFlagMask[56] ^= CASTLE_FLAG_BLACK_QUEEN;
+    rookCastleFlagMask[63] ^= CASTLE_FLAG_BLACK_KING;
+}
 
+void init_inbetween_bb() 
+{    
+    for (int i = 0; i < U8_MAX_SQUARES; i++) 
+    {
+        for(int j = 0; j < U8_MAX_SQUARES; j++) 
+        {
+            arrInBetween[i][j] = inBetweenOnTheFly(i, j);
+        }
+    }
+}
+
+U64 inBetween(int from, int to) 
+{
+   return arrInBetween[from][to];
+}
+
+U64 inBetweenOnTheFly(U8 sq1, U8 sq2) 
+{
    const U64 m1   = C64(-1);
    const U64 a2a7 = C64(0x0001010101010100);
    const U64 b2g7 = C64(0x0040201008040200);

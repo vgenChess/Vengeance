@@ -9,7 +9,6 @@
 #include <assert.h>
 #include <iostream>
 
-#include "globals.h"
 #include "movegen.h"
 #include "magicmoves.h"
 #include "nonslidingmoves.h"

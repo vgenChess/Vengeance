@@ -9,7 +9,6 @@
 #ifndef utility_h
 #define utility_h
 
-#include "globals.h"
 #include "thread.h"
 #include "functions.h"
 
@@ -32,6 +31,8 @@ void clearKillerMovesTable(Thread *th);
 void initHashKey(Thread *th);
 void initPawnHashKey(U8 side, Thread *th);
 void initMovesHistoryTable(Thread *th);
+void init_inbetween_bb();
+void initCastleMaskAndFlags();
 
 U64 getAttacks(const U8 stm, Thread *th);
 
@@ -79,9 +80,7 @@ U64 defendedDefenders2 (U64 b);
 
 U64 inBetweenOnTheFly(U8 sq1, U8 sq2);
 
-inline U64 inBetween(int from, int to) {
-   return arrInBetween[from][to];
-}
+U64 inBetween(int from, int to);
 
 U64 xrayRookAttacks(U64 occ, U64 blockers, U8 rookSq);
 U64 xrayBishopAttacks(U64 occ, U64 blockers, U8 bishopSq);

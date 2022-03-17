@@ -14,7 +14,6 @@
 #include <thread>
 #include <iostream>
 
-#include "globals.h"
 #include "utility.h"
 #include "magicmoves.h"
 #include "nonslidingmoves.h"
@@ -26,7 +25,7 @@
 #include "functions.h"
 #include "ucireport.h"
 #include "zobrist.h"
-#include "misc.h"
+#include "utility.h"
 #include "HashManagement.h"
 
 Zobrist Zobrist::objZobrist;
