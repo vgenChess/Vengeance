@@ -9,6 +9,7 @@
 #ifndef utility_h
 #define utility_h
 
+#include "globals.h"
 #include "thread.h"
 #include "functions.h"
 
@@ -77,6 +78,10 @@ U64 defendedDefenders1 (U64 b);
 U64 defendedDefenders2 (U64 b);
 
 U64 inBetweenOnTheFly(U8 sq1, U8 sq2);
+
+inline U64 inBetween(int from, int to) {
+   return arrInBetween[from][to];
+}
 
 U64 xrayRookAttacks(U64 occ, U64 blockers, U8 rookSq);
 U64 xrayBishopAttacks(U64 occ, U64 blockers, U8 bishopSq);

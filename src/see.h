@@ -1,6 +1,7 @@
 #ifndef see_h
 #define see_h
 
+#include "globals.h"
 #include "utility.h"
 #include "nonslidingmoves.h"
 #include "magicmoves.h"

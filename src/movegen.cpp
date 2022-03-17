@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <iostream>
 
+#include "globals.h"
 #include "movegen.h"
 #include "magicmoves.h"
 #include "nonslidingmoves.h"
@@ -17,7 +18,6 @@
 #include "see.h"
 #include "constants.h"
 #include "functions.h"
-#include "misc.h"
 #include "utility.h"
 
 typedef unsigned char U8;
@@ -440,7 +440,7 @@ bool isValidMove(const int ply, const U32 move, Thread *th) {
     
     if (moveType == MOVE_NORMAL || moveType == MOVE_DOUBLE_PUSH || moveType == MOVE_CAPTURE) {
 
-        if (moveType == MOVE_DOUBLE_PUSH && Misc::arrInBetween[fromSq][toSq] & th->occupied) 
+        if (moveType == MOVE_DOUBLE_PUSH && inBetween(fromSq, toSq) & th->occupied) 
             return false; // pawn's path is blocked       
 
         if (piece == ROOKS && !(Rmagic(fromSq, th->occupied) & toSqBB)) 

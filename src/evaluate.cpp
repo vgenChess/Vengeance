@@ -11,6 +11,7 @@
 #include <iostream>
 #include <assert.h>
 
+#include "globals.h"
 #include "evaluate.h"
 #include "utility.h"
 #include "movegen.h"

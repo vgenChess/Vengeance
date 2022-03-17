@@ -14,6 +14,7 @@
 #include <thread>
 #include <iostream>
 
+#include "globals.h"
 #include "utility.h"
 #include "magicmoves.h"
 #include "nonslidingmoves.h"
@@ -26,7 +27,6 @@
 #include "ucireport.h"
 #include "zobrist.h"
 #include "misc.h"
-#include "TimeManagement.h"
 #include "HashManagement.h"
 
 Zobrist Zobrist::objZobrist;
@@ -34,10 +34,6 @@ TimeManager TimeManager::sTimeManager;
 
 int HashManager::hashTableSize;
 std::vector<HashEntry> HashManager::hashTable; 
-
-int Misc::MAX_DEPTH;
-U8 Misc::rookCastleFlagMask[U8_MAX_SQUARES];
-U64 Misc::arrInBetween[U8_MAX_SQUARES][U8_MAX_SQUARES];
 
 int main(int argc, char **argv) {
     

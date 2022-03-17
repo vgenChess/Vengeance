@@ -9,6 +9,7 @@
 #ifndef evaluate_h
 #define evaluate_h
 
+#include "globals.h"
 #include "thread.h"
 
 void setDist();

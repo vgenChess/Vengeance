@@ -14,6 +14,7 @@
 #include "thread.h"
 #include "functions.h"
 #include "constants.h"
+#include "globals.h"
 #include "zobrist.h"
 
 U64 quiet, prevCap, cap, prevEp, ep, prevCas, cas, check, prom;

@@ -2,6 +2,7 @@
 
 #include "history.h"
 #include "thread.h"
+#include "globals.h"
 #include "functions.h"
 
 void updateHistory(Side stm, int ply, int depth, U32 bestMove, std::vector<U32> &quietMovesPlayed, Thread *th) {

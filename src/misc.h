@@ -2,18 +2,6 @@
 #define MISC_H
 
 #include "constants.h"
-#include "utility.h"
-
-class Misc {
-
-public:
-    
-    static int MAX_DEPTH;
-
-    static U8 rookCastleFlagMask[U8_MAX_SQUARES];
-
-    static U64 arrInBetween[U8_MAX_SQUARES][U8_MAX_SQUARES];
-};
 
 __always_inline void init_inbetween_bb() 
 {    
@@ -21,7 +9,7 @@ __always_inline void init_inbetween_bb()
     {
         for(int j = 0; j < U8_MAX_SQUARES; j++) 
         {
-            Misc::arrInBetween[i][j] = inBetweenOnTheFly(i, j);
+            arrInBetween[i][j] = inBetweenOnTheFly(i, j);
         }
     }
 }
@@ -30,13 +18,13 @@ __always_inline void initCastleMaskAndFlags()
 {    
     for (int i = 0; i < U8_MAX_SQUARES; i++) 
     {
-        Misc::rookCastleFlagMask[i] = 15;
+        rookCastleFlagMask[i] = 15;
     }
     
-    Misc::rookCastleFlagMask[0] ^= CASTLE_FLAG_WHITE_QUEEN;
-    Misc::rookCastleFlagMask[7] ^= CASTLE_FLAG_WHITE_KING;
-    Misc::rookCastleFlagMask[56] ^= CASTLE_FLAG_BLACK_QUEEN;
-    Misc::rookCastleFlagMask[63] ^= CASTLE_FLAG_BLACK_KING;
+    rookCastleFlagMask[0] ^= CASTLE_FLAG_WHITE_QUEEN;
+    rookCastleFlagMask[7] ^= CASTLE_FLAG_WHITE_KING;
+    rookCastleFlagMask[56] ^= CASTLE_FLAG_BLACK_QUEEN;
+    rookCastleFlagMask[63] ^= CASTLE_FLAG_BLACK_KING;
 }
 
 
