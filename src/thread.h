@@ -82,7 +82,8 @@ public:
 	void initialise();
 	void start_searching();
     
-    void blockThreadForState(ThreadState state);
+    template<ThreadState state>
+    void blockThreadForState();
 };
 
 
