@@ -16,7 +16,6 @@
 #include <cmath>
 
 #include "types.h"
-#include "globals.h"
 #include "uci.h"
 #include "utility.h"
 #include "make_unmake.h"
@@ -30,7 +29,7 @@
 #include "ucireport.h"
 #include "functions.h"
 #include "see.h"
-#include "time.h"
+#include "TimeManagement.h"
 
 #define NAME "V0.9"
 #define START_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"

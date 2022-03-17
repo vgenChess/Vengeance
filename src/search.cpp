@@ -67,9 +67,9 @@ void startSearch(Side stm, SearchThread *th) {
         Threads.start_searching(); // start non-main threads
         
         if (stm == WHITE)
-            iterativeDeepeningSearch<WHITE>(th); // main thread start searching
+            iterativeDeepeningSearch<WHITE>(th);
         else
-            iterativeDeepeningSearch<BLACK>(th); // main thread start searching
+            iterativeDeepeningSearch<BLACK>(th);
             
         SearchThread::abortSearch = true;
 
@@ -96,9 +96,9 @@ void startSearch(Side stm, SearchThread *th) {
     } else {
 
         if (stm == WHITE)
-            iterativeDeepeningSearch<WHITE>(th); // main thread start searching
+            iterativeDeepeningSearch<WHITE>(th);
         else
-            iterativeDeepeningSearch<BLACK>(th); // main thread start searching
+            iterativeDeepeningSearch<BLACK>(th);
     }
 }
 

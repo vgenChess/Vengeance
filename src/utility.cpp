@@ -23,20 +23,6 @@
 #include "zobrist.h"
 #include "misc.h"
 
-U64 arrInBetween[64][64];
-
-std::string Notation::algebricSq[64] = {
-    
-    "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
-    "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
-    "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
-    "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
-    "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
-    "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
-    "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
-    "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
-}; 
-
 void print_bb(U64 board) {
     
     printf(" \n ---------- ");
@@ -402,21 +388,22 @@ U8 squareFromAlgebricPos(char* posName) {
     return 0;
 }
 
-std::string algSq[64] = {
-
-    "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
-    "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
-    "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
-    "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
-    "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
-    "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
-    "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
-    "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
-}; 
-
 int divide(U8 depth, U8 sideToMove, Thread *th) {
+
+    std::string algSq[U8_MAX_SQUARES] = {
+        
+        "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
+        "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
+        "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+        "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
+        "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
+        "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
+        "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
+        "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
+    };    
     
-    char pieceName[2][8] = { { ' ', (char) 0, 'N', 'B', 'R', 'Q', 'K', '\0'}, { ' ', (char) 0, 'n', 'b', 'r', 'q', 'k', '\0'}};
+    char pieceName[2][8] = { { ' ', (char) 0, 'N', 'B', 'R', 'Q', 'K', '\0'}, 
+                            { ' ', (char) 0, 'n', 'b', 'r', 'q', 'k', '\0'}};
     
     U64 total_nodes = 0;
 
@@ -469,7 +456,7 @@ int divide(U8 depth, U8 sideToMove, Thread *th) {
             break;
             case MOVE_PROMOTION:
     
-                sprintf(pType, "MOVE_PROMOTION-%d", promType(move.move));
+                sprintf(pType, "MOVE_PROMOTION-%lu", promType(move.move));
                 moveType = pType;
             break;
         }
@@ -490,9 +477,10 @@ int divide(U8 depth, U8 sideToMove, Thread *th) {
             total_nodes = total_nodes + nodes;
             
             printf("%d)%c%s-%s, ", count, pieceName[colorType(move.move)][pieceType(move.move)],
-                   algSq[from_sq(move.move)], algSq[to_sq(move.move)]);
+                   algSq[from_sq(move.move)].c_str(), algSq[to_sq(move.move)].c_str());
             
-            printf("%llu, %s, castle flags -" BYTE_TO_BINARY_PATTERN", nps  - %7.3f MN/s\n", nodes, moveType, BYTE_TO_BINARY(th->moveStack[ply].castleFlags),  nps);
+            printf("%llu, %s, castle flags -" BYTE_TO_BINARY_PATTERN", nps  - %7.3f MN/s\n", nodes, moveType,
+                   BYTE_TO_BINARY(th->moveStack[ply].castleFlags),  nps);
         }
         
         unmake_move(ply, move.move, th);
@@ -650,7 +638,7 @@ U64 inBetweenOnTheFly(U8 sq1, U8 sq2) {
    const U64 m1   = C64(-1);
    const U64 a2a7 = C64(0x0001010101010100);
    const U64 b2g7 = C64(0x0040201008040200);
-   const U64 h1b7 = C64(0x0002040810204080); /* Thanks Dustin, g2b7 did not work for c1-a3 */
+   const U64 h1b7 = C64(0x0002040810204080);
    U64 btwn, line, rank, file;
 
    btwn  = (m1 << sq1) ^ (m1 << sq2);
@@ -697,7 +685,8 @@ U64 pinnedPieces(U8 kingSq, U8 side, Thread *th) {
     while (pinner) {
 
         int sq  = GET_POSITION(pinner);
-        pinned |= inBetween(sq, kingSq) & (side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
+        pinned |= Misc::arrInBetween[sq][kingSq] 
+            & (side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
         POP_POSITION(pinner);
     }
     
@@ -706,7 +695,8 @@ U64 pinnedPieces(U8 kingSq, U8 side, Thread *th) {
     while ( pinner ) 
     {
         int sq  = GET_POSITION(pinner);
-        pinned |= inBetween(sq, kingSq) & (side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
+        pinned |= Misc::arrInBetween[sq][kingSq] 
+            & (side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
         POP_POSITION(pinner);
     }
 
@@ -721,7 +711,8 @@ U64 pinned(U64 pinners, U8 kingSq, U8 side, Thread *th)
     {
         int sq  = GET_POSITION(pinners);
 
-        pinned |= inBetween(sq, kingSq) & (side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
+        pinned |= Misc::arrInBetween[sq][kingSq] 
+            & (side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 
         POP_POSITION(pinners);
     }

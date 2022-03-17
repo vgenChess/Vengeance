@@ -2,17 +2,8 @@
 #define CLASSES_H
 
 #include "types.h"
-#include "constants.h"
 #include "functions.h"
-
-class Notation 
-{
-    
-public:
-    
-    static std::string algebricSq[64];
-};
-
+#include "constants.h"
 
 class EvalInfo 
 {	
