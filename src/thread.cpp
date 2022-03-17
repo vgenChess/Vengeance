@@ -80,7 +80,7 @@ SearchThread::SearchThread(int index)
         {
             cv.notify_one(); // Wake up anyone waiting for search finished
             
-            blockThreadForState<SLEEP>();
+            blockThreadIfState<SLEEP>();
             
             mState = SEARCH;
 
@@ -92,7 +92,7 @@ SearchThread::SearchThread(int index)
         }
     });
 
-    blockThreadForState<SEARCH>();
+    blockThreadIfState<SEARCH>();
 }
 
 
@@ -170,7 +170,7 @@ void SearchThreadPool::createThreadPool(int nThreads)
 {
     if (searchThreads.size() > 0)
     {
-        getMainSearchThread()->blockThreadForState<SEARCH>();
+        getMainSearchThread()->blockThreadIfState<SEARCH>();
 
         for (SearchThread *thread: searchThreads)
             delete thread;
@@ -198,12 +198,12 @@ void SearchThreadPool::wait_for_search_finished()
     for (SearchThread* th : searchThreads)
     {
         if (th != getMainSearchThread())
-            th->blockThreadForState<SEARCH>();
+            th->blockThreadIfState<SEARCH>();
     }
 }
 
 template <ThreadState state>
-void SearchThread::blockThreadForState()
+void SearchThread::blockThreadIfState()
 {
     std::unique_lock<std::mutex> lk(mutex);
     
@@ -218,8 +218,7 @@ void SearchThread::blockThreadForState()
 
 void SearchThreadPool::start_thinking()
 {
-    
-    getMainSearchThread()->blockThreadForState<SEARCH>();
+    getMainSearchThread()->blockThreadIfState<SEARCH>();
     
     SearchThread::stop = false;
 
