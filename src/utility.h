@@ -27,8 +27,6 @@ U64 flipVertical(U64 x);
 
 char* algebricPos(U8 sq);
 
-void clearPawnHashTable(Thread *th);
-void clearEvalHashTable(Thread *th);
 void clearKillerMovesTable(Thread *th);
 
 void initHashKey(Thread *th);

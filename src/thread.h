@@ -41,8 +41,8 @@ public:
 	std::vector<MOVE_STACK> moveStack;
 	std::vector<UNDO_MOVE_STACK> undoMoveStack;
 	std::vector<MOVES_HISTORY> movesHistory;
-	std::vector<PAWNS_HASH> pawnHashTable;
-	std::vector<EVAL_HASH> evalHashTable;
+    std::vector<PawnsHashEntry> pawnsHashTable;
+    std::vector<EvalHashEntry> evalHashTable;
 	
     EvalInfo evalInfo;
 

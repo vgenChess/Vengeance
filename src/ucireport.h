@@ -8,16 +8,6 @@
 #include "thread.h"
 #include "TimeManagement.h"
 
-
-class Notation 
-{
-    
-public:
-    
-    static std::string algebricSq[64];
-};
-
-
 __always_inline std::string getMoveNotation(const U32 move) {
 
     std::string str;

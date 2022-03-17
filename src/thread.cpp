@@ -20,9 +20,9 @@ void Thread::clear() {
 	moveStack.clear();
 	undoMoveStack.clear();
 	movesHistory.clear();
-	pawnHashTable.clear();
-	evalHashTable.clear();
-
+	pawnsHashTable.clear();
+    evalHashTable.clear();
+    
     memset(captureHistoryScore, 0, sizeof(int) * 8 * 64 * 8);
 	memset(historyScore, 0, sizeof(int) * 2 * 64 * 64);
 	memset(counterMove, 0, sizeof(U32) * 2 * 64 * 64);
@@ -42,9 +42,9 @@ void Thread::init() {
 	moveStack = 	std::vector<MOVE_STACK> (U16_MAX_PLY);
 	undoMoveStack = std::vector<UNDO_MOVE_STACK> (U16_MAX_PLY);
 	movesHistory  = std::vector<MOVES_HISTORY> (8192);
-	pawnHashTable = std::vector<PAWNS_HASH> (U32_PAWN_HASH_TABLE_SIZE);
-	evalHashTable = std::vector<EVAL_HASH> (U32_EVAL_HASH_TABLE_SIZE);
-    
+    pawnsHashTable = std::vector<PawnsHashEntry>(U16_PAWN_HASH_TABLE_RECORDS);
+    evalHashTable = std::vector<EvalHashEntry>(U16_EVAL_HASH_TABLE_RECORDS);
+   
 	memset(captureHistoryScore, 0, sizeof(int) * 8 * 64 * 8);
 	memset(historyScore, 0, sizeof(int) * 2 * 64 * 64);
 	memset(counterMove, 0, sizeof(U32) * 2 * 64 * 64);
@@ -63,8 +63,8 @@ Thread::~Thread() {
 	moveStack.clear();
 	undoMoveStack.clear();
 	movesHistory.clear();
-	pawnHashTable.clear();
-	evalHashTable.clear();
+    pawnsHashTable.clear();
+    evalHashTable.clear();
 }
 
 
@@ -137,7 +137,7 @@ void SearchThread::initialise() {
 	side = initThread.side;
 
 	pvLine.clear();
-	moveStack.clear();	
+	moveStack.clear();
 	undoMoveStack.clear();
 	movesHistory.clear();
 
@@ -145,7 +145,10 @@ void SearchThread::initialise() {
 	moveStack =        std::vector<MOVE_STACK> (U16_MAX_PLY + 4);
 	undoMoveStack =    std::vector<UNDO_MOVE_STACK> (U16_MAX_PLY + 4);
 	movesHistory =     std::vector<MOVES_HISTORY> (8192);
-
+    pawnsHashTable =   std::vector<PawnsHashEntry>(U16_PAWN_HASH_TABLE_RECORDS);
+    evalHashTable =    std::vector<EvalHashEntry>(U16_EVAL_HASH_TABLE_RECORDS);
+    
+    
 	moveStack[0].castleFlags = initThread.moveStack[0].castleFlags;
 	moveStack[0].epFlag = initThread.moveStack[0].epFlag;
 	moveStack[0].epSquare = initThread.moveStack[0].epSquare;

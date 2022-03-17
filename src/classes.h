@@ -5,8 +5,17 @@
 #include "constants.h"
 #include "functions.h"
 
-class EvalInfo {
-	
+class Notation 
+{
+    
+public:
+    
+    static std::string algebricSq[64];
+};
+
+
+class EvalInfo 
+{	
 public:
 	
 	U64 openFilesBB;

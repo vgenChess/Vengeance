@@ -184,25 +184,24 @@ int fullEval(U8 stm, Thread *th) {
 		}
 
 	#else
-	
-		int hashedEval;
-		if (probeEval(&hashedEval, th->hashKey, &th->evalHashTable[0])) {
+        
+		int hashedEval = checkEvalHashTable(th->hashKey, &th->evalHashTable[0]);
+		if (hashedEval != I32_UNKNOWN) {
 
 			return stm == WHITE ? hashedEval : -hashedEval;
 		}
 
 	#endif
 
+	th->evalInfo.clear();
 
-	th->evalInfo.clear();	
-
-	initEvalInfo<WHITE>(th);	
+	initEvalInfo<WHITE>(th);
 	initEvalInfo<BLACK>(th);
 
 
 	int eval = 0;
 
-	// TODO Pawn eval cache
+	// TODO Redo Pawn eval caching
 /*
 	#if defined(TUNE)
 
@@ -210,15 +209,15 @@ int fullEval(U8 stm, Thread *th) {
 	#else
 	
 		int pawnsScore;
-		if (!probePawnHash(&pawnsScore, th)) { // TODO check pawn hash logic
+		if (!hashManager.probePawnHash(&pawnsScore, th->pawnsHashKey)) { // TODO check pawn hash logic
 
-			pawnsScore = pawnsEval(stm, th);
-			recordPawnHash(pawnsScore, th);
+			pawnsScore = pawnsEval<stm>(th); // TODO check logic
+			hashManager.recordPawnHash(pawnsScore, th->pawnsHashKey);
 		}
 
-		score += pawnsScore;
-	#endif
-*/
+		eval += pawnsScore;
+	#endif*/
+
 	
 	eval += evalBoard<WHITE>(th) 	- 	evalBoard<BLACK>(th);
 
@@ -241,13 +240,13 @@ int fullEval(U8 stm, Thread *th) {
 
     int score = (ScoreMG(eval) * phase + ScoreEG(eval) * (24 - phase)) / 24;
 
-    #if defined(TUNE)	
+    #if defined(TUNE)
 
 		T->eval = eval;
 		T->phase = phase;
 	#else
 
-		recordEval(score, th->hashKey, &th->evalHashTable[0]);
+		recordEvalHashTable(score, th->hashKey, &th->evalHashTable[0]);
 	#endif
 
 	return stm == WHITE ? score : -score;

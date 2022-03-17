@@ -9,7 +9,8 @@
 
 // for time management
 
-class TimeManager {
+class TimeManager 
+{    
     
 private:
     

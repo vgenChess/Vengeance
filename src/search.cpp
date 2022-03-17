@@ -155,18 +155,18 @@ void iterativeDeepeningSearch(SearchThread *th) {
         if (TimeManager::sTimeManager.isTimeSet() && completedDepth >= 4) 
         {
             // score change
-            int prevScore = th->pvLine.at(completedDepth-3).score;
-            int currentScore = th->pvLine.at(completedDepth).score;
+            int prevScore = th->pvLine[completedDepth-3].score;
+            int currentScore = th->pvLine[completedDepth].score;
 
             const auto scoreChangeFactor = prevScore > currentScore ? 
                 fmax(0.5, fmin(1.5, ((prevScore - currentScore) * 0.05))) : 0.5;
             
             // best move change
-            assert(th->pvLine.at(completedDepth).line[0] != NO_MOVE 
-                && th->pvLine.at(completedDepth-1).line[0] != NO_MOVE);
+            assert(th->pvLine[completedDepth].line[0] != NO_MOVE 
+                && th->pvLine[completedDepth-1].line[0] != NO_MOVE);
 
-            const auto previousMove = th->pvLine.at(completedDepth-1).line[0];
-            const auto currentMove = th->pvLine.at(completedDepth).line[0];
+            const auto previousMove = th->pvLine[completedDepth-1].line[0];
+            const auto currentMove = th->pvLine[completedDepth].line[0];
             
             stableMoveCount = previousMove == currentMove ? stableMoveCount + 1 : 0;
             stableMoveCount = std::min(10, stableMoveCount);
