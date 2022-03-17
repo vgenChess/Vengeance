@@ -3,12 +3,13 @@
 
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include "globals.h"
 #include "thread.h"
 #include "TimeManagement.h"
 
-__always_inline std::string getMoveNotation(const U32 move) {
+inline std::string getMoveNotation(const U32 move) {
 
     std::string str;
 
@@ -30,14 +31,14 @@ __always_inline std::string getMoveNotation(const U32 move) {
     return str;
 }
 
-__always_inline void reportBestMove() {
+inline void reportBestMove() {
 
     U32 bestMove = Threads.getMainSearchThread()->pvLine[Threads.getMainSearchThread()->completedDepth].line[0];
 
     std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
 }
     
-__always_inline void reportPV(SearchThread *th) {
+inline void reportPV(SearchThread *th) {
 
     const auto depth = th->completedDepth;
     const auto selDepth = th->selDepth;

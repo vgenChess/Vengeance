@@ -18,24 +18,24 @@ private:
 
 public:
     
-    __always_inline static void initHashTable(int size) 
+    inline static void initHashTable(int size) 
     {
         hashTable.clear();
         hashTableSize = (size * 1024 * 1024) / sizeof(HashEntry);
         hashTable = std::vector<HashEntry>(hashTableSize);
     }
     
-    __always_inline static void clearHashTable()
+    inline static void clearHashTable()
     {
         hashTable.clear();
     }
     
-    __always_inline HashEntry* getHashEntry(const U64 key)
+    inline HashEntry* getHashEntry(const U64 key)
     {
         return &hashTable[key % hashTableSize];
     }
     
-    __always_inline bool probeHash(HashEntry* entry, U64 key) 
+    inline bool probeHash(HashEntry* entry, U64 key) 
     {
         if (entry == nullptr) 
         {
@@ -48,7 +48,7 @@ public:
         return (entry->key ^ dataKey) == key; 
     }
     
-    __always_inline void recordHash(U64 key, U32 bestMove, int depth, int value, int hashf, int sEval) 
+    inline void recordHash(U64 key, U32 bestMove, int depth, int value, int hashf, int sEval) 
     {
         auto entry = &hashTable[key % hashTableSize];
         
@@ -76,7 +76,7 @@ public:
     
     // Check for valid entries of the first 1000 entries of hash table
     
-    __always_inline int hashfull() 
+    inline int hashfull() 
     {
         int count = 0;
         for (unsigned int i = 0; i < 1000; i++) 
@@ -90,14 +90,14 @@ public:
 };
 
 
-__always_inline int checkEvalHashTable(U64 key, EvalHashEntry* evalHashTable) {
+inline int checkEvalHashTable(U64 key, EvalHashEntry* evalHashTable) {
     
     auto pEntry = &evalHashTable[key % U16_EVAL_HASH_TABLE_RECORDS];
     
     return pEntry->key == key ? pEntry->score : I32_UNKNOWN;
 }
 
-__always_inline void recordEvalHashTable(int eval, U64 key, EvalHashEntry* evalHashTable) {
+inline void recordEvalHashTable(int eval, U64 key, EvalHashEntry* evalHashTable) {
     
     auto pEntry = &evalHashTable[key % U16_EVAL_HASH_TABLE_RECORDS];
     
@@ -105,7 +105,7 @@ __always_inline void recordEvalHashTable(int eval, U64 key, EvalHashEntry* evalH
     pEntry->score = eval;
 }
 
-__always_inline bool probePawnHash(int *score, U64 key, PawnsHashEntry* pawnsHashTable) {
+inline bool probePawnHash(int *score, U64 key, PawnsHashEntry* pawnsHashTable) {
     
     auto pEntry = &pawnsHashTable[key % U16_PAWN_HASH_TABLE_RECORDS];
     
@@ -114,7 +114,7 @@ __always_inline bool probePawnHash(int *score, U64 key, PawnsHashEntry* pawnsHas
     return pEntry->key == key;
 }
 
-__always_inline void recordPawnHash(int score, U64 key, PawnsHashEntry* pawnsHashTable) {
+inline void recordPawnHash(int score, U64 key, PawnsHashEntry* pawnsHashTable) {
     
     auto pEntry = &pawnsHashTable[key % U16_PAWN_HASH_TABLE_RECORDS];
     
