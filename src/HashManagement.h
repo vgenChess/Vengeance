@@ -91,11 +91,13 @@ public:
 };
 
 
-inline int checkEvalHashTable(U64 key, EvalHashEntry* evalHashTable) 
+inline bool checkEvalHashTable(int *score, U64 key, EvalHashEntry* evalHashTable) 
 {    
     auto pEntry = &evalHashTable[key % U16_EVAL_HASH_TABLE_RECORDS];
     
-    return pEntry->key == key ? pEntry->score : I32_UNKNOWN;
+    *score = pEntry->score;
+    
+    return pEntry->key == key;
 }
 
 inline void recordEvalHashTable(int eval, U64 key, EvalHashEntry* evalHashTable) 

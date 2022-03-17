@@ -396,10 +396,9 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
 
     // Transposition Table lookup
     
-    auto hashManager = th->getHashManager();
-    auto hashEntry = IS_SINGULAR_SEARCH ? nullptr : hashManager.getHashEntry(th->hashKey);
+    auto hashEntry = IS_SINGULAR_SEARCH ? nullptr : th->hashManager.getHashEntry(th->hashKey);
     
-    const auto hashHit = hashManager.probeHash(hashEntry, th->hashKey);
+    const auto hashHit = th->hashManager.probeHash(hashEntry, th->hashKey);
     
     int ttScore = I32_UNKNOWN;
     U32 ttMove = NO_MOVE;
@@ -456,7 +455,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
     {
         sEval = fullEval(stm, th);
 
-        hashManager.recordHash(th->hashKey, NO_MOVE, I16_NO_DEPTH, I32_UNKNOWN, U8_NO_BOUND, sEval);
+        th->hashManager.recordHash(th->hashKey, NO_MOVE, I16_NO_DEPTH, I32_UNKNOWN, U8_NO_BOUND, sEval);
     }
 
 
@@ -922,7 +921,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
 
     if (!IS_SINGULAR_SEARCH)
     {
-        hashManager.recordHash(th->hashKey, bestMove, depth, bestScore, hashf, sEval);
+        th->hashManager.recordHash(th->hashKey, bestMove, depth, bestScore, hashf, sEval);
     }
 
     return bestScore;
@@ -1003,10 +1002,9 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
     }
     
     
-    auto hashManager = th->getHashManager();
-    auto hashEntry = hashManager.getHashEntry(th->hashKey);
+    auto hashEntry = th->hashManager.getHashEntry(th->hashKey);
     
-    const auto hashHit = hashManager.probeHash(hashEntry, th->hashKey);  
+    const auto hashHit = th->hashManager.probeHash(hashEntry, th->hashKey);  
     
     int ttScore = I32_UNKNOWN;
 
@@ -1043,7 +1041,7 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
     {
         sEval = fullEval(stm, th);
 
-        hashManager.recordHash(th->hashKey, NO_MOVE, I16_NO_DEPTH, I32_UNKNOWN, U8_NO_BOUND, sEval);
+        th->hashManager.recordHash(th->hashKey, NO_MOVE, I16_NO_DEPTH, I32_UNKNOWN, U8_NO_BOUND, sEval);
     }
 
 
@@ -1154,7 +1152,7 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
         }
     }
 
-    hashManager.recordHash(th->hashKey, bestMove, 0, bestScore, hashf, sEval);
+    th->hashManager.recordHash(th->hashKey, bestMove, 0, bestScore, hashf, sEval);
 
     return bestScore;
 }

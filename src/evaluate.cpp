@@ -184,12 +184,12 @@ int fullEval(U8 stm, Thread *th) {
 
 	#else
         
-		int hashedEval = checkEvalHashTable(th->hashKey, &th->evalHashTable[0]);
-		if (hashedEval != I32_UNKNOWN) {
+		int hashedEval;
+        bool hashHit = checkEvalHashTable(&hashedEval, th->hashKey, &th->evalHashTable[0]);
+		if (hashHit) {
 
 			return stm == WHITE ? hashedEval : -hashedEval;
 		}
-
 	#endif
 
 	th->evalInfo.clear();

@@ -16,8 +16,6 @@ class Thread {
 
 private:
     
-    HashManager hashManager;
-        
 public:
 
 	Side side;
@@ -44,12 +42,11 @@ public:
     std::vector<EvalHashEntry> evalHashTable;
 	
     EvalInfo evalInfo;
+    HashManager hashManager;
 
 	Thread();
     ~Thread();
 
-    inline HashManager getHashManager() { return hashManager; }
-    
     void init();
 	void clear();
 };
