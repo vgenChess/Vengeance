@@ -12,7 +12,6 @@
 
 void initLMR();
 
-void startSearch(Side stm, SearchThread* th);
 template<Side stm> void iterativeDeepeningSearch(SearchThread* th);
 template<Side stm> void aspirationWindowSearch(SearchThread* th);
 

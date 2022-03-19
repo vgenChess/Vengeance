@@ -32,7 +32,9 @@ inline std::string getMoveNotation(const U32 move) {
 
 inline void reportBestMove() {
 
-    U32 bestMove = Threads.getMainSearchThread()->pvLine[Threads.getMainSearchThread()->completedDepth].line[0];
+    auto mainThread = searchThreads.getSearchThreads()[0];
+
+    U32 bestMove = mainThread->pvLine[mainThread->completedDepth].line[0];
 
     std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
 }
@@ -48,8 +50,8 @@ inline void reportPV(SearchThread *th) {
     std::cout << "info depth " << depth << " seldepth " << selDepth; 
     std::cout << " time " << TimeManager::time_elapsed_milliseconds(
          TimeManager::sTimeManager.getStartTime()); 
-    std::cout << " nodes " << Threads.totalNodes();
-    std::cout/*<< " hashfull " << hashfull()*/ << " tbhits " << Threads.totalTTHits();
+    std::cout << " nodes " << searchThreads.totalNodes();
+    std::cout/*<< " hashfull " << hashfull()*/ << " tbhits " << searchThreads.totalTTHits();
     std::cout << " score cp " << score << " pv";
     
     U32 move;

@@ -55,34 +55,30 @@ class SearchThread : public Thread
 
 public:
 
-	static bool abortSearch;
-	static bool stopSearch;
+	static bool abortSearch, stopSearch;
     
-    bool terminate;
+    bool mTerminate, mSearching;
 
-	int idx, depth, completedDepth, selDepth;
+	int mIndex, depth, completedDepth, selDepth;
 
-	std::atomic<U64> nodes, ttHits;
+	U64 nodes, ttHits;
     
-    std::thread thread;
+    std::thread mThread;
 
-	std::mutex mutex;
-	std::condition_variable cv;
-    
-    ThreadState mState;
+	std::mutex mMutex;
+	std::condition_variable mCv;
 	
-	SearchThread(int);
+	SearchThread(int index);
 	~SearchThread();
 
-	int getIndex() { return idx; }
+	int getIndex() { return mIndex; }
 	
 	void initialise();
 	void search();
-    
-    template<ThreadState state>
-    void blockThreadIfState();
+	void startSearch(Side stm);
+	void waitIfSearching();
+	void searchThreadLifeCycle();
 };
-
 
 class SearchThreadPool 
 {
@@ -91,10 +87,9 @@ std::vector<SearchThread*> searchThreads;
 
 public:
 
-	void createThreadPool(int nThreads);
+	void createThreadPool(int n);
 	void clear();
-    
-	void wait_for_search_finished();
+	void waitForAll();
 
 	U64 totalNodes();
 	U64 totalTTHits();
@@ -103,36 +98,32 @@ public:
 	
     std::vector<SearchThread*> getSearchThreads();
     
-    template <bool isFromUci>
+    template <bool isInit>
     void search()
     {
-        if (isFromUci) {
+        auto mainThread = searchThreads[0];
+
+        if (isInit) {
             
-            getMainSearchThread()->blockThreadIfState<SEARCH>();
+            mainThread->waitIfSearching();
             
             SearchThread::stopSearch = false;
             
-            for (SearchThread* th : searchThreads)
-            {
-                th->initialise();
-            }
+            for (SearchThread* th : searchThreads) th->initialise();
             
-            getMainSearchThread()->search();
+            mainThread->search();
         } 
         else 
         {
             for (SearchThread* th : searchThreads)
             {
-                if (th != getMainSearchThread())
-                {
-                    th->search();
-                }
+                if (th != mainThread) th->search();
             }
         }
     }
 };
 
 extern Thread initThread;
-extern SearchThreadPool Threads;
+extern SearchThreadPool searchThreads;
 
 #endif 

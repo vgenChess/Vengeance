@@ -5,7 +5,7 @@
 #include "search.h"
 
 Thread initThread;
-SearchThreadPool Threads;
+SearchThreadPool searchThreads;
 
 Thread::Thread()
 {
@@ -55,7 +55,6 @@ void Thread::init()
     empty = 0;
 }
 
-
 Thread::~Thread()
 {
     moveList.clear();
@@ -67,57 +66,66 @@ Thread::~Thread()
     evalHashTable.clear();
 }
 
-
-SearchThread::SearchThread(int index)
+SearchThread::SearchThread(int index) : mIndex(index), mTerminate(false), mSearching(true)
 {
-    idx = index;
-    side = WHITE;
-    mState = SLEEP;
+    std::unique_lock<std::mutex> lk(mMutex);
 
-    thread = std::thread([this]()
-    {
-        while (!terminate)
-        {
-            cv.notify_one(); // Wake up anyone waiting for search finished
-            
-            blockThreadIfState<SLEEP>();
-            
-            if (!terminate)
-            {
-                startSearch(side, this);
-                mState = SLEEP;
-            }
-        }
-    });
+    mThread = std::thread(&SearchThread::searchThreadLifeCycle, this);
 
-    blockThreadIfState<SEARCH>();
+    mCv.wait(lk, [&]{ return !mSearching; });
 }
 
+void SearchThread::searchThreadLifeCycle()
+{
+    while (!mTerminate)
+    {
+        std::unique_lock<std::mutex> lk(mMutex);
+
+        mSearching = false;
+
+        while (!mSearching && !mTerminate)
+        {
+            mCv.notify_one();
+            mCv.wait(lk);
+        }
+
+        lk.unlock();
+
+        if (!mTerminate)
+        {
+            startSearch(side);        
+        } 
+    }
+}
 
 SearchThread::~SearchThread()
 {
-    assert(mState != SEARCH);
+    assert(!mSearching);
 
-    terminate = true;
+    mTerminate = true;
 
     search();
 
-    thread.join();
+    mThread.join();
 }
 
+void SearchThread::waitIfSearching()
+{
+    std::unique_lock<std::mutex> lk(mMutex);
 
+    while (mSearching) mCv.wait(lk);
 
-/// Thread::start_searching() wakes up the thread that will start the search
+    lk.unlock();
+}
 
 void SearchThread::search()
 {
-    std::lock_guard<std::mutex> lk(mutex);
+    std::lock_guard<std::mutex> lk(mMutex);
     
-    mState = SEARCH;
+    mSearching = true;
 
-    cv.notify_one(); // Wake up the thread in idle_loop()
+    mCv.notify_one(); 
 }
-
 
 void SearchThread::initialise()
 {
@@ -163,70 +171,46 @@ void SearchThread::initialise()
     pawnsHashKey = initThread.pawnsHashKey;
 }
 
-void SearchThreadPool::createThreadPool(int nThreads)
+void SearchThreadPool::createThreadPool(int n)
 {
     if (searchThreads.size() > 0)
     {
-        getMainSearchThread()->blockThreadIfState<SEARCH>();
+        getMainSearchThread()->waitIfSearching();
 
         for (SearchThread *thread: searchThreads)
-        {
             delete thread;
-        }
         
         searchThreads.clear();
     }
 
-    if (nThreads > 0)
+    if (n > 0)
     {
-        for (int i = 0; i < nThreads; i++)
-        {
+        for (int i = 0; i < n; i++)
             searchThreads.push_back(new SearchThread(i));
-        }
     }
 }
-
 
 void SearchThreadPool::clear()
 {
     for (SearchThread* th : searchThreads)
-    {
         th->clear();
-    }
 }
 
-
-void SearchThreadPool::wait_for_search_finished()
+void SearchThreadPool::waitForAll()
 {
+    auto mainThread = searchThreads[0];
     for (SearchThread* th : searchThreads)
     {
-        if (th != getMainSearchThread())
-        {
-            th->blockThreadIfState<SEARCH>();
-        }
+        if (th != mainThread)
+            th->waitIfSearching();
     }
-}
-
-template <ThreadState state>
-void SearchThread::blockThreadIfState()
-{
-    std::unique_lock<std::mutex> lk(mutex);
-    
-    while (mState == state) 
-    {
-        cv.wait(lk);
-    }
-    
-    lk.unlock();
 }
 
 U64 SearchThreadPool::totalNodes()
 {
     U64 total = 0;
     for (SearchThread *thread : searchThreads)
-    {
         total += thread->nodes;
-    }
     
     return total;
 }
@@ -236,9 +220,7 @@ U64 SearchThreadPool::totalTTHits()
     U64 total = 0;
 
     for (SearchThread *thread : searchThreads)
-    {
         total += thread->ttHits;
-    }
     
     return total;
 }

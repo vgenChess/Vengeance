@@ -129,9 +129,4 @@ enum {
 	hashfBETA = 15
 };
 
-enum ThreadState {
-
-	SLEEP, SEARCH, EXIT
-};
-
 #endif

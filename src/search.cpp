@@ -57,38 +57,24 @@ void initLMR()
     }
 }
 
-//TODO refactor logic
-void startSearch(Side stm, SearchThread *th) 
+void SearchThread::startSearch(Side stm) 
 {
-    if (th == Threads.getMainSearchThread()) 
+    if (this == searchThreads.getMainSearchThread()) 
     {
         SearchThread::abortSearch = false;
         SearchThread::stopSearch = false;
         
-        Threads.search<false>(); // start non-main threads
-        
+        searchThreads.search<false>(); 
+
         if (stm == WHITE)
-            iterativeDeepeningSearch<WHITE>(th); // main thread start searching
+            iterativeDeepeningSearch<WHITE>(this); 
         else
-            iterativeDeepeningSearch<BLACK>(th); // main thread start searching
-            
+            iterativeDeepeningSearch<BLACK>(this); 
+        
+        SearchThread::stopSearch = true;    
         SearchThread::abortSearch = true;
 
-        // When we reach the maximum depth, we can arrive here without a raise of
-        // SearchThread::stop. However, if we are pondering or in an infinite search,
-        // the UCI protocol states that we shouldn't print the best move before the
-        // GUI sends a "stop" or "ponderhit" command. We therefore simply wait here
-        // until the GUI sends one of those commands.
-
-        while (!SearchThread::stopSearch)
-        {} // Busy wait for a stop or a ponder reset
-
-        // Stop the threads if not already stopped (also raise the stop if
-        // "ponderhit" just reset Threads.ponder).
-        SearchThread::stopSearch = true;
-
-        // Wait until all threads have finished
-        Threads.wait_for_search_finished();
+        searchThreads.waitForAll();
 
         reportBestMove();
 
@@ -98,9 +84,9 @@ void startSearch(Side stm, SearchThread *th)
     else 
     {
         if (stm == WHITE)
-            iterativeDeepeningSearch<WHITE>(th); 
+            iterativeDeepeningSearch<WHITE>(this); 
         else
-            iterativeDeepeningSearch<BLACK>(th); 
+            iterativeDeepeningSearch<BLACK>(this); 
     }
 }
 
@@ -117,13 +103,13 @@ void iterativeDeepeningSearch(SearchThread *th)
 
     for (int depth = 1; depth < MAX_DEPTH; depth++) 
     {
-        if (th != Threads.getMainSearchThread()) 
+        if (th != searchThreads.getMainSearchThread()) 
         {  
             std::unique_lock<std::mutex> lck(mutex);
 
             U16 count = 0;
 
-            for (SearchThread *thread : Threads.getSearchThreads()) 
+            for (SearchThread *thread : searchThreads.getSearchThreads()) 
             {
                 if (th != thread && depth == thread->depth) 
                 {
@@ -149,7 +135,7 @@ void iterativeDeepeningSearch(SearchThread *th)
             break;
         }
 
-        if (th != Threads.getMainSearchThread())
+        if (th != searchThreads.getMainSearchThread())
         {
             continue;
         }
@@ -288,7 +274,7 @@ void aspirationWindowSearch(SearchThread *th)
 
     assert (score > alpha && score < beta);
 
-    if (th != Threads.getMainSearchThread())
+    if (th != searchThreads.getMainSearchThread())
     {
         return;
     }
@@ -316,7 +302,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
     
     const auto ply = si->ply;
     const auto IS_ROOT_NODE = ply == 0;
-    const auto IS_MAIN_THREAD = th == Threads.getMainSearchThread();
+    const auto IS_MAIN_THREAD = th == searchThreads.getMainSearchThread();
     const auto IS_SINGULAR_SEARCH = isSingularSearch;
     const auto CAN_NULL_MOVE = isNullMoveAllowed;
     const auto IS_PV_NODE = alpha != beta - 1;
@@ -941,7 +927,7 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
 
     constexpr auto opp = stm == WHITE ? BLACK : WHITE;
 
-    const bool IS_MAIN_THREAD = th == Threads.getMainSearchThread();
+    const bool IS_MAIN_THREAD = th == searchThreads.getMainSearchThread();
 
     const auto ply = si->ply;
 
