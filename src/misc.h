@@ -2,6 +2,8 @@
 #define MISC_H
 
 #include "constants.h"
+#include "nonslidingmoves.h"
+#include "magicmoves.h"
 
 extern int MAX_DEPTH;
 extern U8 rookCastleFlagMask[U8_MAX_SQUARES];

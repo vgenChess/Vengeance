@@ -6,16 +6,15 @@
 #include "functions.h"
 
 class Notation 
-{
-    
+{    
+
 public:
-    
     static std::string algebricSq[64];
 };
 
-
 class EvalInfo 
 {	
+
 public:
 	
 	U64 openFilesBB;
@@ -45,45 +44,46 @@ public:
 
     void clear() {
 
-		this->openFilesBB = 0ULL;
+		openFilesBB = 0ULL;
 
 		for (int i = 0; i < 2; i++) {
 
 			passedPawns[i] = 0ULL;
 	
-			this->halfOpenFilesBB[i] = 0ULL;
+			halfOpenFilesBB[i] = 0ULL;
 
-			this->allPawnAttacks[i] = 0ULL;
-			this->allKnightAttacks[i] = 0ULL;
-			this->allBishopAttacks[i] = 0ULL;
-			this->allRookAttacks[i] = 0ULL;
-			this->allQueenAttacks[i] = 0ULL;
-			this->kingAttacks[i] = 0ULL;
+			allPawnAttacks[i] = 0ULL;
+			allKnightAttacks[i] = 0ULL;
+			allBishopAttacks[i] = 0ULL;
+			allRookAttacks[i] = 0ULL;
+			allQueenAttacks[i] = 0ULL;
+			kingAttacks[i] = 0ULL;
 
 			for (int j = 0; j < 64; j++) {
 
-				this->knightAttacks[i][j] = 0ULL;
-				this->bishopAttacks[i][j] = 0ULL;
-				this->rookAttacks[i][j] = 0ULL;
-				this->queenAttacks[i][j] = 0ULL;
+				knightAttacks[i][j] = 0ULL;
+				bishopAttacks[i][j] = 0ULL;
+				rookAttacks[i][j] = 0ULL;
+				queenAttacks[i][j] = 0ULL;
 			}
 
-			this->attacks[i] = 0ULL;
+			attacks[i] = 0ULL;
 
-			this->kingZoneBB[i] = 0ULL;
+			kingZoneBB[i] = 0ULL;
 
-			this->kingSq[i] = 0;
+			kingSq[i] = 0;
 
-			this->kingAttackersCount[i] = 0;
-			this->kingAttackersWeight[i] = 0;
+			kingAttackersCount[i] = 0;
+			kingAttackersWeight[i] = 0;
 
-			this->kingAdjacentZoneAttacksCount[i] = 0;
+			kingAdjacentZoneAttacksCount[i] = 0;
 		} 
 	}
 };
 
 
-class SearchInfo {
+class SearchInfo 
+{
 
 public:
 		
@@ -95,7 +95,8 @@ public:
     
     U32 line[U16_MAX_PLY];
     
-	SearchInfo() {
+	SearchInfo() 
+	{
 	
 		ply = 0;
 		depth = 0;
@@ -107,7 +108,8 @@ public:
 };
 
 
-class TraceCoefficients {
+class TraceCoefficients 
+{
 
 public:
 
@@ -155,7 +157,6 @@ public:
 	int rookSupportingFriendlyRook[U8_MAX_SIDES];
 	int rookOnSeventhRank[U8_MAX_SIDES];
 	int rookOnEightRank[U8_MAX_SIDES];
-	int rookAllPawnsCount[U8_MAX_SIDES];
 	
 	// Queen
 
@@ -213,13 +214,13 @@ public:
 
 	int centerControl[U8_MAX_SIDES];
 
-	void clear() {
-
+	void clear() 
+	{
 		phase = 0;
 		eval = 0;
 
-		for (int i = 0; i < U8_MAX_SIDES; i++) {
-			
+		for (int i = 0; i < U8_MAX_SIDES; i++) 
+		{		
 			weight_val_pawn[i] = 0;
 			weight_val_knight[i] = 0;
 			weight_val_bishop[i] = 0;
@@ -227,16 +228,16 @@ public:
 			weight_val_queen[i] = 0;
 		}
 		
-		for (int i = 0; i < U8_MAX_SIDES; i++) {
-
+		for (int i = 0; i < U8_MAX_SIDES; i++) 
+		{
 			pawnIsland[i] = 0;
 			isolatedPawns[i] = 0;
 			backwardPawns[i] = 0;
 			doublePawns[i] = 0;
 			pawnHoles[i] = 0;
 
-			for (int j = 0; j < 8; j++) {
-				
+			for (int j = 0; j < 8; j++) 
+			{	
 				pawnChain[j][i] = 0;
 				phalanxPawn[j][i] = 0;
 				defendedPhalanxPawn[j][i] = 0;
@@ -245,22 +246,22 @@ public:
 			}
 		}
 
-		for (int i = 0; i < U8_MAX_SIDES; i++) {
-
+		for (int i = 0; i < U8_MAX_SIDES; i++) 
+		{
 			knightAllPawnsCount[i] = 0;
 			knightOutpost[i] = 0;
 			undefendedKnight[i] = 0;
 			knightDefendedByPawn[i] = 0;
 		}
 
-		for (int i = 0; i < U8_MAX_SIDES; i++) {
-
+		for (int i = 0; i < U8_MAX_SIDES; i++) 
+		{
 			bishopPair[i] = 0;
 			undefendedBishop[i] = 0;
 		}
 
-		for (int i = 0; i < U8_MAX_SIDES; i++) {
-			
+		for (int i = 0; i < U8_MAX_SIDES; i++) 
+		{	
 			rookBehindStmPassedPawn[i] = 0;
 			rookBehindOppPassedPawn[i] = 0;
 			rookFlankOutpost[i] = 0;
@@ -270,36 +271,37 @@ public:
 			rookSupportingFriendlyRook[i] = 0;
 			rookOnSeventhRank[i] = 0;
 			rookOnEightRank[i] = 0;		
-			rookAllPawnsCount[i] = 0;
 		}
 	
-		for (int i = 0; i < U8_MAX_SIDES; i++) {
-
+		for (int i = 0; i < U8_MAX_SIDES; i++) 
+		{
 			queenUnderdevelopedPieces[i] = 0;
 		}
 			
-		for (int i = 0; i < U8_MAX_SIDES; i++)	{
-			for (int j = 0; j < 16; j++) {
-
+		for (int i = 0; i < U8_MAX_SIDES; i++)	
+		{
+			for (int j = 0; j < 16; j++) 
+			{
 				knightMobility[i][j] = 0;
 				bishopMobility[i][j] = 0;
 				rookMobility[i][j] = 0;			
 			}
 		}
 
-		for (int i = 0; i < U8_MAX_SIDES; i++)	{
+		for (int i = 0; i < U8_MAX_SIDES; i++)	
+		{
 			for (int j = 0; j < 32; j++)
 				queenMobility[i][j] = 0;
 		}
 
-		for (U8 side = WHITE; side <= BLACK; side++) {
-
-			for (int i = 0; i < 64; i++) {
-
+		for (U8 side = WHITE; side <= BLACK; side++) 
+		{
+			for (int i = 0; i < 64; i++) 
+			{
 				kingPSQT[i][side] = 0;
 
-				for (int j = 0; j < 64; j++) {
-					
+				for (int j = 0; j < 64; j++) 
+				{	
 					pawnPSQT[i][j][side] = 0;
 					knightPSQT[i][j][side] = 0;
 					bishopPSQT[i][j][side] = 0;
@@ -309,8 +311,8 @@ public:
 			}
 		}
 	
-		for (int i = 0; i < U8_MAX_SIDES; i++) {
-
+		for (int i = 0; i < U8_MAX_SIDES; i++) 
+		{
 			kingPawnShield[i] = 0;
 			kingEnemyPawnStorm[i] = 0;
 	

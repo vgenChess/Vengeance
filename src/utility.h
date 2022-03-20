@@ -20,7 +20,7 @@ bool isSqAttacked(U8 sq, const U8 color, Thread *th);
 
 int divide(U8 depth, U8 sideToMove, Thread *th);
 
-U8 squareFromAlgebricPos(char* posName);
+U8 squareFromAlgebricPos(const char* posName);
 
 U64 flipVertical(U64 x);
 

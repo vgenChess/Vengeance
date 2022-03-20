@@ -116,10 +116,7 @@ Side parseFen(std::string str, Thread *th) {
         
         th->moveStack[0].epFlag = 1;
 
-        char char_array[checkEpSquare.length() + 1]; 
-        strcpy(char_array, checkEpSquare.c_str()); 
-        
-        th->moveStack[0].epSquare = squareFromAlgebricPos(char_array);
+        th->moveStack[0].epSquare = squareFromAlgebricPos(checkEpSquare.c_str());
 
         U64 epSqBitboard = 1ULL << th->moveStack[0].epSquare;
 

@@ -11,7 +11,7 @@
 
 #include "thread.h"
 
-U64 perft(int perft, U8 depth, U8 color, Thread *th);
-void startPerft(U8 side, U8 depth, Thread *th);
+U64 perft(int perft, U8 depth, Side color, Thread *th);
+void startPerft(Side side, U8 depth, Thread *th);
 
 #endif /* perft_h */

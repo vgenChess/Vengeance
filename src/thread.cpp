@@ -66,9 +66,13 @@ Thread::~Thread()
     evalHashTable.clear();
 }
 
-SearchThread::SearchThread(int index) : mIndex(index), mTerminate(false), mSearching(true)
+SearchThread::SearchThread(int index)
 {
     std::unique_lock<std::mutex> lk(mMutex);
+    
+    mIndex = index;
+    mTerminate = false;
+    mSearching = true;
 
     mThread = std::thread(&SearchThread::searchThreadLifeCycle, this);
 

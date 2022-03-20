@@ -50,11 +50,9 @@ U64 arrRanks[8] = {
 // TODO check datatype
 int PSQT[U8_MAX_SQUARES][U8_MAX_PIECES][U8_MAX_SQUARES];
 
-//TODO remove weight_rook_all_pawns_count eval 
-
 template<Side stm>
-void initEvalInfo(Thread *th) {
-
+void initEvalInfo(Thread *th) 
+{
 	if (!th->evalInfo.openFilesBB)
 		th->evalInfo.openFilesBB = openFiles(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
 
@@ -73,43 +71,43 @@ void initEvalInfo(Thread *th) {
 
 	int sq = -1;
 	U64 bb = 0ULL;
-	for (int p = KNIGHTS; p <= KING; p++) {
-
+	for (int p = KNIGHTS; p <= KING; p++) 
+	{
 		bb = stm ? th->blackPieceBB[p] : th->whitePieceBB[p];
 		
-		while (bb) {
-
+		while (bb) 
+		{
 			sq = GET_POSITION(bb);
 			POP_POSITION(bb);
 
 			assert(sq >= 0 && sq <= 63);
 
-			if (p == KNIGHTS) {
-
+			if (p == KNIGHTS) 
+			{
 				th->evalInfo.knightAttacks[stm][sq] = get_knight_attacks(sq);
 				th->evalInfo.allKnightAttacks[stm] |= th->evalInfo.knightAttacks[stm][sq];
 				th->evalInfo.attacks[stm] |= th->evalInfo.knightAttacks[stm][sq];		
 			}	
-			else if (p == BISHOPS) {
-
+			else if (p == BISHOPS) 
+			{
 				th->evalInfo.bishopAttacks[stm][sq] = Bmagic(sq, th->occupied);
 				th->evalInfo.allBishopAttacks[stm] |= th->evalInfo.bishopAttacks[stm][sq];		
 				th->evalInfo.attacks[stm] |= th->evalInfo.bishopAttacks[stm][sq];		
 			}
-			else if (p == ROOKS) {
-				
+			else if (p == ROOKS) 
+			{	
 				th->evalInfo.rookAttacks[stm][sq] = Rmagic(sq, th->occupied);
 				th->evalInfo.allRookAttacks[stm] |= th->evalInfo.rookAttacks[stm][sq];						
 				th->evalInfo.attacks[stm] |= th->evalInfo.rookAttacks[stm][sq];				
 			}	
-			else if (p == QUEEN) {
-
+			else if (p == QUEEN) 
+			{
 				th->evalInfo.queenAttacks[stm][sq] = Qmagic(sq, th->occupied);
 				th->evalInfo.allQueenAttacks[stm] |= th->evalInfo.queenAttacks[stm][sq];
 				th->evalInfo.attacks[stm] |= th->evalInfo.queenAttacks[stm][sq];		
 			}
-			else if (p == KING)	{
-				
+			else if (p == KING)	
+			{	
 				th->evalInfo.kingAttacks[stm] = get_king_attacks(sq);			
 				th->evalInfo.attacks[stm] |= th->evalInfo.kingAttacks[stm];
 			}	
@@ -137,27 +135,27 @@ void initEvalInfo(Thread *th) {
 								bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]);
 }
 
-int traceFullEval(Side stm, TraceCoefficients *traceCoefficients, Thread *th) {
-
+int traceFullEval(Side stm, TraceCoefficients *traceCoefficients, Thread *th) 
+{
 	T = traceCoefficients;
 
 	return stm ? fullEval(BLACK, th) : fullEval(WHITE, th);
 }
 
-int fullEval(U8 stm, Thread *th) {
-	
+int fullEval(U8 stm, Thread *th) 
+{	
 	#if defined(TUNE)
 	
 		U8 sq, kingSq;
 		U64 bb;
-		for (U8 side = WHITE; side <= BLACK; side++) {
-
-			for (U8 piece = PAWNS; piece <= KING; piece++) {
-				
+		for (U8 side = WHITE; side <= BLACK; side++) 
+		{
+			for (U8 piece = PAWNS; piece <= KING; piece++) 
+			{	
 				bb = side ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
 
-				while (bb) {
-
+				while (bb) 
+				{
 					sq = GET_POSITION(bb);
 					POP_POSITION(bb);
 
@@ -186,8 +184,8 @@ int fullEval(U8 stm, Thread *th) {
         
 		int hashedEval;
         bool hashHit = checkEvalHashTable(&hashedEval, th->hashKey, &th->evalHashTable[0]);
-		if (hashHit) {
-
+		if (hashHit) 
+		{
 			return stm == WHITE ? hashedEval : -hashedEval;
 		}
 	#endif
@@ -268,9 +266,10 @@ int fullEval(U8 stm, Thread *th) {
 */
 
 template <Side stm>
-int pawnsEval(Thread *th) {
+int pawnsEval(Thread *th) 
+{
+	constexpr auto opp = stm == WHITE ? BLACK : WHITE;
 
-	const auto opp = stm ^ 1;
 	const auto kingSq = th->evalInfo.kingSq[stm];
 
 	int sq = -1, rank = -1;
@@ -281,8 +280,8 @@ int pawnsEval(Thread *th) {
 	// Piece Square Tables
 	
 	auto ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
-	while (ourPawns) {
-
+	while (ourPawns) 
+	{
 		sq = GET_POSITION(ourPawns);
 		POP_POSITION(ourPawns);
 
@@ -334,16 +333,16 @@ int pawnsEval(Thread *th) {
 	// TODO check logic
 	ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 	auto phalanxPawns = pawnsWithEastNeighbors(ourPawns) | pawnsWithWestNeighbors(ourPawns);
-	while (phalanxPawns) {
-
+	while (phalanxPawns) 
+	{
 		sq = GET_POSITION(phalanxPawns);
 		POP_POSITION(phalanxPawns);
 
 		rank = stm ? Mirror64[sq] >> 3 : sq >> 3; // = sq / 8
 
 		// Check if the phalanx pawn is defended by another pawn
-		if (th->evalInfo.allPawnAttacks[stm] & (1ULL << sq)) {
-			
+		if (th->evalInfo.allPawnAttacks[stm] & (1ULL << sq)) 
+		{	
 			// Defended phalanx pawn
 		
 			score += arr_weight_defended_phalanx_pawn[rank];
@@ -352,8 +351,9 @@ int pawnsEval(Thread *th) {
 			
 				T->defendedPhalanxPawn[rank][stm]++;
 			#endif
-		} else {
-			
+		} 
+		else 
+		{	
 			// Normal phalanx pawn
 
 			score += arr_weight_phalanx_pawn[rank];
@@ -381,8 +381,8 @@ int pawnsEval(Thread *th) {
 	// http://www.talkchess.com/forum3/viewtopic.php?t=55477
 	auto b = defendedDefenders1(p) | defendedDefenders2(p);
 
-	while (b) {
-
+	while (b) 
+	{
 		sq = GET_POSITION(b);
 		POP_POSITION(b);
 		
@@ -479,10 +479,10 @@ int pawnsEval(Thread *th) {
 		the pawn cannot advance unless it is protected along its way.
 	*/
 
-	for (int file = 1; file <= 8; file++) {
-
-		if (arrFiles[file - 1] & th->evalInfo.allRookAttacks[stm] & stmPassedPawns) {
-			
+	for (int file = 1; file <= 8; file++) 
+	{
+		if (arrFiles[file - 1] & th->evalInfo.allRookAttacks[stm] & stmPassedPawns) 
+		{	
 			score += weight_rook_behind_stm_passed_pawn;
 			
 			#if defined(TUNE) 
@@ -491,8 +491,8 @@ int pawnsEval(Thread *th) {
 			#endif
 		}
 		
-		if (arrFiles[file - 1] & th->evalInfo.allRookAttacks[stm] & oppPassedPawns) {
-			
+		if (arrFiles[file - 1] & th->evalInfo.allRookAttacks[stm] & oppPassedPawns) 
+		{	
 			score += weight_rook_behind_opp_passed_pawn;
 			
 			#if defined(TUNE) 
@@ -502,8 +502,8 @@ int pawnsEval(Thread *th) {
 		}
 	}
 
-	while (stmPassedPawns) {
-		
+	while (stmPassedPawns) 
+	{	
 		sq = GET_POSITION(stmPassedPawns);
 		POP_POSITION(stmPassedPawns);
 
@@ -524,8 +524,9 @@ int pawnsEval(Thread *th) {
 			
 				T->defendedPassedPawn[stm][rank]++;
 			#endif
-		} else {
-			
+		} 
+		else 
+		{	
 			// Normal passed pawn
 
 			score += arr_weight_passed_pawn[rank];
@@ -537,15 +538,15 @@ int pawnsEval(Thread *th) {
 		}	
 	}
 
-
 	return score;
 }
 
 
 template <Side stm>
-int knightsEval(Thread *th) {
+int knightsEval(Thread *th) 
+{
+	constexpr auto opp = stm == WHITE ? BLACK : WHITE;
 
-	const auto opp = stm ^ 1;
 	const auto kingSq = th->evalInfo.kingSq[stm];
 	const auto allPawnsCount = POPCOUNT(th->blackPieceBB[PAWNS] | th->whitePieceBB[PAWNS]);
 	const auto oppPawnHoles = ~th->evalInfo.allPawnAttacks[opp] & EXTENDED_CENTER;
@@ -558,8 +559,8 @@ int knightsEval(Thread *th) {
 	
 	U64 attacksBB;
 	
-	while (knightsBB) {
-
+	while (knightsBB) 
+	{
 		sq = GET_POSITION(knightsBB);
 		POP_POSITION(knightsBB);
 
@@ -584,8 +585,8 @@ int knightsEval(Thread *th) {
 		// 	Outpost
 		//	An outpost is a square on the fourth, fifth, sixth, 
 		//	or seventh rank which is protected by a pawn and which cannot be attacked by an opponent's pawn.
-		if (oppPawnHoles & (1ULL << sq) & th->evalInfo.allPawnAttacks[stm]) {
-
+		if (oppPawnHoles & (1ULL << sq) & th->evalInfo.allPawnAttacks[stm]) 
+		{
 			score += weight_knight_outpost;
 
 			#if defined(TUNE) 
@@ -599,8 +600,8 @@ int knightsEval(Thread *th) {
 		
 		bool isDefended = (1ULL << sq) & th->evalInfo.attacks[stm]; 
 
-		if (!isDefended) {
-
+		if (!isDefended) 
+		{
 			score += weight_undefended_knight;
 
 			#if defined(TUNE)	
@@ -614,8 +615,8 @@ int knightsEval(Thread *th) {
 		
 		bool isDefendedByAPawn = (1ULL << sq) & th->evalInfo.allPawnAttacks[stm];
 		
-		if (isDefendedByAPawn) {
-
+		if (isDefendedByAPawn) 
+		{
 			score += weight_knight_defended_by_pawn;
 
 			#if defined(TUNE)	
@@ -641,8 +642,8 @@ int knightsEval(Thread *th) {
 
 		// Update values required for King safety 
 		
-		if (attacksBB & th->evalInfo.kingZoneBB[opp]) {
- 			
+		if (attacksBB & th->evalInfo.kingZoneBB[opp]) 
+		{	
  			th->evalInfo.kingAttackersCount[opp]++;
             th->evalInfo.kingAttackersWeight[opp] += weight_knight_attack;
 
@@ -652,8 +653,8 @@ int knightsEval(Thread *th) {
             #endif
 
             const auto bb = attacksBB & th->evalInfo.kingAttacks[opp];
-            if (bb) {
-
+            if (bb) 
+            {
            		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
             }
 		}
@@ -663,9 +664,10 @@ int knightsEval(Thread *th) {
 }
 
 template <Side stm>
-int bishopsEval(Thread *th) {
+int bishopsEval(Thread *th) 
+{
+	constexpr auto opp = stm == WHITE ? BLACK : WHITE;
 
-	const auto opp = stm ^ 1;
 	const auto kingSq = th->evalInfo.kingSq[stm];
 
 	bool isDefended;
@@ -679,8 +681,8 @@ int bishopsEval(Thread *th) {
 	U64 attacksBB;
 	
 	// Bishop pair
-	if (POPCOUNT(bishopBB) == 2) {	
-
+	if (POPCOUNT(bishopBB) == 2) 
+	{	
 		score += weight_bishop_pair;
 
 		#if defined(TUNE)	
@@ -689,8 +691,8 @@ int bishopsEval(Thread *th) {
 		#endif
 	}
 
-	while (bishopBB) {
-	
+	while (bishopBB) 
+	{
 		sq = GET_POSITION(bishopBB);
 		POP_POSITION(bishopBB);
 
@@ -706,8 +708,8 @@ int bishopsEval(Thread *th) {
 		
 		isDefended = (1ULL << sq) & th->evalInfo.attacks[stm]; 
 
-		if (!isDefended) {
-
+		if (!isDefended) 
+		{
 			score += weight_undefended_bishop;
 
 			#if defined(TUNE)	
@@ -732,8 +734,8 @@ int bishopsEval(Thread *th) {
 
 		// Update values required for King safety 
 
-		if (attacksBB & th->evalInfo.kingZoneBB[opp]) {
- 			
+		if (attacksBB & th->evalInfo.kingZoneBB[opp]) 
+		{	
  			th->evalInfo.kingAttackersCount[opp]++;
             th->evalInfo.kingAttackersWeight[opp] += weight_bishop_attack;
 
@@ -743,8 +745,8 @@ int bishopsEval(Thread *th) {
             #endif
             	
             const auto bb = (attacksBB & th->evalInfo.kingAttacks[opp]);
-            if (bb)	{
-
+            if (bb)	
+            {
            		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
             }
 		}
@@ -759,11 +761,11 @@ Increasing value as pawns disappear
 Tarrasch Rule
 */
 template <Side stm>
-int rooksEval(Thread *th) {
-	
-	const auto opp = stm ^ 1;
+int rooksEval(Thread *th) 
+{	
+	constexpr auto opp = stm == WHITE ? BLACK : WHITE;
+
 	const auto kingSq = th->evalInfo.kingSq[stm];
-	const auto allPawnsCount = POPCOUNT(th->blackPieceBB[PAWNS] | th->whitePieceBB[PAWNS]);
 
 	const auto oppFlankPawnHoles = ~th->evalInfo.allPawnAttacks[opp] 
 								& ~EXTENDED_CENTER & ~(RANK_1 | RANK_2 | RANK_7 | RANK_8);
@@ -775,8 +777,8 @@ int rooksEval(Thread *th) {
 	int score = 0;
 	int sq = -1, mobilityCount = 0;
 
-	while (rooksBB) {
-
+	while (rooksBB) 
+	{
 		sq = GET_POSITION(rooksBB);
 		POP_POSITION(rooksBB);
 
@@ -793,8 +795,8 @@ int rooksEval(Thread *th) {
 		// the ideal piece to make use of the outpost is a rook. 
 		// This is because the rook can put pressure on all the squares along the rank
 		
-		if (oppFlankPawnHoles & (1ULL << sq) & th->evalInfo.allPawnAttacks[stm]) {
-
+		if (oppFlankPawnHoles & (1ULL << sq) & th->evalInfo.allPawnAttacks[stm]) 
+		{
 			score += weight_rook_flank_outpost;
 			
 			#if defined(TUNE)
@@ -806,8 +808,8 @@ int rooksEval(Thread *th) {
 
 		// Rook on half open file
 		
-		if ((1ULL << sq) & th->evalInfo.halfOpenFilesBB[stm]) {
-
+		if ((1ULL << sq) & th->evalInfo.halfOpenFilesBB[stm]) 
+		{
 			score += weight_rook_half_open_file;
 		
 			#if defined(TUNE)	
@@ -818,8 +820,8 @@ int rooksEval(Thread *th) {
 
 		// Rook on open file
 		
-		if ((1ULL << sq) & th->evalInfo.openFilesBB) {
-
+		if ((1ULL << sq) & th->evalInfo.openFilesBB) 
+		{
 			score += weight_rook_open_file;
 
 			#if defined(TUNE)	
@@ -831,8 +833,8 @@ int rooksEval(Thread *th) {
 		// Rook on same file as enemy Queen
 		
 		if (arrFiles[sq & 7] & 
-			(opp ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN])) {
-
+			(opp ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN])) 
+		{
 			score += weight_rook_enemy_queen_same_file;
 
 			#if defined(TUNE)	
@@ -843,8 +845,8 @@ int rooksEval(Thread *th) {
 
 		// Rook on Seventh rank
 		
-		if ((1ULL << sq) & (stm ? RANK_2 : RANK_7)) {
-
+		if ((1ULL << sq) & (stm ? RANK_2 : RANK_7)) 
+		{
 			score += weight_rook_on_seventh_rank;
 		
 			#if defined(TUNE)	
@@ -855,8 +857,8 @@ int rooksEval(Thread *th) {
 
 		// Rook on Eight rank
 		
-		if ((1ULL << sq) & (stm ? RANK_1 : RANK_8)) {
-
+		if ((1ULL << sq) & (stm ? RANK_1 : RANK_8)) 
+		{
 			score += weight_rook_on_eight_rank;
 
 			#if defined(TUNE)	
@@ -868,8 +870,8 @@ int rooksEval(Thread *th) {
 
 		// Connected Rooks
 
-		if (attacksBB & rooksBB) {
-
+		if (attacksBB & rooksBB) 
+		{
 			score += weight_rook_supporting_friendly_rook;
 
 			#if defined(TUNE)	
@@ -877,17 +879,6 @@ int rooksEval(Thread *th) {
 				T->rookSupportingFriendlyRook[stm] = 1;
 			#endif
 		}
-
-
-		// Increasing value as pawns disappear
-
-		score += weight_rook_all_pawns_count * allPawnsCount;
-
-		#if defined (TUNE)
-
-			T->rookAllPawnsCount[stm] += allPawnsCount; 	
-		#endif
-
 
 
 		// Rook mobility
@@ -904,8 +895,8 @@ int rooksEval(Thread *th) {
 
 		// Update values required for King safety later in kingEval
 		
-		if (attacksBB & th->evalInfo.kingZoneBB[opp]) {
- 			
+		if (attacksBB & th->evalInfo.kingZoneBB[opp]) 
+		{	
  			th->evalInfo.kingAttackersCount[opp]++;
             th->evalInfo.kingAttackersWeight[opp] += weight_rook_attack;
 
@@ -915,8 +906,8 @@ int rooksEval(Thread *th) {
             #endif
 
             const auto bb = attacksBB & th->evalInfo.kingAttacks[opp];
-            if (bb)	{
-            	
+            if (bb)	
+            {	
            		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
             }
 		}
@@ -927,9 +918,10 @@ int rooksEval(Thread *th) {
 
 
 template <Side stm>
-int queenEval(Thread *th) {
+int queenEval(Thread *th) 
+{
+	constexpr auto opp = stm == WHITE ? BLACK : WHITE;
 
-	const auto opp = stm ^ 1;
 	const auto kingSq = th->evalInfo.kingSq[stm];
 	auto queenBB = stm ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN];
 	
@@ -938,8 +930,8 @@ int queenEval(Thread *th) {
 
 	U64 attacksBB;
 
-	while (queenBB) {
-
+	while (queenBB) 
+	{
 		sq = GET_POSITION(queenBB);
 		POP_POSITION(queenBB);
 
@@ -952,8 +944,8 @@ int queenEval(Thread *th) {
 
 
 		if (	POPCOUNT(th->occupied) >= 22	// early game
-			&&	(stm ? sq <= 48 : sq >= 15)) { 
-
+			&&	(stm ? sq <= 48 : sq >= 15)) 
+		{ 
 			const auto minorPiecesBB = stm ? 
 									th->blackPieceBB[KNIGHTS] | th->blackPieceBB[BISHOPS] :
 									th->whitePieceBB[KNIGHTS] | th->whitePieceBB[BISHOPS];
@@ -980,8 +972,8 @@ int queenEval(Thread *th) {
 
 
 		// Update values required for King safety later in kingEval
-		if (attacksBB & th->evalInfo.kingZoneBB[opp]) {
- 			
+		if (attacksBB & th->evalInfo.kingZoneBB[opp]) 
+		{	
  			th->evalInfo.kingAttackersCount[opp]++;
             th->evalInfo.kingAttackersWeight[opp] += weight_queen_attack;
 
@@ -991,8 +983,8 @@ int queenEval(Thread *th) {
             #endif
 
             const auto bb = attacksBB & th->evalInfo.kingAttacks[opp];
-            if (bb)	{
-
+            if (bb)	
+            {
            		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
             }
 		}
@@ -1002,9 +994,10 @@ int queenEval(Thread *th) {
 }
 
 template <Side stm>
-int kingEval(Thread *th) {
-	
-	const auto opp = stm ^ 1;
+int kingEval(Thread *th) 
+{	
+	constexpr auto opp = stm == WHITE ? BLACK : WHITE;
+
 	const auto kingSq = th->evalInfo.kingSq[stm];
 	const auto ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 	const auto theirPawns = opp ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
@@ -1035,8 +1028,8 @@ int kingEval(Thread *th) {
 
 
 	if (	th->evalInfo.kingAttackersCount[stm] >= 2
-		&&	th->evalInfo.kingAdjacentZoneAttacksCount[stm]) { 
-
+		&&	th->evalInfo.kingAdjacentZoneAttacksCount[stm]) 
+	{ 
 		int safetyScore = th->evalInfo.kingAttackersWeight[stm];
 
         U64 kingUndefendedSquares = th->evalInfo.attacks[opp]
@@ -1099,8 +1092,8 @@ int kingEval(Thread *th) {
 
         score += MakeScore(-mg * MAX(0, mg) / 720, -MAX(0, eg) / 20); 
 	} 
-    else {
-
+    else 
+    {
     	#if defined(TUNE)
 	    	
 	    	T->knightAttack[stm] 	= 0;
@@ -1114,8 +1107,8 @@ int kingEval(Thread *th) {
 }
 
 template <Side stm>
-int evalBoard(Thread *th) {
-
+int evalBoard(Thread *th) 
+{
 	int score = 0;
 
 	score += POPCOUNT(CENTER & th->evalInfo.attacks[stm]) * weight_center_control;
@@ -1130,12 +1123,12 @@ int evalBoard(Thread *th) {
 
 // Helper functions
 
-void initPSQT() {
-
-	for (U8 kingSq = 0; kingSq < U8_MAX_SQUARES; kingSq++) {
-
-		for (U8 sq = 0; sq < U8_MAX_SQUARES; sq++) {
-
+void initPSQT() 
+{
+	for (U8 kingSq = 0; kingSq < U8_MAX_SQUARES; kingSq++) 
+	{
+		for (U8 sq = 0; sq < U8_MAX_SQUARES; sq++) 
+		{
 			PSQT[kingSq][PAWNS][sq] 	= 	pawnPSQT[kingSq][sq] 	+ 	weight_val_pawn; 
 			PSQT[kingSq][KNIGHTS][sq] 	= 	knightPSQT[kingSq][sq] 	+	weight_val_knight; 
 			PSQT[kingSq][BISHOPS][sq] 	= 	bishopPSQT[kingSq][sq]	+ 	weight_val_bishop; 
@@ -1146,8 +1139,8 @@ void initPSQT() {
 }
 
 template<Side stm>
-U64 pawnHoles(Thread *th) {
-
+U64 pawnHoles(Thread *th) 
+{
 	U64 pawnsBB = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 
 	U64 frontAttackSpans = stm ? 
@@ -1161,14 +1154,14 @@ U64 pawnHoles(Thread *th) {
 }
 
 template<Side stm>	
-U64 isolatedPawns(Thread *th) {
-
+U64 isolatedPawns(Thread *th) 
+{
 	return isolanis(stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS]);
 }
 
 template<Side stm> 
-U64 doublePawns(Thread *th) {
-
+U64 doublePawns(Thread *th) 
+{
 	U64 pawnsBB = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 
 	U64 doublePawnsBB = stm ? bPawnsInfrontOwn(pawnsBB) : wPawnsInfrontOwn(pawnsBB); 
@@ -1177,39 +1170,39 @@ U64 doublePawns(Thread *th) {
 }
 
 template<Side stm>
-U64 backwardPawns(Thread *th) {
-
+U64 backwardPawns(Thread *th) 
+{
 	return stm == WHITE ? 
 			wBackward(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]) :
 			bBackward(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]);
 }
 
 // pawns with at least one pawn in front on the same file
-U64 wPawnsBehindOwn(U64 wpawns) {
-
+U64 wPawnsBehindOwn(U64 wpawns) 
+{
 	return wpawns & wRearSpans(wpawns);
 }
 
 // pawns with at least one pawn in front on the same file
-U64 bPawnsBehindOwn(U64 bpawns) {
-
+U64 bPawnsBehindOwn(U64 bpawns) 
+{
 	return bpawns & bRearSpans(bpawns);
 }
 
 // pawns with at least one pawn behind on the same file
-U64 wPawnsInfrontOwn (U64 wpawns) {
-
+U64 wPawnsInfrontOwn (U64 wpawns)
+{
 	return wpawns & wFrontSpans(wpawns);
 }
 
 // pawns with at least one pawn behind on the same file
-U64 bPawnsInfrontOwn (U64 bpawns) {
-
+U64 bPawnsInfrontOwn (U64 bpawns) 
+{
 	return bpawns & bFrontSpans(bpawns);
 }
 
-U64 wBackward(U64 wpawns, U64 bpawns) {
-
+U64 wBackward(U64 wpawns, U64 bpawns) 
+{
    U64 stops = wpawns << 8;
 
    U64 wAttackSpans = wEastAttackFrontSpans(wpawns)
@@ -1221,8 +1214,8 @@ U64 wBackward(U64 wpawns, U64 bpawns) {
    return (stops & bAttacks & ~wAttackSpans) >> 8;
 }
 
-U64 bBackward(U64 bpawns, U64 wpawns) {
-	
+U64 bBackward(U64 bpawns, U64 wpawns) 
+{	
    U64 stops = bpawns >> 8;
    U64 bAttackSpans = bEastAttackFrontSpans(bpawns)
                     | bWestAttackFrontSpans(bpawns);
@@ -1233,8 +1226,8 @@ U64 bBackward(U64 bpawns, U64 wpawns) {
    return (stops & wAttacks & ~bAttackSpans) << 8;
 }
 
-U64 wPassedPawns(U64 wpawns, U64 bpawns) {
-
+U64 wPassedPawns(U64 wpawns, U64 bpawns) 
+{
    U64 allFrontSpans = bFrontSpans(bpawns);
    allFrontSpans |= eastOne(allFrontSpans)
                  |  westOne(allFrontSpans);
@@ -1242,8 +1235,8 @@ U64 wPassedPawns(U64 wpawns, U64 bpawns) {
    return wpawns & ~allFrontSpans;
 }
 
-U64 bPassedPawns(U64 bpawns, U64 wpawns) {
-
+U64 bPassedPawns(U64 bpawns, U64 wpawns) 
+{
    U64 allFrontSpans = wFrontSpans(wpawns);
    allFrontSpans |= eastOne(allFrontSpans)
                  |  westOne(allFrontSpans);
@@ -1251,49 +1244,49 @@ U64 bPassedPawns(U64 bpawns, U64 wpawns) {
    return bpawns & ~allFrontSpans;
 }
 
-U64 wPawnDefendedFromWest(U64 wpawns) {
-
+U64 wPawnDefendedFromWest(U64 wpawns) 
+{
    return wpawns & wPawnEastAttacks(wpawns);
 }
 
-U64 wPawnDefendedFromEast(U64 wpawns) {
-
+U64 wPawnDefendedFromEast(U64 wpawns) 
+{
    return wpawns & wPawnWestAttacks(wpawns);
 }
 
-U64 bPawnDefendedFromWest(U64 bpawns) {
-
+U64 bPawnDefendedFromWest(U64 bpawns) 
+{
    return bpawns & bPawnEastAttacks(bpawns);
 }
 
-U64 bPawnDefendedFromEast(U64 bpawns) {
-
+U64 bPawnDefendedFromEast(U64 bpawns) 
+{
    return bpawns & bPawnWestAttacks(bpawns);
 }
 
-U64 noNeighborOnEastFile (U64 pawns) {
-
+U64 noNeighborOnEastFile (U64 pawns) 
+{
     return pawns & ~westAttackFileFill(pawns);
 }
 
-U64 noNeighborOnWestFile (U64 pawns) {
-
+U64 noNeighborOnWestFile (U64 pawns) 
+{
     return pawns & ~eastAttackFileFill(pawns);
 }
 
-U64 isolanis(U64 pawns) {
-
+U64 isolanis(U64 pawns) 
+{
    return  noNeighborOnEastFile(pawns)
          & noNeighborOnWestFile(pawns);
 }
 
-U64 openFiles(U64 wpanws, U64 bpawns) {
- 
+U64 openFiles(U64 wpanws, U64 bpawns) 
+{ 
    return ~fileFill(wpanws) & ~fileFill(bpawns);
 }
 
-U64 halfOpenOrOpenFile(U64 gen) {
-
+U64 halfOpenOrOpenFile(U64 gen) 
+{
 	return ~fileFill(gen);
 }
 

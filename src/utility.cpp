@@ -253,7 +253,7 @@ bool isSqAttacked(U8 sq, U8 side, Thread *th) {
     return false;
 }
 
-U8 squareFromAlgebricPos(char* posName) {
+U8 squareFromAlgebricPos(const char* posName) {
     
     if (strcmp(posName, "a1") == 0) {
         return 0;
@@ -421,7 +421,7 @@ int divide(U8 depth, U8 sideToMove, Thread *th) {
     U64 total_nodes = 0;
 
     char pType[24];
-    char* moveType;
+    std::string moveType;
     U64 nodes;
 
     std::vector<Move> moves;
@@ -469,7 +469,7 @@ int divide(U8 depth, U8 sideToMove, Thread *th) {
             break;
             case MOVE_PROMOTION:
     
-                sprintf(pType, "MOVE_PROMOTION-%d", promType(move.move));
+                sprintf(pType, "MOVE_PROMOTION-%d", (int)promType(move.move));
                 moveType = pType;
             break;
         }
@@ -490,9 +490,10 @@ int divide(U8 depth, U8 sideToMove, Thread *th) {
             total_nodes = total_nodes + nodes;
             
             printf("%d)%c%s-%s, ", count, pieceName[colorType(move.move)][pieceType(move.move)],
-                   algSq[from_sq(move.move)], algSq[to_sq(move.move)]);
+                   algSq[from_sq(move.move)].c_str(), algSq[to_sq(move.move)].c_str());
             
-            printf("%llu, %s, castle flags -" BYTE_TO_BINARY_PATTERN", nps  - %7.3f MN/s\n", nodes, moveType, BYTE_TO_BINARY(th->moveStack[ply].castleFlags),  nps);
+            printf("%llu, %s, castle flags -" BYTE_TO_BINARY_PATTERN", nps  - %7.3f MN/s\n", 
+                   nodes, moveType.c_str(), BYTE_TO_BINARY(th->moveStack[ply].castleFlags),  nps);
         }
         
         unmake_move(ply, move.move, th);

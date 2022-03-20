@@ -29,14 +29,14 @@
 #define DISPLAY_TIME	60				
 #define LRDROPRATE		1
 
-struct Score {
-	
+struct Score 
+{	
 	double mg;
 	double eg;
 };
 
-class LoadCoeff {
-
+class LoadCoeff 
+{
 public:
 	int8_t type[NTERMS];
 	int8_t coeffs[2][NTERMS];
@@ -46,15 +46,13 @@ int seePieceVal[8] = { 0, 100, 300, 300, 500, 900, 2000, 0 };
 
 std::vector<Data> dataList;
 
-
-double sigmoid(double K, double E) {
-
+double sigmoid(double K, double E) 
+{
     return 1.0 / (1.0 + exp(-K * E / 400.0));
 }
 
-
-void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
-
+void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) 
+{
 	int i = 0;
 
 	// Material
@@ -206,7 +204,7 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
 	loadCoeff->coeffs[WHITE][i] = T->rookOnEightRank[WHITE];                         
     loadCoeff->coeffs[BLACK][i++] = T->rookOnEightRank[BLACK];                         
     
-    
+
     // Queen
 
 	loadCoeff->type[i] = NORMAL;

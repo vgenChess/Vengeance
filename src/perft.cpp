@@ -11,13 +11,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "perft.h"
 #include "movegen.h"
 #include "make_unmake.h"
 #include "utility.h"
+#include "misc.h"
 
-void startPerft(U8 side, U8 depth, Thread *th) {
+// TODO fix perft 
+
+void startPerft(Side side, U8 depth, Thread *th) {
     
     U64 nodes;
     
@@ -44,52 +48,65 @@ void startPerft(U8 side, U8 depth, Thread *th) {
     }
 }
 
-U64 perft(int ply, U8 depth, U8 side, Thread *th) {
+U64 perft(int ply, U8 depth, Side side, Thread *th) {
 
     U64 nodes = 0;
     
-//     Move move_list[U16_MAX_MOVES];
-//     U8 i;
-//     
-//     if (depth == 0) 
-//         return 1;
-//     
-//     if (ply != 0) {
-//     
-//         th->moveStack[ply].epFlag = th->moveStack[ply - 1].epFlag;
-//         th->moveStack[ply].epSquare = th->moveStack[ply - 1].epSquare;
-//         th->moveStack[ply].castleFlags = th->moveStack[ply - 1].castleFlags;
-//     }
-// 
-//     std::vector<Move> moves;
-//     Move m;
-//     for (int stage = STAGE_PROMOTIONS; stage <= STAGE_NORMAL_MOVES; stage++) {
-// 
-//         moves.clear();
-//         getMoves(ply, side, moves, stage, false, th);       
-// 
-//         for (std::vector<Move>::iterator i = moves.begin(); i != moves.end(); i++) {
-//             
-//             m = *i;
-// 
-//             make_move(ply, m.move, th);
-// 
-//             if (!isKingInCheck(side, th))
-//                 nodes += perft(ply + 1, depth - 1, side ^ 1, th);
-//             else {
-// 
-//                 switch (move_type(m.move)) {
-// 
-//                     case MOVE_CAPTURE: cap--; break;
-//                     case MOVE_PROMOTION: prom--; break;
-//                     case MOVE_CASTLE: cas--; break;
-//                     case MOVE_ENPASSANT: ep--; break;
-//                 }
-//             }
-// 
-//             unmake_move(ply, m.move, th);
-//         }
-//     }
-//     
+    if (depth == 0) 
+        return 1;
+    
+    if (ply != 0) {
+    
+        th->moveStack[ply].epFlag = th->moveStack[ply - 1].epFlag;
+        th->moveStack[ply].epSquare = th->moveStack[ply - 1].epSquare;
+        th->moveStack[ply].castleFlags = th->moveStack[ply - 1].castleFlags;
+    }
+    
+    th->moveList[ply].skipQuiets = false;
+    th->moveList[ply].stage = PLAY_HASH_MOVE;
+    th->moveList[ply].ttMove = NO_MOVE;
+    th->moveList[ply].counterMove = NO_MOVE;
+    th->moveList[ply].moves.clear();
+    th->moveList[ply].badCaptures.clear();
+    
+    Move currentMove;
+    
+    while (true) 
+    {
+        // fetch next psuedo-legal move
+        currentMove = getNextMove(side, ply, th, &th->moveList[ply]);
+
+        if (th->moveList[ply].stage == STAGE_DONE)
+        {
+            break;
+        }
+        
+        // check if move generator returns a valid psuedo-legal move
+        assert(currentMove.move != NO_MOVE);
+
+        // make the move
+        make_move(ply, currentMove.move, th);
+        
+        // check if psuedo-legal move is valid
+        if (side == WHITE)
+        {
+            if (isKingInCheck<WHITE>(th)) 
+            {
+                unmake_move(ply, currentMove.move, th);
+                continue;
+            }
+        }
+        else 
+        {
+            if (isKingInCheck<BLACK>(th)) 
+            {
+                unmake_move(ply, currentMove.move, th);
+                continue;
+            }
+        }
+        
+        nodes += perft(ply + 1, depth - 1, side == WHITE ? BLACK : WHITE, th);
+    }
+
     return nodes;
 }
