@@ -206,11 +206,7 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff) {
 	loadCoeff->coeffs[WHITE][i] = T->rookOnEightRank[WHITE];                         
     loadCoeff->coeffs[BLACK][i++] = T->rookOnEightRank[BLACK];                         
     
-    loadCoeff->type[i] = NORMAL;
-	loadCoeff->coeffs[WHITE][i] = T->rookAllPawnsCount[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->rookAllPawnsCount[BLACK];                         
     
-
     // Queen
 
 	loadCoeff->type[i] = NORMAL;
@@ -488,9 +484,6 @@ void startTuner() {
 
 	cparams[MG][count] = ScoreMG(weight_rook_on_eight_rank);
 	cparams[EG][count++] = ScoreEG(weight_rook_on_eight_rank);
-
-	cparams[MG][count] = ScoreMG(weight_rook_all_pawns_count);
-	cparams[EG][count++] = ScoreEG(weight_rook_all_pawns_count);
 
 
 
@@ -1140,8 +1133,7 @@ void saveWeights(TVector params, TVector cparams) {
    		"\nweight_rook_enemy_queen_same_file = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
    		"\nweight_rook_on_seventh_rank = " 			<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
 		"\nweight_rook_on_eight_rank = " 			<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-		"\nweight_rook_supporting_friendly_rook = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", " <<
-   		"\nweight_rook_all_pawns_count = " 			<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n\n";
+		"\nweight_rook_supporting_friendly_rook = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n\n";
 
   
    	myfile << "weight_queen_underdeveloped_pieces = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count++]<<")" << ", \n\n";
