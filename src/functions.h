@@ -84,4 +84,7 @@ constexpr int S(const int mg, const int eg) {
 	return (int)((unsigned int)eg << 16) + mg;
 }
 
+#define PAWNATTACKS(s, x) ((s) ? ((shift<SOUTH_EAST>(x)) | (shift < SOUTH_WEST> (x))) : ((shift <NORTH_EAST> (x)) | (shift <NORTH_WEST> (x))))
+
+
 #endif

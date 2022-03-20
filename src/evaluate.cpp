@@ -50,25 +50,29 @@ U64 arrRanks[8] = {
 // TODO check datatype
 int PSQT[U8_MAX_SQUARES][U8_MAX_PIECES][U8_MAX_SQUARES];
 
+
 template<Side stm>
-void initEvalInfo(Thread *th) 
+void initEvalInfo(Thread *th, bool isPawnsHashHit) 
 {
-	if (!th->evalInfo.openFilesBB)
-		th->evalInfo.openFilesBB = openFiles(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
+	if (!isPawnsHashHit)
+	{
+		if (!th->evalInfo.openFilesBB)
+		{
+			th->evalInfo.openFilesBB = openFiles(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
+		}
 
+		const auto stmPawns = stm == WHITE ? th->whitePieceBB[PAWNS] : th->blackPieceBB[PAWNS];
 
-	th->evalInfo.halfOpenFilesBB[stm] = stm == WHITE ? 
-									halfOpenOrOpenFile(th->whitePieceBB[PAWNS]) ^ th->evalInfo.openFilesBB :	
-									halfOpenOrOpenFile(th->blackPieceBB[PAWNS]) ^ th->evalInfo.openFilesBB;
+		th->evalInfo.halfOpenFilesBB[stm] = halfOpenOrOpenFile(stmPawns) ^ th->evalInfo.openFilesBB;
 
-	th->evalInfo.allPawnAttacks[stm] = stm == WHITE ? 
-									wPawnWestAttacks(th->whitePieceBB[PAWNS]) | wPawnEastAttacks(th->whitePieceBB[PAWNS]) :
-									bPawnWestAttacks(th->blackPieceBB[PAWNS]) | bPawnEastAttacks(th->blackPieceBB[PAWNS]);
+		th->evalInfo.allPawnAttacks[stm] = stm == WHITE ? 
+										wPawnWestAttacks(stmPawns) | wPawnEastAttacks(stmPawns) :
+										bPawnWestAttacks(stmPawns) | bPawnEastAttacks(stmPawns);
+	}
 
 	th->evalInfo.attacks[stm] |= stm == WHITE ? 
-							th->evalInfo.allPawnAttacks[WHITE] : th->evalInfo.allPawnAttacks[BLACK];
+		th->evalInfo.allPawnAttacks[WHITE] : th->evalInfo.allPawnAttacks[BLACK];
 	
-
 	int sq = -1;
 	U64 bb = 0ULL;
 	for (int p = KNIGHTS; p <= KING; p++) 
@@ -127,12 +131,6 @@ void initEvalInfo(Thread *th)
 	th->evalInfo.kingAttackersCount[stm] = 0;
     th->evalInfo.kingAttackersWeight[stm] = 0;
   	th->evalInfo.kingAdjacentZoneAttacksCount[stm] = 0;
-
-  	// Pawn Related 
-
-  	th->evalInfo.passedPawns[stm] = stm == WHITE ? 
-								wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]) :
-								bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]);
 }
 
 int traceFullEval(Side stm, TraceCoefficients *traceCoefficients, Thread *th) 
@@ -144,6 +142,9 @@ int traceFullEval(Side stm, TraceCoefficients *traceCoefficients, Thread *th)
 
 int fullEval(U8 stm, Thread *th) 
 {	
+	bool pawnsHashHit = false;
+	th->evalInfo.clear();
+
 	#if defined(TUNE)
 	
 		U8 sq, kingSq;
@@ -181,54 +182,80 @@ int fullEval(U8 stm, Thread *th)
 		}
 
 	#else
-        
-		int hashedEval;
-        bool hashHit = checkEvalHashTable(&hashedEval, th->hashKey, &th->evalHashTable[0]);
-		if (hashHit) 
-		{
-			return stm == WHITE ? hashedEval : -hashedEval;
-		}
+
+		//@TODO check eval hash implementation
+	    auto evalHashEntry = &th->evalHashTable[th->hashKey % U16_EVAL_HASH_TABLE_RECORDS];
+	    if (evalHashEntry->key == th->hashKey)
+	    {
+	    	return stm == WHITE ? evalHashEntry->score : -evalHashEntry->score;
+	    }
+
+
+	    auto pawnsHashEntry = &th->pawnsHashTable[th->pawnsHashKey % U16_PAWN_HASH_TABLE_RECORDS];
+	    
+	   	pawnsHashHit = pawnsHashEntry->key == th->pawnsHashKey;
+
+	    if (pawnsHashHit)
+	    {
+			th->evalInfo.openFilesBB = pawnsHashEntry->openFilesBB;
+
+			th->evalInfo.halfOpenFilesBB[WHITE] = pawnsHashEntry->halfOpenFilesBB[WHITE];
+			th->evalInfo.halfOpenFilesBB[BLACK] = pawnsHashEntry->halfOpenFilesBB[BLACK]; 
+
+			th->evalInfo.allPawnAttacks[WHITE] = pawnsHashEntry->allPawnAttacks[WHITE];
+			th->evalInfo.allPawnAttacks[BLACK] = pawnsHashEntry->allPawnAttacks[BLACK];
+	    }
 	#endif
 
-	th->evalInfo.clear();
-
-	initEvalInfo<WHITE>(th);
-	initEvalInfo<BLACK>(th);
-
+	initEvalInfo<WHITE>(th, pawnsHashHit);
+	initEvalInfo<BLACK>(th, pawnsHashHit);
 
 	int eval = 0;
 
-	// TODO Redo Pawn eval caching
-/*
 	#if defined(TUNE)
 
-		eval += pawnsEval(WHITE, th) - pawnsEval(BLACK, th);
+		th->evalInfo.passedPawns[WHITE] = wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
+		th->evalInfo.passedPawns[BLACK] = bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]);
+
+		eval += pawnsEval<WHITE>(th) - pawnsEval<BLACK>(th);
+		eval += pawnKingEval<WHITE>(th) - pawnKingEval<BLACK>(th);
 	#else
 	
-		int pawnsScore;
-		if (!hashManager.probePawnHash(&pawnsScore, th->pawnsHashKey)) { // TODO check pawn hash logic
+	    if (!pawnsHashHit)
+	    {
+		    // only calculate passed pawns if there is no cached evaluation for pawns	
+			th->evalInfo.passedPawns[WHITE] = wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
+			th->evalInfo.passedPawns[BLACK] = bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]);
 
-			pawnsScore = pawnsEval<stm>(th); // TODO check logic
-			hashManager.recordPawnHash(pawnsScore, th->pawnsHashKey);
-		}
+	    	pawnsHashEntry->key = th->pawnsHashKey;
+	    
+	    	pawnsHashEntry->pawnsEval = pawnsEval<WHITE>(th) - pawnsEval<BLACK>(th);
+	    	pawnsHashEntry->pawnKingEval = pawnKingEval<WHITE>(th) - pawnKingEval<BLACK>(th);
 
-		eval += pawnsScore;
-	#endif*/
+			pawnsHashEntry->openFilesBB = th->evalInfo.openFilesBB;
 
+			pawnsHashEntry->halfOpenFilesBB[WHITE] = th->evalInfo.halfOpenFilesBB[WHITE];
+			pawnsHashEntry->halfOpenFilesBB[BLACK] = th->evalInfo.halfOpenFilesBB[BLACK]; 
+
+			pawnsHashEntry->allPawnAttacks[WHITE] = th->evalInfo.allPawnAttacks[WHITE];
+			pawnsHashEntry->allPawnAttacks[BLACK] = th->evalInfo.allPawnAttacks[BLACK];
+	    }
+
+     	eval += pawnsHashEntry->pawnsEval;
+    	eval += pawnsHashEntry->pawnKingEval;
+   
+	#endif
 	
-	eval += evalBoard<WHITE>(th) 	- 	evalBoard<BLACK>(th);
-
-	eval += pawnsEval<WHITE>(th) 	- 	pawnsEval<BLACK>(th);
 	eval += knightsEval<WHITE>(th) 	- 	knightsEval<BLACK>(th);
 	eval += bishopsEval<WHITE>(th) 	-	bishopsEval<BLACK>(th);
 	eval += rooksEval<WHITE>(th) 	- 	rooksEval<BLACK>(th);
 	eval += queenEval<WHITE>(th) 	- 	queenEval<BLACK>(th);
 
 	// evaluation of other pieces other than king needs to be done first
-	// before king eval because of values needed for king safety calculation
-	eval += kingEval<WHITE>(th) 	- 	kingEval<BLACK>(th);
+	// because of values required for king safety calculation
+	eval += kingSafety<WHITE>(th)	- 	kingSafety<BLACK>(th);
+	eval += evalBoard<WHITE>(th)	- 	evalBoard<BLACK>(th);
 	
-
 	// Tapered evaluation 
 	int phase = 	4 * POPCOUNT(th->whitePieceBB[QUEEN] 	| 	th->blackPieceBB[QUEEN]) 
 				+ 	2 * POPCOUNT(th->whitePieceBB[ROOKS] 	| 	th->blackPieceBB[ROOKS])
@@ -243,7 +270,8 @@ int fullEval(U8 stm, Thread *th)
 		T->phase = phase;
 	#else
 
-		recordEvalHashTable(score, th->hashKey, &th->evalHashTable[0]);
+		evalHashEntry->key = th->hashKey;
+		evalHashEntry->score = score;
 	#endif
 
 	return stm == WHITE ? score : -score;
@@ -994,8 +1022,8 @@ int queenEval(Thread *th)
 }
 
 template <Side stm>
-int kingEval(Thread *th) 
-{	
+inline int pawnKingEval(Thread *th)
+{
 	constexpr auto opp = stm == WHITE ? BLACK : WHITE;
 
 	const auto kingSq = th->evalInfo.kingSq[stm];
@@ -1026,7 +1054,19 @@ int kingEval(Thread *th)
 		T->kingEnemyPawnStorm[stm] 	= POPCOUNT(pawnStormZone & theirPawns); // TODO check logic
 	#endif
 
+	return score;
+}
 
+template <Side stm>
+inline int kingSafety(Thread *th) 
+{	
+
+	int score = 0;
+
+	constexpr auto opp = stm == WHITE ? BLACK : WHITE;
+
+	const auto kingSq = th->evalInfo.kingSq[stm];
+	
 	if (	th->evalInfo.kingAttackersCount[stm] >= 2
 		&&	th->evalInfo.kingAdjacentZoneAttacksCount[stm]) 
 	{ 

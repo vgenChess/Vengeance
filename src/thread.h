@@ -23,7 +23,7 @@ public:
 
 	int historyScore[2][64][64];
 	int captureHistoryScore[8][64][8]; // [piece][to][c_piece]
-
+	
 	U32 counterMove[2][64][64];
     
     U64 hashKey, pawnsHashKey;
@@ -37,9 +37,9 @@ public:
 	std::vector<MOVE_STACK> moveStack;
 	std::vector<UNDO_MOVE_STACK> undoMoveStack;
 	std::vector<MOVES_HISTORY> movesHistory;
-    std::vector<PawnsHashEntry> pawnsHashTable;
-    std::vector<EvalHashEntry> evalHashTable;
-	
+	std::vector<PawnsHashEntry> pawnsHashTable;
+	std::vector<EvalHashEntry> evalHashTable;
+
     EvalInfo evalInfo;
     HashManager hashManager;
 
@@ -83,7 +83,7 @@ public:
 class SearchThreadPool 
 {
 
-std::vector<SearchThread*> searchThreads;
+std::vector<SearchThread*> threads;
 
 public:
 
@@ -95,13 +95,14 @@ public:
 	U64 totalTTHits();
 
 	SearchThread* getMainSearchThread();
-	
+	SearchThread* getBestThread();
+
     std::vector<SearchThread*> getSearchThreads();
     
     template <bool isInit>
     void search()
     {
-        auto mainThread = searchThreads[0];
+        auto mainThread = threads[0];
 
         if (isInit) {
             
@@ -109,13 +110,13 @@ public:
             
             SearchThread::stopSearch = false;
             
-            for (SearchThread* th : searchThreads) th->initialise();
+            for (SearchThread* th : threads) th->initialise();
             
             mainThread->search();
         } 
         else 
         {
-            for (SearchThread* th : searchThreads)
+            for (SearchThread* th : threads)
             {
                 if (th != mainThread) th->search();
             }

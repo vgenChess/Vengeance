@@ -30,15 +30,6 @@ inline std::string getMoveNotation(const U32 move) {
     return str;
 }
 
-inline void reportBestMove() {
-
-    auto mainThread = searchThreads.getSearchThreads()[0];
-
-    U32 bestMove = mainThread->pvLine[mainThread->completedDepth].line[0];
-
-    std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
-}
-    
 inline void reportPV(SearchThread *th) {
 
     const auto depth = th->completedDepth;
@@ -68,6 +59,18 @@ inline void reportPV(SearchThread *th) {
     }
     
     std::cout << "\n";
+}
+
+inline void reportBestMove() {
+
+    auto bestThread = searchThreads.getBestThread();
+
+    if (bestThread != searchThreads.getMainSearchThread())
+        reportPV(bestThread);
+
+    U32 bestMove = bestThread->pvLine[bestThread->completedDepth].line[0];
+
+    std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
 }
 
 #endif

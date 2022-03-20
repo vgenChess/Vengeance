@@ -44,6 +44,7 @@ Side parseFen(std::string str, Thread *th) {
 
 
     th->hashKey = 0ULL;
+    th->pawnsHashKey = 0ULL;
             
 	Side side = WHITE;
 
@@ -63,7 +64,7 @@ Side parseFen(std::string str, Thread *th) {
     assert (side == WHITE || side == BLACK);
 
     if (side) th->hashKey ^= Zobrist::objZobrist.KEY_SIDE_TO_MOVE;
-
+    
     //-------------------------------------------------------
 
 
@@ -208,7 +209,8 @@ Side parseFen(std::string str, Thread *th) {
                     th->blackPieceBB[PAWNS] |= (1ULL << pos);
                    
                     th->hashKey ^= Zobrist::objZobrist.zobristKey[PAWNS][BLACK][pos];
-                       
+                    th->pawnsHashKey ^= Zobrist::objZobrist.pawnZobristKey[pos];   
+
                     pos--;
                     break;
                
@@ -257,8 +259,9 @@ Side parseFen(std::string str, Thread *th) {
                 
                     th->whitePieceBB[PAWNS] |= (1ULL << pos);
                     
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[PAWNS][WHITE][pos];
-                    
+                    th->hashKey ^= Zobrist::objZobrist.zobristKey[PAWNS][WHITE][pos];            
+                    th->pawnsHashKey ^= Zobrist::objZobrist.pawnZobristKey[pos];
+
                     pos--;
                     break;
                     

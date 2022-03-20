@@ -108,21 +108,4 @@ inline void recordEvalHashTable(int eval, U64 key, EvalHashEntry* evalHashTable)
     pEntry->score = eval;
 }
 
-inline bool probePawnHash(int *score, U64 key, PawnsHashEntry* pawnsHashTable) 
-{    
-    auto pEntry = &pawnsHashTable[key % U16_PAWN_HASH_TABLE_RECORDS];
-    
-    *score = pEntry->score;
-    
-    return pEntry->key == key;
-}
-
-inline void recordPawnHash(int score, U64 key, PawnsHashEntry* pawnsHashTable) 
-{    
-    auto pEntry = &pawnsHashTable[key % U16_PAWN_HASH_TABLE_RECORDS];
-    
-    pEntry->key = key;
-    pEntry->score = score;
-}
-
 #endif

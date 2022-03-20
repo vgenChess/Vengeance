@@ -543,7 +543,6 @@ void make_move(int ply, U32 move, Thread *th) {
     
     
     th->hashKey ^= Zobrist::objZobrist.KEY_SIDE_TO_MOVE;
-    th->pawnsHashKey ^= Zobrist::objZobrist.KEY_SIDE_TO_MOVE;
 }
 
 
@@ -773,7 +772,6 @@ void makeNullMove(int ply, Thread *th) { // Needs investigation
     
     
     th->hashKey ^= Zobrist::objZobrist.KEY_SIDE_TO_MOVE;
-    th->pawnsHashKey ^= Zobrist::objZobrist.KEY_SIDE_TO_MOVE;
 }
 
 

@@ -36,12 +36,12 @@ const int16_t I16_CAPTURE_PRUNING = 0;
 const int16_t I16_SEE_PRUNING = -550;
 const int16_t I16_QSEE_PRUNING = 0;
 
-const uint16_t U16_PAWN_HASH_TABLE_RECORDS = 1024 * 2;
+const uint16_t U16_PAWN_HASH_TABLE_RECORDS = 1024 * 8;
 const uint16_t U16_EVAL_HASH_TABLE_RECORDS = 1024 * 16;
 
 const int32_t I32_INF = 50000;
-const int32_t I32_UNKNOWN = 30000;
-const int32_t I32_MATE = 25000;
+const int32_t I32_UNKNOWN = 40000;
+const int32_t I32_MATE = 30000;
 
 const float F_ONE_PLY = 1.25;
 const float F_CHECK_EXT = 0.5;
