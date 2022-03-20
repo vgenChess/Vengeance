@@ -10,6 +10,7 @@
 #define evaluate_h
 
 #include "thread.h"
+#include "utility.h"
 
 void setDist();
 
@@ -29,34 +30,157 @@ template<Side stm> int kingSafety(Thread *th);
 
 void initPSQT();
 
-template<Side stm> U64 isolatedPawns(Thread *th);
-template<Side stm> U64 doublePawns(Thread *th);
-template<Side stm> U64 backwardPawns(Thread *th);
-template<Side stm> U64 pawnHoles(Thread *th);
+// pawns with at least one pawn in front on the same file
+inline U64 wPawnsBehindOwn(U64 wpawns) 
+{
+	return wpawns & wRearSpans(wpawns);
+}
 
-U64 wPawnsBehindOwn(U64 wpawns);
-U64 bPawnsBehindOwn(U64 bpawns); 
-U64 wPawnsInfrontOwn (U64 wpawns);
-U64 bPawnsInfrontOwn (U64 bpawns);
+// pawns with at least one pawn in front on the same file
+inline U64 bPawnsBehindOwn(U64 bpawns) 
+{
+	return bpawns & bRearSpans(bpawns);
+}
 
-U64 wBackward(U64 wpawns, U64 bpawns);
-U64 bBackward(U64 bpawns, U64 wpawns);
+// pawns with at least one pawn behind on the same file
+inline U64 wPawnsInfrontOwn (U64 wpawns)
+{
+	return wpawns & wFrontSpans(wpawns);
+}
 
-U64 wPassedPawns(U64 wpawns, U64 bpawns);
-U64 bPassedPawns(U64 bpawns, U64 wpawns);
+// pawns with at least one pawn behind on the same file
+inline U64 bPawnsInfrontOwn (U64 bpawns) 
+{
+	return bpawns & bFrontSpans(bpawns);
+}
 
-U64 wPawnDefendedFromWest(U64 wpawns);
-U64 wPawnDefendedFromEast(U64 wpawns);
-U64 bPawnDefendedFromWest(U64 bpawns);
-U64 bPawnDefendedFromEast(U64 bpawns);
+inline U64 wBackward(U64 wpawns, U64 bpawns) 
+{
+   U64 stops = wpawns << 8;
 
-U64 noNeighborOnEastFile (U64 pawns);
-U64 noNeighborOnWestFile (U64 pawns);
-U64 isolanis(U64 pawns);
+   U64 wAttackSpans = wEastAttackFrontSpans(wpawns)
+                    | wWestAttackFrontSpans(wpawns);
 
-U64 openFiles(U64 wpanws, U64 bpawns);
+   U64 bAttacks     = bPawnEastAttacks(bpawns)
+                    | bPawnWestAttacks(bpawns);
 
-U64 halfOpenOrOpenFile(U64 gen);
+   return (stops & bAttacks & ~wAttackSpans) >> 8;
+}
+
+inline U64 bBackward(U64 bpawns, U64 wpawns) 
+{	
+   U64 stops = bpawns >> 8;
+   U64 bAttackSpans = bEastAttackFrontSpans(bpawns)
+                    | bWestAttackFrontSpans(bpawns);
+
+   U64 wAttacks     = wPawnEastAttacks(wpawns)
+                    | wPawnWestAttacks(wpawns);
+
+   return (stops & wAttacks & ~bAttackSpans) << 8;
+}
+
+inline U64 wPassedPawns(U64 wpawns, U64 bpawns) 
+{
+   U64 allFrontSpans = bFrontSpans(bpawns);
+   allFrontSpans |= eastOne(allFrontSpans)
+                 |  westOne(allFrontSpans);
+
+   return wpawns & ~allFrontSpans;
+}
+
+inline U64 bPassedPawns(U64 bpawns, U64 wpawns) 
+{
+   U64 allFrontSpans = wFrontSpans(wpawns);
+   allFrontSpans |= eastOne(allFrontSpans)
+                 |  westOne(allFrontSpans);
+
+   return bpawns & ~allFrontSpans;
+}
+
+inline U64 wPawnDefendedFromWest(U64 wpawns) 
+{
+   return wpawns & wPawnEastAttacks(wpawns);
+}
+
+inline U64 wPawnDefendedFromEast(U64 wpawns) 
+{
+   return wpawns & wPawnWestAttacks(wpawns);
+}
+
+inline U64 bPawnDefendedFromWest(U64 bpawns) 
+{
+   return bpawns & bPawnEastAttacks(bpawns);
+}
+
+inline U64 bPawnDefendedFromEast(U64 bpawns) 
+{
+   return bpawns & bPawnWestAttacks(bpawns);
+}
+
+inline U64 noNeighborOnEastFile (U64 pawns) 
+{
+    return pawns & ~westAttackFileFill(pawns);
+}
+
+inline U64 noNeighborOnWestFile (U64 pawns) 
+{
+    return pawns & ~eastAttackFileFill(pawns);
+}
+
+inline U64 isolanis(U64 pawns) 
+{
+   return  noNeighborOnEastFile(pawns)
+         & noNeighborOnWestFile(pawns);
+}
+
+inline U64 openFiles(U64 wpanws, U64 bpawns) 
+{ 
+   return ~fileFill(wpanws) & ~fileFill(bpawns);
+}
+
+inline U64 halfOpenOrOpenFile(U64 gen) 
+{
+	return ~fileFill(gen);
+}
+
+template<Side stm>
+inline U64 pawnHoles(Thread *th) 
+{
+	U64 pawnsBB = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+
+	U64 frontAttackSpans = stm ? 
+		bWestAttackFrontSpans(pawnsBB) | bEastAttackFrontSpans(pawnsBB)
+		: wWestAttackFrontSpans(pawnsBB) | wEastAttackFrontSpans(pawnsBB); 
+
+	U64 holes = ~frontAttackSpans & EXTENDED_CENTER
+		& (stm ? (RANK_5 | RANK_6) : (RANK_3 | RANK_4)); 
+
+	return holes;
+}
+
+template<Side stm>	
+inline U64 isolatedPawns(Thread *th) 
+{
+	return isolanis(stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS]);
+}
+
+template<Side stm> 
+inline U64 doublePawns(Thread *th) 
+{
+	U64 pawnsBB = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+
+	U64 doublePawnsBB = stm ? bPawnsInfrontOwn(pawnsBB) : wPawnsInfrontOwn(pawnsBB); 
+
+	return doublePawnsBB;	
+}
+
+template<Side stm>
+inline U64 backwardPawns(Thread *th) 
+{
+	return stm == WHITE ? 
+			wBackward(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]) :
+			bBackward(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]);
+}
 
 #endif /* evaluate_h */
 

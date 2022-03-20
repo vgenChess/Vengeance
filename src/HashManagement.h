@@ -90,22 +90,4 @@ public:
     }
 };
 
-
-inline bool checkEvalHashTable(int *score, U64 key, EvalHashEntry* evalHashTable) 
-{    
-    auto pEntry = &evalHashTable[key % U16_EVAL_HASH_TABLE_RECORDS];
-    
-    *score = pEntry->score;
-    
-    return pEntry->key == key;
-}
-
-inline void recordEvalHashTable(int eval, U64 key, EvalHashEntry* evalHashTable) 
-{    
-    auto pEntry = &evalHashTable[key % U16_EVAL_HASH_TABLE_RECORDS];
-    
-    pEntry->key = key;
-    pEntry->score = eval;
-}
-
 #endif

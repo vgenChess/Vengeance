@@ -115,7 +115,8 @@ void SearchThread::waitIfSearching()
 {
     std::unique_lock<std::mutex> lk(mMutex);
 
-    while (mSearching) mCv.wait(lk);
+    while (mSearching) 
+        mCv.wait(lk);
 
     lk.unlock();
 }

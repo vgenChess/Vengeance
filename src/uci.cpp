@@ -187,11 +187,12 @@ void UciLoop() {
             } else {
                 
                 TimeManager::sTimeManager.updateTimeSet(time != -1 ? true : false);
-                
+
                 if (time != -1) {
                 
                     if (movesToGo == -1) {
 
+                        // TODO redo logic  
                         const auto total = (int)fmax(1, time + 50 * inc - MOVE_OVERHEAD);
 
                         TimeManager::sTimeManager.updateTimePerMove((int)fmin(time * 0.33, total / 20.0));
@@ -199,12 +200,11 @@ void UciLoop() {
                     
                         const auto total = (int)fmax(1, time + movesToGo * inc - MOVE_OVERHEAD);
                         
-                        TimeManager::sTimeManager.updateTimePerMove(total / movesToGo);
+                        TimeManager::sTimeManager.updateTimePerMove(total / fmax(1, movesToGo / 1.25));
                     }
                     
                     TimeManager::sTimeManager.setStopTime(
-                        TimeManager::sTimeManager.getStartTime() + std::chrono::milliseconds(
-                            (int)fmin(time * 0.75, TimeManager::sTimeManager.getTimePerMove() * 5.5)));           
+                        TimeManager::sTimeManager.getStartTime() + std::chrono::milliseconds((int)(time * 0.75)));           
                 } else {
 
                     TimeManager::sTimeManager.updateTimeSet(false);

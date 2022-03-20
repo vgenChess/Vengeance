@@ -12,7 +12,6 @@
 #include <assert.h>
 
 #include "evaluate.h"
-#include "utility.h"
 #include "movegen.h"
 #include "make_unmake.h"
 #include "magicmoves.h"
@@ -273,6 +272,8 @@ int fullEval(U8 stm, Thread *th)
 		evalHashEntry->key = th->hashKey;
 		evalHashEntry->score = score;
 	#endif
+
+
 
 	return stm == WHITE ? score : -score;
 }
@@ -784,10 +785,6 @@ int bishopsEval(Thread *th)
 }
 
 
-/** TODO
-Increasing value as pawns disappear 
-Tarrasch Rule
-*/
 template <Side stm>
 int rooksEval(Thread *th) 
 {	
@@ -1022,7 +1019,7 @@ int queenEval(Thread *th)
 }
 
 template <Side stm>
-inline int pawnKingEval(Thread *th)
+int pawnKingEval(Thread *th)
 {
 	constexpr auto opp = stm == WHITE ? BLACK : WHITE;
 
@@ -1058,7 +1055,7 @@ inline int pawnKingEval(Thread *th)
 }
 
 template <Side stm>
-inline int kingSafety(Thread *th) 
+int kingSafety(Thread *th) 
 {	
 
 	int score = 0;
@@ -1178,157 +1175,6 @@ void initPSQT()
 	}
 }
 
-template<Side stm>
-U64 pawnHoles(Thread *th) 
-{
-	U64 pawnsBB = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
-
-	U64 frontAttackSpans = stm ? 
-		bWestAttackFrontSpans(pawnsBB) | bEastAttackFrontSpans(pawnsBB)
-		: wWestAttackFrontSpans(pawnsBB) | wEastAttackFrontSpans(pawnsBB); 
-
-	U64 holes = ~frontAttackSpans & EXTENDED_CENTER
-		& (stm ? (RANK_5 | RANK_6) : (RANK_3 | RANK_4)); 
-
-	return holes;
-}
-
-template<Side stm>	
-U64 isolatedPawns(Thread *th) 
-{
-	return isolanis(stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS]);
-}
-
-template<Side stm> 
-U64 doublePawns(Thread *th) 
-{
-	U64 pawnsBB = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
-
-	U64 doublePawnsBB = stm ? bPawnsInfrontOwn(pawnsBB) : wPawnsInfrontOwn(pawnsBB); 
-
-	return doublePawnsBB;	
-}
-
-template<Side stm>
-U64 backwardPawns(Thread *th) 
-{
-	return stm == WHITE ? 
-			wBackward(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]) :
-			bBackward(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]);
-}
-
-// pawns with at least one pawn in front on the same file
-U64 wPawnsBehindOwn(U64 wpawns) 
-{
-	return wpawns & wRearSpans(wpawns);
-}
-
-// pawns with at least one pawn in front on the same file
-U64 bPawnsBehindOwn(U64 bpawns) 
-{
-	return bpawns & bRearSpans(bpawns);
-}
-
-// pawns with at least one pawn behind on the same file
-U64 wPawnsInfrontOwn (U64 wpawns)
-{
-	return wpawns & wFrontSpans(wpawns);
-}
-
-// pawns with at least one pawn behind on the same file
-U64 bPawnsInfrontOwn (U64 bpawns) 
-{
-	return bpawns & bFrontSpans(bpawns);
-}
-
-U64 wBackward(U64 wpawns, U64 bpawns) 
-{
-   U64 stops = wpawns << 8;
-
-   U64 wAttackSpans = wEastAttackFrontSpans(wpawns)
-                    | wWestAttackFrontSpans(wpawns);
-
-   U64 bAttacks     = bPawnEastAttacks(bpawns)
-                    | bPawnWestAttacks(bpawns);
-
-   return (stops & bAttacks & ~wAttackSpans) >> 8;
-}
-
-U64 bBackward(U64 bpawns, U64 wpawns) 
-{	
-   U64 stops = bpawns >> 8;
-   U64 bAttackSpans = bEastAttackFrontSpans(bpawns)
-                    | bWestAttackFrontSpans(bpawns);
-
-   U64 wAttacks     = wPawnEastAttacks(wpawns)
-                    | wPawnWestAttacks(wpawns);
-
-   return (stops & wAttacks & ~bAttackSpans) << 8;
-}
-
-U64 wPassedPawns(U64 wpawns, U64 bpawns) 
-{
-   U64 allFrontSpans = bFrontSpans(bpawns);
-   allFrontSpans |= eastOne(allFrontSpans)
-                 |  westOne(allFrontSpans);
-
-   return wpawns & ~allFrontSpans;
-}
-
-U64 bPassedPawns(U64 bpawns, U64 wpawns) 
-{
-   U64 allFrontSpans = wFrontSpans(wpawns);
-   allFrontSpans |= eastOne(allFrontSpans)
-                 |  westOne(allFrontSpans);
-
-   return bpawns & ~allFrontSpans;
-}
-
-U64 wPawnDefendedFromWest(U64 wpawns) 
-{
-   return wpawns & wPawnEastAttacks(wpawns);
-}
-
-U64 wPawnDefendedFromEast(U64 wpawns) 
-{
-   return wpawns & wPawnWestAttacks(wpawns);
-}
-
-U64 bPawnDefendedFromWest(U64 bpawns) 
-{
-   return bpawns & bPawnEastAttacks(bpawns);
-}
-
-U64 bPawnDefendedFromEast(U64 bpawns) 
-{
-   return bpawns & bPawnWestAttacks(bpawns);
-}
-
-U64 noNeighborOnEastFile (U64 pawns) 
-{
-    return pawns & ~westAttackFileFill(pawns);
-}
-
-U64 noNeighborOnWestFile (U64 pawns) 
-{
-    return pawns & ~eastAttackFileFill(pawns);
-}
-
-U64 isolanis(U64 pawns) 
-{
-   return  noNeighborOnEastFile(pawns)
-         & noNeighborOnWestFile(pawns);
-}
-
-U64 openFiles(U64 wpanws, U64 bpawns) 
-{ 
-   return ~fileFill(wpanws) & ~fileFill(bpawns);
-}
-
-U64 halfOpenOrOpenFile(U64 gen) 
-{
-	return ~fileFill(gen);
-}
 
 
 
