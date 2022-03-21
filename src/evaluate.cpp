@@ -22,7 +22,7 @@
 
 TraceCoefficients *T;
 
-int Mirror64[64] = {
+int Mirror64[U8_MAX_SQUARES] = {
 
 	56,	57,	58,	59,	60,	61,	62,	63,
 	48,	49,	50,	51,	52,	53,	54,	55,
@@ -49,34 +49,14 @@ U64 arrRanks[8] = {
 // TODO check datatype
 int PSQT[U8_MAX_SQUARES][U8_MAX_PIECES][U8_MAX_SQUARES];
 
-
 template<Side stm>
-void initEvalInfo(Thread *th, bool isPawnsHashHit) 
-{
-	if (!isPawnsHashHit)
-	{
-		if (!th->evalInfo.openFilesBB)
-		{
-			th->evalInfo.openFilesBB = openFiles(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
-		}
-
-		const auto stmPawns = stm == WHITE ? th->whitePieceBB[PAWNS] : th->blackPieceBB[PAWNS];
-
-		th->evalInfo.halfOpenFilesBB[stm] = halfOpenOrOpenFile(stmPawns) ^ th->evalInfo.openFilesBB;
-
-		th->evalInfo.allPawnAttacks[stm] = stm == WHITE ? 
-										wPawnWestAttacks(stmPawns) | wPawnEastAttacks(stmPawns) :
-										bPawnWestAttacks(stmPawns) | bPawnEastAttacks(stmPawns);
-	}
-
-	th->evalInfo.attacks[stm] |= stm == WHITE ? 
-		th->evalInfo.allPawnAttacks[WHITE] : th->evalInfo.allPawnAttacks[BLACK];
-	
+void initEvalInfo(Thread *th) 
+{	
 	int sq = -1;
 	U64 bb = 0ULL;
-	for (int p = KNIGHTS; p <= KING; p++) 
+	for (int piece = KNIGHTS; piece <= KING; piece++) 
 	{
-		bb = stm ? th->blackPieceBB[p] : th->whitePieceBB[p];
+		bb = stm ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
 		
 		while (bb) 
 		{
@@ -85,31 +65,31 @@ void initEvalInfo(Thread *th, bool isPawnsHashHit)
 
 			assert(sq >= 0 && sq <= 63);
 
-			if (p == KNIGHTS) 
+			if (piece == KNIGHTS) 
 			{
 				th->evalInfo.knightAttacks[stm][sq] = get_knight_attacks(sq);
 				th->evalInfo.allKnightAttacks[stm] |= th->evalInfo.knightAttacks[stm][sq];
 				th->evalInfo.attacks[stm] |= th->evalInfo.knightAttacks[stm][sq];		
 			}	
-			else if (p == BISHOPS) 
+			else if (piece == BISHOPS) 
 			{
 				th->evalInfo.bishopAttacks[stm][sq] = Bmagic(sq, th->occupied);
 				th->evalInfo.allBishopAttacks[stm] |= th->evalInfo.bishopAttacks[stm][sq];		
 				th->evalInfo.attacks[stm] |= th->evalInfo.bishopAttacks[stm][sq];		
 			}
-			else if (p == ROOKS) 
+			else if (piece == ROOKS) 
 			{	
 				th->evalInfo.rookAttacks[stm][sq] = Rmagic(sq, th->occupied);
 				th->evalInfo.allRookAttacks[stm] |= th->evalInfo.rookAttacks[stm][sq];						
 				th->evalInfo.attacks[stm] |= th->evalInfo.rookAttacks[stm][sq];				
 			}	
-			else if (p == QUEEN) 
+			else if (piece == QUEEN) 
 			{
 				th->evalInfo.queenAttacks[stm][sq] = Qmagic(sq, th->occupied);
 				th->evalInfo.allQueenAttacks[stm] |= th->evalInfo.queenAttacks[stm][sq];
 				th->evalInfo.attacks[stm] |= th->evalInfo.queenAttacks[stm][sq];		
 			}
-			else if (p == KING)	
+			else if (piece == KING)	
 			{	
 				th->evalInfo.kingAttacks[stm] = get_king_attacks(sq);			
 				th->evalInfo.attacks[stm] |= th->evalInfo.kingAttacks[stm];
@@ -117,9 +97,8 @@ void initEvalInfo(Thread *th, bool isPawnsHashHit)
 		}	
 	}
 
-
 	th->evalInfo.kingSq[stm] = stm == WHITE ? 
-							GET_POSITION(th->whitePieceBB[KING]) : GET_POSITION(th->blackPieceBB[KING]);	
+		GET_POSITION(th->whitePieceBB[KING]) : GET_POSITION(th->blackPieceBB[KING]);	
 
 	// King Safety 
 		
@@ -142,7 +121,6 @@ int traceFullEval(Side stm, TraceCoefficients *traceCoefficients, Thread *th)
 int fullEval(U8 stm, Thread *th) 
 {	
 	bool pawnsHashHit = false;
-	th->evalInfo.clear();
 
 	#if defined(TUNE)
 	
@@ -189,25 +167,37 @@ int fullEval(U8 stm, Thread *th)
 	    	return stm == WHITE ? evalHashEntry->score : -evalHashEntry->score;
 	    }
 
-
 	    auto pawnsHashEntry = &th->pawnsHashTable[th->pawnsHashKey % U16_PAWN_HASH_TABLE_RECORDS];
 	    
 	   	pawnsHashHit = pawnsHashEntry->key == th->pawnsHashKey;
-
-	    if (pawnsHashHit)
-	    {
-			th->evalInfo.openFilesBB = pawnsHashEntry->openFilesBB;
-
-			th->evalInfo.halfOpenFilesBB[WHITE] = pawnsHashEntry->halfOpenFilesBB[WHITE];
-			th->evalInfo.halfOpenFilesBB[BLACK] = pawnsHashEntry->halfOpenFilesBB[BLACK]; 
-
-			th->evalInfo.allPawnAttacks[WHITE] = pawnsHashEntry->allPawnAttacks[WHITE];
-			th->evalInfo.allPawnAttacks[BLACK] = pawnsHashEntry->allPawnAttacks[BLACK];
-	    }
 	#endif
 
-	initEvalInfo<WHITE>(th, pawnsHashHit);
-	initEvalInfo<BLACK>(th, pawnsHashHit);
+
+	th->evalInfo.clear();
+
+	const auto whitePawns = th->whitePieceBB[PAWNS];
+	const auto blackPawns = th->blackPieceBB[PAWNS];
+
+	th->evalInfo.openFilesBB = 
+		pawnsHashHit ? pawnsHashEntry->openFilesBB : openFiles(whitePawns, blackPawns); // @TODO check logic
+
+	th->evalInfo.halfOpenFilesBB[WHITE] = 
+		pawnsHashHit ? pawnsHashEntry->halfOpenFilesBB[WHITE] : halfOpenOrOpenFile(whitePawns) ^ th->evalInfo.openFilesBB; // @TODO check logic
+	th->evalInfo.halfOpenFilesBB[BLACK] =
+		pawnsHashHit ? pawnsHashEntry->halfOpenFilesBB[BLACK] :	halfOpenOrOpenFile(blackPawns) ^ th->evalInfo.openFilesBB; // @TODO check logic
+
+	th->evalInfo.allPawnAttacks[WHITE] =
+		pawnsHashHit ? pawnsHashEntry->allPawnAttacks[WHITE] : wPawnWestAttacks(whitePawns) | wPawnEastAttacks(whitePawns);
+	th->evalInfo.allPawnAttacks[BLACK] = 
+		pawnsHashHit ? pawnsHashEntry->allPawnAttacks[BLACK] : bPawnWestAttacks(blackPawns) | bPawnEastAttacks(blackPawns);
+
+	th->evalInfo.attacks[WHITE] |= th->evalInfo.allPawnAttacks[WHITE];
+	th->evalInfo.attacks[BLACK] |= th->evalInfo.allPawnAttacks[BLACK];
+
+
+	initEvalInfo<WHITE>(th);
+	initEvalInfo<BLACK>(th);
+
 
 	int eval = 0;
 
@@ -216,7 +206,7 @@ int fullEval(U8 stm, Thread *th)
 		th->evalInfo.passedPawns[WHITE] = wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
 		th->evalInfo.passedPawns[BLACK] = bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]);
 
-		eval += pawnsEval<WHITE>(th) - pawnsEval<BLACK>(th);
+		eval += pawnsEval<WHITE>(th) 	- pawnsEval<BLACK>(th);
 		eval += pawnKingEval<WHITE>(th) - pawnKingEval<BLACK>(th);
 	#else
 	
@@ -272,8 +262,6 @@ int fullEval(U8 stm, Thread *th)
 		evalHashEntry->key = th->hashKey;
 		evalHashEntry->score = score;
 	#endif
-
-
 
 	return stm == WHITE ? score : -score;
 }

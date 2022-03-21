@@ -7,7 +7,6 @@
 
 class Notation 
 {    
-
 public:
     static std::string algebricSq[64];
 };
@@ -46,7 +45,7 @@ public:
 
 		openFilesBB = 0ULL;
 
-		for (int i = 0; i < 2; i++) {
+		for (int i = 0; i < U8_MAX_SIDES; i++) {
 
 			passedPawns[i] = 0ULL;
 	
@@ -59,7 +58,7 @@ public:
 			allQueenAttacks[i] = 0ULL;
 			kingAttacks[i] = 0ULL;
 
-			for (int j = 0; j < 64; j++) {
+			for (int j = 0; j < U8_MAX_SQUARES; j++) {
 
 				knightAttacks[i][j] = 0ULL;
 				bishopAttacks[i][j] = 0ULL;

@@ -115,12 +115,12 @@ void UciLoop() {
             std::string fen;
 
             //TODO refactor logic
-            if (token == "startpos") {
-
+            if (token == "startpos") 
+            {
                 fen = START_FEN;
                 is>>token;
-            } else if (token == "fen") {
-
+            } else if (token == "fen") 
+            {
                 while (is >> token && token != "moves")
                     fen += token + " ";
             }
@@ -129,16 +129,16 @@ void UciLoop() {
 
             std::vector<Move> moves;
 
-            while (is>>token) {
-
+            while (is>>token) 
+            {
                 moves.clear();
 
                 genMoves(sideToMove, 0, moves, &initThread);
                 
-                for (Move m : moves) {
-
-                    if (getMoveNotation(m.move) == token) {
-
+                for (Move m : moves) 
+                {
+                    if (getMoveNotation(m.move) == token) 
+                    {
                         make_move(0, m.move, &initThread);
                         
                         initThread.moves_history_counter++;
@@ -151,13 +151,14 @@ void UciLoop() {
                 }
             }
 
-            initThread.side = sideToMove == WHITE ? WHITE : BLACK;
-            
-        } else if (token == "isready") {
-
+            initThread.side = sideToMove == WHITE ? WHITE : BLACK;   
+        } 
+        else if (token == "isready") 
+        {
             std::cout << "readyok\n";
-        } else if (token == "go") {
-
+        } 
+        else if (token == "go") 
+        {
             TimeManager::sTimeManager.setStartTime(std::chrono::steady_clock::now());
 
             TimeManager::sTimeManager.updateTimeSet(false);
