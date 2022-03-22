@@ -350,22 +350,18 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
     th->moveStack[ply + 1].killerMoves[1] = NO_MOVE;
 
 
-    const int phase = 
-            4 * POPCOUNT(th->whitePieceBB[QUEEN]    |   th->blackPieceBB[QUEEN]) 
-        +   2 * POPCOUNT(th->whitePieceBB[ROOKS]    |   th->blackPieceBB[ROOKS])
-        +   1 * POPCOUNT(th->whitePieceBB[BISHOPS]  |   th->blackPieceBB[BISHOPS])
-        +   1 * POPCOUNT(th->whitePieceBB[KNIGHTS]  |   th->blackPieceBB[KNIGHTS]);
-
-
+    const auto ALL_PIECES_COUNT = POPCOUNT(th->occupied);
+    
+    
     if (!IS_ROOT_NODE) 
     {
         if (isRepetition(ply, th)) // Repetition detection
         {
-            if (phase > 16) // earlygame
+            if (ALL_PIECES_COUNT > 22) // earlygame
             {
                 return -50;
             }
-            else if (phase > 8) // middlegame
+            else if (ALL_PIECES_COUNT > 12) // middlegame
             {
                 return -25;
             }
@@ -450,6 +446,10 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         improving = ply >= 2 ? sEval > th->moveStack[ply - 2].sEval : true;
     }
 
+
+    const auto OPP_PIECES_COUNT = POPCOUNT(
+        OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
+
     // Reverse Futility Pruning
     if (	!IS_ROOT_NODE 
         &&	!IS_PV_NODE 
@@ -457,7 +457,7 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         &&	!IS_SINGULAR_SEARCH
         &&	std::abs(alpha) < U16_WIN_SCORE
         &&	std::abs(beta) < U16_WIN_SCORE 
-        &&	phase > 8) 
+        &&	OPP_PIECES_COUNT > 3) 
     { 
         assert(sEval != I32_UNKNOWN);
         
@@ -495,7 +495,7 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         &&	!IS_PV_NODE 
         &&	!IS_IN_CHECK 
         &&	!IS_SINGULAR_SEARCH
-        &&	phase > 8 
+        &&	OPP_PIECES_COUNT > 3 // Check the logic for endgame
         &&	CAN_NULL_MOVE 
         &&	depth > 2 
         &&	sEval >= beta) 
@@ -527,7 +527,7 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         &&	!IS_SINGULAR_SEARCH
         &&	std::abs(alpha) < U16_WIN_SCORE
         &&	std::abs(beta) < U16_WIN_SCORE 
-        &&	phase > 8)	
+        &&	OPP_PIECES_COUNT > 3)	
     { 
         assert(sEval != I32_UNKNOWN);
 
@@ -947,22 +947,19 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
     th->selDepth = std::max(th->selDepth, ply);
     th->nodes++;
 
-    const int phase = 
-            4 * POPCOUNT(th->whitePieceBB[QUEEN]    |   th->blackPieceBB[QUEEN]) 
-        +   2 * POPCOUNT(th->whitePieceBB[ROOKS]    |   th->blackPieceBB[ROOKS])
-        +   1 * POPCOUNT(th->whitePieceBB[BISHOPS]  |   th->blackPieceBB[BISHOPS])
-        +   1 * POPCOUNT(th->whitePieceBB[KNIGHTS]  |   th->blackPieceBB[KNIGHTS]);
+
+    const auto ALL_PIECES_COUNT = POPCOUNT(th->occupied);
 
     // Repetition detection
     if (isRepetition(ply, th)) 
     {
         // earlygame
-        if (phase > 16)
+        if (ALL_PIECES_COUNT > 22)
         {
             return -50;
         }
         // middlegame
-        else if (phase > 8)
+        else if (ALL_PIECES_COUNT > 12)
         {
             return -25;
         }
@@ -1045,6 +1042,7 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
     th->moveList[ply].moves.clear();
     th->moveList[ply].badCaptures.clear();
 
+    const auto OPP_PIECES_COUNT = POPCOUNT(opp ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
     const auto Q_FUTILITY_BASE = sEval + U16_Q_DELTA; 
 
     U8 hashf = hashfALPHA, capPiece = DUMMY;
@@ -1086,7 +1084,7 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
             &&	move_type(currentMove.move) != MOVE_PROMOTION) 
         {
             // Delta pruning
-            if (phase > 8 && Q_FUTILITY_BASE + seeVal[capPiece] <= alpha) 
+            if (OPP_PIECES_COUNT > 3 && Q_FUTILITY_BASE + seeVal[capPiece] <= alpha) 
             {
                 unmake_move(ply, currentMove.move, th);
 
