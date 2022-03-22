@@ -415,8 +415,8 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
    
     const auto sEval =  IS_SINGULAR_SEARCH  ?   th->moveStack[ply].sEval 
                         : IS_IN_CHECK       ?   I32_UNKNOWN 
-                        : hashHit           ?   ((hashEntry->sEval == I32_UNKNOWN) ? 
-                                                    fullEval(stm, th) : hashEntry->sEval) : fullEval(stm, th);
+                        : hashHit           ?   ((hashEntry->sEval == I32_UNKNOWN) ? fullEval(stm, th) : hashEntry->sEval) 
+                        : fullEval(stm, th);
 
     const auto improving = IS_IN_CHECK ? false : ply >= 2 ? sEval > th->moveStack[ply - 2].sEval : true;
 
