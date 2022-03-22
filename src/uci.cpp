@@ -201,7 +201,7 @@ void UciLoop() {
                     
                         const auto total = (int)fmax(1, time + movesToGo * inc - MOVE_OVERHEAD);
                         
-                        TimeManager::sTimeManager.updateTimePerMove(total / fmax(1, movesToGo / 1.25));
+                        TimeManager::sTimeManager.updateTimePerMove(total / movesToGo);
                     }
                     
                     TimeManager::sTimeManager.setStopTime(
