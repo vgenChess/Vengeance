@@ -2,28 +2,28 @@
 
 #include "history.h"
 #include "thread.h"
-#include "globals.h"
 #include "functions.h"
 
-void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> &quietMovesPlayed, Thread *th) {
+void updateHistory(Side stm, int ply, int depth, U32 bestMove, std::vector<U32> &quietMovesPlayed, Thread *th) {
 
-	int32_t hScore;
-	int32_t bonus = std::min(400, depth * depth), delta = 0;
+	// For debugging
+	// std::lock_guard<std::mutex> lk(mtx);
 
-	u32 previousMove;
+	int hScore;
+	int bonus = std::min(400, depth * depth), delta = 0;
+
+	U32 previousMove;
 
 	// History Heuristics
 	for (auto &move : quietMovesPlayed) { 
 
 		delta = (move == bestMove) ? bonus : -bonus;
-		hScore = th->historyScore[side][from_sq(move)][to_sq(move)];
+		hScore = th->historyScore[stm][from_sq(move)][to_sq(move)];
 
-		th->historyScore[side][from_sq(move)][to_sq(move)] += 32 * delta - hScore * std::abs(delta) / 512;
+		th->historyScore[stm][from_sq(move)][to_sq(move)] += 32 * delta - hScore * std::abs(delta) / 512;
 
-		// mtx.lock();
 		// if (th->historyScore[side][from_sq(move)][to_sq(move)] > 10000)
 		//     std::cout << th->historyScore[side][from_sq(move)][to_sq(move)] << ", ";
-		// mtx.unlock();
 	}
 
 	// Counter move heuristics
@@ -31,19 +31,22 @@ void updateHistory(int ply, int side, int depth, u32 bestMove, std::vector<u32> 
 
 	if (previousMove != NO_MOVE) {
 
-		th->counterMove[side][from_sq(previousMove)][to_sq(previousMove)] = bestMove;
+		th->counterMove[stm][from_sq(previousMove)][to_sq(previousMove)] = bestMove;
 	}
 }
 
-void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,std::vector<u32>&captureMovesPlayed, Thread *th) {
+void updateCaptureHistory(int depth, U32 bestMove,std::vector<U32>&captureMovesPlayed, Thread *th) {
 
-	int32_t bonus = std::min(400, depth * depth), delta = 0;
+	// For debugging
+	// std::lock_guard<std::mutex> lk(mtx);
 
-	int32_t score;
+	int bonus = std::min(400, depth * depth), delta = 0;
+
+	int score;
 
 	uint16_t atk_piece, to, cap_piece;
 	
-	u8 mt;
+	U8 mt;
 
 	// Capture History Heuristics	
 	for (auto &move : captureMovesPlayed) {	
@@ -63,9 +66,7 @@ void updateCaptureHistory(int ply, int side, int depth, u32 bestMove,std::vector
 
 		th->captureHistoryScore[atk_piece][to][cap_piece] += 32 * delta - score * std::abs(delta) / 512;
 
-		// mtx.lock();
 		// if (th->captureHistoryScore[atk_piece][to][cap_piece] > 1000)
 		//     std::cout << th->captureHistoryScore[atk_piece][to][cap_piece] << ", ";
-		// mtx.unlock();
 	}
 }

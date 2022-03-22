@@ -7,99 +7,124 @@
 #include <thread>
 #include <vector>
 
-#include "globals.h"
+#include "constants.h"
+#include "classes.h"
+#include "structs.h"
+#include "HashManagement.h"
 
-class Thread {
-	
+class Thread 
+{
+
 public:
 
-	bool isInit = false;
+	Side side;
+    
+	U16 moves_history_counter;
 
-	u8 side;
-
-	uint16_t moves_history_counter;
+	int historyScore[2][64][64];
+	int captureHistoryScore[8][64][8]; // [piece][to][c_piece]
 	
-	int32_t historyScore[2][64][64];
-	int32_t captureHistoryScore[8][64][8]; // [piece][to][c_piece]
+	U32 counterMove[2][64][64];
+    
+    U64 hashKey, pawnsHashKey;
+	U64 occupied, empty;
 
-	u32 counterMove[2][64][64];
-	
+    U64 whitePieceBB[U8_MAX_PIECES];
+	U64 blackPieceBB[U8_MAX_PIECES];
+
 	std::vector<MOVE_LIST> moveList;
 	std::vector<PV> pvLine;
-
 	std::vector<MOVE_STACK> moveStack;
 	std::vector<UNDO_MOVE_STACK> undoMoveStack;
-	
-	// record of moves played
 	std::vector<MOVES_HISTORY> movesHistory;
+	std::vector<PawnsHashEntry> pawnsHashTable;
+	std::vector<EvalHashEntry> evalHashTable;
 
-	// cache for evaluation
-	std::vector<PAWNS_HASH> pawnHashTable;
-	std::vector<EVAL_HASH> evalHashTable;
+    EvalInfo evalInfo;
+    HashManager hashManager;
 
-	u64 whitePieceBB[MAX_PIECES];
-	u64 blackPieceBB[MAX_PIECES];
-	u64 occupied, empty;
+	Thread();
+    ~Thread();
 
-	u64 hashKey, pawnsHashKey;
-
-	EvalInfo evalInfo;
-	
-	explicit Thread();
-
-	void initMembers();
+    void init();
 	void clear();
 };
 
-class SearchThread : public Thread {
+class SearchThread : public Thread 
+{
 
 public:
 
-	bool exit = false, searching = true; // Set before starting std::thread
-	bool canReportCurrMove;
-
-	int idx, depth, completedDepth, selDepth;
-
-	std::atomic<uint64_t> nodes, ttHits;
+	static bool abortSearch, stopSearch;
     
-    std::thread stdThread;
+    bool mTerminate, mSearching;
 
-	std::mutex mutex;
-	std::condition_variable cv;
+	int mIndex, depth, completedDepth, selDepth;
 
-	explicit SearchThread(int);
-	virtual ~SearchThread();
+	U64 nodes, ttHits;
+    
+    std::thread mThread;
 
-	int index() { return idx; }
+	std::mutex mMutex;
+	std::condition_variable mCv;
 	
-	void init();
-	void idle_loop();
-	void start_searching();
-	void wait_for_search_finished();
+	SearchThread(int index);
+	~SearchThread();
+
+	int getIndex() { return mIndex; }
+	
+	void initialise();
 	void search();
+	void startSearch(Side stm);
+	void waitIfSearching();
+	void searchThreadLifeCycle();
 };
 
-struct SearchThreadPool : public std::vector<SearchThread*> {
+class SearchThreadPool 
+{
 
-	std::atomic_bool stop;
+std::vector<SearchThread*> threads;
 
-	void set(size_t);
+public:
+
+	void createThreadPool(int n);
 	void clear();
+	void waitForAll();
 
-	void start_thinking();
-	void start_searching();
-	void wait_for_search_finished() const;
+	U64 totalNodes();
+	U64 totalTTHits();
 
+	SearchThread* getMainSearchThread();
+	SearchThread* getBestThread();
 
-	SearchThread* main() const { return front(); }
+    std::vector<SearchThread*> getSearchThreads();
+    
+    template <bool isInit>
+    void search()
+    {
+        auto mainThread = threads[0];
 
-
-	uint64_t getTotalNodes() const;
-	uint64_t getTotalTTHits() const;
+        if (isInit) {
+            
+            mainThread->waitIfSearching();
+            
+            SearchThread::stopSearch = false;
+            
+            for (SearchThread* th : threads) th->initialise();
+            
+            mainThread->search();
+        } 
+        else 
+        {
+            for (SearchThread* th : threads)
+            {
+                if (th != mainThread) th->search();
+            }
+        }
+    }
 };
-
 
 extern Thread initThread;
-extern SearchThreadPool Threads;
+extern SearchThreadPool searchThreads;
 
 #endif 

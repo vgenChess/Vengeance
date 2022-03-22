@@ -7,10 +7,10 @@
 
 int SEE_VALUE[8] = {0, 100, 300, 300, 500, 900, 2000, 0}; 
 
-u64 attacksTo(u64 occ, u8 square, u8 sideToMove, Thread *th) { // TODO check logic
+U64 attacksTo(U64 occ, U8 square, U8 sideToMove, Thread *th) { // TODO check logic
 
-	u64 attacks = 0ULL;
-	u64 sqBitboard = 1ULL << square;
+	U64 attacks = 0ULL;
+	U64 sqBitboard = 1ULL << square;
 
 	if (sideToMove) {
 
@@ -37,25 +37,27 @@ u64 attacksTo(u64 occ, u8 square, u8 sideToMove, Thread *th) { // TODO check log
 	return attacks & occ;
 }
 
-int SEE(u32 move, u8 sideToMove, Thread *th) {
+template<Side sideToMove>
+int SEE(U32 move, Thread *th) {
 
 	int moveType = move_type(move);	
-	if (moveType == MOVE_CASTLE || moveType == MOVE_ENPASSANT || moveType == MOVE_PROMOTION) return 100;
+	if (moveType == MOVE_CASTLE || moveType == MOVE_ENPASSANT || moveType == MOVE_PROMOTION) 
+		return 100;
 
 	int from = from_sq(move);
 	int to = to_sq(move);
 
-	u8 piece = pieceType(move);
-	u8 target = cPieceType(move);
+	U8 piece = pieceType(move);
+	U8 target = cPieceType(move);
 
-	u64 occ = (th->occupied ^ (1ULL << from)) | (1ULL << to);
-	u64 attackers = attacksTo(occ, to, WHITE, th) | attacksTo(occ, to, BLACK, th); // TODO check logic
+	U64 occ = (th->occupied ^ (1ULL << from)) | (1ULL << to);
+	U64 attackers = attacksTo(occ, to, WHITE, th) | attacksTo(occ, to, BLACK, th); // TODO check logic
 
-	u64 diag = 
+	U64 diag = 
 			th->whitePieceBB[BISHOPS] |	th->blackPieceBB[BISHOPS] 
 		|	th->whitePieceBB[QUEEN] | th->blackPieceBB[QUEEN];
 
-	u64 straight = 
+	U64 straight = 
 			th->whitePieceBB[ROOKS] | th->blackPieceBB[ROOKS] 
 		|	th->whitePieceBB[QUEEN] | th->blackPieceBB[QUEEN];
 
@@ -65,14 +67,14 @@ int SEE(u32 move, u8 sideToMove, Thread *th) {
 	swapList[0] = SEE_VALUE[target];
 
 
-	u8 stm = sideToMove ^ 1;
+	U8 stm = sideToMove ^ 1;
 
-	u64 stmAttackers = attackers & (stm ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
+	U64 stmAttackers = attackers & (stm ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 
 	if (!stmAttackers)
 		return swapList[0];
 
-	u64 fromSet;
+	U64 fromSet;
 	do {
 		
 		for (piece = PAWNS; !(fromSet = (stmAttackers & stm ? th->blackPieceBB[piece] : th->whitePieceBB[piece])); piece++) {
@@ -131,7 +133,10 @@ int SEE(u32 move, u8 sideToMove, Thread *th) {
 
 void debugSEE(char ch, int square) {
 
-	u8 piece, side;
+	U8 piece;
+	
+	U8 side;
+
 	switch (ch) {
 
 		case 'k' : side = BLACK; piece = KING; break;
@@ -166,10 +171,10 @@ void debugSEE(char ch, int square) {
 
 	std::vector<Move> moves; 
 
-   	genMoves(0, moves, side, &initThread);
+   	genMoves(side, 0, moves, &initThread);   		  	
 	
-	u8 p, to;
-	u32 move;
+	U8 p, to;
+	U32 move;
 	bool flag = false; 
 	for (std::vector<Move>::iterator i = moves.begin(); i != moves.end(); ++i)
 	{
@@ -192,7 +197,7 @@ void debugSEE(char ch, int square) {
 		return;
 	}
 
-	int value = SEE(move, side, &initThread);
+	int value = side ? SEE<BLACK>(move, &initThread) : SEE<WHITE>(move, &initThread);
 
 	std::cout << "See score = " << value << std::endl;
 }

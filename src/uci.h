@@ -11,8 +11,8 @@
 
 #include <stdio.h>
 
-#include "globals.h"
-#include "thread.h"
+extern bool quit;
+extern int option_thread_count;
 
 void UciLoop(void);
 

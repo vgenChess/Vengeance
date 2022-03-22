@@ -9,94 +9,84 @@
 #ifndef utility_h
 #define utility_h
 
-#include "globals.h"
 #include "thread.h"
+#include "functions.h"
 
-void print_bb(u64 board);
+void print_bb(U64 board);
 
-void print_board(u64 board, Thread *th);
+void print_board(U64 board, Thread *th);
 
-int bitScanForward(u64 board);
+bool isSqAttacked(U8 sq, const U8 color, Thread *th);
 
-bool isKingInCheck(u8 sideToMove, Thread *th);
+int divide(U8 depth, U8 sideToMove, Thread *th);
 
-bool isSqAttacked(u8 sq, const u8 color, Thread *th);
+U8 squareFromAlgebricPos(const char* posName);
 
-int divide(u8 depth, u8 sideToMove, Thread *th);
+U64 flipVertical(U64 x);
 
-u8 squareFromAlgebricPos(char* posName);
+char* algebricPos(U8 sq);
 
-u64 getBitboardFromSquare(int sq);
-
-u64 bbFromAlgebricPos(char* posName);
-
-int popCount (u64 x);
-
-u64 flipVertical(u64 x);
-
-char* algebricPos(u8 sq);
-
-void clearAllBitBoards(Thread *th);
-
-void initHashTable(int size);
-
-void clearHashTable(void);
-void clearPawnHashTable(Thread *th);
-void clearEvalHashTable(Thread *th);
 void clearKillerMovesTable(Thread *th);
-void clearHistoryTable(Thread *th);
 
 void initHashKey(Thread *th);
-void initPawnHashKey(u8 side, Thread *th);
+void initPawnHashKey(U8 side, Thread *th);
 void initMovesHistoryTable(Thread *th);
+void init_inbetween_bb();
+void initCastleMaskAndFlags();
 
-bool isRepetition(const int ply, Thread *th);
-bool isPositionDraw(Thread *th);
+U64 getAttacks(const U8 stm, Thread *th);
 
-u64 getAttacks(const u8 stm, Thread *th);
+U64 soutOne (U64 b);
+U64 nortOne (U64 b);
+U64 eastOne (U64 b);
+U64 westOne (U64 b);
+U64 noEaOne (U64 b);
+U64 soEaOne (U64 b);
+U64 soWeOne (U64 b);
+U64 noWeOne (U64 b);
+U64 wFrontSpans(U64 wpawns);
+U64 bRearSpans (U64 bpawns);
+U64 bFrontSpans(U64 bpawns);
+U64 wRearSpans (U64 wpawns);
+U64 nortFill(U64 gen);
+U64 soutFill(U64 gen);
+U64 wFrontFill(U64 wpawns);
+U64 wRearFill (U64 wpawns);
+U64 bFrontFill(U64 bpawns);
+U64 bRearFill (U64 bpawns);
+U64 fileFill(U64 gen);
+U64 wEastAttackFrontSpans (U64 wpawns);
+U64 wWestAttackFrontSpans (U64 wpawns);
+U64 bEastAttackFrontSpans (U64 bpawns);
+U64 bWestAttackFrontSpans (U64 bpawns);
+U64 wEastAttackRearSpans (U64 wpawns);
+U64 wWestAttackRearSpans (U64 wpawns);
+U64 bEastAttackRearSpans (U64 bpawns);
+U64 bWestAttackRearSpans (U64 bpawns);
+U64 eastAttackFileFill (U64 pawns);
+U64 westAttackFileFill (U64 pawns);
+U64 wPawnEastAttacks(U64 wpawns);
+U64 wPawnWestAttacks(U64 wpawns);
+U64 bPawnEastAttacks(U64 bpawns);
+U64 bPawnWestAttacks(U64 bpawns);
+U64 pawnsWithEastNeighbors(U64 pawns);
+U64 pawnsWithWestNeighbors(U64 pawns);
 
-u64 soutOne (u64 b);
-u64 nortOne (u64 b);
-u64 eastOne (u64 b);
-u64 westOne (u64 b);
-u64 noEaOne (u64 b);
-u64 soEaOne (u64 b);
-u64 soWeOne (u64 b);
-u64 noWeOne (u64 b);
-u64 wFrontSpans(u64 wpawns);
-u64 bRearSpans (u64 bpawns);
-u64 bFrontSpans(u64 bpawns);
-u64 wRearSpans (u64 wpawns);
-u64 nortFill(u64 gen);
-u64 soutFill(u64 gen);
-u64 wFrontFill(u64 wpawns);
-u64 wRearFill (u64 wpawns);
-u64 bFrontFill(u64 bpawns);
-u64 bRearFill (u64 bpawns);
-u64 fileFill(u64 gen);
-u64 wEastAttackFrontSpans (u64 wpawns);
-u64 wWestAttackFrontSpans (u64 wpawns);
-u64 bEastAttackFrontSpans (u64 bpawns);
-u64 bWestAttackFrontSpans (u64 bpawns);
-u64 wEastAttackRearSpans (u64 wpawns);
-u64 wWestAttackRearSpans (u64 wpawns);
-u64 bEastAttackRearSpans (u64 bpawns);
-u64 bWestAttackRearSpans (u64 bpawns);
-u64 eastAttackFileFill (u64 pawns);
-u64 westAttackFileFill (u64 pawns);
-u64 wPawnEastAttacks(u64 wpawns);
-u64 wPawnWestAttacks(u64 wpawns);
-u64 bPawnEastAttacks(u64 bpawns);
-u64 bPawnWestAttacks(u64 bpawns);
+U64 islandsEastFiles(U64 f);
+U64 islandsWestFiles(U64 f);
 
-u64 inBetweenOnTheFly(u8 sq1, u8 sq2);
-u64 inBetween(u8 from, u8 to);
+U64 defendedDefenders1 (U64 b);
+U64 defendedDefenders2 (U64 b);
 
-u64 xrayRookAttacks(u64 occ, u64 blockers, u8 rookSq);
-u64 xrayBishopAttacks(u64 occ, u64 blockers, u8 bishopSq);
+U64 inBetweenOnTheFly(U8 sq1, U8 sq2);
 
-u64 pinnedPieces(u8 kingSq, u8 side, Thread *th);
-u64 pinners(u8 kingSq, u8 side, Thread *th);
-u64 pinned(u64 pinners, u8 kingSq, u8 side, Thread *th);
+U64 inBetween(int from, int to);
+
+U64 xrayRookAttacks(U64 occ, U64 blockers, U8 rookSq);
+U64 xrayBishopAttacks(U64 occ, U64 blockers, U8 bishopSq);
+
+U64 pinnedPieces(U8 kingSq, U8 side, Thread *th);
+U64 pinners(U8 kingSq, U8 side, Thread *th);
+U64 pinned(U64 pinners, U8 kingSq, U8 side, Thread *th);
 
 #endif /* utility_h */

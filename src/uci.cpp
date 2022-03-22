@@ -15,6 +15,7 @@
 #include <sstream>
 #include <cmath>
 
+#include "types.h"
 #include "uci.h"
 #include "utility.h"
 #include "make_unmake.h"
@@ -22,18 +23,18 @@
 #include "movegen.h"
 #include "search.h"
 #include "perft.h"
-#include "hash.h"
 #include "evaluate.h"
 #include "thread.h"
 #include "tuner.h"
 #include "ucireport.h"
 #include "functions.h"
+#include "see.h"
+#include "time.h"
 
 #define NAME "V0.9"
 #define START_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 bool quit;
-bool NNUE = false;
 
 int option_hash_size;
 
@@ -45,14 +46,14 @@ void setOption(std::string &line) {
 
         int hash_size = std::stoi(line.substr(26, std::string::npos));
     
-        initHashTable(hash_size);
+        HashManager::initHashTable(hash_size);
      
         std::cout << "info string set Hash to " << hash_size << "MB\n";
     } else if (line.rfind("setoption name Threads value", 0) == 0) {
 
         option_thread_count = std::stoi(line.substr(29, std::string::npos));
 
-        Threads.set(option_thread_count);
+        searchThreads.createThreadPool(option_thread_count);
 
         std::cout<<"info string set Threads to " << option_thread_count << "\n";
     } 
@@ -60,12 +61,11 @@ void setOption(std::string &line) {
 
 void UciLoop() {
 
-	initThread.isInit = true;
-
     initThread.clear();
-    initThread.initMembers();
+    initThread.init();
+
     parseFen(START_FEN, &initThread);
-    
+
     quit = false;
     
     std::string cmd, token;
@@ -93,51 +93,52 @@ void UciLoop() {
             setOption(cmd);
         } else if (token == "ucinewgame") {
 
-            clearHashTable();
+            HashManager::clearHashTable();
 
-            for (Thread *thread : Threads)
+            for (Thread *thread : searchThreads.getSearchThreads())
+            {
                 thread->clear();
-
+            }
+            
             initThread.clear();
         } else if (token == "position") {
             
             initThread.clear();
-            initThread.initMembers();
+            initThread.init();
 
             initThread.moves_history_counter = 0;
             initThread.movesHistory[0].hashKey = initThread.hashKey;
             initThread.movesHistory[0].fiftyMovesCounter = 0;
-
-            u8 sideToMove = WHITE;
 
             is>>token;
 
             std::string fen;
 
             //TODO refactor logic
-            if (token == "startpos") {
-
+            if (token == "startpos") 
+            {
                 fen = START_FEN;
                 is>>token;
-            } else if (token == "fen") {
-
+            } else if (token == "fen") 
+            {
                 while (is >> token && token != "moves")
                     fen += token + " ";
             }
 
-            sideToMove = parseFen(fen, &initThread);
+            U8 sideToMove = parseFen(fen, &initThread);
 
             std::vector<Move> moves;
 
-            while (is>>token) {
-
+            while (is>>token) 
+            {
                 moves.clear();
-                genMoves(0, moves, sideToMove, &initThread);
+
+                genMoves(sideToMove, 0, moves, &initThread);
                 
-                for (Move m : moves) {
-
-                    if (getMoveNotation(m.move) == token) {
-
+                for (Move m : moves) 
+                {
+                    if (getMoveNotation(m.move) == token) 
+                    {
                         make_move(0, m.move, &initThread);
                         
                         initThread.moves_history_counter++;
@@ -150,15 +151,17 @@ void UciLoop() {
                 }
             }
 
-            initThread.side = sideToMove;
-        } else if (token == "isready") {
-
+            initThread.side = sideToMove == WHITE ? WHITE : BLACK;   
+        } 
+        else if (token == "isready") 
+        {
             std::cout << "readyok\n";
-        } else if (token == "go") {
+        } 
+        else if (token == "go") 
+        {
+            TimeManager::sTimeManager.setStartTime(std::chrono::steady_clock::now());
 
-            startTime = std::chrono::steady_clock::now();
-
-            timeSet = false;
+            TimeManager::sTimeManager.updateTimeSet(false);
 
             int32_t time = -1, moveTime = -1, nodes = 0, inc = 0, movesToGo = -1, depthCurrent = 0;
 
@@ -177,47 +180,49 @@ void UciLoop() {
 
             if (moveTime != -1) {
                 
-                timeSet = true;
-
-                timePerMove = moveTime;
-
-                stopTime = startTime + std::chrono::milliseconds(moveTime);
+                TimeManager::sTimeManager.updateTimeSet(true);
+                TimeManager::sTimeManager.updateTimePerMove(moveTime);
+                
+                TimeManager::sTimeManager.setStopTime(TimeManager::sTimeManager.getStartTime() 
+                    + std::chrono::milliseconds(moveTime));
             } else {
+                
+                TimeManager::sTimeManager.updateTimeSet(time != -1 ? true : false);
 
                 if (time != -1) {
                 
-                    timeSet = true;
-
                     if (movesToGo == -1) {
 
-                        int total = (int)fmax(1, time + 50 * inc - MOVE_OVERHEAD);
+                        // TODO redo logic  
+                        const auto total = (int)fmax(1, time + 50 * inc - MOVE_OVERHEAD);
 
-                        timePerMove = (int)fmin(time * 0.33, total / 20.0);
+                        TimeManager::sTimeManager.updateTimePerMove((int)fmin(time * 0.33, total / 20.0));
                     } else {
                     
-                        int total = (int)fmax(1, time + movesToGo * inc - MOVE_OVERHEAD);
-
-                        timePerMove = total / movesToGo;
+                        const auto total = (int)fmax(1, time + movesToGo * inc - MOVE_OVERHEAD);
+                        
+                        TimeManager::sTimeManager.updateTimePerMove(total / fmax(1, movesToGo / 1.25));
                     }
-
-                    stopTime = startTime + std::chrono::milliseconds((int)fmin(time * 0.75, timePerMove * 5.5));           
+                    
+                    TimeManager::sTimeManager.setStopTime(
+                        TimeManager::sTimeManager.getStartTime() + std::chrono::milliseconds((int)(time * 0.75)));           
                 } else {
 
-                    timeSet = false;
+                    TimeManager::sTimeManager.updateTimeSet(false);
                 }
             }
 
-            Threads.start_thinking();
+            searchThreads.search<true>();
         } 
 
         else if (token == "stop") {
 
-            Threads.stop = true;
+            SearchThread::stopSearch = true;
         }
 
         else if (token == "quit") {
         
-            Threads.stop = true;  
+            SearchThread::stopSearch = true;  
         
             break;
         } 
@@ -271,17 +276,12 @@ void UciLoop() {
 
         else if (token == "tune") {
             
-           startTuner();
-        } 
-
-        else if (token == "writeEval") {
-
-            writeEvalToFile();
-        } 
-
-        else if (token == "getEval") {
-
-            getEval();
+            #if defined(TUNE)
+                std::cout<<"starting tuner..."<<std::endl; 
+                startTuner();
+            #else
+                std::cout<<"Not a tuning build. TUNE not set." << std::endl;
+            #endif
         } 
 
         else if (token == "see") {

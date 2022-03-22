@@ -9,10 +9,9 @@
 #ifndef perft_h
 #define perft_h
 
-#include "globals.h"
 #include "thread.h"
 
-u64 perft(int perft, u8 depth, u8 color, Thread *th);
-void startPerft(u8 side, u8 depth, Thread *th);
+U64 perft(int perft, U8 depth, Side color, Thread *th);
+void startPerft(Side side, U8 depth, Thread *th);
 
 #endif /* perft_h */
