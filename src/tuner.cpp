@@ -114,6 +114,13 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff)
 	    loadCoeff->coeffs[BLACK][i++] = T->phalanxPawn[k][BLACK];                         
 	}
 
+	for (int k = 0; k < 8; k++) {
+	
+		loadCoeff->type[i] = NORMAL;
+	    loadCoeff->coeffs[WHITE][i] = T->defendedPhalanxPawn[k][WHITE];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->defendedPhalanxPawn[k][BLACK];                         
+	}
+    
     for (int k = 0; k < 8; k++) {
 	
 		loadCoeff->type[i] = NORMAL;
@@ -406,6 +413,12 @@ void startTuner() {
  		
 		cparams[MG][count] = ScoreMG(arr_weight_phalanx_pawn[i]);
 		cparams[EG][count++] = ScoreEG(arr_weight_phalanx_pawn[i]);
+	}
+
+	for (int i = 0; i < 8; i++) {
+ 		
+		cparams[MG][count] = ScoreMG(arr_weight_defended_phalanx_pawn[i]);
+		cparams[EG][count++] = ScoreEG(arr_weight_defended_phalanx_pawn[i]);
 	}
 
 	for (int i = 0; i < 8; i++) {
@@ -1074,6 +1087,12 @@ void saveWeights(TVector params, TVector cparams) {
 	}
 	
 	myfile <<"}, \n" << "arr_weight_phalanx_pawn[8] = { "; 
+	for(int i = 0; i < 8; i++) {
+
+		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", "; count++; 
+	}
+
+	myfile <<"}, \n" << "arr_weight_defended_phalanx_pawn[8] = { "; 
 	for(int i = 0; i < 8; i++) {
 
 		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", "; count++; 

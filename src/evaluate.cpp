@@ -331,7 +331,7 @@ int pawnsEval(Thread *th)
 		X  	   __________________A phalanx
 		  X	 _|_
 		X  	|  	|
-		  X	P P P 
+		  X	P P P --------->	Defended phalanx pawn 
 		X P X   X P ------->	Member of a pawn chain 
 		P X   X   X P ----->	Base of a pawn chain
 		X   X   X   X  
@@ -347,6 +347,7 @@ int pawnsEval(Thread *th)
 		In such a case they are sometimes referred to as “hanging pawns.”
 	*/
 	
+	// TODO check logic
 	ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 	auto phalanxPawns = pawnsWithEastNeighbors(ourPawns) | pawnsWithWestNeighbors(ourPawns);
 	while (phalanxPawns) 
@@ -356,12 +357,29 @@ int pawnsEval(Thread *th)
 
 		rank = stm ? Mirror64[sq] >> 3 : sq >> 3; // = sq / 8
 
-		score += arr_weight_phalanx_pawn[rank];
-
-		#if defined(TUNE)	
+		// Check if the phalanx pawn is defended by another pawn
+		if (th->evalInfo.allPawnAttacks[stm] & (1ULL << sq)) 
+		{	
+			// Defended phalanx pawn
 		
-			T->phalanxPawn[rank][stm]++;
-		#endif
+			score += arr_weight_defended_phalanx_pawn[rank];
+			
+			#if defined(TUNE)	
+			
+				T->defendedPhalanxPawn[rank][stm]++;
+			#endif
+		} 
+		else 
+		{	
+			// Normal phalanx pawn
+
+			score += arr_weight_phalanx_pawn[rank];
+
+			#if defined(TUNE)	
+			
+				T->phalanxPawn[rank][stm]++;
+			#endif
+		}	
 	}
 
 
@@ -395,6 +413,10 @@ int pawnsEval(Thread *th)
 			T->pawnChain[rank][stm]++;
 		#endif
 	}
+
+	// Base pawns of a chain(not defended by another pawns) are not scored.
+	// Since unprotected pawns are likely to be captured which results in a pawn loss for the side,
+	// they are most likely to be protected by the side to avoid it.
 
 
 	// Isolated pawns
@@ -465,7 +487,6 @@ int pawnsEval(Thread *th)
 
 	auto stmPassedPawns = th->evalInfo.passedPawns[stm];
 	auto oppPassedPawns = th->evalInfo.passedPawns[opp];
-
 
 	// Tarrasch rule
 	/*	
