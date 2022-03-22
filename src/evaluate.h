@@ -29,7 +29,6 @@ template<Side stm> int queenEval(Thread *th);
 template<Side stm> int kingSafety(Thread *th);
 
 void initPSQT();
-void initKingZoneBB();
 
 // pawns with at least one pawn in front on the same file
 inline U64 wPawnsBehindOwn(U64 wpawns) 

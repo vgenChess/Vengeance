@@ -49,23 +49,6 @@ U64 arrRanks[8] = {
 // TODO check datatype
 int PSQT[U8_MAX_SQUARES][U8_MAX_PIECES][U8_MAX_SQUARES];
 
-U64 kingZoneBB[U8_MAX_SIDES][U8_MAX_SQUARES];
-
-void initKingZoneBB()
-{
-	for (int sq = 0; sq < U8_MAX_SQUARES; sq++) 
-	{
-        kingZoneBB[WHITE][sq] = get_king_attacks(sq) | (1ULL << sq) | (get_king_attacks(sq) << 8);
-        kingZoneBB[BLACK][sq] = get_king_attacks(sq) | (1ULL << sq) | (get_king_attacks(sq) >> 8);
-
-        kingZoneBB[WHITE][sq] |= (sq % 8 != 0) ? 0ULL : kingZoneBB[WHITE][sq] << 1;
-        kingZoneBB[BLACK][sq] |= (sq % 8 != 0) ? 0ULL : kingZoneBB[BLACK][sq] << 1;
-
-        kingZoneBB[WHITE][sq] |= (sq % 8 != 7) ? 0ULL : kingZoneBB[WHITE][sq] >> 1;
-        kingZoneBB[BLACK][sq] |= (sq % 8 != 7) ? 0ULL : kingZoneBB[BLACK][sq] >> 1;
-    }
-}
-
 template<Side stm>
 void initEvalInfo(Thread *th) 
 {	
@@ -119,6 +102,10 @@ void initEvalInfo(Thread *th)
 
 	// King Safety 
 		
+	th->evalInfo.kingZoneBB[stm] = stm == WHITE ? 
+								th->evalInfo.kingAttacks[WHITE] | (th->evalInfo.kingAttacks[WHITE] >> 8) :
+								th->evalInfo.kingAttacks[BLACK] | (th->evalInfo.kingAttacks[BLACK] << 8);
+
 	th->evalInfo.kingAttackersCount[stm] = 0;
     th->evalInfo.kingAttackersWeight[stm] = 0;
   	th->evalInfo.kingAdjacentZoneAttacksCount[stm] = 0;
@@ -651,7 +638,7 @@ int knightsEval(Thread *th)
 
 		// Update values required for King safety 
 		
-		if (attacksBB & kingZoneBB[opp][th->evalInfo.kingSq[opp]]) 
+		if (attacksBB & th->evalInfo.kingZoneBB[opp]) 
 		{	
  			th->evalInfo.kingAttackersCount[opp]++;
             th->evalInfo.kingAttackersWeight[opp] += weight_knight_attack;
@@ -743,7 +730,7 @@ int bishopsEval(Thread *th)
 
 		// Update values required for King safety 
 
-		if (attacksBB & kingZoneBB[opp][th->evalInfo.kingSq[opp]]) 
+		if (attacksBB & th->evalInfo.kingZoneBB[opp]) 
 		{	
  			th->evalInfo.kingAttackersCount[opp]++;
             th->evalInfo.kingAttackersWeight[opp] += weight_bishop_attack;
@@ -900,7 +887,7 @@ int rooksEval(Thread *th)
 
 		// Update values required for King safety later in kingEval
 		
-		if (attacksBB & kingZoneBB[opp][th->evalInfo.kingSq[opp]]) 
+		if (attacksBB & th->evalInfo.kingZoneBB[opp]) 
 		{	
  			th->evalInfo.kingAttackersCount[opp]++;
             th->evalInfo.kingAttackersWeight[opp] += weight_rook_attack;
@@ -977,7 +964,7 @@ int queenEval(Thread *th)
 
 
 		// Update values required for King safety later in kingEval
-		if (attacksBB & kingZoneBB[opp][th->evalInfo.kingSq[opp]]) 
+		if (attacksBB & th->evalInfo.kingZoneBB[opp]) 
 		{	
  			th->evalInfo.kingAttackersCount[opp]++;
             th->evalInfo.kingAttackersWeight[opp] += weight_queen_attack;
@@ -1008,7 +995,7 @@ int pawnKingEval(Thread *th)
 	const auto theirPawns = opp ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 
 	// TODO redo logic (Often results in bad evaluation)
-	U64 kingZone = kingZoneBB[stm][kingSq];
+	auto pawnStormZone = th->evalInfo.kingZoneBB[stm];
 	
 	int score = 0;	
 	
@@ -1016,17 +1003,19 @@ int pawnKingEval(Thread *th)
 
 	score += stm ? kingPSQT[Mirror64[kingSq]] : kingPSQT[kingSq];
 
+	pawnStormZone |= stm ? pawnStormZone >> 8 : pawnStormZone << 8;
+
 	// Anything strictly pawn related can be stored in the Pawn Hash Table, 
 	// including pawn shield terms to be used dynamically for king safety.
 	// TODO implement this in Pawn Hash Table
 
-	score += POPCOUNT(kingZone & ourPawns) * weight_king_pawn_shield;
-	score += POPCOUNT(kingZone & theirPawns) * weight_king_enemy_pawn_storm;
+	score += POPCOUNT(th->evalInfo.kingZoneBB[stm] & ourPawns) * weight_king_pawn_shield;
+	score += POPCOUNT(pawnStormZone & theirPawns) * weight_king_enemy_pawn_storm;
 
 	#if defined(TUNE)	
 
-		T->kingPawnShield[stm] 		= POPCOUNT(kingZone & ourPawns); // TODO check logic
-		T->kingEnemyPawnStorm[stm] 	= POPCOUNT(kingZone & theirPawns); // TODO check logic
+		T->kingPawnShield[stm] 		= POPCOUNT(th->evalInfo.kingZoneBB[stm] & ourPawns); // TODO check logic
+		T->kingEnemyPawnStorm[stm] 	= POPCOUNT(pawnStormZone & theirPawns); // TODO check logic
 	#endif
 
 	return score;
@@ -1074,7 +1063,6 @@ int kingSafety(Thread *th)
 										|	th->evalInfo.allQueenAttacks[opp]);
 							
 		U64 safe 	= 	~(enemyPieces | th->evalInfo.attacks[stm]);
-
 		U64 b1 		= 	Rmagic(kingSq, th->occupied) & safe;
 		U64 b2 		= 	Bmagic(kingSq, th->occupied) & safe;
 
@@ -1085,7 +1073,6 @@ int kingSafety(Thread *th)
 		
 		safetyScore +=	weight_queen_safe_contact_check *	POPCOUNT(queenSafeContactCheck);
 		safetyScore +=	weight_rook_safe_contact_check	*	POPCOUNT(rookSafeContactCheck);
-
 		safetyScore += 	weight_queen_check 				* 	POPCOUNT(queenSafeChecks);
 		safetyScore += 	weight_rook_check 				* 	POPCOUNT(rookSafeChecks);
 		safetyScore += 	weight_bishop_check				* 	POPCOUNT(bishopSafeChecks);
