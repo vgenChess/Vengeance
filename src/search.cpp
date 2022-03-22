@@ -420,7 +420,9 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
 
     const auto improving = IS_IN_CHECK ? false : ply >= 2 ? sEval > th->moveStack[ply - 2].sEval : true;
 
-    const auto eval =   hashHit 
+    const auto eval =   !IS_SINGULAR_SEARCH
+                    &&  !IS_IN_CHECK
+                    &&  hashHit 
                     &&  ttScore != I32_UNKNOWN
                     &&  hashEntry->depth >= depth 
                     &&  hashEntry->flags == (ttScore > sEval ? hashfBETA : hashfALPHA) ? ttScore : sEval;
