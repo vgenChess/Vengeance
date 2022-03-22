@@ -391,18 +391,17 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         
         ttScore = hashEntry->value;
         ttMove =  hashEntry->bestMove;
-    }
     
-    if (!IS_ROOT_NODE && !IS_PV_NODE && hashHit && hashEntry->depth >= depth && ttScore != I32_UNKNOWN) 
-    {
-        if (    hashEntry->flags == hashfEXACT 
-            ||  (hashEntry->flags == hashfBETA && ttScore >= beta)
-            ||  (hashEntry->flags == hashfALPHA && ttScore <= alpha)) 
+        if (!IS_ROOT_NODE && !IS_PV_NODE && hashEntry->depth >= depth && ttScore != I32_UNKNOWN) 
         {
-            return ttScore;
+            if (    hashEntry->flags == hashfEXACT 
+                ||  (hashEntry->flags == hashfBETA && ttScore >= beta)
+                ||  (hashEntry->flags == hashfALPHA && ttScore <= alpha)) 
+            {
+                return ttScore;
+            }
         }
     }
-
 
     // Alternative to IID
     if (depth >= 4 && !ttMove && !IS_SINGULAR_SEARCH) 
@@ -613,7 +612,12 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         // check if move generator returns a valid psuedo-legal move
         assert(currentMove.move != NO_MOVE);
 
-
+        // skip the move if its in a singular search and the current move is singular
+        if (currentMove.move == si->skipMove) 
+        {
+            continue;
+        }
+        
         // Prune moves based on conditions met
         if (    movesPlayed > 1
             &&  !IS_ROOT_NODE 
@@ -647,12 +651,6 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
             }
         }
 
-        // skip the move if its in a singular search and the current move is singular
-        if (IS_SINGULAR_SEARCH && currentMove.move == si->skipMove) 
-        {
-            continue;
-        }
-        
         // make the move
         make_move(ply, currentMove.move, th);
 
