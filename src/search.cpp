@@ -613,6 +613,40 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         // check if move generator returns a valid psuedo-legal move
         assert(currentMove.move != NO_MOVE);
 
+
+        // Prune moves based on conditions met
+        if (    movesPlayed > 1
+            &&  !IS_ROOT_NODE 
+            &&  !IS_PV_NODE
+            &&  !IS_IN_CHECK 
+            &&  move_type(currentMove.move) != MOVE_PROMOTION) 
+        {
+            if (isQuietMove) 
+            {
+                // Futility pruning
+                if (fPrune) 
+                {
+                    th->moveList[ply].skipQuiets = true;
+                    continue;
+                }
+
+                // Late move pruning
+                if (    depth <= U8_LMP_DEPTH 
+                    &&  movesPlayed >= U8_LMP_BASE * depth)
+                {
+                    th->moveList[ply].skipQuiets = true;
+                    continue;
+                }
+
+                // History pruning
+                if (    depth <= U8_HISTORY_PRUNING_DEPTH 
+                    &&  currentMove.score < I16_HISTORY_PRUNING) 
+                {
+                    continue;
+                }
+            }
+        }
+
         // skip the move if its in a singular search and the current move is singular
         if (IS_SINGULAR_SEARCH && currentMove.move == si->skipMove) 
         {
@@ -660,46 +694,9 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
             capturesPlayed.push_back(currentMove.move);
         }
 
-
-        // Prune moves based on conditions met
-        if (	movesPlayed > 1
-            &&	!IS_ROOT_NODE 
-            &&	!IS_PV_NODE
-            &&	!IS_IN_CHECK 
-            &&	move_type(currentMove.move) != MOVE_PROMOTION) 
-        {
-            if (isQuietMove) 
-            {
-                // Futility pruning
-                if (fPrune) 
-                {
-                    th->moveList[ply].skipQuiets = true;
-
-                    unmake_move(ply, currentMove.move, th);
-                    continue;
-                }
-
-                // Late move pruning
-                if (	depth <= U8_LMP_DEPTH 
-                    &&	movesPlayed >= U8_LMP_BASE * depth)
-                {
-                    th->moveList[ply].skipQuiets = true;
-
-                    unmake_move(ply, currentMove.move, th);
-                    continue;
-                }
-
-                // History pruning
-                if (	depth <= U8_HISTORY_PRUNING_DEPTH 
-                    &&	currentMove.score < I16_HISTORY_PRUNING) 
-                {
-                    unmake_move(ply, currentMove.move, th);
-                    continue;
-                }
-            }
-        }
         
         th->moveStack[ply].move = currentMove.move;
+
 
         extend = 0;
         float extension = IS_ROOT_NODE ? 0 : th->moveStack[ply - 1].extension;
@@ -1065,6 +1062,19 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
         
         assert(currentMove.move != NO_MOVE);
 
+        // Pruning
+        if (    movesPlayed > 1
+            &&  capPiece != DUMMY
+            &&  move_type(currentMove.move) != MOVE_PROMOTION) 
+        {
+            // Delta pruning
+            if (OPP_PIECES_COUNT > 3 && Q_FUTILITY_BASE + seeVal[capPiece] <= alpha) 
+            {
+                continue;
+            }
+        }
+
+
         make_move(ply, currentMove.move, th);
 
         if (isKingInCheck<stm>(th)) 
@@ -1078,19 +1088,6 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
 
         capPiece = cPieceType(currentMove.move);
 
-        // Pruning
-        if (	movesPlayed > 1
-            &&	capPiece != DUMMY
-            &&	move_type(currentMove.move) != MOVE_PROMOTION) 
-        {
-            // Delta pruning
-            if (OPP_PIECES_COUNT > 3 && Q_FUTILITY_BASE + seeVal[capPiece] <= alpha) 
-            {
-                unmake_move(ply, currentMove.move, th);
-
-                continue;
-            }
-        }
 
         searchInfo.line[0] = NO_MOVE;
         score = -quiescenseSearch<opp>(-beta, -alpha, th, &searchInfo);
