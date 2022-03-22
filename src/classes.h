@@ -32,8 +32,6 @@ public:
 	U64 kingAttacks[U8_MAX_SIDES];
 	U64 attacks[U8_MAX_SIDES];
 
-	U64 kingZoneBB[U8_MAX_SIDES];
-	
 	int kingSq[U8_MAX_SIDES];
 	int kingAttackersCount[U8_MAX_SIDES];
 	int kingAttackersWeight[U8_MAX_SIDES];
@@ -67,8 +65,6 @@ public:
 			}
 
 			attacks[i] = 0ULL;
-
-			kingZoneBB[i] = 0ULL;
 
 			kingSq[i] = 0;
 
