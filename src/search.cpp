@@ -505,7 +505,7 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         const auto R = depth > 9 ? 3 : 2;        
     
         searchInfo.ply = ply + 1;
-        searchInfo.depth = depth - R - 1;
+        searchInfo.depth = depth - R - 1; // @TODO test and check with depth = depth - R
         searchInfo.line[0] = NO_MOVE;
         
         const auto score = -alphabeta<OPP, NO_NULL, NON_SING>(-beta, -beta + 1, mate - 1, th, &searchInfo);
