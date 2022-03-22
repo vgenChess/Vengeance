@@ -9,7 +9,6 @@ const uint8_t U8_MAX_SQUARES = 64;
 
 const uint8_t U8_NO_BOUND = 50;
 const uint8_t U8_AP_WINDOW = 20;
-const uint8_t U8_MAX_EXTENSION = 10;
 const uint8_t U8_LMP_BASE = 4;
 const uint8_t U8_LMP_DEPTH = 8; 
 const uint8_t U8_HISTORY_PRUNING_DEPTH = 1;
