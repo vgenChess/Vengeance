@@ -403,51 +403,39 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         }
     }
 
+
     // Alternative to IID
     if (depth >= 4 && !ttMove && !IS_SINGULAR_SEARCH) 
     {
         depth--;
     }
 
-    const bool IS_IN_CHECK = isKingInCheck<stm>(th);
-    bool improving = false;
 
-    int sEval = I32_UNKNOWN;
+    const auto IS_IN_CHECK = isKingInCheck<stm>(th);
+   
+    const auto sEval =  IS_SINGULAR_SEARCH  ?   th->moveStack[ply].sEval 
+                        : IS_IN_CHECK       ?   I32_UNKNOWN 
+                        : hashHit           ?   ((hashEntry->sEval == I32_UNKNOWN) ? 
+                                                    fullEval(stm, th) : hashEntry->sEval) : fullEval(stm, th);
 
-    if (IS_SINGULAR_SEARCH) 
-    {
-        sEval = th->moveStack[ply].sEval;
-    } 
-    else if (IS_IN_CHECK) 
-    {
-        sEval = I32_UNKNOWN;
-        improving = false;
-    } 
-    else if (hashHit) 
-    {
-        sEval = hashEntry->sEval;
-        if (sEval == I32_UNKNOWN)
-        {
-            sEval = fullEval(stm, th); 
-            // Do not save sEval here to the TT since it can overwrite the previous hash entry
-        }
-    } 
-    else 
-    {
-        sEval = fullEval(stm, th);
+    const auto improving = IS_IN_CHECK ? false : ply >= 2 ? sEval > th->moveStack[ply - 2].sEval : true;
 
+    const auto eval =   !IS_SINGULAR_SEARCH
+                    &&  !IS_IN_CHECK
+                    &&  hashHit 
+                    &&  ttScore != I32_UNKNOWN
+                    &&  hashEntry->depth >= depth 
+                    &&  hashEntry->flags == (ttScore > sEval ? hashfBETA : hashfALPHA) ? ttScore : sEval;
+
+    if (!IS_SINGULAR_SEARCH && !IS_IN_CHECK && !hashHit)
+    {
         th->hashManager.recordHash(th->hashKey, NO_MOVE, I16_NO_DEPTH, I32_UNKNOWN, U8_NO_BOUND, sEval);
     }
 
 
-    if (!IS_IN_CHECK) 
-    {
-        improving = ply >= 2 ? sEval > th->moveStack[ply - 2].sEval : true;
-    }
 
+    const auto OPP_PIECES_COUNT = POPCOUNT(OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 
-    const auto OPP_PIECES_COUNT = POPCOUNT(
-        OPP ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
 
     // Reverse Futility Pruning
     if (	!IS_ROOT_NODE 
@@ -458,15 +446,15 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         &&	std::abs(beta) < U16_WIN_SCORE 
         &&	OPP_PIECES_COUNT > 3) 
     { 
-        assert(sEval != I32_UNKNOWN);
+        assert(eval != I32_UNKNOWN);
         
-        if (depth == 1 && sEval - U16_RVRFPRUNE >= beta) 
+        if (depth == 1 && eval - U16_RVRFPRUNE >= beta) 
             return beta;
     
-        if (depth == 2 && sEval - U16_EXT_RVRFPRUNE >= beta) 
+        if (depth == 2 && eval - U16_EXT_RVRFPRUNE >= beta) 
             return beta;
     
-        if (depth == 3 && sEval - U16_LTD_RVRRAZOR >= beta) 
+        if (depth == 3 && eval - U16_LTD_RVRRAZOR >= beta) 
             depth--;
     }
 
@@ -504,7 +492,7 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         const auto R = depth > 6 ? 2 : 1;        
     
         searchInfo.ply = ply + 1;
-        searchInfo.depth = depth - R - 1; // @TODO test and check with depth = depth - R
+        searchInfo.depth = depth - R - 1;
         searchInfo.line[0] = NO_MOVE;
         
         const auto score = -alphabeta<OPP, NO_NULL, NON_SING>(-beta, -beta + 1, mate - 1, th, &searchInfo);
@@ -528,15 +516,15 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         &&	std::abs(beta) < U16_WIN_SCORE 
         &&	OPP_PIECES_COUNT > 3)	
     { 
-        assert(sEval != I32_UNKNOWN);
+        assert(eval != I32_UNKNOWN);
 
-        if (depth == 1 && sEval + U16_FPRUNE <= alpha) // Futility Pruning
+        if (depth == 1 && eval + U16_FPRUNE <= alpha) // Futility Pruning
             fPrune = true; 
         
-        else if (depth == 2 && sEval + U16_EXT_FPRUNE <= alpha) // Extended Futility Pruning
+        else if (depth == 2 && eval + U16_EXT_FPRUNE <= alpha) // Extended Futility Pruning
             fPrune = true;
         
-        else if (depth == 3 && sEval + U16_LTD_RAZOR <= alpha) // Limited Razoring
+        else if (depth == 3 && eval + U16_LTD_RAZOR <= alpha) // Limited Razoring
             depth--;
     }
     
@@ -998,24 +986,19 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
 
 
     U32 bestMove = NO_MOVE;
-    int sEval, bestScore = -I32_MATE;
-    
-    if (hashHit) 
-    {
-        sEval = hashEntry->sEval;
-        if (sEval == I32_UNKNOWN)
-        {
-            sEval = fullEval(stm, th); 
-            // Do not save sEval here to the TT since it can overwrite the previous hash entry        
-        }
-    } 
-    else 
-    {
-        sEval = fullEval(stm, th);
+    int bestScore = -I32_MATE;
 
+    auto sEval = hashHit ? ((hashEntry->sEval == I32_UNKNOWN) ? 
+                                    fullEval(stm, th) : hashEntry->sEval) : fullEval(stm, th);
+    sEval =     hashHit 
+            &&  ttScore != I32_UNKNOWN 
+            &&  hashEntry->flags == (ttScore > sEval ? hashfBETA : hashfALPHA) ? ttScore : sEval;
+
+    if (!hashHit)
+    {
         th->hashManager.recordHash(th->hashKey, NO_MOVE, I16_NO_DEPTH, I32_UNKNOWN, U8_NO_BOUND, sEval);
     }
-
+    
 
     bestScore = sEval;
     alpha = std::max(alpha, sEval);
