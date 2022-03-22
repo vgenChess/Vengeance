@@ -67,9 +67,9 @@ void SearchThread::startSearch(Side stm)
         searchThreads.search<false>(); 
 
         if (stm == WHITE)
-            iterativeDeepeningSearch<WHITE>(this); 
+            iterativeDeepening<WHITE>(this); 
         else
-            iterativeDeepeningSearch<BLACK>(this); 
+            iterativeDeepening<BLACK>(this); 
         
         SearchThread::stopSearch = true;    
         SearchThread::abortSearch = true;
@@ -84,14 +84,14 @@ void SearchThread::startSearch(Side stm)
     else 
     {
         if (stm == WHITE)
-            iterativeDeepeningSearch<WHITE>(this); 
+            iterativeDeepening<WHITE>(this); 
         else
-            iterativeDeepeningSearch<BLACK>(this); 
+            iterativeDeepening<BLACK>(this); 
     }
 }
 
 template<Side stm>
-void iterativeDeepeningSearch(SearchThread *th) 
+void iterativeDeepening(SearchThread *th) 
 {    
     th->nodes = 0;
     th->ttHits = 0;
@@ -128,7 +128,7 @@ void iterativeDeepeningSearch(SearchThread *th)
 
         th->depth = depth;
 
-        aspirationWindowSearch<stm>(th);
+        aspirationWindow<stm>(th);
 
         if (SearchThread::stopSearch)
         {
@@ -184,7 +184,7 @@ void iterativeDeepeningSearch(SearchThread *th)
 }
 
 template<Side stm>
-void aspirationWindowSearch(SearchThread *th) 
+void aspirationWindow(SearchThread *th) 
 {
     int window = I32_MATE;
 
@@ -216,7 +216,7 @@ void aspirationWindowSearch(SearchThread *th)
         
         th->selDepth = I16_NO_DEPTH;
         
-        score = alphabetaSearch<stm, NO_NULL, NON_SING>(alpha, beta, I32_MATE, th, &searchInfo);
+        score = alphabeta<stm, NO_NULL, NON_SING>(alpha, beta, I32_MATE, th, &searchInfo);
 
         if (SearchThread::stopSearch)
         {
@@ -289,7 +289,7 @@ inline void checkTime()
 }
 
 template<Side stm, bool isNullMoveAllowed, bool isSingularSearch>
-int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, SearchInfo *si) 
+int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo *si) 
 {
     // if (alpha >= beta) {
     // 	std::cout<<"realDepth=" << si->realDepth << ", depth=" << si->depth << ", ply =" << si->ply << "\n";
@@ -508,7 +508,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
         searchInfo.depth = depth - R - 1;
         searchInfo.line[0] = NO_MOVE;
         
-        const auto score = -alphabetaSearch<OPP, NO_NULL, NON_SING>(-beta, -beta + 1, mate - 1, th, &searchInfo);
+        const auto score = -alphabeta<OPP, NO_NULL, NON_SING>(-beta, -beta + 1, mate - 1, th, &searchInfo);
 
         unmakeNullMove(ply, th);
 
@@ -562,7 +562,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
         searchInfo.depth = sDepth;
         searchInfo.line[0] = NO_MOVE;
 
-        const auto score = alphabetaSearch<stm, NO_NULL, SING>(sBeta - 1, sBeta, mate, th, &searchInfo);
+        const auto score = alphabeta<stm, NO_NULL, SING>(sBeta - 1, sBeta, mate, th, &searchInfo);
 
         searchInfo.skipMove = NO_MOVE;
 
@@ -776,7 +776,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
             searchInfo.depth = newDepth;
             searchInfo.line[0] = NO_MOVE;
 
-            score = -alphabetaSearch<OPP, NUL, NON_SING>(-beta, -alpha, mate - 1, th, &searchInfo);
+            score = -alphabeta<OPP, NUL, NON_SING>(-beta, -alpha, mate - 1, th, &searchInfo);
         } 
         else 
         { // Late Move Reductions (Under observation)
@@ -814,7 +814,7 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
                 searchInfo.depth = newDepth - reduce;	
                 searchInfo.line[0] = NO_MOVE;
                 
-                score = -alphabetaSearch<OPP, NUL, NON_SING>(-alpha - 1, -alpha, mate - 1, th, &searchInfo);
+                score = -alphabeta<OPP, NUL, NON_SING>(-alpha - 1, -alpha, mate - 1, th, &searchInfo);
             } else
             {
                 score = alpha + 1;
@@ -826,11 +826,11 @@ int alphabetaSearch(int alpha, int beta, const int mate, SearchThread *th, Searc
                 searchInfo.depth = newDepth;
                 searchInfo.line[0] = NO_MOVE;
 
-                score = -alphabetaSearch<OPP, NUL, NON_SING>(-alpha - 1, -alpha, mate - 1, th, &searchInfo);
+                score = -alphabeta<OPP, NUL, NON_SING>(-alpha - 1, -alpha, mate - 1, th, &searchInfo);
                 
                 if (score > alpha && score < beta) 
                 {
-                    score = -alphabetaSearch<OPP, NUL, NON_SING>(-beta, -alpha, mate - 1, th, &searchInfo);
+                    score = -alphabeta<OPP, NUL, NON_SING>(-beta, -alpha, mate - 1, th, &searchInfo);
                 }
             }
         }
