@@ -501,7 +501,7 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
     { 
         makeNullMove(ply, th);
 
-        const auto R = depth > 9 ? 3 : 2;        
+        const auto R = depth > 6 ? 2 : 1;        
     
         searchInfo.ply = ply + 1;
         searchInfo.depth = depth - R - 1; // @TODO test and check with depth = depth - R
