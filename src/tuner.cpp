@@ -871,7 +871,9 @@ void optimise(TVector params, TVector cparams) {
 
 					bestMae = mae;
 
-					std::async(saveWeights, params, cparams);			
+					#if defined (TUNE)
+						std::async(saveWeights, params, cparams);			
+					#endif
 				}
 			} 
 
