@@ -950,6 +950,7 @@ double linearEvaluation(TVector weights, Data data, TGradientData *gradientData)
     if (gradientData != NULL) {
     	
     	TGradientData tGradientData;
+    	
     	tGradientData.wsafetymg = wsafety[MG]; 
     	tGradientData.bsafetymg = bsafety[MG];
     	tGradientData.wsafetyeg = wsafety[EG];
