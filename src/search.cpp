@@ -409,18 +409,10 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
 
     const auto improving = isInCheck ? false : ply >= 2 ? sEval > th->moveStack[ply - 2].sEval : true;
 
-    const auto eval =   !isSingularSearch
-                    &&  !isInCheck
-                    &&  hashHit 
-                    &&  ttScore != I32_UNKNOWN
-                    &&  hashEntry->depth >= depth 
-                    &&  hashEntry->flags == (ttScore > sEval ? hashfBETA : hashfALPHA) ? ttScore : sEval;
-
     if (!isSingularSearch && !isInCheck && !hashHit)
     {
         th->hashManager.recordHash(th->hashKey, NO_MOVE, I16_NO_DEPTH, I32_UNKNOWN, U8_NO_BOUND, sEval);
     }
-
 
 
     const auto oppPiecesCount = POPCOUNT(opp ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
@@ -434,15 +426,15 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         &&	std::abs(beta) < U16_WIN_SCORE 
         &&	oppPiecesCount > 3) 
     { 
-        assert(eval != I32_UNKNOWN);
+        assert(sEval != I32_UNKNOWN);
         
-        if (depth == 1 && eval - U16_RVRFPRUNE >= beta)         // Reverse Futility Pruning
+        if (depth == 1 && sEval - U16_RVRFPRUNE >= beta)         // Reverse Futility Pruning
             return beta;
     
-        if (depth == 2 && eval - U16_EXT_RVRFPRUNE >= beta)     // Extended Reverse Futility Pruning 
+        if (depth == 2 && sEval - U16_EXT_RVRFPRUNE >= beta)     // Extended Reverse Futility Pruning 
             return beta;
         
-        if (depth <= 3 && eval + U16_RAZOR_MARGIN < beta)       // Razoring
+        if (depth <= 3 && sEval + U16_RAZOR_MARGIN < beta)       // Razoring
         {
             const auto rscore = quiescenseSearch<stm>(alpha, beta, th, si);
 
@@ -452,10 +444,10 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
             }
         }
 
-        if (depth == 1 && eval + U16_FPRUNE <= alpha)           // Futility Pruning
+        if (depth == 1 && sEval + U16_FPRUNE <= alpha)           // Futility Pruning
             fPrune = true; 
         
-        if (depth == 2 && eval + U16_EXT_FPRUNE <= alpha)       // Extended Futility Pruning
+        if (depth == 2 && sEval + U16_EXT_FPRUNE <= alpha)       // Extended Futility Pruning
             fPrune = true;
     }
 
@@ -977,10 +969,6 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
 
     auto sEval = hashHit ? ((hashEntry->sEval == I32_UNKNOWN) ? 
                                     fullEval(stm, th) : hashEntry->sEval) : fullEval(stm, th);
-    sEval =     hashHit 
-            &&  ttScore != I32_UNKNOWN 
-            &&  hashEntry->flags == (ttScore > sEval ? hashfBETA : hashfALPHA) ? ttScore : sEval;
-
     if (!hashHit)
     {
         th->hashManager.recordHash(th->hashKey, NO_MOVE, I16_NO_DEPTH, I32_UNKNOWN, U8_NO_BOUND, sEval);
