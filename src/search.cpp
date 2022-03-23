@@ -115,29 +115,6 @@ void iterativeDeepening(SearchThread *th)
 
     for (int depth = 1; depth < MAX_DEPTH; depth++) 
     {
-        if (th != searchThreads.getMainSearchThread()) 
-        {  
-            std::unique_lock<std::mutex> lck(mutex);
-
-            U16 count = 0;
-
-            for (SearchThread *thread : searchThreads.getSearchThreads()) 
-            {
-                if (th != thread && depth == thread->depth) 
-                {
-                    count++;
-                }
-            }
-
-            lck.unlock();
-
-            if (count >= (option_thread_count / 2)) 
-            {
-                continue;
-            }
-        } 
-
-
         th->depth = depth;
 
         aspirationWindow<stm>(th);
