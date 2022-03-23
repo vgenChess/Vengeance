@@ -45,8 +45,7 @@ public:
             return false;
         }
         
-        U32 dataKey = entry->bestMove ^ entry->value 
-                    ^ entry->depth ^ entry->flags ^ entry->sEval;
+        U32 dataKey = entry->bestMove ^ entry->value ^ entry->depth ^ entry->flags ^ entry->sEval;
         
         return (entry->key ^ dataKey) == key; 
     }
