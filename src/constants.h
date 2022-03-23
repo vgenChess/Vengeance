@@ -12,7 +12,7 @@ const uint8_t U8_NO_BOUND = 50;
 const uint8_t U8_AP_WINDOW = 20;
 const uint8_t U8_LMP_BASE = 4;
 const uint8_t U8_LMP_DEPTH = 8; 
-const uint8_t U8_HISTORY_PRUNING_DEPTH = 1;
+const uint8_t U8_HISTORY_PRUNING_DEPTH = 2;
 const uint8_t U8_CAPTURE_HISTORY_PRUNING_DEPTH = 1;
 
 const uint16_t U16_MAX_PLY = 128;
