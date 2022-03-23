@@ -635,7 +635,7 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
 
                 // History pruning
                 if (    depth <= U8_HISTORY_PRUNING_DEPTH 
-                    &&  currentMove.score < I16_HISTORY_PRUNING) 
+                    &&  currentMove.score < I16_HISTORY_PRUNING * depth) 
                 {
                     continue;
                 }
