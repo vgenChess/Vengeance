@@ -438,9 +438,8 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
 
 
     const auto oppPiecesCount = POPCOUNT(opp ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
-
-
-    // Reverse Futility Pruning
+    bool fPrune = false;
+    
     if (	!isRootNode 
         &&	!isPvNode 
         &&	!isInCheck 
@@ -451,14 +450,13 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
     { 
         assert(eval != I32_UNKNOWN);
         
-        if (depth == 1 && eval - U16_RVRFPRUNE >= beta) 
+        if (depth == 1 && eval - U16_RVRFPRUNE >= beta)         // Reverse Futility Pruning
             return beta;
     
-        if (depth == 2 && eval - U16_EXT_RVRFPRUNE >= beta) 
+        if (depth == 2 && eval - U16_EXT_RVRFPRUNE >= beta)     // Extended Reverse Futility Pruning 
             return beta;
-     
-        // Razoring
-        if (depth <= 3 && eval + U16_RAZOR_MARGIN < beta) 
+        
+        if (depth <= 3 && eval + U16_RAZOR_MARGIN < beta)       // Razoring
         {
             const auto rscore = quiescenseSearch<stm>(alpha, beta, th, si);
 
@@ -467,7 +465,15 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
                 return rscore;
             }
         }
+
+        if (depth == 1 && eval + U16_FPRUNE <= alpha)           // Futility Pruning
+            fPrune = true; 
+        
+        if (depth == 2 && eval + U16_EXT_FPRUNE <= alpha)       // Extended Futility Pruning
+            fPrune = true;
     }
+
+
 
     if (!isRootNode) 
     {
@@ -476,13 +482,12 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         th->moveStack[ply].castleFlags = th->moveStack[ply - 1].castleFlags;
     }
 
-    
     th->moveStack[ply].ttMove = ttMove;
     th->moveStack[ply].sEval = sEval;
 
-
     SearchInfo searchInfo;
     searchInfo.skipMove = NO_MOVE;
+
 
 
     bool mateThreat = false;
@@ -514,25 +519,6 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
     
         if (std::abs(score) >= U16_WIN_SCORE) // Mate threat 	
             mateThreat = true;
-    }
-
-
-    bool fPrune = false;
-    if (	!isRootNode 
-        &&	!isPvNode 
-        &&	!isInCheck 
-        &&	!isSingularSearch
-        &&	std::abs(alpha) < U16_WIN_SCORE
-        &&	std::abs(beta) < U16_WIN_SCORE 
-        &&	oppPiecesCount > 3)	
-    { 
-        assert(eval != I32_UNKNOWN);
-
-        if (depth == 1 && eval + U16_FPRUNE <= alpha) // Futility Pruning
-            fPrune = true; 
-        
-        else if (depth == 2 && eval + U16_EXT_FPRUNE <= alpha) // Extended Futility Pruning
-            fPrune = true;
     }
     
 
