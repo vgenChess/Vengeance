@@ -11,6 +11,7 @@
 #include "evaluate.h"
 
 void initLMR();
+void initLMP();
 
 template<Side stm> void iterativeDeepening(SearchThread* th);
 template<Side stm> void aspirationWindow(SearchThread* th);
