@@ -23,10 +23,9 @@ const uint16_t U16_CHECK_NODES = 1024;
 const uint16_t U16_COUNTER_MOVE_BONUS = 2500;
 const uint16_t U16_FPRUNE = 265;
 const uint16_t U16_EXT_FPRUNE = 515;
-const uint16_t U16_LTD_RAZOR = 915;
+const uint16_t U16_RAZOR_MARGIN = 250;
 const uint16_t U16_RVRFPRUNE = 265;
 const uint16_t U16_EXT_RVRFPRUNE = 515;
-const uint16_t U16_LTD_RVRRAZOR = 915;
 const uint16_t U16_Q_DELTA = 150;
 const uint16_t U16_CURRMOVE_INTERVAL = 3000;
 
