@@ -639,6 +639,14 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
                 {
                     continue;
                 }
+            } 
+            else
+            {
+                if (    depth <= U8_SEE_PRUNING_DEPTH 
+                    &&  currentMove.seeScore < I16_SEE_PRUNING * depth) 
+                {
+                    continue;
+                }
             }
         }
 
