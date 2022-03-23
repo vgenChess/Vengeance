@@ -41,7 +41,7 @@ bool SearchThread::abortSearch = false;
 bool SearchThread::stopSearch = false;
 
 int option_thread_count;
-int stableMoveCount = 0, MAX_DEPTH = 100, LMR[64][64], LMP[2][U8_LMP_DEPTH];
+int stableMoveCount = 0, MAX_DEPTH = 100, LMR[64][64], LMP[2][U16_MAX_PLY];
 
 std::mutex mutex;
 
