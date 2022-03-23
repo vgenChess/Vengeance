@@ -37,7 +37,7 @@ std::vector<HashEntry> HashManager::hashTable;
 int main(int argc, char **argv) 
 {    
     initLMR();
-
+    initLMP();
     init_king_attacks();
     init_knight_attacks();
     init_magic_moves();
