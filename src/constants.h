@@ -31,7 +31,7 @@ const uint16_t U16_Q_DELTA = 150;
 const uint16_t U16_CURRMOVE_INTERVAL = 3000;
 
 const int16_t I16_NO_DEPTH = -127;
-const int16_t I16_HISTORY_PRUNING = -5000;   
+const int16_t I16_HISTORY_PRUNING = -10000;   
 const int16_t I16_CAPTURE_PRUNING = 0;
 const int16_t I16_SEE_PRUNING = -550;
 const int16_t I16_QSEE_PRUNING = 0;
