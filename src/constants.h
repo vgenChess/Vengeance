@@ -6,6 +6,7 @@
 const uint8_t U8_MAX_SIDES = 2;
 const uint8_t U8_MAX_PIECES = 8;
 const uint8_t U8_MAX_SQUARES = 64;
+const uint8_t U8_HASH_AGE = 6;
 
 const uint8_t U8_NO_BOUND = 50;
 const uint8_t U8_AP_WINDOW = 20;
