@@ -41,7 +41,7 @@ bool SearchThread::abortSearch = false;
 bool SearchThread::stopSearch = false;
 
 int option_thread_count;
-int stableMoveCount = 0, MAX_DEPTH = 100, LMR[64][64], LMP[2][U16_MAX_PLY];
+int stableMoveCount = 0, MAX_DEPTH = 100, LMR[64][64], LMP[2][U8_LMP_DEPTH];
 
 std::mutex mutex;
 
@@ -59,7 +59,7 @@ void initLMR()
 
 void initLMP()
 {
-    for (int depth = 0; depth < U16_MAX_PLY; depth++)
+    for (int depth = 0; depth < U8_LMP_DEPTH; depth++)
     {       
         LMP[1][depth] = 3 + depth * depth;
         LMP[0][depth] = LMP[1][depth] / 2;
@@ -625,7 +625,8 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
                 }
 
                 // Late move pruning
-                if (movesPlayed >= LMP[improving][depth])
+                if (    depth < U8_LMP_DEPTH
+                    &&    movesPlayed >= LMP[improving][depth])
                 {
                     th->moveList[ply].skipQuiets = true;
                     continue;
