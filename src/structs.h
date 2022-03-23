@@ -9,6 +9,7 @@ typedef struct
 {   
     U32 move;
     int score;
+    int seeScore;
 } Move;
 
 typedef struct 

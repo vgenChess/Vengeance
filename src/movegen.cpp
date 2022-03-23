@@ -672,7 +672,9 @@ inline Move getNextMove(int ply, Thread *th, MOVE_LIST *moveList) {
                     return getNextMove<stm>(ply, th, moveList);
                 }
 
-                if (SEE<stm>(m.move, th) < 0) { // bad capture
+                m.seeScore = SEE<stm>(m.move, th);
+
+                if (m.seeScore < 0) { // bad capture
 
                     moveList->badCaptures.push_back(m);
                     

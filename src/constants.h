@@ -14,6 +14,7 @@ const uint8_t U8_LMP_BASE = 4;
 const uint8_t U8_LMP_DEPTH = 8; 
 const uint8_t U8_HISTORY_PRUNING_DEPTH = 2;
 const uint8_t U8_CAPTURE_HISTORY_PRUNING_DEPTH = 1;
+const uint8_t U8_SEE_PRUNING_DEPTH = 1;
 
 const uint16_t U16_MAX_PLY = 128;
 const uint16_t U16_MAX_MOVES = 256;
@@ -33,7 +34,7 @@ const uint16_t U16_CURRMOVE_INTERVAL = 3000;
 const int16_t I16_NO_DEPTH = -127;
 const int16_t I16_HISTORY_PRUNING = -10000;   
 const int16_t I16_CAPTURE_PRUNING = 0;
-const int16_t I16_SEE_PRUNING = -550;
+const int16_t I16_SEE_PRUNING = -1000;
 const int16_t I16_QSEE_PRUNING = 0;
 
 const uint16_t U16_PAWN_HASH_TABLE_RECORDS = 1024 * 8;
