@@ -617,7 +617,7 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
 
                 // Late move pruning
                 if (    depth <= U8_LMP_DEPTH 
-                    &&  movesPlayed >= U8_LMP_BASE * depth)
+                    &&  movesPlayed >= (depth * (improving ? U8_LMP_MULTIPLIER : U8_LMP_MULTIPLIER - 1)))
                 {
                     th->moveList[ply].skipQuiets = true;
                     continue;
