@@ -35,7 +35,7 @@ typedef struct
 
 typedef struct 
 {
-    U8 flags; 
+    U8 flags, age; 
     int depth;
     int value;
     int sEval;

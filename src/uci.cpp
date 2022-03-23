@@ -37,8 +37,9 @@
 bool quit;
 
 int option_hash_size;
-
 int MOVE_OVERHEAD = 300;
+
+U8 HashManager::age;
 
 void setOption(std::string &line) {
 
@@ -92,7 +93,8 @@ void UciLoop() {
             
             setOption(cmd);
         } else if (token == "ucinewgame") {
-
+            
+            HashManager::age = 0;
             HashManager::clearHashTable();
 
             for (Thread *thread : searchThreads.getSearchThreads())
