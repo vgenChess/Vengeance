@@ -19,6 +19,8 @@ private:
 
 public:
     
+    static U8 age;
+
     inline static void initHashTable(int size) 
     {
         hashTable.clear();
@@ -57,7 +59,7 @@ public:
         
         const auto isValidHash = (entry->key ^ dataKey) == key; 
         
-        if (isValidHash && depth < entry->depth) 
+        if ((age - entry->age) < 10 && isValidHash && depth < entry->depth) 
         { // Check whether to overwrite previous information
             return;           
         }
@@ -72,6 +74,7 @@ public:
         entry->depth = depth;
         entry->bestMove = bestMove;
         entry->sEval = sEval;
+        entry->age = age;
     }
     
     

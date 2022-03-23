@@ -61,6 +61,9 @@ void SearchThread::startSearch(Side stm)
 {
     if (this == searchThreads.getMainSearchThread()) 
     {
+
+        HashManager::age += 1;
+
         SearchThread::abortSearch = false;
         SearchThread::stopSearch = false;
         
