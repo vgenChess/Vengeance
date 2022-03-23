@@ -456,11 +456,18 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
     
         if (depth == 2 && eval - U16_EXT_RVRFPRUNE >= beta) 
             return beta;
-    
-        if (depth == 3 && eval - U16_LTD_RVRRAZOR >= beta) 
-            depth--;
-    }
+     
+        // Razoring
+        if (depth <= 3 && eval + U16_RAZOR_MARGIN < beta) 
+        {
+            const auto rscore = quiescenseSearch<stm>(alpha, beta, th, si);
 
+            if (rscore < beta) 
+            {
+                return rscore;
+            }
+        }
+    }
 
     if (!isRootNode) 
     {
@@ -526,9 +533,6 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         
         else if (depth == 2 && eval + U16_EXT_FPRUNE <= alpha) // Extended Futility Pruning
             fPrune = true;
-        
-        else if (depth == 3 && eval + U16_LTD_RAZOR <= alpha) // Limited Razoring
-            depth--;
     }
     
 
