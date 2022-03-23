@@ -43,8 +43,7 @@ public:
             return false;
         }
         
-        U32 dataKey = entry->bestMove ^ entry->value 
-                    ^ entry->depth ^ entry->flags ^ entry->sEval;
+        U32 dataKey = entry->bestMove ^ entry->value ^ entry->depth ^ entry->flags ^ entry->sEval;
         
         return (entry->key ^ dataKey) == key; 
     }
@@ -53,18 +52,7 @@ public:
     {
         auto entry = &hashTable[key % hashTableSize];
         
-        U32 dataKey = entry->bestMove ^ entry->value ^ entry->depth ^ entry->flags ^ entry->sEval;
-        
-        const auto isValidHash = (entry->key ^ dataKey) == key; 
-        
-        if (isValidHash && depth < entry->depth) 
-        { // Check whether to overwrite previous information
-            return;           
-        }
-        
-        // Overwrite the hash information 
-        
-        dataKey = bestMove ^ depth ^ value ^ hashf ^ sEval;
+        U32 dataKey = bestMove ^ depth ^ value ^ hashf ^ sEval;
         
         entry->key = key ^ dataKey;
         entry->value = value;
