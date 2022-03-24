@@ -27,7 +27,6 @@
 #define BATCHSIZE		16 
 #define NPOSITIONS		7150000 
 #define DISPLAY_TIME	60				
-#define LRDROPRATE		1
 
 struct Score 
 {	
@@ -41,8 +40,6 @@ public:
 	int8_t type[NTERMS];
 	int8_t coeffs[2][NTERMS];
 };	
-
-int seePieceVal[8] = { 0, 100, 300, 300, 500, 900, 2000, 0 };
 
 std::vector<Data> dataList;
 
@@ -631,8 +628,6 @@ void startTuner() {
 			
 			fen = tp.substr(0, tp.find("\""));
 			
-			// std::string fen = tp.substr(0, tp.find(";"));
-
 			if (fen.length() <= 0) 
 				continue;
 
