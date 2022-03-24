@@ -37,11 +37,8 @@
 #include "TimeManagement.h"
 #include "HashManagement.h"
 
-bool SearchThread::abortSearch = false;
-bool SearchThread::stopSearch = false;
-
-int option_thread_count;
-int stableMoveCount = 0, MAX_DEPTH = 100, LMR[64][64], LMP[2][U8_LMP_DEPTH];
+bool SearchThread::abortSearch = false, SearchThread::stopSearch = false;
+int option_thread_count, stableMoveCount = 0, MAX_DEPTH = 100, LMR[64][64], LMP[2][U8_LMP_DEPTH];
 
 std::mutex mutex;
 
@@ -159,9 +156,8 @@ void iterativeDeepening(SearchThread *th)
             const auto totalFactor = scoreChangeFactor * stableMoveFactor * winFactor;
             
             // Check for time 
-            if (TimeManager::sTimeManager.time_elapsed_milliseconds(
-                TimeManager::sTimeManager.getStartTime()) 
-                > (TimeManager::sTimeManager.getTimePerMove() * totalFactor)) 
+            if (TimeManager::sTimeManager.time_elapsed_milliseconds(TimeManager::sTimeManager.getStartTime()) 
+                    > (TimeManager::sTimeManager.getTimePerMove() * totalFactor)) 
             {
                 SearchThread::stopSearch = true;
                 break;
@@ -528,7 +524,7 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         {
             ttMoveIsSingular = true;
         } 
-        else if (sBeta >= beta) // TODO check logic
+        else if (sBeta >= beta)
         { 
             return sBeta;
         }
