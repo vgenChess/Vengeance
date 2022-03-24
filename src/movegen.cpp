@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <iostream>
 
+#include "types.h"
 #include "movegen.h"
 #include "magicmoves.h"
 #include "nonslidingmoves.h"
@@ -18,8 +19,6 @@
 #include "constants.h"
 #include "functions.h"
 #include "utility.h"
-
-typedef unsigned char U8;
 
 /*
  *    Move Type
