@@ -427,7 +427,7 @@ int divide(U8 depth, U8 sideToMove, Thread *th) {
     std::vector<Move> moves;
 
     int ply = 0;
-    genMoves(sideToMove, ply, moves, th);
+    genMoves(sideToMove == WHITE ? WHITE : BLACK, ply, moves, th);
         
     U8 count = 0;
 
