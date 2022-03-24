@@ -42,10 +42,30 @@ typedef unsigned char U8;
  *    3 - Bishop
  **/
 
-U32 createMove(Side stm, U32 promotion_type, U32 castleDir, U32 move_type, U32 c_piece, U32 piece, U32 from, U32 to) {
+uint16_t val_piece[8] = { 
+
+    0, 
+    VALUE_PAWN, 
+    VALUE_KNIGHT, 
+    VALUE_BISHOP, 
+    VALUE_ROOK,
+    VALUE_QUEEN, 
+    VALUE_KING, 
+    0
+};
+
+inline U32 createMove(Side stm, U32 promotion_type, U32 castleDir, U32 move_type, U32 c_piece, U32 piece, U32 from, U32 to) {
     
     return (0ULL | promotion_type << 24 | castleDir << 22 | move_type << 19 
         | stm << 18 | c_piece << 15 | piece << 12 | from << 6 | to);
+}
+
+inline Move getNoMove() {
+
+    Move noMove;
+    noMove.move = NO_MOVE;
+
+    return noMove;
 }
 
 void generatePushes(Side stm, std::vector<Move> &moves, Thread *th) {
@@ -388,27 +408,6 @@ void genPromotionsAttacks(Side stm, std::vector<Move> &moves, Thread *th) {
             }
         }
     }
-}
-
-
-uint16_t val_piece[8] = { 
-
-    0, 
-    VALUE_PAWN, 
-    VALUE_KNIGHT, 
-    VALUE_BISHOP, 
-    VALUE_ROOK,
-    VALUE_QUEEN, 
-    VALUE_KING, 
-    0
-};
-
-Move getNoMove() {
-
-    Move noMove;
-    noMove.move = NO_MOVE;
-
-    return noMove;
 }
 
 bool isValidMove(Side stm, const int ply, const U32 move, Thread *th) {

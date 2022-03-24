@@ -29,6 +29,4 @@ void genPromotionsAttacks(Side stm, std::vector<Move> &moves, Thread *th);
 
 Move getNextMove(Side stm, int ply, Thread *th, MOVE_LIST *moveList);
 
-U32 createMove(Side stm, U32 promotion_type, U32 castle_dir, U32 move_type, U32 c_piece, U32 piece, U32 from, U32 to);
-
 #endif /* movegen_h */
