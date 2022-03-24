@@ -135,7 +135,7 @@ void UciLoop() {
             {
                 moves.clear();
 
-                genMoves(sideToMove, 0, moves, &initThread);
+                genMoves(sideToMove == WHITE ? WHITE : BLACK, 0, moves, &initThread);
                 
                 for (Move m : moves) 
                 {

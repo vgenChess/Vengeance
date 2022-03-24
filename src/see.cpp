@@ -37,8 +37,7 @@ U64 attacksTo(U64 occ, U8 square, U8 sideToMove, Thread *th) { // TODO check log
 	return attacks & occ;
 }
 
-template<Side sideToMove>
-int SEE(U32 move, Thread *th) {
+int SEE(Side sideToMove, U32 move, Thread *th) {
 
 	int moveType = move_type(move);	
 	if (moveType == MOVE_CASTLE || moveType == MOVE_ENPASSANT || moveType == MOVE_PROMOTION) 
@@ -171,7 +170,7 @@ void debugSEE(char ch, int square) {
 
 	std::vector<Move> moves; 
 
-   	genMoves(side, 0, moves, &initThread);   		  	
+   	genMoves(side == WHITE ? WHITE : BLACK, 0, moves, &initThread);   		  	
 	
 	U8 p, to;
 	U32 move;
@@ -197,7 +196,7 @@ void debugSEE(char ch, int square) {
 		return;
 	}
 
-	int value = side ? SEE<BLACK>(move, &initThread) : SEE<WHITE>(move, &initThread);
+	int value = side ? SEE(BLACK, move, &initThread) : SEE(WHITE, move, &initThread);
 
 	std::cout << "See score = " << value << std::endl;
 }
