@@ -1,6 +1,6 @@
 
 
-inline int 
+constexpr int 
 
 weight_val_pawn = S(100, 100),
 weight_val_knight = S(300, 300),
@@ -8,7 +8,6 @@ weight_val_bishop = S(300, 300),
 weight_val_rook = S(500, 500),
 weight_val_queen = S(900, 900), 
 
-weight_pawn_island = S(0, 0),
 weight_isolated_pawn = S(0, 0),
 weight_backward_pawn = S(0, 0),
 weight_double_pawn = S(0, 0),
@@ -81,11 +80,10 @@ weight_knight_check = S(1, 1),
 weight_bishop_check = S(1, 1), 
 weight_rook_check = S(1, 1), 
 weight_queen_check = S(1, 1), 
-weight_safety_adjustment = S(1, 1)
-;
+weight_safety_adjustment = S(1, 1),
 
 
-int kingPSQT[U8_MAX_SQUARES] = { 
+kingPSQT[U8_MAX_SQUARES] = { 
 
  S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), 
  S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), 
@@ -96,9 +94,9 @@ int kingPSQT[U8_MAX_SQUARES] = {
  S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), 
  S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), 
  S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0)  
-};
+},
 
-int pawnPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {
+pawnPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {
 
 S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), 
 S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), 
@@ -373,9 +371,9 @@ S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   
 S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), 
 
 
-};
+},
 
-int knightPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {
+knightPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {
 
 S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), 
 S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), 
@@ -650,9 +648,9 @@ S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   
 S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), 
 
 
-};
+},
 
-int bishopPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {
+bishopPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {
 
 S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), 
 S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), 
@@ -927,10 +925,10 @@ S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   
 S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), 
 
 
-};
+},
 
 
-int rookPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {
+rookPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {
 
 S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), 
 S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), 
@@ -1205,9 +1203,9 @@ S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   
 S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), 
 
 
-};
+},
 
-int queenPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {
+queenPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {
 
 S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), 
 S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), S(   0,   0), 

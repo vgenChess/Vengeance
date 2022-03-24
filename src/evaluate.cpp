@@ -158,6 +158,9 @@ int fullEval(U8 stm, Thread *th)
 			}
 		}
 
+	    auto pawnsHashEntry = &th->pawnsHashTable[th->pawnsHashKey % U16_PAWN_HASH_TABLE_RECORDS];
+	    
+	   	pawnsHashHit = false;
 	#else
 
 		//@TODO check eval hash implementation
@@ -207,7 +210,6 @@ int fullEval(U8 stm, Thread *th)
 		th->evalInfo.passedPawns[BLACK] = bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]);
 
 		eval += pawnsEval<WHITE>(th) 	- pawnsEval<BLACK>(th);
-		eval += pawnKingEval<WHITE>(th) - pawnKingEval<BLACK>(th);
 	#else
 	
 	    if (!pawnsHashHit)
@@ -219,8 +221,7 @@ int fullEval(U8 stm, Thread *th)
 	    	pawnsHashEntry->key = th->pawnsHashKey;
 	    
 	    	pawnsHashEntry->pawnsEval = pawnsEval<WHITE>(th) - pawnsEval<BLACK>(th);
-	    	pawnsHashEntry->pawnKingEval = pawnKingEval<WHITE>(th) - pawnKingEval<BLACK>(th);
-
+	    
 			pawnsHashEntry->openFilesBB = th->evalInfo.openFilesBB;
 
 			pawnsHashEntry->halfOpenFilesBB[WHITE] = th->evalInfo.halfOpenFilesBB[WHITE];
@@ -231,7 +232,6 @@ int fullEval(U8 stm, Thread *th)
 	    }
 
      	eval += pawnsHashEntry->pawnsEval;
-    	eval += pawnsHashEntry->pawnKingEval;
    
 	#endif
 	
@@ -305,24 +305,6 @@ int pawnsEval(Thread *th)
 		score += stm ? PSQT[Mirror64[kingSq]][PAWNS][Mirror64[sq]] : PSQT[kingSq][PAWNS][sq];
 	}
 
-
-	// Pawn islands
-	/*
-		At the start of a new game all the pawns are connected, but as the game continue and some exchanges are made, 
-		the pawns may become disconnected. When a group of pawns gets disconnected from the rest of the pawn-structure 
-		they become a pawn-island. Generally, the more pawn-islands you have, the harder it is to defend them all. 
-		Therefore, more pawn-island usually implies a weaker pawn-structure.
-	*/
-
-	ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
-	
-	// https://www.chessprogramming.org/Pawn_Islands_(Bitboards)
-	score += POPCOUNT(islandsEastFiles(ourPawns)) * weight_pawn_island;
-
-	#if defined(TUNE)
-
-		T->pawnIsland[stm] = POPCOUNT(islandsEastFiles(ourPawns));
-	#endif
 
 
 	/*
@@ -1006,41 +988,6 @@ int queenEval(Thread *th)
 	return score;
 }
 
-template <Side stm>
-int pawnKingEval(Thread *th)
-{
-	constexpr auto opp = stm == WHITE ? BLACK : WHITE;
-
-	const auto kingSq = th->evalInfo.kingSq[stm];
-	const auto ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
-	const auto theirPawns = opp ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
-
-	// TODO redo logic (Often results in bad evaluation)
-	auto pawnStormZone = th->evalInfo.kingZoneBB[stm];
-	
-	int score = 0;	
-	
-	assert(kingSq >= 0 && kingSq < 64);
-
-	score += stm ? kingPSQT[Mirror64[kingSq]] : kingPSQT[kingSq];
-
-	pawnStormZone |= stm ? pawnStormZone >> 8 : pawnStormZone << 8;
-
-	// Anything strictly pawn related can be stored in the Pawn Hash Table, 
-	// including pawn shield terms to be used dynamically for king safety.
-	// TODO implement this in Pawn Hash Table
-
-	score += POPCOUNT(th->evalInfo.kingZoneBB[stm] & ourPawns) * weight_king_pawn_shield;
-	score += POPCOUNT(pawnStormZone & theirPawns) * weight_king_enemy_pawn_storm;
-
-	#if defined(TUNE)	
-
-		T->kingPawnShield[stm] 		= POPCOUNT(th->evalInfo.kingZoneBB[stm] & ourPawns); // TODO check logic
-		T->kingEnemyPawnStorm[stm] 	= POPCOUNT(pawnStormZone & theirPawns); // TODO check logic
-	#endif
-
-	return score;
-}
 
 template <Side stm>
 int kingSafety(Thread *th) 
@@ -1052,10 +999,27 @@ int kingSafety(Thread *th)
 
 	const auto kingSq = th->evalInfo.kingSq[stm];
 	
+	assert(kingSq >= 0 && kingSq < 64);
+	
+	// King PSQT Score	
+	score += stm ? kingPSQT[Mirror64[kingSq]] : kingPSQT[kingSq];
+
+
 	if (	th->evalInfo.kingAttackersCount[stm] >= 2
 		&&	th->evalInfo.kingAdjacentZoneAttacksCount[stm]) 
 	{ 
-		int safetyScore = th->evalInfo.kingAttackersWeight[stm];
+		const auto ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+		const auto theirPawns = opp ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+
+		// TODO redo logic (Often results in bad evaluation)
+		auto pawnStormZone = th->evalInfo.kingZoneBB[stm];
+
+		pawnStormZone |= stm ? pawnStormZone >> 8 : pawnStormZone << 8;
+
+		auto safetyScore = th->evalInfo.kingAttackersWeight[stm]
+						+ POPCOUNT(th->evalInfo.kingZoneBB[stm] & ourPawns) * weight_king_pawn_shield	// TODO check logic
+						+ POPCOUNT(pawnStormZone & theirPawns) * weight_king_enemy_pawn_storm;			// TODO check logic
+
 
         U64 kingUndefendedSquares = th->evalInfo.attacks[opp]
         						&	th->evalInfo.kingAttacks[stm]
@@ -1102,6 +1066,8 @@ int kingSafety(Thread *th)
 
 		#if defined(TUNE)
 
+			T->kingPawnShield[stm] 			=	POPCOUNT(th->evalInfo.kingZoneBB[stm] & ourPawns); 
+			T->kingEnemyPawnStorm[stm] 		=	POPCOUNT(pawnStormZone & theirPawns); 
 	        T->queenSafeContactCheck[stm] 	= 	POPCOUNT(queenSafeContactCheck);
 	        T->rookSafeContactCheck[stm] 	= 	POPCOUNT(rookSafeContactCheck);
 			T->queenCheck[stm] 				= 	POPCOUNT(queenSafeChecks);
@@ -1121,10 +1087,21 @@ int kingSafety(Thread *th)
     {
     	#if defined(TUNE)
 	    	
-	    	T->knightAttack[stm] 	= 0;
-			T->bishopAttack[stm] 	= 0;
-			T->rookAttack[stm] 		= 0;
-			T->queenAttack[stm]	 	= 0;
+	    	T->knightAttack[stm] 			= 	0;
+			T->bishopAttack[stm] 			=	0;
+			T->rookAttack[stm] 				=	0;
+			T->queenAttack[stm]	 			=	0;
+			T->kingPawnShield[stm] 			=	0; 
+			T->kingEnemyPawnStorm[stm] 		=	0; 
+	        T->queenSafeContactCheck[stm] 	= 	0;
+	        T->rookSafeContactCheck[stm] 	= 	0;
+			T->queenCheck[stm] 				= 	0;
+			T->rookCheck[stm] 				= 	0;
+			T->bishopCheck[stm] 			= 	0;
+			T->knightCheck[stm] 			= 	0;
+			T->safetyAdjustment[stm] 		=	0;
+	    	T->safety[stm] 					= 	0;
+
     	#endif
     } 
 

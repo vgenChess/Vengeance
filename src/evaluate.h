@@ -21,7 +21,6 @@ int fullEval(U8 stm, Thread *th);
 
 template<Side stm> int evalBoard(Thread *th);
 template<Side stm> int pawnsEval(Thread *th);
-template<Side stm> int pawnKingEval(Thread *th);
 template<Side stm> int knightsEval(Thread *th);
 template<Side stm> int bishopsEval(Thread *th);
 template<Side stm> int rooksEval(Thread *th);

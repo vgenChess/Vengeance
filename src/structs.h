@@ -22,7 +22,6 @@ typedef struct
 {    
     U64 key; 
     int pawnsEval;
-    int pawnKingEval;
     U64 openFilesBB;
     U64 halfOpenFilesBB[U8_MAX_SIDES];
     U64 allPawnAttacks[U8_MAX_SIDES];

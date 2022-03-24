@@ -24,8 +24,8 @@
 
 #define MAXEPOCHS		1000000000
 #define NPARTITIONS		4 
-#define BATCHSIZE		16 
-#define NPOSITIONS		7150000 
+#define BATCHSIZE		256 
+#define NPOSITIONS		1428000 
 #define DISPLAY_TIME	60				
 
 struct Score 
@@ -77,9 +77,6 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff)
                         
 
     // Pawns
-	loadCoeff->type[i] = NORMAL;
-    loadCoeff->coeffs[WHITE][i] = T->pawnIsland[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->pawnIsland[BLACK]; 
 
 	loadCoeff->type[i] = NORMAL;
     loadCoeff->coeffs[WHITE][i] = T->isolatedPawns[WHITE];                         
@@ -385,8 +382,6 @@ void startTuner() {
 	cparams[EG][count++] = ScoreEG(weight_val_queen);
 
 
-	cparams[MG][count] = ScoreMG(weight_pawn_island);
-	cparams[EG][count++] = ScoreEG(weight_pawn_island);
 
 	cparams[MG][count] = ScoreMG(weight_isolated_pawn);
 	cparams[EG][count++] = ScoreEG(weight_isolated_pawn);
@@ -608,9 +603,9 @@ void startTuner() {
 	assert(count == NTERMS);
 
 	std::fstream newfile;
-   	newfile.open ("lichess-big3-resolved.book", std::ios::in);	// NPOSITIONS = 7150000 roughly
-	// newfile.open ("quiet-labeled.epd", std::ios::in); 			// NPOSITIONS = 725000 exact
-	
+   	// newfile.open ("lichess-big3-resolved.book", std::ios::in);	// NPOSITIONS = 7150000 roughly
+	newfile.open ("quiet-labeled.epd", std::ios::in); 			// v6 NPOSITIONS = 725000 exact
+																// v7 NPOSITIONS = 1428000 exact
 	count = 0;
 
 	TraceCoefficients *T = new TraceCoefficients();
@@ -641,7 +636,7 @@ void startTuner() {
 
 			// for file "quiet-labeled.epd"
 
-		/*	if (tp.find("1-0") != std::string::npos)	
+			if (tp.find("1-0") != std::string::npos)	
 				result = 1.0;
 			else if (tp.find("1/2-1/2") != std::string::npos) 
 				result = 0.5;
@@ -649,11 +644,11 @@ void startTuner() {
 				result = 0.0;
 			else 
 				continue;
-*/
+
 
 			// for file "4818922_positions_gm2600.txt"
 
-			if (tp.find("1.0") != std::string::npos)	
+/*			if (tp.find("1.0") != std::string::npos)	
 				result = 1.0;
 			else if (tp.find("0.5") != std::string::npos) 
 				result = 0.5;
@@ -661,7 +656,7 @@ void startTuner() {
 				result = 0.0;
 			else 
 				continue;
-
+*/
 			
 			assert(result == 1.0 || result == 0.5 || result == 0.0);
 
@@ -828,14 +823,8 @@ void optimise(TVector params, TVector cparams) {
 				R[MG][i] = beta2 * R[MG][i] + (1.0 - beta2) * pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
 	        	R[EG][i] = beta2 * R[EG][i] + (1.0 - beta2) * pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
 
-	        	double mg_m_k_hat = M[MG][i] / (1.0 - pow(beta1, epoch));
-	        	double eg_m_k_hat = M[EG][i] / (1.0 - pow(beta1, epoch));
-
-	        	double mg_r_k_hat = R[MG][i] / (1.0 - pow(beta2, epoch));
-	        	double eg_r_k_hat = R[EG][i] / (1.0 - pow(beta2, epoch));
-
-	        	params[MG][i] += alpha1 * mg_m_k_hat / (sqrt(mg_r_k_hat) + 1e-8);
-	        	params[EG][i] += alpha1 * eg_m_k_hat / (sqrt(eg_r_k_hat) + 1e-8);
+	        	params[MG][i] += alpha1 * (M[MG][i] / (1.0 - pow(beta1, epoch))) / (sqrt(R[MG][i] / (1.0 - pow(beta2, epoch))) + 1e-8);
+	        	params[EG][i] += alpha1 * (M[EG][i] / (1.0 - pow(beta1, epoch))) / (sqrt(R[EG][i] / (1.0 - pow(beta2, epoch))) + 1e-8);
 			}
 		} // End of the Parallel region 
 		
@@ -866,6 +855,7 @@ void optimise(TVector params, TVector cparams) {
 
 					bestMae = mae;
 
+					std::cout << "Saving weights..\n";
 					std::async(saveWeights, params, cparams);			
 				}
 			} 
@@ -911,13 +901,15 @@ double linearEvaluation(TVector weights, Data data, TGradientData *gradientData)
     double normal[2], safety[2];
     double mg[2][2] = {}, eg[2][2] = {};
 
+	std::vector<CoefficientsInfo> list = data.coefficientsInfoList;
     // Save any modifications for MG or EG for each evaluation type
-	for (auto info : data.coefficientsInfoList) {
-		
-		mg[info.type][WHITE] += (double) info.wcoeff * weights[MG][info.index];
-        mg[info.type][BLACK] += (double) info.bcoeff * weights[MG][info.index];
-        eg[info.type][WHITE] += (double) info.wcoeff * weights[EG][info.index];
-        eg[info.type][BLACK] += (double) info.bcoeff * weights[EG][info.index];
+	#pragma omp parallel for schedule(auto)
+	for (uint64_t i = 0; i < list.size(); i++)
+	{
+		mg[list[i].type][WHITE] += (double) list[i].wcoeff * weights[MG][list[i].index];
+        mg[list[i].type][BLACK] += (double) list[i].bcoeff * weights[MG][list[i].index];
+        eg[list[i].type][WHITE] += (double) list[i].wcoeff * weights[EG][list[i].index];
+        eg[list[i].type][BLACK] += (double) list[i].bcoeff * weights[EG][list[i].index];
 	}
 
     // Grab the original "normal" evaluations and add the modified parameters
@@ -941,18 +933,12 @@ double linearEvaluation(TVector weights, Data data, TGradientData *gradientData)
     safety[EG] = MIN(0, -wsafety[EG] / 20.0) - MIN(0, -bsafety[EG] / 20.0);
 
 
-    // Save this information since we need it to compute the gradients
-    if (gradientData != NULL) {
-    	
-    	TGradientData tGradientData;
-    	
-    	tGradientData.wsafetymg = wsafety[MG]; 
-    	tGradientData.bsafetymg = bsafety[MG];
-    	tGradientData.wsafetyeg = wsafety[EG];
-    	tGradientData.bsafetyeg = bsafety[EG];
+      // Save this information since we need it to compute the gradients
+	if (gradientData != NULL) 
+		*gradientData = (TGradientData) {
+    		wsafety[MG], bsafety[MG], wsafety[EG], bsafety[EG]
+		};
 
-    	gradientData = &tGradientData;
-    }
 
 
     midgame = normal[MG] + safety[MG];
@@ -975,21 +961,22 @@ void updateSingleGradient(Data data, TVector gradient, TVector weights, double K
 
 	std::vector<CoefficientsInfo> list = data.coefficientsInfoList;
 
-	for (auto info : list) {
+	#pragma omp parallel for schedule(auto)
+	for (uint64_t i = 0; i < list.size(); i++)
+	{
+		if (list[i].type == NORMAL)
+		{
+            gradient[MG][list[i].index] += mgBase * (list[i].wcoeff - list[i].bcoeff);
+		    gradient[EG][list[i].index] += egBase * (list[i].wcoeff - list[i].bcoeff);
+		}
+		
+		if (list[i].type == SAFETY)
+		{
+			gradient[MG][list[i].index] += (mgBase / 360.0) 
+				* (fmax(gradientData.bsafetymg, 0) * list[i].bcoeff - (fmax(gradientData.wsafetymg, 0) * list[i].wcoeff));
 
-        if (info.type == NORMAL) {
-    
-            gradient[MG][info.index] += mgBase * (info.wcoeff - info.bcoeff);
-		    gradient[EG][info.index] += egBase * (info.wcoeff - info.bcoeff);
-        }
-
-		if (info.type == SAFETY) {
-
-	    	gradient[MG][info.index] += (mgBase / 360.0) 
-	    		* (fmax(gradientData.bsafetymg, 0) * info.bcoeff - (fmax(gradientData.wsafetymg, 0) * info.wcoeff));
-
-		    gradient[EG][info.index] += (egBase /  20.0) 
-		    	* ((gradientData.bsafetyeg > 0.0) * info.bcoeff - (gradientData.wsafetyeg > 0.0) * info.wcoeff);
+			gradient[EG][list[i].index] += (egBase /  20.0) 
+				* ((gradientData.bsafetyeg > 0.0) * list[i].bcoeff - (gradientData.wsafetyeg > 0.0) * list[i].wcoeff);
 		}
 	}
 }
@@ -1005,6 +992,7 @@ void computeGradient(TVector gradient, TVector weights, std::vector<Data> data_b
         for (uint32_t i = 0; i < data_batch.size(); i++) 
         	updateSingleGradient(data_batch[i], local, weights, K);
         
+        #pragma omp for schedule(auto)
         for (uint32_t i = 0; i < NTERMS; i++) {
 
             gradient[MG][i] += local[MG][i];
@@ -1069,8 +1057,7 @@ void saveWeights(TVector params, TVector cparams) {
 	
 	myfile  <<", \n";
 
-	myfile  << "\nweight_pawn_island = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")"; count++; 
-	myfile  << ",\nweight_isolated_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")"; count++; 
+	myfile  << "\nweight_isolated_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")"; count++; 
 	myfile  << ",\nweight_backward_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")"; count++; 
 	myfile  << ",\nweight_double_pawn = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")"; count++; 
 	myfile  << ",\nweight_pawn_hole = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")"; count++;
