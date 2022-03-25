@@ -1003,7 +1003,6 @@ int queenEval(Thread *th)
 template <Side stm>
 int kingSafety(Thread *th) 
 {	
-
 	int score = 0;
 
 	constexpr auto opp = stm == WHITE ? BLACK : WHITE;
@@ -1019,6 +1018,8 @@ int kingSafety(Thread *th)
 	if (	th->evalInfo.kingAttackersCount[stm] >= 2
 		&&	th->evalInfo.kingAdjacentZoneAttacksCount[stm]) 
 	{ 
+	
+
 	   	if (!th->evalInfo.pawnsHashHit)
 	    {
 			const auto ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
@@ -1031,38 +1032,39 @@ int kingSafety(Thread *th)
 		
 			th->evalInfo.pawnsKingEval[stm] =
 				POPCOUNT(th->evalInfo.kingZoneBB[stm] & ourPawns) * weight_king_pawn_shield	// TODO check logic
-				+ POPCOUNT(pawnStormZone & theirPawns) * weight_king_enemy_pawn_storm;			// TODO check logic			
+				+ POPCOUNT(pawnStormZone & theirPawns) * weight_king_enemy_pawn_storm;			// TODO check logic		
+
+			#if defined(TUNE)
+				T->kingPawnShield[stm] 			=	POPCOUNT(th->evalInfo.kingZoneBB[stm] & ourPawns); 
+				T->kingEnemyPawnStorm[stm] 		=	POPCOUNT(pawnStormZone & theirPawns); 
+			#endif
 		}
 
 
 		int safetyScore = th->evalInfo.kingAttackersWeight[stm] + th->evalInfo.pawnsKingEval[stm];
 
 
-        U64 kingUndefendedSquares = th->evalInfo.attacks[opp]
-        						&	th->evalInfo.kingAttacks[stm]
-        						&	~(		th->evalInfo.allPawnAttacks[stm] 
-        								| 	th->evalInfo.allKnightAttacks[stm] 
-        								|	th->evalInfo.allBishopAttacks[stm] 
-        								|	th->evalInfo.allRookAttacks[stm] 
-        								|	th->evalInfo.allQueenAttacks[stm]);
+        const auto kingUndefendedSquares = 
+	        							th->evalInfo.attacks[opp]
+	        						&	th->evalInfo.kingAttacks[stm]
+	        						&	~(th->evalInfo.attacks[stm] & ~th->evalInfo.kingAttacks[stm]);
+        						
+		const auto enemyPieces = opp == WHITE ? th->whitePieceBB[PIECES] : th->blackPieceBB[PIECES];
 
-		U64 enemyPieces = opp ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES];
+		const auto queenSafeContactCheck = 
+										kingUndefendedSquares 
+									&	th->evalInfo.allQueenAttacks[opp] 
+									& 	~enemyPieces
+									&	th->evalInfo.attacks[opp] 
+									& ~(th->evalInfo.kingAttacks[opp] | th->evalInfo.allQueenAttacks[opp]);
 
-		U64 queenSafeContactCheck = kingUndefendedSquares 
-								&	th->evalInfo.allQueenAttacks[opp] 
-								& 	~enemyPieces
-								& 	(		th->evalInfo.allPawnAttacks[opp] 
-										|	th->evalInfo.allKnightAttacks[opp] 
-										|	th->evalInfo.allBishopAttacks[opp] 
-										|	th->evalInfo.allRookAttacks[opp]);
+		const auto rookSafeContactCheck = 
+										kingUndefendedSquares 
+									&	th->evalInfo.allRookAttacks[opp] 
+									&	~enemyPieces
+									&	th->evalInfo.attacks[opp] 
+									& ~(th->evalInfo.kingAttacks[opp] | th->evalInfo.allRookAttacks[opp]);
 
-		U64 rookSafeContactCheck = kingUndefendedSquares 
-								&	th->evalInfo.allRookAttacks[opp] 
-								&	~enemyPieces
-								&	(		th->evalInfo.allPawnAttacks[opp] 
-										|	th->evalInfo.allKnightAttacks[opp] 
-										|	th->evalInfo.allBishopAttacks[opp] 
-										|	th->evalInfo.allQueenAttacks[opp]);
 							
 		U64 safe 	= 	~(enemyPieces | th->evalInfo.attacks[stm]);
 		U64 b1 		= 	Rmagic(kingSq, th->occupied) & safe;
@@ -1083,8 +1085,6 @@ int kingSafety(Thread *th)
 
 		#if defined(TUNE)
 
-			T->kingPawnShield[stm] 			=	POPCOUNT(th->evalInfo.kingZoneBB[stm] & ourPawns); 
-			T->kingEnemyPawnStorm[stm] 		=	POPCOUNT(pawnStormZone & theirPawns); 
 	        T->queenSafeContactCheck[stm] 	= 	POPCOUNT(queenSafeContactCheck);
 	        T->rookSafeContactCheck[stm] 	= 	POPCOUNT(rookSafeContactCheck);
 			T->queenCheck[stm] 				= 	POPCOUNT(queenSafeChecks);
@@ -1093,7 +1093,6 @@ int kingSafety(Thread *th)
 			T->knightCheck[stm] 			= 	POPCOUNT(knightSafeChecks);
 			T->safetyAdjustment[stm] 		=	1;
 	    	T->safety[stm] 					= 	safetyScore;
-
 		#endif
 	
  		const auto mg = ScoreMG(safetyScore), eg = ScoreEG(safetyScore);
@@ -1108,17 +1107,9 @@ int kingSafety(Thread *th)
 			T->bishopAttack[stm] 			=	0;
 			T->rookAttack[stm] 				=	0;
 			T->queenAttack[stm]	 			=	0;
+
 			T->kingPawnShield[stm] 			=	0; 
 			T->kingEnemyPawnStorm[stm] 		=	0; 
-	        T->queenSafeContactCheck[stm] 	= 	0;
-	        T->rookSafeContactCheck[stm] 	= 	0;
-			T->queenCheck[stm] 				= 	0;
-			T->rookCheck[stm] 				= 	0;
-			T->bishopCheck[stm] 			= 	0;
-			T->knightCheck[stm] 			= 	0;
-			T->safetyAdjustment[stm] 		=	0;
-	    	T->safety[stm] 					= 	0;
-
     	#endif
     } 
 
