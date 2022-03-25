@@ -1040,27 +1040,34 @@ int kingSafety(Thread *th)
 		int safetyScore = th->evalInfo.kingAttackersWeight[stm] + th->evalInfo.pawnsKingEval[stm];
 
 
-        const auto kingUndefendedSquares = 
-	        							th->evalInfo.attacks[opp]
-	        						&	th->evalInfo.kingAttacks[stm]
-	        						&	~(th->evalInfo.attacks[stm] & ~th->evalInfo.kingAttacks[stm]);
-        						
-		const auto enemyPieces = opp == WHITE ? th->whitePieceBB[PIECES] : th->blackPieceBB[PIECES];
 
-		const auto queenSafeContactCheck = 
-										kingUndefendedSquares 
-									&	th->evalInfo.allQueenAttacks[opp] 
-									& 	~enemyPieces
-									&	th->evalInfo.attacks[opp] 
-									& ~(th->evalInfo.kingAttacks[opp] | th->evalInfo.allQueenAttacks[opp]);
+        U64 kingUndefendedSquares = th->evalInfo.attacks[opp]
+        						&	th->evalInfo.kingAttacks[stm]
+        						&	~(		th->evalInfo.allPawnAttacks[stm] 
+        								| 	th->evalInfo.allKnightAttacks[stm] 
+        								|	th->evalInfo.allBishopAttacks[stm] 
+        								|	th->evalInfo.allRookAttacks[stm] 
+        								|	th->evalInfo.allQueenAttacks[stm]);
 
-		const auto rookSafeContactCheck = 
-										kingUndefendedSquares 
-									&	th->evalInfo.allRookAttacks[opp] 
-									&	~enemyPieces
-									&	th->evalInfo.attacks[opp] 
-									& ~(th->evalInfo.kingAttacks[opp] | th->evalInfo.allRookAttacks[opp]);
+		U64 enemyPieces = opp ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES];
 
+		U64 queenSafeContactCheck = kingUndefendedSquares 
+								&	th->evalInfo.allQueenAttacks[opp] 
+								& 	~enemyPieces
+								& 	(		th->evalInfo.allPawnAttacks[opp] 
+										|	th->evalInfo.allKnightAttacks[opp] 
+										|	th->evalInfo.allBishopAttacks[opp] 
+										|	th->evalInfo.allRookAttacks[opp]);
+
+		U64 rookSafeContactCheck = kingUndefendedSquares 
+								&	th->evalInfo.allRookAttacks[opp] 
+								&	~enemyPieces
+								&	(		th->evalInfo.allPawnAttacks[opp] 
+										|	th->evalInfo.allKnightAttacks[opp] 
+										|	th->evalInfo.allBishopAttacks[opp] 
+										|	th->evalInfo.allQueenAttacks[opp]);
+		
+							
 							
 		U64 safe 	= 	~(enemyPieces | th->evalInfo.attacks[stm]);
 		U64 b1 		= 	Rmagic(kingSq, th->occupied) & safe;

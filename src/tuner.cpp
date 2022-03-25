@@ -23,7 +23,7 @@
 #include "weights.h"
 
 #define MAXEPOCHS		1000000000
-#define NPOSITIONS		5000000
+#define NPOSITIONS		7000000
 #define NPARTITIONS		4 
 #define BATCHSIZE		1024 
 #define LR              0.005 
