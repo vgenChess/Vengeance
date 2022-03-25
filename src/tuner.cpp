@@ -757,12 +757,17 @@ void optimise(TVector params, TVector cparams) {
 
 	double bestMae = 100, mae = 0, prevMae = 100;
 
-// 	TVector adagrad = {}, cache = {};
-	TVector M = {}, R = {};
+	// For Adagrad
+	// TVector adagrad = {};
+	
+	// For RMS Prop
+	TVector cache = {};
+	double alpha1 = LR, beta1 = 0.9;
 
 	// For Adam optimiser
-	double beta1 = 0.9, beta2 = 0.999;
-	double alpha1 = LR;
+	// TVector M = {}, R = {};
+	// double beta1 = 0.9, beta2 = 0.999;
+	// double alpha1 = LR;
 	
 	auto tunerStartTime = std::chrono::steady_clock::now();
 	
@@ -797,13 +802,20 @@ void optimise(TVector params, TVector cparams) {
         // params[MG][i] += (K / 200.0) * (gradient[MG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + adagrad[MG][i]));
         // params[EG][i] += (K / 200.0) * (gradient[EG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + adagrad[EG][i]));
 
+
+
 		// RMSProp
+		#pragma omp parallel for schedule(auto)
+		for (int i = 0; i < NTERMS; i++) {
 
-        // cache[MG][i] = beta1 * cache[MG][i] + (1.0 - beta1) * pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
-        // cache[EG][i] = beta1 * cache[EG][i] + (1.0 - beta1) * pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
-        // params[MG][i] += (K / 200.0) * (gradient[MG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + cache[MG][i]));
-        // params[EG][i] += (K / 200.0) * (gradient[EG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + cache[EG][i]));
+	        cache[MG][i] = beta1 * cache[MG][i] + (1.0 - beta1) * pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
+	        cache[EG][i] = beta1 * cache[EG][i] + (1.0 - beta1) * pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
+	        params[MG][i] += (K / 200.0) * (gradient[MG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + cache[MG][i]));
+	        params[EG][i] += (K / 200.0) * (gradient[EG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + cache[EG][i]));
+		}
 
+
+/*
 		#pragma omp parallel
 		{
 			// Parallel region with default number of threads
@@ -821,7 +833,8 @@ void optimise(TVector params, TVector cparams) {
 			}
 		} // End of the Parallel region 
 		
-		
+*/		
+
 		auto tunerTimeNow = std::chrono::steady_clock::now();
 
 		if (std::chrono::duration_cast<std::chrono::seconds>(tunerTimeNow - tunerStartTime).count() > DISPLAY_TIME) {
