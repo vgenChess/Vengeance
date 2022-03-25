@@ -248,7 +248,6 @@ int fullEval(U8 stm, Thread *th)
 	// evaluation of other pieces other than king needs to be done first
 	// because of values required for king safety calculation
 	eval += kingSafety<WHITE>(th)	- 	kingSafety<BLACK>(th);
-	eval += evalBoard<WHITE>(th)	- 	evalBoard<BLACK>(th);
 
 	if (!pawnsHashHit)
 	{
@@ -1116,22 +1115,6 @@ int kingSafety(Thread *th)
 	return score;
 }
 
-template <Side stm>
-int evalBoard(Thread *th) 
-{
-	int score = 0;
-
-	score += POPCOUNT(CENTER & th->evalInfo.attacks[stm]) * weight_center_control;
-
-	#if defined(TUNE)	
-		T->centerControl[stm] = POPCOUNT(CENTER & th->evalInfo.attacks[stm]);
-	#endif
-
-
-	return score;
-}
-
-// Helper functions
 
 void initPSQT() 
 {

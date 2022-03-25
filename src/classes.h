@@ -213,10 +213,6 @@ public:
 	int safety[U8_MAX_SIDES];
 
 
-	// General Board features
-
-	int centerControl[U8_MAX_SIDES];
-
 	void clear() 
 	{
 		phase = 0;

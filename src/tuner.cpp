@@ -247,11 +247,6 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff)
 	}
 
 
-    loadCoeff->type[i] = NORMAL;
-    loadCoeff->coeffs[WHITE][i] = T->centerControl[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->centerControl[BLACK];                         
-
-
 	loadCoeff->type[i] = SAFETY;
     loadCoeff->coeffs[WHITE][i] = T->knightAttack[WHITE];                         
     loadCoeff->coeffs[BLACK][i++] = T->knightAttack[BLACK];                         
@@ -515,9 +510,6 @@ void startTuner() {
 		cparams[EG][count++] = ScoreEG(arr_weight_queen_mobility[i]);
 	}
 
-
-	cparams[MG][count] = ScoreMG(weight_center_control);
-	cparams[EG][count++] = ScoreEG(weight_center_control);
 
 	cparams[MG][count] = ScoreMG(weight_knight_attack);
 	cparams[EG][count++] = ScoreEG(weight_knight_attack);
@@ -1174,10 +1166,6 @@ void saveWeights(TVector params, TVector cparams) {
 	myfile <<"}, ";
 
 
-	myfile << "\n\n";
-
-	myfile << "weight_center_control = " 		<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", "; count++;
-   
 	myfile << "\n\n";
 
 
