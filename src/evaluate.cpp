@@ -158,9 +158,8 @@ int fullEval(U8 stm, Thread *th)
 			}
 		}
 
-	    auto pawnsHashEntry = &th->pawnsHashTable[th->pawnsHashKey % U16_PAWN_HASH_TABLE_RECORDS];
-	    
-	   	pawnsHashHit = false;
+		auto pawnsHashEntry = &th->pawnsHashTable[th->pawnsHashKey % U16_PAWN_HASH_TABLE_RECORDS];
+   		pawnsHashHit = false;
 	#else
 
 		//@TODO check eval hash implementation
@@ -170,13 +169,19 @@ int fullEval(U8 stm, Thread *th)
 	    	return stm == WHITE ? evalHashEntry->score : -evalHashEntry->score;
 	    }
 
-	    auto pawnsHashEntry = &th->pawnsHashTable[th->pawnsHashKey % U16_PAWN_HASH_TABLE_RECORDS];
-	    
+        auto pawnsHashEntry = &th->pawnsHashTable[th->pawnsHashKey % U16_PAWN_HASH_TABLE_RECORDS];
 	   	pawnsHashHit = pawnsHashEntry->key == th->pawnsHashKey;
 	#endif
 
 
 	th->evalInfo.clear();
+	th->evalInfo.pawnsHashHit = pawnsHashHit;
+
+	if (pawnsHashHit) 
+	{
+		th->evalInfo.pawnsKingEval[WHITE] = pawnsHashEntry->pawnsKingEval[WHITE];
+		th->evalInfo.pawnsKingEval[BLACK] = pawnsHashEntry->pawnsKingEval[BLACK];
+	}
 
 	const auto whitePawns = th->whitePieceBB[PAWNS];
 	const auto blackPawns = th->blackPieceBB[PAWNS];
@@ -244,6 +249,12 @@ int fullEval(U8 stm, Thread *th)
 	// because of values required for king safety calculation
 	eval += kingSafety<WHITE>(th)	- 	kingSafety<BLACK>(th);
 	eval += evalBoard<WHITE>(th)	- 	evalBoard<BLACK>(th);
+
+	if (!pawnsHashHit)
+	{
+		pawnsHashEntry->pawnsKingEval[WHITE] = th->evalInfo.pawnsKingEval[WHITE];
+		pawnsHashEntry->pawnsKingEval[BLACK] = th->evalInfo.pawnsKingEval[BLACK];
+	}
 	
 	// Tapered evaluation 
 	int phase = 	4 * POPCOUNT(th->whitePieceBB[QUEEN] 	| 	th->blackPieceBB[QUEEN]) 
@@ -1008,17 +1019,23 @@ int kingSafety(Thread *th)
 	if (	th->evalInfo.kingAttackersCount[stm] >= 2
 		&&	th->evalInfo.kingAdjacentZoneAttacksCount[stm]) 
 	{ 
-		const auto ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
-		const auto theirPawns = opp ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+	   	if (!th->evalInfo.pawnsHashHit)
+	    {
+			const auto ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+			const auto theirPawns = opp ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 
-		// TODO redo logic (Often results in bad evaluation)
-		auto pawnStormZone = th->evalInfo.kingZoneBB[stm];
+			// TODO redo logic (Often results in bad evaluation)
+			auto pawnStormZone = th->evalInfo.kingZoneBB[stm];
 
-		pawnStormZone |= stm ? pawnStormZone >> 8 : pawnStormZone << 8;
+			pawnStormZone |= stm ? pawnStormZone >> 8 : pawnStormZone << 8;
+		
+			th->evalInfo.pawnsKingEval[stm] =
+				POPCOUNT(th->evalInfo.kingZoneBB[stm] & ourPawns) * weight_king_pawn_shield	// TODO check logic
+				+ POPCOUNT(pawnStormZone & theirPawns) * weight_king_enemy_pawn_storm;			// TODO check logic			
+		}
 
-		auto safetyScore = th->evalInfo.kingAttackersWeight[stm]
-						+ POPCOUNT(th->evalInfo.kingZoneBB[stm] & ourPawns) * weight_king_pawn_shield	// TODO check logic
-						+ POPCOUNT(pawnStormZone & theirPawns) * weight_king_enemy_pawn_storm;			// TODO check logic
+
+		int safetyScore = th->evalInfo.kingAttackersWeight[stm] + th->evalInfo.pawnsKingEval[stm];
 
 
         U64 kingUndefendedSquares = th->evalInfo.attacks[opp]

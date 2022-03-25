@@ -16,6 +16,9 @@ class EvalInfo
 
 public:
 	
+	bool pawnsHashHit;
+	int pawnsKingEval[U8_MAX_SIDES];
+
 	U64 openFilesBB;
 	U64 halfOpenFilesBB[U8_MAX_SIDES]; 
 
@@ -46,6 +49,8 @@ public:
 		openFilesBB = 0ULL;
 
 		for (int i = 0; i < U8_MAX_SIDES; i++) {
+
+			pawnsKingEval[i] = 0;
 
 			passedPawns[i] = 0ULL;
 	
