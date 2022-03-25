@@ -23,9 +23,10 @@
 #include "weights.h"
 
 #define MAXEPOCHS		1000000000
+#define NPOSITIONS		5000000
 #define NPARTITIONS		4 
-#define BATCHSIZE		256 
-#define NPOSITIONS		1428000 
+#define BATCHSIZE		1024 
+#define LR              0.005 
 #define DISPLAY_TIME	60				
 
 struct Score 
@@ -603,8 +604,8 @@ void startTuner() {
 	assert(count == NTERMS);
 
 	std::fstream newfile;
-   	// newfile.open ("lichess-big3-resolved.book", std::ios::in);	// NPOSITIONS = 7150000 roughly
-	newfile.open ("quiet-labeled.epd", std::ios::in); 			// v6 NPOSITIONS = 725000 exact
+   	newfile.open ("lichess-big3-resolved.book", std::ios::in);	// NPOSITIONS = 7150000 roughly
+	// newfile.open ("quiet-labeled.epd", std::ios::in); 			// v6 NPOSITIONS = 725000 exact
 																// v7 NPOSITIONS = 1428000 exact
 	count = 0;
 
@@ -636,7 +637,7 @@ void startTuner() {
 
 			// for file "quiet-labeled.epd"
 
-			if (tp.find("1-0") != std::string::npos)	
+			/*if (tp.find("1-0") != std::string::npos)	
 				result = 1.0;
 			else if (tp.find("1/2-1/2") != std::string::npos) 
 				result = 0.5;
@@ -644,11 +645,11 @@ void startTuner() {
 				result = 0.0;
 			else 
 				continue;
-
+*/
 
 			// for file "4818922_positions_gm2600.txt"
 
-/*			if (tp.find("1.0") != std::string::npos)	
+			if (tp.find("1.0") != std::string::npos)	
 				result = 1.0;
 			else if (tp.find("0.5") != std::string::npos) 
 				result = 0.5;
@@ -656,7 +657,7 @@ void startTuner() {
 				result = 0.0;
 			else 
 				continue;
-*/
+
 			
 			assert(result == 1.0 || result == 0.5 || result == 0.0);
 
@@ -769,7 +770,7 @@ void optimise(TVector params, TVector cparams) {
 
 	// For Adam optimiser
 	double beta1 = 0.9, beta2 = 0.999;
-	double alpha1 = 0.001;
+	double alpha1 = LR;
 	
 	auto tunerStartTime = std::chrono::steady_clock::now();
 	
@@ -839,7 +840,8 @@ void optimise(TVector params, TVector cparams) {
 
 			std::cout << "Epoch = [" << epoch * BATCHSIZE / NPOSITIONS << "], ";
 			std::cout << "Error = [" << std::fixed << std::setprecision(8) << mae << "], ";
-			std::cout << "Rate = [" << std::fixed << std::setprecision(5) << alpha1 << "], ";
+			std::cout << "Rate = [" << std::fixed << std::setprecision(5) << LR << "], ";
+			std::cout << "Batch Size = [" << BATCHSIZE << "], ";
 			
 			if (prevMae > mae)
 				std::cout << "Error loss = [" << std::fixed << std::setprecision(8) << prevMae - mae << "]" << std::endl;
