@@ -48,6 +48,7 @@ U64 arrRanks[8] = {
 
 // TODO check datatype
 int PSQT[U8_MAX_SQUARES][U8_MAX_PIECES][U8_MAX_SQUARES];
+U64 kingZoneBB[U8_MAX_SIDES][U8_MAX_SQUARES];
 
 template<Side stm>
 void initEvalInfo(Thread *th) 
@@ -219,7 +220,6 @@ int fullEval(U8 stm, Thread *th)
 	
 	    if (!pawnsHashHit)
 	    {
-		    // only calculate passed pawns if there is no cached evaluation for pawns	
 			th->evalInfo.passedPawns[WHITE] = wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
 			th->evalInfo.passedPawns[BLACK] = bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]);
 
@@ -304,14 +304,14 @@ int pawnsEval(Thread *th)
 	int score = 0;
 	
 
-	// Piece Square Tables
-	
+
 	auto ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 	while (ourPawns) 
 	{
 		sq = GET_POSITION(ourPawns);
 		POP_POSITION(ourPawns);
 
+		// Pawn PSQT Score
 		score += stm ? PSQT[Mirror64[kingSq]][PAWNS][Mirror64[sq]] : PSQT[kingSq][PAWNS][sq];
 	}
 
@@ -575,6 +575,7 @@ int knightsEval(Thread *th)
 
 		assert(sq >= 0 && sq <= 63);
 		
+		// Knight PSQT Score
 		score += stm ? PSQT[Mirror64[kingSq]][KNIGHTS][Mirror64[sq]] : PSQT[kingSq][KNIGHTS][sq];
 
 
@@ -710,6 +711,7 @@ int bishopsEval(Thread *th)
 		attacksBB = th->evalInfo.bishopAttacks[stm][sq];		
 
 
+		// Bishop PSQT Score
 		score += stm ? PSQT[Mirror64[kingSq]][BISHOPS][Mirror64[sq]] : PSQT[kingSq][BISHOPS][sq];
 
 
@@ -793,7 +795,9 @@ int rooksEval(Thread *th)
 		attacksBB = th->evalInfo.rookAttacks[stm][sq];		
 
 
+		// Rook PSQT Score
 		score += stm ? PSQT[Mirror64[kingSq]][ROOKS][Mirror64[sq]] : PSQT[kingSq][ROOKS][sq];
+
 
 
 		// Nimzowitsch argued when the outpost is in one of the flank (a-, b-, g- and h-) files 
@@ -945,7 +949,9 @@ int queenEval(Thread *th)
 		attacksBB = th->evalInfo.queenAttacks[stm][sq];
 
 
+		// Queen PSQT Score
 		score += stm ? PSQT[Mirror64[kingSq]][QUEEN][Mirror64[sq]] : PSQT[kingSq][QUEEN][sq];
+
 
 
 		if (	POPCOUNT(th->occupied) >= 22	// early game
@@ -1131,7 +1137,20 @@ void initPSQT()
 	}
 }
 
+void initKingZoneBB()
+{
+	for (int sq = 0; sq < U8_MAX_SQUARES; sq++) {
 
+	    kingZoneBB[WHITE][sq] = get_king_attacks(sq) | (1ULL << sq) | (get_king_attacks(sq) << 8);
+	    kingZoneBB[BLACK][sq] = get_king_attacks(sq) | (1ULL << sq) | (get_king_attacks(sq) >> 8);
+
+	    kingZoneBB[WHITE][sq] |= ((sq % 8) != 0) ? 0ULL : kingZoneBB[WHITE][sq] << 1;
+	    kingZoneBB[BLACK][sq] |= ((sq % 8) != 0) ? 0ULL : kingZoneBB[BLACK][sq] << 1;
+
+	    kingZoneBB[WHITE][sq] |= ((sq % 8) != 7) ? 0ULL : kingZoneBB[WHITE][sq] >> 1;
+	    kingZoneBB[BLACK][sq] |= ((sq % 8) != 7) ? 0ULL : kingZoneBB[BLACK][sq] >> 1;
+	}	
+}
 
 
 
