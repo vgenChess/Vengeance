@@ -761,13 +761,12 @@ void optimise(TVector params, TVector cparams) {
 	// TVector adagrad = {};
 	
 	// For RMS Prop
-	TVector cache = {};
-	double alpha1 = LR, beta1 = 0.9;
+	// TVector cache = {};
+	// double alpha1 = LR, beta1 = 0.9;
 
 	// For Adam optimiser
-	// TVector M = {}, R = {};
-	// double beta1 = 0.9, beta2 = 0.999;
-	// double alpha1 = LR;
+	double alpha1 = LR, beta1 = 0.9, beta2 = 0.999;
+	TVector M = {}, R = {};
 	
 	auto tunerStartTime = std::chrono::steady_clock::now();
 	
@@ -803,9 +802,8 @@ void optimise(TVector params, TVector cparams) {
         // params[EG][i] += (K / 200.0) * (gradient[EG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + adagrad[EG][i]));
 
 
-
-		// RMSProp
-		#pragma omp parallel for schedule(auto)
+		// RMSProp (slower than Adam)
+/*		#pragma omp parallel for schedule(auto)
 		for (int i = 0; i < NTERMS; i++) {
 
 	        cache[MG][i] = beta1 * cache[MG][i] + (1.0 - beta1) * pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
@@ -813,27 +811,23 @@ void optimise(TVector params, TVector cparams) {
 	        params[MG][i] += (K / 200.0) * (gradient[MG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + cache[MG][i]));
 	        params[EG][i] += (K / 200.0) * (gradient[EG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + cache[EG][i]));
 		}
+*/
 
+		// Adam
+		#pragma omp parallel for schedule(auto)
+		for (int i = 0; i < NTERMS; ++i) {
+			
+		    M[MG][i] = beta1 * M[MG][i] + (1.0 - beta1) * (K / 200.0) * gradient[MG][i] / BATCHSIZE;
+		    M[EG][i] = beta1 * M[EG][i] + (1.0 - beta1) * (K / 200.0) * gradient[EG][i] / BATCHSIZE;
 
-/*
-		#pragma omp parallel
-		{
-			// Parallel region with default number of threads
-			#pragma omp for schedule(auto)
-			for (int i = 0; i < NTERMS; ++i) {
-				
-			    M[MG][i] = beta1 * M[MG][i] + (1.0 - beta1) * (K / 200.0) * gradient[MG][i] / BATCHSIZE;
-			    M[EG][i] = beta1 * M[EG][i] + (1.0 - beta1) * (K / 200.0) * gradient[EG][i] / BATCHSIZE;
+			R[MG][i] = beta2 * R[MG][i] + (1.0 - beta2) * pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
+        	R[EG][i] = beta2 * R[EG][i] + (1.0 - beta2) * pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
+
+        	params[MG][i] += alpha1 * (M[MG][i] / (1.0 - pow(beta1, epoch))) / (sqrt(R[MG][i] / (1.0 - pow(beta2, epoch))) + 1e-8);
+        	params[EG][i] += alpha1 * (M[EG][i] / (1.0 - pow(beta1, epoch))) / (sqrt(R[EG][i] / (1.0 - pow(beta2, epoch))) + 1e-8);
+		}
 	
-				R[MG][i] = beta2 * R[MG][i] + (1.0 - beta2) * pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
-	        	R[EG][i] = beta2 * R[EG][i] + (1.0 - beta2) * pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
 
-	        	params[MG][i] += alpha1 * (M[MG][i] / (1.0 - pow(beta1, epoch))) / (sqrt(R[MG][i] / (1.0 - pow(beta2, epoch))) + 1e-8);
-	        	params[EG][i] += alpha1 * (M[EG][i] / (1.0 - pow(beta1, epoch))) / (sqrt(R[EG][i] / (1.0 - pow(beta2, epoch))) + 1e-8);
-			}
-		} // End of the Parallel region 
-		
-*/		
 
 		auto tunerTimeNow = std::chrono::steady_clock::now();
 
