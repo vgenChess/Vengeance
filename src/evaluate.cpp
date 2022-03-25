@@ -102,10 +102,6 @@ void initEvalInfo(Thread *th)
 		GET_POSITION(th->whitePieceBB[KING]) : GET_POSITION(th->blackPieceBB[KING]);	
 
 	// King Safety 
-		
-	th->evalInfo.kingZoneBB[stm] = stm == WHITE ? 
-								th->evalInfo.kingAttacks[WHITE] | (th->evalInfo.kingAttacks[WHITE] >> 8) :
-								th->evalInfo.kingAttacks[BLACK] | (th->evalInfo.kingAttacks[BLACK] << 8);
 
 	th->evalInfo.kingAttackersCount[stm] = 0;
     th->evalInfo.kingAttackersWeight[stm] = 0;
@@ -652,7 +648,7 @@ int knightsEval(Thread *th)
 
 		// Update values required for King safety 
 		
-		if (attacksBB & th->evalInfo.kingZoneBB[opp]) 
+		if (attacksBB & kingZoneBB[opp][kingSq]) 
 		{	
  			th->evalInfo.kingAttackersCount[opp]++;
             th->evalInfo.kingAttackersWeight[opp] += weight_knight_attack;
@@ -745,7 +741,7 @@ int bishopsEval(Thread *th)
 
 		// Update values required for King safety 
 
-		if (attacksBB & th->evalInfo.kingZoneBB[opp]) 
+		if (attacksBB & kingZoneBB[opp][kingSq]) 
 		{	
  			th->evalInfo.kingAttackersCount[opp]++;
             th->evalInfo.kingAttackersWeight[opp] += weight_bishop_attack;
@@ -904,7 +900,7 @@ int rooksEval(Thread *th)
 
 		// Update values required for King safety later in kingEval
 		
-		if (attacksBB & th->evalInfo.kingZoneBB[opp]) 
+		if (attacksBB & kingZoneBB[opp][kingSq]) 
 		{	
  			th->evalInfo.kingAttackersCount[opp]++;
             th->evalInfo.kingAttackersWeight[opp] += weight_rook_attack;
@@ -983,7 +979,7 @@ int queenEval(Thread *th)
 
 
 		// Update values required for King safety later in kingEval
-		if (attacksBB & th->evalInfo.kingZoneBB[opp]) 
+		if (attacksBB & kingZoneBB[opp][kingSq]) 
 		{	
  			th->evalInfo.kingAttackersCount[opp]++;
             th->evalInfo.kingAttackersWeight[opp] += weight_queen_attack;
@@ -1030,18 +1026,13 @@ int kingSafety(Thread *th)
 			const auto ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 			const auto theirPawns = opp ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 
-			// TODO redo logic (Often results in bad evaluation)
-			auto pawnStormZone = th->evalInfo.kingZoneBB[stm];
-
-			pawnStormZone |= stm ? pawnStormZone >> 8 : pawnStormZone << 8;
-		
 			th->evalInfo.pawnsKingEval[stm] =
-				POPCOUNT(th->evalInfo.kingZoneBB[stm] & ourPawns) * weight_king_pawn_shield	// TODO check logic
-				+ POPCOUNT(pawnStormZone & theirPawns) * weight_king_enemy_pawn_storm;			// TODO check logic		
+				POPCOUNT(kingZoneBB[stm][kingSq] & ourPawns) * weight_king_pawn_shield	// TODO check logic
+				+ POPCOUNT(kingZoneBB[stm][kingSq] & theirPawns) * weight_king_enemy_pawn_storm;			// TODO check logic		
 
 			#if defined(TUNE)
-				T->kingPawnShield[stm] 			=	POPCOUNT(th->evalInfo.kingZoneBB[stm] & ourPawns); 
-				T->kingEnemyPawnStorm[stm] 		=	POPCOUNT(pawnStormZone & theirPawns); 
+				T->kingPawnShield[stm] 			=	POPCOUNT(kingZoneBB[stm][kingSq] & ourPawns); 
+				T->kingEnemyPawnStorm[stm] 		=	POPCOUNT(kingZoneBB[stm][kingSq] & theirPawns); 
 			#endif
 		}
 
