@@ -208,7 +208,7 @@ void aspirationWindow(SearchThread *th)
             break;
         }
         
-        if (score <= alpha) 
+        if (score <= alpha)
         {
             beta = (alpha + beta) / 2;
             alpha = std::max(score - window, -I32_MATE);

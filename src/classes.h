@@ -179,11 +179,11 @@ public:
 	// Piece Square Tables
 
 	int kingPSQT[U8_MAX_SQUARES][U8_MAX_SIDES];
-	int pawnPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES][U8_MAX_SIDES];
-	int knightPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES][U8_MAX_SIDES];
-	int bishopPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES][U8_MAX_SIDES];
-	int rookPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES][U8_MAX_SIDES];
-	int queenPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES][U8_MAX_SIDES];
+	int pawnPSQT[U8_MAX_SQUARES][U8_MAX_SIDES];
+	int knightPSQT[U8_MAX_SQUARES][U8_MAX_SIDES];
+	int bishopPSQT[U8_MAX_SQUARES][U8_MAX_SIDES];
+	int rookPSQT[U8_MAX_SQUARES][U8_MAX_SIDES];
+	int queenPSQT[U8_MAX_SQUARES][U8_MAX_SIDES];
 	
 
 	// King Safety
@@ -293,15 +293,11 @@ public:
 			for (int i = 0; i < 64; i++) 
 			{
 				kingPSQT[i][side] = 0;
-
-				for (int j = 0; j < 64; j++) 
-				{	
-					pawnPSQT[i][j][side] = 0;
-					knightPSQT[i][j][side] = 0;
-					bishopPSQT[i][j][side] = 0;
-					rookPSQT[i][j][side] = 0;
-					queenPSQT[i][j][side] = 0;
-				}
+				pawnPSQT[i][side] = 0;
+				knightPSQT[i][side] = 0;
+				bishopPSQT[i][side] = 0;
+				rookPSQT[i][side] = 0;
+				queenPSQT[i][side] = 0;
 			}
 		}
 	

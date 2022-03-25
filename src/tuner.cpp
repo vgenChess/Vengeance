@@ -25,8 +25,8 @@
 #define MAXEPOCHS		1000000000
 #define NPOSITIONS		7000000
 #define NPARTITIONS		4 
-#define BATCHSIZE		1024 
-#define LR              0.005 
+#define BATCHSIZE		256 
+#define LR              0.001 
 #define DISPLAY_TIME	60				
 
 struct Score 
@@ -297,60 +297,53 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff)
 
     //PSQT
 
-    for (int kingSq = 0; kingSq < U8_MAX_SQUARES; kingSq++) {
+    for (int sq = 0; sq < U8_MAX_SQUARES; sq++) {
 	
 		loadCoeff->type[i] = NORMAL;
 
-	    loadCoeff->coeffs[WHITE][i] = T->kingPSQT[kingSq][WHITE];                         
-	    loadCoeff->coeffs[BLACK][i++] = T->kingPSQT[kingSq][BLACK];                         
+	    loadCoeff->coeffs[WHITE][i] = T->pawnPSQT[sq][WHITE];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->pawnPSQT[sq][BLACK];                         
     }
 
-    for (int kingSq = 0; kingSq < U8_MAX_SQUARES; kingSq++) {
-		for (int pieceSq = 0; pieceSq < U8_MAX_SQUARES; pieceSq++) {
+    for (int sq = 0; sq < U8_MAX_SQUARES; sq++) {
+	
+		loadCoeff->type[i] = NORMAL;
 
-			loadCoeff->type[i] = NORMAL;
-		    
-		    loadCoeff->coeffs[WHITE][i] = T->pawnPSQT[kingSq][pieceSq][WHITE];                         
-		    loadCoeff->coeffs[BLACK][i++] = T->pawnPSQT[kingSq][pieceSq][BLACK];                         
-    	}
+	    loadCoeff->coeffs[WHITE][i] = T->knightPSQT[sq][WHITE];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->knightPSQT[sq][BLACK];                         
     }
 
-    for (int kingSq = 0; kingSq < U8_MAX_SQUARES; kingSq++) {
-		for (int pieceSq = 0; pieceSq < U8_MAX_SQUARES; pieceSq++) {
+    for (int sq = 0; sq < U8_MAX_SQUARES; sq++) {
+	
+		loadCoeff->type[i] = NORMAL;
 
-			loadCoeff->type[i] = NORMAL;
-		    loadCoeff->coeffs[WHITE][i] = T->knightPSQT[kingSq][pieceSq][WHITE];                         
-		    loadCoeff->coeffs[BLACK][i++] = T->knightPSQT[kingSq][pieceSq][BLACK];                         
-    	}
+	    loadCoeff->coeffs[WHITE][i] = T->bishopPSQT[sq][WHITE];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->bishopPSQT[sq][BLACK];                         
     }
 
-    for (int kingSq = 0; kingSq < U8_MAX_SQUARES; kingSq++) {
-		for (int pieceSq = 0; pieceSq < U8_MAX_SQUARES; pieceSq++) {
+    for (int sq = 0; sq < U8_MAX_SQUARES; sq++) {
+	
+		loadCoeff->type[i] = NORMAL;
 
-			loadCoeff->type[i] = NORMAL;
-		    loadCoeff->coeffs[WHITE][i] = T->bishopPSQT[kingSq][pieceSq][WHITE];                         
-		    loadCoeff->coeffs[BLACK][i++] = T->bishopPSQT[kingSq][pieceSq][BLACK];                         
-    	}
+	    loadCoeff->coeffs[WHITE][i] = T->rookPSQT[sq][WHITE];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->rookPSQT[sq][BLACK];                         
     }
 
-    for (int kingSq = 0; kingSq < U8_MAX_SQUARES; kingSq++) {
-		for (int pieceSq = 0; pieceSq < U8_MAX_SQUARES; pieceSq++) {
+    for (int sq = 0; sq < U8_MAX_SQUARES; sq++) {
+	
+		loadCoeff->type[i] = NORMAL;
 
-			loadCoeff->type[i] = NORMAL;
-		    loadCoeff->coeffs[WHITE][i] = T->rookPSQT[kingSq][pieceSq][WHITE];                         
-		    loadCoeff->coeffs[BLACK][i++] = T->rookPSQT[kingSq][pieceSq][BLACK];                         
-    	}
+	    loadCoeff->coeffs[WHITE][i] = T->queenPSQT[sq][WHITE];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->queenPSQT[sq][BLACK];                         
     }
 
-    for (int kingSq = 0; kingSq < U8_MAX_SQUARES; kingSq++) {
-		for (int pieceSq = 0; pieceSq < U8_MAX_SQUARES; pieceSq++) {
+    for (int sq = 0; sq < U8_MAX_SQUARES; sq++) {
+	
+		loadCoeff->type[i] = NORMAL;
 
-			loadCoeff->type[i] = NORMAL;
-		    loadCoeff->coeffs[WHITE][i] = T->queenPSQT[kingSq][pieceSq][WHITE];                         
-		    loadCoeff->coeffs[BLACK][i++] = T->queenPSQT[kingSq][pieceSq][BLACK];                         
-    	}
+	    loadCoeff->coeffs[WHITE][i] = T->kingPSQT[sq][WHITE];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->kingPSQT[sq][BLACK];                         
     }
-
 
     assert(i == NTERMS);
 }
@@ -546,50 +539,40 @@ void startTuner() {
 	cparams[EG][count++] = ScoreEG(weight_safety_adjustment);
 
 	
-	for (int kingSq = 0; kingSq < U8_MAX_SQUARES; kingSq++) {
+	for (int sq = 0; sq < U8_MAX_SQUARES; sq++) {
 	
-		cparams[MG][count] = ScoreMG(kingPSQT[kingSq]);
-		cparams[EG][count++] = ScoreEG(kingPSQT[kingSq]);
+		cparams[MG][count] = ScoreMG(pawnPSQT[sq]);
+		cparams[EG][count++] = ScoreEG(pawnPSQT[sq]);
 	}
 
-	for (int kingSq = 0; kingSq < U8_MAX_SQUARES; kingSq++) {
-		for (int pieceSq = 0; pieceSq < U8_MAX_SQUARES; pieceSq++) {
-
-			cparams[MG][count] = ScoreMG(pawnPSQT[kingSq][pieceSq]);
-			cparams[EG][count++] = ScoreEG(pawnPSQT[kingSq][pieceSq]);
-		}
+	for (int sq = 0; sq < U8_MAX_SQUARES; sq++) {
+	
+		cparams[MG][count] = ScoreMG(knightPSQT[sq]);
+		cparams[EG][count++] = ScoreEG(knightPSQT[sq]);
 	}
 
-	for (int kingSq = 0; kingSq < U8_MAX_SQUARES; kingSq++) {
-		for (int pieceSq = 0; pieceSq < U8_MAX_SQUARES; pieceSq++) {
-
-			cparams[MG][count] = ScoreMG(knightPSQT[kingSq][pieceSq]);
-			cparams[EG][count++] = ScoreEG(knightPSQT[kingSq][pieceSq]);
-		}
+	for (int sq = 0; sq < U8_MAX_SQUARES; sq++) {
+	
+		cparams[MG][count] = ScoreMG(bishopPSQT[sq]);
+		cparams[EG][count++] = ScoreEG(bishopPSQT[sq]);
 	}
 
-	for (int kingSq = 0; kingSq < U8_MAX_SQUARES; kingSq++) {
-		for (int pieceSq = 0; pieceSq < U8_MAX_SQUARES; pieceSq++) {
-
-			cparams[MG][count] = ScoreMG(bishopPSQT[kingSq][pieceSq]);
-			cparams[EG][count++] = ScoreEG(bishopPSQT[kingSq][pieceSq]);
-		}
+	for (int sq = 0; sq < U8_MAX_SQUARES; sq++) {
+	
+		cparams[MG][count] = ScoreMG(rookPSQT[sq]);
+		cparams[EG][count++] = ScoreEG(rookPSQT[sq]);
 	}
 
-	for (int kingSq = 0; kingSq < U8_MAX_SQUARES; kingSq++) {
-		for (int pieceSq = 0; pieceSq < U8_MAX_SQUARES; pieceSq++) {
-
-			cparams[MG][count] = ScoreMG(rookPSQT[kingSq][pieceSq]);
-			cparams[EG][count++] = ScoreEG(rookPSQT[kingSq][pieceSq]);
-		}
+	for (int sq = 0; sq < U8_MAX_SQUARES; sq++) {
+	
+		cparams[MG][count] = ScoreMG(queenPSQT[sq]);
+		cparams[EG][count++] = ScoreEG(queenPSQT[sq]);
 	}
 
-	for (int kingSq = 0; kingSq < U8_MAX_SQUARES; kingSq++) {
-		for (int pieceSq = 0; pieceSq < U8_MAX_SQUARES; pieceSq++) {
-
-			cparams[MG][count] = ScoreMG(queenPSQT[kingSq][pieceSq]);
-			cparams[EG][count++] = ScoreEG(queenPSQT[kingSq][pieceSq]);
-		}
+	for (int sq = 0; sq < U8_MAX_SQUARES; sq++) {
+	
+		cparams[MG][count] = ScoreMG(kingPSQT[sq]);
+		cparams[EG][count++] = ScoreEG(kingPSQT[sq]);
 	}
 
 
@@ -1193,42 +1176,30 @@ void saveWeights(TVector params, TVector cparams) {
 
 	// PSQT weights
 	
-	myfile << "\n" << "kingPSQT[U8_MAX_SQUARES] = {" 	<<	"\n\n";	
-	for (int i = 0; i < U8_MAX_SQUARES; i++) { 
-
-		myfile << "S(" 
-				<< std::setw(4) << (int)weights[MG][count] << "," 
-				<< std::setw(4) << (int)weights[EG][count] << ")" << ", "; count++; 
-
-		if (((i + 1) % 8) == 0) 
-			myfile << "\n";
-	}	
-	myfile << "}," << "\n"; 	
-	
-	for (int piece = PAWNS; piece < KING; piece++) {
+	for (int piece = PAWNS; piece <= KING; piece++) {
 
 		if (piece == PAWNS)
-			myfile << "\n" << "pawnPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {" 	<<	"\n\n";
+			myfile << "\n" << "pawnPSQT[U8_MAX_SQUARES] = {" 	<<	"\n\n";
 		if (piece == KNIGHTS)
-			myfile << "\n" << "knightPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {" <<	"\n\n";
+			myfile << "\n" << "knightPSQT[U8_MAX_SQUARES] = {" <<	"\n\n";
 		if (piece == BISHOPS)
-			myfile << "\n" << "bishopPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {" <<	"\n\n";
+			myfile << "\n" << "bishopPSQT[U8_MAX_SQUARES] = {" <<	"\n\n";
 		if (piece == ROOKS)
-			myfile << "\n" << "rookPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {" 	<<	"\n\n";
+			myfile << "\n" << "rookPSQT[U8_MAX_SQUARES] = {" 	<<	"\n\n";
 		if (piece == QUEEN)
-			myfile << "\n" << "queenPSQT[U8_MAX_SQUARES][U8_MAX_SQUARES] = {" 	<<	"\n\n";
+			myfile << "\n" << "queenPSQT[U8_MAX_SQUARES] = {" 	<<	"\n\n";
+		if (piece == KING)
+			myfile << "\n" << "kingPSQT[U8_MAX_SQUARES] = {" 	<<	"\n\n";
 
-		for (int j = 0; j < U8_MAX_SQUARES; j++) { 
-			for (int i = 0; i < U8_MAX_SQUARES; i++) { 
+		for (int i = 0; i < U8_MAX_SQUARES; i++) { 
 
-				myfile << "S(" 
-						<< std::setw(4) << (int)weights[MG][count] << "," 
-						<< std::setw(4) << (int)weights[EG][count] << ")" << ", "; count++; 
-					
-				if (((i + 1) % 16) == 0) 
-					myfile << "\n";
-			}  
-		}	
+			myfile << "S(" 
+					<< std::setw(4) << (int)weights[MG][count] << "," 
+					<< std::setw(4) << (int)weights[EG][count] << ")" << ", "; count++; 
+				
+			if (((i + 1) % 8) == 0) 
+				myfile << "\n";
+		}  
 
 		if (piece == QUEEN)
 			myfile << "};" << "\n"; 	
