@@ -433,13 +433,13 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
             return beta;          
     
 
-        if (sEval < U16_RAZOR_MARGIN)             // Razoring
+        if (sEval + U16_RAZOR_MARGIN < beta)      // Razoring
         {
             const auto rscore = quiescenseSearch<stm>(alpha, beta, th, si);
 
-            if (rscore < U16_RAZOR_MARGIN) 
+            if (rscore < beta) 
             {
-                return alpha;
+                return rscore;
             }
         }
 
