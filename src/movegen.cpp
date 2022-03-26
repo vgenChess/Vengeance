@@ -557,7 +557,7 @@ void genMoves(Side stm, int ply, std::vector<Move> &moves, Thread *th) {
    }
 }
 
-int getTopIndex(std::vector<Move> &moves) {
+inline int getBestMoveIndex(std::vector<Move> &moves) {
   
     int m = 0;
     int n = moves.size();
@@ -645,7 +645,7 @@ Move getNextMove(Side stm, int ply, Thread *th, MOVE_LIST *moveList) {
 
             if (moveList->moves.size() > 0) {
 
-                int index = getTopIndex(moveList->moves);
+                int index = getBestMoveIndex(moveList->moves);
                 
                 Move m = moveList->moves[index];
 
@@ -753,7 +753,7 @@ Move getNextMove(Side stm, int ply, Thread *th, MOVE_LIST *moveList) {
 
             if (moveList->moves.size() > 0) {
 
-                int index = getTopIndex(moveList->moves);
+                int index = getBestMoveIndex(moveList->moves);
                 
                 Move m = moveList->moves[index];
                 
@@ -777,7 +777,7 @@ Move getNextMove(Side stm, int ply, Thread *th, MOVE_LIST *moveList) {
 
             if (moveList->badCaptures.size() > 0) {
 
-                int index = getTopIndex(moveList->badCaptures);
+                int index = getBestMoveIndex(moveList->badCaptures);
                     
                 Move m = moveList->badCaptures[index];
 
@@ -814,7 +814,7 @@ Move getNextMove(Side stm, int ply, Thread *th, MOVE_LIST *moveList) {
             if (    !moveList->skipQuiets
                 &&  moveList->moves.size() > 0) {
 
-                int index = getTopIndex(moveList->moves);
+                int index = getBestMoveIndex(moveList->moves);
                     
                 Move m = moveList->moves[index];
 
