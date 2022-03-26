@@ -1201,7 +1201,7 @@ void saveWeights(TVector params, TVector cparams) {
 				myfile << "\n";
 		}  
 
-		if (piece == QUEEN)
+		if (piece == KING)
 			myfile << "};" << "\n"; 	
 		else 
 			myfile << "}," << "\n"; 	
