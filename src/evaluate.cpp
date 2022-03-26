@@ -123,7 +123,7 @@ int fullEval(U8 side, Thread *th)
 	
 		U8 sq;
 		U64 bb;
-		for (U8 side = WHITE; side <= BLACK; side++) 
+		for (U8 s = WHITE; s <= BLACK; s++) 
 		{
 			for (U8 piece = PAWNS; piece <= KING; piece++) 
 			{	
@@ -134,20 +134,20 @@ int fullEval(U8 side, Thread *th)
 					sq = GET_POSITION(bb);
 					POP_POSITION(bb);
 
-					T->weight_val_pawn[side] 	+= 	piece == PAWNS 		? 1 : 0;
-					T->weight_val_knight[side] 	+= 	piece == KNIGHTS 	? 1 : 0;
-					T->weight_val_bishop[side] 	+= 	piece == BISHOPS 	? 1 : 0;
-					T->weight_val_rook[side] 	+= 	piece == ROOKS 		? 1 : 0;
-					T->weight_val_queen[side] 	+= 	piece == QUEEN 		? 1 : 0;
+					T->weight_val_pawn[s] 	+= 	piece == PAWNS 		? 1 : 0;
+					T->weight_val_knight[s] += 	piece == KNIGHTS 	? 1 : 0;
+					T->weight_val_bishop[s] += 	piece == BISHOPS 	? 1 : 0;
+					T->weight_val_rook[s] 	+= 	piece == ROOKS 		? 1 : 0;
+					T->weight_val_queen[s] 	+= 	piece == QUEEN 		? 1 : 0;
 					
-					sq = side ? Mirror64[sq] : sq;
+					sq = s ? Mirror64[sq] : sq;
 	
-					T->kingPSQT 	[sq][side] = piece == KING  	? 1 : 0;
-					T->pawnPSQT	 	[sq][side] = piece == PAWNS 	? 1 : 0; 			
-					T->knightPSQT	[sq][side] = piece == KNIGHTS 	? 1 : 0; 			
-					T->bishopPSQT	[sq][side] = piece == BISHOPS 	? 1 : 0; 			
-					T->rookPSQT		[sq][side] = piece == ROOKS 	? 1 : 0; 			
-					T->queenPSQT	[sq][side] = piece == QUEEN 	? 1 : 0; 			
+					T->kingPSQT 	[sq][s] = piece == KING  	? 1 : 0;
+					T->pawnPSQT	 	[sq][s] = piece == PAWNS 	? 1 : 0; 			
+					T->knightPSQT	[sq][s] = piece == KNIGHTS 	? 1 : 0; 			
+					T->bishopPSQT	[sq][s] = piece == BISHOPS 	? 1 : 0; 			
+					T->rookPSQT		[sq][s] = piece == ROOKS 	? 1 : 0; 			
+					T->queenPSQT	[sq][s] = piece == QUEEN 	? 1 : 0; 			
 				}
 			}
 		}
@@ -173,8 +173,11 @@ int fullEval(U8 side, Thread *th)
 
 	if (pawnsHashHit) 
 	{
-		th->evalInfo.pawnsKingEval[WHITE] = pawnsHashEntry->pawnsKingEval[WHITE];
-		th->evalInfo.pawnsKingEval[BLACK] = pawnsHashEntry->pawnsKingEval[BLACK];
+		th->evalInfo.pawnsShieldScore[WHITE] = pawnsHashEntry->pawnsShieldScore[WHITE];
+	    th->evalInfo.pawnsShieldScore[BLACK] = pawnsHashEntry->pawnsShieldScore[BLACK];
+
+	    th->evalInfo.enemyPawnStormScore[WHITE] = pawnsHashEntry->enemyPawnStormScore[WHITE];
+	    th->evalInfo.enemyPawnStormScore[BLACK] = pawnsHashEntry->enemyPawnStormScore[BLACK];
 	}
 
 	const auto whitePawns = th->whitePieceBB[PAWNS];
@@ -244,8 +247,11 @@ int fullEval(U8 side, Thread *th)
 
 	if (!pawnsHashHit)
 	{
-		pawnsHashEntry->pawnsKingEval[WHITE] = th->evalInfo.pawnsKingEval[WHITE];
-		pawnsHashEntry->pawnsKingEval[BLACK] = th->evalInfo.pawnsKingEval[BLACK];
+	    pawnsHashEntry->pawnsShieldScore[WHITE] = th->evalInfo.pawnsShieldScore[WHITE];
+	    pawnsHashEntry->pawnsShieldScore[BLACK] = th->evalInfo.pawnsShieldScore[BLACK];
+
+	    pawnsHashEntry->enemyPawnStormScore[WHITE] = th->evalInfo.enemyPawnStormScore[WHITE];
+	    pawnsHashEntry->enemyPawnStormScore[BLACK] = th->evalInfo.enemyPawnStormScore[BLACK];
 	}
 	
 	// Tapered evaluation 
@@ -987,27 +993,44 @@ int kingSafety(Thread *th)
 	// King PSQT Score	
 	score += side ? kingPSQT[Mirror64[kingSq]] : kingPSQT[kingSq];
 
+
+   	if (!th->evalInfo.pawnsHashHit)
+    {
+		const auto friendlyPawns = side == WHITE ? th->whitePieceBB[PAWNS] : th->blackPieceBB[PAWNS];
+		const auto countPawnShield = POPCOUNT(friendlyPawns & kingZoneBB[side][kingSq]);
+
+		th->evalInfo.pawnsShieldScore[side] = countPawnShield * weight_king_pawn_shield;				
+
+		#if defined(TUNE)
+			T->kingPawnShield[side] = countPawnShield; 
+		#endif
+	}
+
+	score += th->evalInfo.pawnsShieldScore[side];
+	
+
+
 	if (	th->evalInfo.kingAttackersCount[side] > 
 			(1 - POPCOUNT(opp == WHITE ? th->whitePieceBB[QUEEN] : th->blackPieceBB[QUEEN])))
 	{ 
-	   	
-	   	if (!th->evalInfo.pawnsHashHit)
-	    {
-			const auto ourPawns = side ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
-			const auto theirPawns = opp ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
+		int safetyScore = th->evalInfo.kingAttackersWeight[side];		
 
-			th->evalInfo.pawnsKingEval[side] =
-					POPCOUNT(kingZoneBB[side][kingSq] & ourPawns)	* weight_king_pawn_shield				// TODO check logic
-				+	POPCOUNT(kingZoneBB[side][kingSq] & theirPawns)	* weight_king_enemy_pawn_storm;			// TODO check logic		
+		// only consider enemy pawn storm when there is a potential attack building on the king side
+		if (!th->evalInfo.pawnsHashHit)
+	    {
+			const auto enemyPawns = opp == WHITE ? th->whitePieceBB[PAWNS] : th->blackPieceBB[PAWNS];
+			const auto countPawnStorm = POPCOUNT(enemyPawns & kingZoneBB[side][kingSq]);
+
+			th->evalInfo.enemyPawnStormScore[side] = countPawnStorm * weight_king_enemy_pawn_storm;	// TODO check logic		
 
 			#if defined(TUNE)
-				T->kingPawnShield[side] 			=	POPCOUNT(kingZoneBB[side][kingSq] & ourPawns); 
-				T->kingEnemyPawnStorm[side] 		=	POPCOUNT(kingZoneBB[side][kingSq] & theirPawns); 
+
+				T->kingEnemyPawnStorm[side] = countPawnStorm; 
 			#endif
 		}
 
+		safetyScore += th->evalInfo.enemyPawnStormScore[side];
 
-		int safetyScore = th->evalInfo.kingAttackersWeight[side] + th->evalInfo.pawnsKingEval[side];
 
 		U64 enemyPieces = opp == WHITE ? th->whitePieceBB[PIECES] : th->blackPieceBB[PIECES];	
 							
@@ -1030,7 +1053,7 @@ int kingSafety(Thread *th)
 			#if defined(TUNE)
 
 				T->unsafeQueenCheck[side] 	= 	POPCOUNT(queenChecks & unsafeSquares);
-				T->safeQueenCheck[side] 		= 	POPCOUNT(queenChecks & safeSquares);
+				T->safeQueenCheck[side] 	= 	POPCOUNT(queenChecks & safeSquares);
 			#endif
         }
 		
@@ -1076,8 +1099,8 @@ int kingSafety(Thread *th)
 
 		#if defined(TUNE)
 
-			T->safetyAdjustment[side] 		=	1;
-	    	T->safety[side] 					= 	safetyScore;
+			T->safetyAdjustment[side] 	=	1;
+	    	T->safety[side] 			= 	safetyScore;
 		#endif
 
 	
@@ -1089,10 +1112,10 @@ int kingSafety(Thread *th)
     {
     	#if defined(TUNE)
 	    	
-	    	T->knightAttack[side] 			= 	0;
-			T->bishopAttack[side] 			=	0;
-			T->rookAttack[side] 				=	0;
-			T->queenAttack[side]	 			=	0;
+	    	T->knightAttack[side] 	= 	0;
+			T->bishopAttack[side] 	=	0;
+			T->rookAttack[side] 	=	0;
+			T->queenAttack[side]	=	0;
     	#endif
     } 
 
