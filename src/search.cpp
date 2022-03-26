@@ -422,16 +422,18 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         &&	!isSingularSearch
         &&	std::abs(alpha) < U16_WIN_SCORE
         &&	std::abs(beta) < U16_WIN_SCORE 
+        &&  depth <= 3
         &&	oppPiecesCount > 3) 
     { 
+
         assert(sEval != I32_UNKNOWN);
         
 
-        if (depth <= 3 && sEval - fmargin[depth] >= beta)       // Reverse Futility Pruning
-            return sEval - fmargin[depth]; /* fail soft */
+        if (sEval - fmargin[depth] >= beta)       // Reverse Futility Pruning
+            return sEval - fmargin[depth];          /* fail soft */
     
-    
-        if (depth <= 3 && sEval + U16_RAZOR_MARGIN < beta)      // Razoring
+
+        if (sEval + U16_RAZOR_MARGIN < beta)      // Razoring
         {
             const auto rscore = quiescenseSearch<stm>(alpha, beta, th, si);
 
@@ -442,7 +444,7 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         }
 
 
-        if (depth <= 3 && sEval + fmargin[depth] <= alpha)      // Futility Pruning
+        if (sEval + fmargin[depth] <= alpha)      // Futility Pruning
             fPrune = true;
     }
 
