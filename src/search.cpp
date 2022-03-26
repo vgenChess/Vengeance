@@ -430,16 +430,16 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         
 
         if (sEval - fmargin[depth] >= beta)       // Reverse Futility Pruning
-            return sEval - fmargin[depth];          /* fail soft */
+            return beta;          
     
 
-        if (sEval + U16_RAZOR_MARGIN < beta)      // Razoring
+        if (sEval < U16_RAZOR_MARGIN)             // Razoring
         {
             const auto rscore = quiescenseSearch<stm>(alpha, beta, th, si);
 
-            if (rscore < beta) 
+            if (rscore < U16_RAZOR_MARGIN) 
             {
-                return rscore;
+                return alpha;
             }
         }
 
