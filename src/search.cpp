@@ -42,6 +42,8 @@ int option_thread_count, stableMoveCount = 0, MAX_DEPTH = 100, LMR[64][64], LMP[
 
 std::mutex mutex;
 
+int fmargin[4] = { 0, 200, 300, 500 };
+
 void initLMR() 
 {
     const float a = 0.1, b = 2;
@@ -420,17 +422,18 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         &&	!isSingularSearch
         &&	std::abs(alpha) < U16_WIN_SCORE
         &&	std::abs(beta) < U16_WIN_SCORE 
+        &&  depth <= 3
         &&	oppPiecesCount > 3) 
     { 
+
         assert(sEval != I32_UNKNOWN);
         
-        if (depth == 1 && sEval - U16_RVRFPRUNE >= beta)         // Reverse Futility Pruning
-            return beta;
+
+        if (sEval - fmargin[depth] >= beta)       // Reverse Futility Pruning
+            return beta;          
     
-        if (depth == 2 && sEval - U16_EXT_RVRFPRUNE >= beta)     // Extended Reverse Futility Pruning 
-            return beta;
-        
-        if (depth <= 3 && sEval + U16_RAZOR_MARGIN < beta)       // Razoring
+
+        if (sEval + U16_RAZOR_MARGIN < beta)      // Razoring
         {
             const auto rscore = quiescenseSearch<stm>(alpha, beta, th, si);
 
@@ -440,10 +443,8 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
             }
         }
 
-        if (depth == 1 && sEval + U16_FPRUNE <= alpha)           // Futility Pruning
-            fPrune = true; 
-        
-        if (depth == 2 && sEval + U16_EXT_FPRUNE <= alpha)       // Extended Futility Pruning
+
+        if (sEval + fmargin[depth] <= alpha)      // Futility Pruning
             fPrune = true;
     }
 
