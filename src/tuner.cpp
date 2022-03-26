@@ -25,8 +25,8 @@
 #define MAXEPOCHS		1000000000
 #define NPOSITIONS		7000000
 #define NPARTITIONS		4 
-#define BATCHSIZE		256 
-#define LR              0.001 
+#define BATCHSIZE		1024 
+#define LR              0.005 
 #define DISPLAY_TIME	60				
 
 struct Score 
@@ -264,30 +264,45 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff)
     loadCoeff->coeffs[BLACK][i++] = T->queenAttack[BLACK];                         
 
 
-	loadCoeff->type[i] = SAFETY;
-    loadCoeff->coeffs[WHITE][i] = T->rookSafeContactCheck[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->rookSafeContactCheck[BLACK];                         
-
-	loadCoeff->type[i] = SAFETY;
-    loadCoeff->coeffs[WHITE][i] = T->queenSafeContactCheck[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->queenSafeContactCheck[BLACK];                         
 
 
     loadCoeff->type[i] = SAFETY;
-    loadCoeff->coeffs[WHITE][i] = T->knightCheck[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->knightCheck[BLACK];                         
+    loadCoeff->coeffs[WHITE][i] = T->safeKnightCheck[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->safeKnightCheck[BLACK];                         
 
     loadCoeff->type[i] = SAFETY;
-    loadCoeff->coeffs[WHITE][i] = T->bishopCheck[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->bishopCheck[BLACK];                         
+    loadCoeff->coeffs[WHITE][i] = T->safeBishopCheck[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->safeBishopCheck[BLACK];                         
 
     loadCoeff->type[i] = SAFETY;
-    loadCoeff->coeffs[WHITE][i] = T->rookCheck[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->rookCheck[BLACK];                         
+    loadCoeff->coeffs[WHITE][i] = T->safeRookCheck[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->safeRookCheck[BLACK];                         
 
     loadCoeff->type[i] = SAFETY;
-    loadCoeff->coeffs[WHITE][i] = T->queenCheck[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->queenCheck[BLACK];                         
+    loadCoeff->coeffs[WHITE][i] = T->safeQueenCheck[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->safeQueenCheck[BLACK];                         
+
+
+    loadCoeff->type[i] = SAFETY;
+    loadCoeff->coeffs[WHITE][i] = T->unsafeKnightCheck[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->unsafeKnightCheck[BLACK];                         
+
+    loadCoeff->type[i] = SAFETY;
+    loadCoeff->coeffs[WHITE][i] = T->unsafeBishopCheck[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->unsafeBishopCheck[BLACK];                         
+
+    loadCoeff->type[i] = SAFETY;
+    loadCoeff->coeffs[WHITE][i] = T->unsafeRookCheck[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->unsafeRookCheck[BLACK];                         
+
+    loadCoeff->type[i] = SAFETY;
+    loadCoeff->coeffs[WHITE][i] = T->unsafeQueenCheck[WHITE];                         
+    loadCoeff->coeffs[BLACK][i++] = T->unsafeQueenCheck[BLACK];                         
+
+
+
+
+
 
 
     loadCoeff->type[i] = SAFETY;
@@ -516,23 +531,35 @@ void startTuner() {
 	cparams[MG][count] = ScoreMG(weight_queen_attack);
 	cparams[EG][count++] = ScoreEG(weight_queen_attack);
 
-	cparams[MG][count] = ScoreMG(weight_rook_safe_contact_check);
-	cparams[EG][count++] = ScoreEG(weight_rook_safe_contact_check);
 
-	cparams[MG][count] = ScoreMG(weight_queen_safe_contact_check);
-	cparams[EG][count++] = ScoreEG(weight_queen_safe_contact_check);
 
-	cparams[MG][count] = ScoreMG(weight_knight_check);
-	cparams[EG][count++] = ScoreEG(weight_knight_check);
+	cparams[MG][count] = ScoreMG(weight_safe_knight_check);
+	cparams[EG][count++] = ScoreEG(weight_safe_knight_check);
 
-	cparams[MG][count] = ScoreMG(weight_bishop_check);
-	cparams[EG][count++] = ScoreEG(weight_bishop_check);
+	cparams[MG][count] = ScoreMG(weight_safe_bishop_check);
+	cparams[EG][count++] = ScoreEG(weight_safe_bishop_check);
 
-	cparams[MG][count] = ScoreMG(weight_rook_check);
-	cparams[EG][count++] = ScoreEG(weight_rook_check);
+	cparams[MG][count] = ScoreMG(weight_safe_rook_check);
+	cparams[EG][count++] = ScoreEG(weight_safe_rook_check);
 
-	cparams[MG][count] = ScoreMG(weight_queen_check);
-	cparams[EG][count++] = ScoreEG(weight_queen_check);
+	cparams[MG][count] = ScoreMG(weight_safe_queen_check);
+	cparams[EG][count++] = ScoreEG(weight_safe_queen_check);
+
+
+	cparams[MG][count] = ScoreMG(weight_unsafe_knight_check);
+	cparams[EG][count++] = ScoreEG(weight_unsafe_knight_check);
+
+	cparams[MG][count] = ScoreMG(weight_unsafe_bishop_check);
+	cparams[EG][count++] = ScoreEG(weight_unsafe_bishop_check);
+
+	cparams[MG][count] = ScoreMG(weight_unsafe_rook_check);
+	cparams[EG][count++] = ScoreEG(weight_unsafe_rook_check);
+
+	cparams[MG][count] = ScoreMG(weight_unsafe_queen_check);
+	cparams[EG][count++] = ScoreEG(weight_unsafe_queen_check);
+
+
+
 
 
 	cparams[MG][count] = ScoreMG(weight_safety_adjustment);
@@ -1163,12 +1190,17 @@ void saveWeights(TVector params, TVector cparams) {
 	myfile << "\nweight_bishop_attack = " 				<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", " ; count++;
 	myfile << "\nweight_rook_attack = " 				<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", " ; count++;
 	myfile << "\nweight_queen_attack = " 				<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", " ; count++;
-	myfile << "\nweight_rook_safe_contact_check = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", " ; count++;
-	myfile << "\nweight_queen_safe_contact_check = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", " ; count++;
-	myfile << "\nweight_knight_check = " 				<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", " ; count++;
-	myfile << "\nweight_bishop_check = " 				<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", " ; count++;
-	myfile << "\nweight_rook_check = " 					<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", " ; count++;
-	myfile << "\nweight_queen_check = " 				<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", " ; count++;
+
+	myfile << "\nweight_safe_knight_check = " 			<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", " ; count++;
+	myfile << "\nweight_safe_bishop_check = " 			<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", " ; count++;
+	myfile << "\nweight_safe_rook_check = " 			<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", " ; count++;
+	myfile << "\nweight_safe_queen_check = " 			<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", " ; count++;
+
+	myfile << "\nweight_unsafe_knight_check = " 		<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", " ; count++;
+	myfile << "\nweight_unsafe_bishop_check = " 		<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", " ; count++;
+	myfile << "\nweight_unsafe_rook_check = " 			<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", " ; count++;
+	myfile << "\nweight_unsafe_queen_check = " 			<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", " ; count++;
+
 	myfile << "\nweight_safety_adjustment = " 			<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", "; count++;
 
 	myfile << "\n\n";

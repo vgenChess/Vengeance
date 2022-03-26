@@ -193,13 +193,15 @@ public:
 	int rookAttack[U8_MAX_SIDES];
 	int queenAttack[U8_MAX_SIDES];
 
-	int rookSafeContactCheck[U8_MAX_SIDES];
-	int queenSafeContactCheck[U8_MAX_SIDES];
+	int safeKnightCheck[U8_MAX_SIDES];
+	int safeBishopCheck[U8_MAX_SIDES];
+	int safeRookCheck[U8_MAX_SIDES];
+	int safeQueenCheck[U8_MAX_SIDES];
 
-	int knightCheck[U8_MAX_SIDES];
-	int bishopCheck[U8_MAX_SIDES];
-	int rookCheck[U8_MAX_SIDES];
-	int queenCheck[U8_MAX_SIDES];
+	int unsafeKnightCheck[U8_MAX_SIDES];
+	int unsafeBishopCheck[U8_MAX_SIDES];
+	int unsafeRookCheck[U8_MAX_SIDES];
+	int unsafeQueenCheck[U8_MAX_SIDES];
 
 	int safetyAdjustment[U8_MAX_SIDES];
 
@@ -311,13 +313,15 @@ public:
 			rookAttack[i] = 0;
 			queenAttack[i] = 0;
 
-			rookSafeContactCheck[i] = 0;
-			queenSafeContactCheck[i] = 0;
+			safeKnightCheck[i] = 0;
+			safeBishopCheck[i] = 0;
+			safeRookCheck[i] = 0;
+			safeQueenCheck[i] = 0;
 
-			knightCheck[i] = 0;
-			bishopCheck[i] = 0;
-			rookCheck[i] = 0;
-			queenCheck[i] = 0;
+			unsafeKnightCheck[i] = 0;
+			unsafeBishopCheck[i] = 0;
+			unsafeRookCheck[i] = 0;
+			unsafeQueenCheck[i] = 0;
 
 			safetyAdjustment[i] = 0;
 

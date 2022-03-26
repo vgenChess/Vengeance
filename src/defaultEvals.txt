@@ -74,12 +74,16 @@ weight_knight_attack = S(1, 1),
 weight_bishop_attack = S(1, 1), 
 weight_rook_attack = S(1, 1), 
 weight_queen_attack = S(1, 1), 
-weight_rook_safe_contact_check = S(1, 1), 
-weight_queen_safe_contact_check = S(1, 1), 
-weight_knight_check = S(1, 1), 
-weight_bishop_check = S(1, 1), 
-weight_rook_check = S(1, 1), 
-weight_queen_check = S(1, 1), 
+
+weight_safe_knight_check = S(1, 1), 
+weight_safe_bishop_check = S(1, 1), 
+weight_safe_rook_check = S(1, 1), 
+weight_safe_queen_check = S(1, 1), 
+weight_unsafe_knight_check = S(1, 1), 
+weight_unsafe_bishop_check = S(1, 1), 
+weight_unsafe_rook_check = S(1, 1), 
+weight_unsafe_queen_check = S(1, 1), 
+
 weight_safety_adjustment = S(1, 1),
 
 

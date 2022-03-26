@@ -652,12 +652,6 @@ int knightsEval(Thread *th)
             
             	T->knightAttack[opp]++; 
             #endif
-
-            const auto bb = attacksBB & th->evalInfo.kingAttacks[opp];
-            if (bb) 
-            {
-           		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
-            }
 		}
 	}
 
@@ -745,12 +739,6 @@ int bishopsEval(Thread *th)
             
             	T->bishopAttack[opp]++; 
             #endif
-            	
-            const auto bb = (attacksBB & th->evalInfo.kingAttacks[opp]);
-            if (bb)	
-            {
-           		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
-            }
 		}
 	}
 	
@@ -904,12 +892,6 @@ int rooksEval(Thread *th)
             
             	T->rookAttack[opp]++; 
             #endif
-
-            const auto bb = attacksBB & th->evalInfo.kingAttacks[opp];
-            if (bb)	
-            {	
-           		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
-            }
 		}
 	}
 
@@ -983,12 +965,6 @@ int queenEval(Thread *th)
     
             	T->queenAttack[opp]++; 
             #endif
-
-            const auto bb = attacksBB & th->evalInfo.kingAttacks[opp];
-            if (bb)	
-            {
-           		th->evalInfo.kingAdjacentZoneAttacksCount[opp] += POPCOUNT(bb);
-            }
 		}
 	}	
 
@@ -1007,23 +983,22 @@ int kingSafety(Thread *th)
 	
 	assert(kingSq >= 0 && kingSq < 64);
 	
+
 	// King PSQT Score	
 	score += stm ? kingPSQT[Mirror64[kingSq]] : kingPSQT[kingSq];
 
-
-	if (	th->evalInfo.kingAttackersCount[stm] >= 2
-		&&	th->evalInfo.kingAdjacentZoneAttacksCount[stm]) 
+	if (	th->evalInfo.kingAttackersCount[stm] > 
+			(1 - POPCOUNT(opp == WHITE ? th->whitePieceBB[QUEEN] : th->blackPieceBB[QUEEN])))
 	{ 
-	
-
+	   	
 	   	if (!th->evalInfo.pawnsHashHit)
 	    {
 			const auto ourPawns = stm ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 			const auto theirPawns = opp ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 
 			th->evalInfo.pawnsKingEval[stm] =
-				POPCOUNT(kingZoneBB[stm][kingSq] & ourPawns) * weight_king_pawn_shield	// TODO check logic
-				+ POPCOUNT(kingZoneBB[stm][kingSq] & theirPawns) * weight_king_enemy_pawn_storm;			// TODO check logic		
+					POPCOUNT(kingZoneBB[stm][kingSq] & ourPawns)	* weight_king_pawn_shield				// TODO check logic
+				+	POPCOUNT(kingZoneBB[stm][kingSq] & theirPawns)	* weight_king_enemy_pawn_storm;			// TODO check logic		
 
 			#if defined(TUNE)
 				T->kingPawnShield[stm] 			=	POPCOUNT(kingZoneBB[stm][kingSq] & ourPawns); 
@@ -1034,64 +1009,77 @@ int kingSafety(Thread *th)
 
 		int safetyScore = th->evalInfo.kingAttackersWeight[stm] + th->evalInfo.pawnsKingEval[stm];
 
-
-
-        U64 kingUndefendedSquares = th->evalInfo.attacks[opp]
-        						&	th->evalInfo.kingAttacks[stm]
-        						&	~(		th->evalInfo.allPawnAttacks[stm] 
-        								| 	th->evalInfo.allKnightAttacks[stm] 
-        								|	th->evalInfo.allBishopAttacks[stm] 
-        								|	th->evalInfo.allRookAttacks[stm] 
-        								|	th->evalInfo.allQueenAttacks[stm]);
-
-		U64 enemyPieces = opp ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES];
-
-		U64 queenSafeContactCheck = kingUndefendedSquares 
-								&	th->evalInfo.allQueenAttacks[opp] 
-								& 	~enemyPieces
-								& 	(		th->evalInfo.allPawnAttacks[opp] 
-										|	th->evalInfo.allKnightAttacks[opp] 
-										|	th->evalInfo.allBishopAttacks[opp] 
-										|	th->evalInfo.allRookAttacks[opp]);
-
-		U64 rookSafeContactCheck = kingUndefendedSquares 
-								&	th->evalInfo.allRookAttacks[opp] 
-								&	~enemyPieces
-								&	(		th->evalInfo.allPawnAttacks[opp] 
-										|	th->evalInfo.allKnightAttacks[opp] 
-										|	th->evalInfo.allBishopAttacks[opp] 
-										|	th->evalInfo.allQueenAttacks[opp]);
-		
+		U64 enemyPieces = opp == WHITE ? th->whitePieceBB[PIECES] : th->blackPieceBB[PIECES];	
 							
-							
-		U64 safe 	= 	~(enemyPieces | th->evalInfo.attacks[stm]);
-		U64 b1 		= 	Rmagic(kingSq, th->occupied) & safe;
-		U64 b2 		= 	Bmagic(kingSq, th->occupied) & safe;
+		U64 safeSquares 	= 	~(enemyPieces | th->evalInfo.attacks[stm]);
+		U64 unsafeSquares   = 	~safeSquares;
+		U64 rookSquares 	= 	Rmagic(kingSq, th->occupied);
+		U64 bishopSquares 	= 	Bmagic(kingSq, th->occupied);
+		U64 knightSquares   =	get_knight_attacks(kingSq);
 
-		U64 queenSafeChecks 	=	(b1 | b2) & th->evalInfo.allQueenAttacks[opp];
-		U64 rookSafeChecks 		= 	b1 & th->evalInfo.allRookAttacks[opp];
-		U64 bishopSafeChecks 	= 	b2 & th->evalInfo.allBishopAttacks[opp];
-		U64 knightSafeChecks 	= 	get_knight_attacks(kingSq) & th->evalInfo.allKnightAttacks[opp] & safe;
+		U64 queenChecks 	=	(rookSquares | bishopSquares) & th->evalInfo.allQueenAttacks[opp];
+		U64 rookChecks 		= 	rookSquares & th->evalInfo.allRookAttacks[opp];
+		U64 bishopChecks 	= 	bishopSquares & th->evalInfo.allBishopAttacks[opp];
+		U64 knightChecks 	= 	knightSquares & th->evalInfo.allKnightAttacks[opp];
+
+		if (queenChecks)
+		{
+			safetyScore += 	weight_unsafe_queen_check 	* 	POPCOUNT(queenChecks & unsafeSquares);
+			safetyScore += 	weight_safe_queen_check 	* 	POPCOUNT(queenChecks & safeSquares);
+			
+			#if defined(TUNE)
+
+				T->unsafeQueenCheck[stm] 	= 	POPCOUNT(queenChecks & unsafeSquares);
+				T->safeQueenCheck[stm] 		= 	POPCOUNT(queenChecks & safeSquares);
+			#endif
+        }
 		
-		safetyScore +=	weight_queen_safe_contact_check *	POPCOUNT(queenSafeContactCheck);
-		safetyScore +=	weight_rook_safe_contact_check	*	POPCOUNT(rookSafeContactCheck);
-		safetyScore += 	weight_queen_check 				* 	POPCOUNT(queenSafeChecks);
-		safetyScore += 	weight_rook_check 				* 	POPCOUNT(rookSafeChecks);
-		safetyScore += 	weight_bishop_check				* 	POPCOUNT(bishopSafeChecks);
-		safetyScore += 	weight_knight_check 			* 	POPCOUNT(knightSafeChecks);
+		if (rookChecks)
+		{
+			safetyScore += 	weight_unsafe_rook_check 	* 	POPCOUNT(rookChecks & unsafeSquares);
+			safetyScore += 	weight_safe_rook_check 		* 	POPCOUNT(rookChecks & safeSquares);
+			
+			#if defined(TUNE)
+
+				T->unsafeRookCheck[stm] 	= 	POPCOUNT(rookChecks & unsafeSquares);
+				T->safeRookCheck[stm] 		= 	POPCOUNT(rookChecks & safeSquares);
+			#endif
+        }
+
+		if (bishopChecks)
+		{
+			safetyScore += 	weight_unsafe_bishop_check 	* 	POPCOUNT(bishopChecks & unsafeSquares);
+			safetyScore += 	weight_safe_bishop_check 	* 	POPCOUNT(bishopChecks & safeSquares);
+			
+			#if defined(TUNE)
+
+				T->unsafeBishopCheck[stm] 	= 	POPCOUNT(bishopChecks & unsafeSquares);
+				T->safeBishopCheck[stm] 	= 	POPCOUNT(bishopChecks & safeSquares);
+			#endif
+        }
+
+		if (knightChecks)
+		{
+			safetyScore += 	weight_unsafe_knight_check 	* 	POPCOUNT(knightChecks & unsafeSquares);
+			safetyScore += 	weight_safe_knight_check 	* 	POPCOUNT(knightChecks & safeSquares);
+			
+			#if defined(TUNE)
+
+				T->unsafeKnightCheck[stm] 	= 	POPCOUNT(knightChecks & unsafeSquares);
+				T->safeKnightCheck[stm] 	= 	POPCOUNT(knightChecks & safeSquares);
+			#endif
+        }
+
+
 		safetyScore += 	weight_safety_adjustment;
+
 
 		#if defined(TUNE)
 
-	        T->queenSafeContactCheck[stm] 	= 	POPCOUNT(queenSafeContactCheck);
-	        T->rookSafeContactCheck[stm] 	= 	POPCOUNT(rookSafeContactCheck);
-			T->queenCheck[stm] 				= 	POPCOUNT(queenSafeChecks);
-			T->rookCheck[stm] 				= 	POPCOUNT(rookSafeChecks);
-			T->bishopCheck[stm] 			= 	POPCOUNT(bishopSafeChecks);
-			T->knightCheck[stm] 			= 	POPCOUNT(knightSafeChecks);
 			T->safetyAdjustment[stm] 		=	1;
 	    	T->safety[stm] 					= 	safetyScore;
 		#endif
+
 	
  		const auto mg = ScoreMG(safetyScore), eg = ScoreEG(safetyScore);
 
@@ -1105,9 +1093,6 @@ int kingSafety(Thread *th)
 			T->bishopAttack[stm] 			=	0;
 			T->rookAttack[stm] 				=	0;
 			T->queenAttack[stm]	 			=	0;
-
-			T->kingPawnShield[stm] 			=	0; 
-			T->kingEnemyPawnStorm[stm] 		=	0; 
     	#endif
     } 
 
