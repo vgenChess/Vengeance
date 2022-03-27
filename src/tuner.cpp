@@ -1229,7 +1229,7 @@ void saveWeights(TVector params, TVector cparams) {
 	myfile << "\nweight_rook_supporting_friendly_rook = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", \n\n"; count++;
 
   
-   	myfile << "weight_queen_underdeveloped_pieces = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", \n\n"; count++;
+   	myfile << "weight_queen_underdeveloped_pieces = " 		<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", \n\n"; count++;
 
 
 	myfile << "arr_weight_knight_mobility[16] = { \n\n";
@@ -1395,9 +1395,9 @@ void saveWeights(TVector params, TVector cparams) {
 		}  
 
 		if (piece == KING)
-			myfile << "};" << "\n"; 	
+			myfile << "\n};" << "\n"; 	
 		else 
-			myfile << "}," << "\n"; 	
+			myfile << "\n}," << "\n"; 	
 	}
 
 	myfile << "\n\n";
