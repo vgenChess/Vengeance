@@ -123,31 +123,31 @@ int fullEval(U8 side, Thread *th)
 	
 		U8 sq;
 		U64 bb;
-		for (U8 side = WHITE; side <= BLACK; side++) 
+		for (U8 s = WHITE; s <= BLACK; s++) 
 		{
 			for (U8 piece = PAWNS; piece <= KING; piece++) 
 			{	
-				bb = side ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
+				bb = s ? th->blackPieceBB[piece] : th->whitePieceBB[piece];
 
 				while (bb) 
 				{
 					sq = GET_POSITION(bb);
 					POP_POSITION(bb);
 
-					T->weight_val_pawn[side] 	+= 	piece == PAWNS 		? 1 : 0;
-					T->weight_val_knight[side] 	+= 	piece == KNIGHTS 	? 1 : 0;
-					T->weight_val_bishop[side] 	+= 	piece == BISHOPS 	? 1 : 0;
-					T->weight_val_rook[side] 	+= 	piece == ROOKS 		? 1 : 0;
-					T->weight_val_queen[side] 	+= 	piece == QUEEN 		? 1 : 0;
+					T->weight_val_pawn[s] 	+= 	piece == PAWNS 		? 1 : 0;
+					T->weight_val_knight[s]	+= 	piece == KNIGHTS 	? 1 : 0;
+					T->weight_val_bishop[s]	+= 	piece == BISHOPS 	? 1 : 0;
+					T->weight_val_rook[s] 	+= 	piece == ROOKS 		? 1 : 0;
+					T->weight_val_queen[s] 	+= 	piece == QUEEN 		? 1 : 0;
 					
-					sq = side ? Mirror64[sq] : sq;
+					sq = s ? Mirror64[sq] : sq;
 	
-					T->kingPSQT 	[sq][side] = piece == KING  	? 1 : 0;
-					T->pawnPSQT	 	[sq][side] = piece == PAWNS 	? 1 : 0; 			
-					T->knightPSQT	[sq][side] = piece == KNIGHTS 	? 1 : 0; 			
-					T->bishopPSQT	[sq][side] = piece == BISHOPS 	? 1 : 0; 			
-					T->rookPSQT		[sq][side] = piece == ROOKS 	? 1 : 0; 			
-					T->queenPSQT	[sq][side] = piece == QUEEN 	? 1 : 0; 			
+					T->kingPSQT 	[sq][s] = piece == KING  	? 1 : 0;
+					T->pawnPSQT	 	[sq][s] = piece == PAWNS 	? 1 : 0; 			
+					T->knightPSQT	[sq][s] = piece == KNIGHTS 	? 1 : 0; 			
+					T->bishopPSQT	[sq][s] = piece == BISHOPS 	? 1 : 0; 			
+					T->rookPSQT		[sq][s] = piece == ROOKS 	? 1 : 0; 			
+					T->queenPSQT	[sq][s] = piece == QUEEN 	? 1 : 0; 			
 				}
 			}
 		}
@@ -971,6 +971,62 @@ int queenEval(Thread *th)
 	return score;
 }
 
+U64 ForwardRanksMasks[U8_MAX_SIDES][8];
+
+void initForwardRankMask()
+{
+	for (int rank = 0; rank < 8; rank++) 
+	{
+	    for (int i = rank; i < 8; i++)
+	        ForwardRanksMasks[WHITE][rank] |= arrRanks[i];
+	
+	    ForwardRanksMasks[BLACK][rank] = ~ForwardRanksMasks[WHITE][rank] | arrRanks[rank];
+	}	
+}
+
+template<Side side>
+int pKEval(Thread *th) 
+{
+	constexpr Side opp = side == WHITE ? BLACK : WHITE;
+
+	const auto kingSq = th->evalInfo.kingSq[side];
+	const auto kingRank = kingSq / 8;
+
+	int score = 0;
+	
+	int middle_file = MAX(1, MIN(6, kingSq % 8));
+    U64 myPawns = side == WHITE ? th->whitePieceBB[PAWNS] : th->blackPieceBB[PAWNS];
+    U64 opponentPawns = opp == WHITE ? th->whitePieceBB[PAWNS] : th->blackPieceBB[PAWNS];
+    
+	for (int file = middle_file - 1; file <= middle_file + 1; file++)
+    {   
+        U64 pawns = myPawns & arrFiles[file] & ForwardRanksMasks[side][kingRank];
+        int defendingRank = pawns ? RRANK((side ? MSB(pawns) : LSB(pawns)), side) : 0;
+
+        pawns = opponentPawns & arrFiles[file] & ForwardRanksMasks[side][kingRank];
+        int stormingRank = pawns ? RRANK((side ? MSB(pawns) : LSB(pawns)), side) : 0;
+
+        int f = MIN(file, 7 - file);
+        score += weight_pawn_shield[f][defendingRank];
+
+        #if defined(TUNE)
+			T->pawnShield[f][defendingRank][side]++;
+		#endif
+
+        bool blocked = (defendingRank != 0) && defendingRank == stormingRank - 1;
+        score += (blocked) ? weight_blocked_pawn_storm[f][stormingRank] : weight_unblocked_pawn_storm[f][stormingRank];
+        
+  		#if defined(TUNE)
+	        if (blocked)
+				T->blockedStorm[f][stormingRank][side]++;
+	        else
+				T->unblockedStorm[f][stormingRank][side]++;
+        #endif
+    }
+
+	return score;
+}
+				
 
 template <Side side>
 int kingSafety(Thread *th) 
@@ -983,31 +1039,13 @@ int kingSafety(Thread *th)
 	
 	assert(kingSq >= 0 && kingSq < 64);
 	
-
 	// King PSQT Score	
 	score += side ? kingPSQT[Mirror64[kingSq]] : kingPSQT[kingSq];
 
 	if (	th->evalInfo.kingAttackersCount[side] > 
 			(1 - POPCOUNT(opp == WHITE ? th->whitePieceBB[QUEEN] : th->blackPieceBB[QUEEN])))
 	{ 
-	   	
-	   	if (!th->evalInfo.pawnsHashHit)
-	    {
-			const auto ourPawns = side ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
-			const auto theirPawns = opp ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
-
-			th->evalInfo.pawnsKingEval[side] =
-					POPCOUNT(kingZoneBB[side][kingSq] & ourPawns)	* weight_king_pawn_shield				// TODO check logic
-				+	POPCOUNT(kingZoneBB[side][kingSq] & theirPawns)	* weight_king_enemy_pawn_storm;			// TODO check logic		
-
-			#if defined(TUNE)
-				T->kingPawnShield[side] 			=	POPCOUNT(kingZoneBB[side][kingSq] & ourPawns); 
-				T->kingEnemyPawnStorm[side] 		=	POPCOUNT(kingZoneBB[side][kingSq] & theirPawns); 
-			#endif
-		}
-
-
-		int safetyScore = th->evalInfo.kingAttackersWeight[side] + th->evalInfo.pawnsKingEval[side];
+		int safetyScore = th->evalInfo.kingAttackersWeight[side] + pKEval<side>(th);
 
 		U64 enemyPieces = opp == WHITE ? th->whitePieceBB[PIECES] : th->blackPieceBB[PIECES];	
 							
@@ -1030,7 +1068,7 @@ int kingSafety(Thread *th)
 			#if defined(TUNE)
 
 				T->unsafeQueenCheck[side] 	= 	POPCOUNT(queenChecks & unsafeSquares);
-				T->safeQueenCheck[side] 		= 	POPCOUNT(queenChecks & safeSquares);
+				T->safeQueenCheck[side] 	= 	POPCOUNT(queenChecks & safeSquares);
 			#endif
         }
 		
@@ -1077,7 +1115,7 @@ int kingSafety(Thread *th)
 		#if defined(TUNE)
 
 			T->safetyAdjustment[side] 		=	1;
-	    	T->safety[side] 					= 	safetyScore;
+	    	T->safety[side] 				= 	safetyScore;
 		#endif
 
 	
@@ -1091,8 +1129,43 @@ int kingSafety(Thread *th)
 	    	
 	    	T->knightAttack[side] 			= 	0;
 			T->bishopAttack[side] 			=	0;
-			T->rookAttack[side] 				=	0;
-			T->queenAttack[side]	 			=	0;
+			T->rookAttack[side] 			=	0;
+			T->queenAttack[side]	 		=	0;
+
+			for (int edge_distance = 0; edge_distance < 8; edge_distance++) 
+			{
+				for (int rank = 0; rank < 8; rank++)
+				{
+					for(int s = WHITE; s <= BLACK; s++)
+					{
+						T->pawnShield[edge_distance][rank][s] = 0;
+					}
+				}
+			}
+
+
+			for (int edge_distance = 0; edge_distance < 8; edge_distance++) 
+			{
+				for (int rank = 0; rank < 8; rank++)
+				{
+					for(int s = WHITE; s <= BLACK; s++)
+					{
+						T->blockedStorm[edge_distance][rank][s] = 0;
+					}
+				}
+			}
+
+			for (int edge_distance = 0; edge_distance < 8; edge_distance++) 
+			{
+				for (int rank = 0; rank < 8; rank++)
+				{
+					for(int s = WHITE; s <= BLACK; s++)
+					{
+						T->unblockedStorm[edge_distance][rank][s] = 0;
+					}
+				}
+			}
+		
     	#endif
     } 
 

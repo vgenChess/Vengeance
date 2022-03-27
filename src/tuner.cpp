@@ -23,7 +23,7 @@
 #include "weights.h"
 
 #define MAXEPOCHS		1000000000
-#define NPOSITIONS		7000000
+#define NPOSITIONS		1428000
 #define NPARTITIONS		4 
 #define BATCHSIZE		1024 
 #define LR              0.005 
@@ -206,16 +206,6 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff)
     loadCoeff->coeffs[WHITE][i] = T->queenUnderdevelopedPieces[WHITE];                         
     loadCoeff->coeffs[BLACK][i++] = T->queenUnderdevelopedPieces[BLACK];                         
   	
-  	// King
-
-	loadCoeff->type[i] = NORMAL;
-    loadCoeff->coeffs[WHITE][i] = T->kingPawnShield[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->kingPawnShield[BLACK];                         
-
-	loadCoeff->type[i] = NORMAL;
-    loadCoeff->coeffs[WHITE][i] = T->kingEnemyPawnStorm[WHITE];                         
-    loadCoeff->coeffs[BLACK][i++] = T->kingEnemyPawnStorm[BLACK]; 
-
 
     // Pieces Mobility
     for (int k = 0; k < 16; k++) {
@@ -247,6 +237,37 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff)
 	}
 
 
+	for (int edge_distance = 0; edge_distance < 8; edge_distance++)
+	{
+		for (int rank = 0; rank < 8; rank++)
+		{
+			loadCoeff->type[i] = SAFETY;	
+		    loadCoeff->coeffs[WHITE][i] = T->pawnShield[edge_distance][rank][WHITE];                         
+		    loadCoeff->coeffs[BLACK][i++] = T->pawnShield[edge_distance][rank][BLACK];                         
+		}
+	}
+
+	for (int edge_distance = 0; edge_distance < 8; edge_distance++)
+	{
+		for (int rank = 0; rank < 8; rank++)
+		{
+			loadCoeff->type[i] = SAFETY;	
+		    loadCoeff->coeffs[WHITE][i] = T->blockedStorm[edge_distance][rank][WHITE];                         
+		    loadCoeff->coeffs[BLACK][i++] = T->blockedStorm[edge_distance][rank][BLACK];                         
+		}
+	}
+
+	for (int edge_distance = 0; edge_distance < 8; edge_distance++)
+	{
+		for (int rank = 0; rank < 8; rank++)
+		{
+			loadCoeff->type[i] = SAFETY;	
+		    loadCoeff->coeffs[WHITE][i] = T->unblockedStorm[edge_distance][rank][WHITE];                         
+		    loadCoeff->coeffs[BLACK][i++] = T->unblockedStorm[edge_distance][rank][BLACK];                         
+		}
+	}
+
+
 	loadCoeff->type[i] = SAFETY;
     loadCoeff->coeffs[WHITE][i] = T->knightAttack[WHITE];                         
     loadCoeff->coeffs[BLACK][i++] = T->knightAttack[BLACK];                         
@@ -262,8 +283,6 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff)
 	loadCoeff->type[i] = SAFETY;
     loadCoeff->coeffs[WHITE][i] = T->queenAttack[WHITE];                         
     loadCoeff->coeffs[BLACK][i++] = T->queenAttack[BLACK];                         
-
-
 
 
     loadCoeff->type[i] = SAFETY;
@@ -299,15 +318,11 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff)
     loadCoeff->coeffs[WHITE][i] = T->unsafeQueenCheck[WHITE];                         
     loadCoeff->coeffs[BLACK][i++] = T->unsafeQueenCheck[BLACK];                         
 
-
-
-
-
-
-
     loadCoeff->type[i] = SAFETY;
     loadCoeff->coeffs[WHITE][i] = T->safetyAdjustment[WHITE];                         
     loadCoeff->coeffs[BLACK][i++] = T->safetyAdjustment[BLACK];                         
+
+
 
 
     //PSQT
@@ -486,14 +501,6 @@ void startTuner() {
 
 
 
-	cparams[MG][count] = ScoreMG(weight_king_pawn_shield);
-	cparams[EG][count++] = ScoreEG(weight_king_pawn_shield);
-
-	cparams[MG][count] = ScoreMG(weight_king_enemy_pawn_storm);
-	cparams[EG][count++] = ScoreEG(weight_king_enemy_pawn_storm);
-
-	
-
 	for (int i = 0; i < 16; i++) {
 
 		cparams[MG][count] = ScoreMG(arr_weight_knight_mobility[i]);
@@ -516,6 +523,36 @@ void startTuner() {
 
 		cparams[MG][count] = ScoreMG(arr_weight_queen_mobility[i]);
 		cparams[EG][count++] = ScoreEG(arr_weight_queen_mobility[i]);
+	}
+
+
+	for (int edge_distance = 0; edge_distance < 8; edge_distance++)
+	{
+		for (int rank = 0; rank < 8; rank++)
+		{
+			cparams[MG][count] = ScoreMG(weight_pawn_shield[edge_distance][rank]);
+			cparams[EG][count++] = ScoreEG(weight_pawn_shield[edge_distance][rank]);                       
+		}
+	}
+
+
+	for (int edge_distance = 0; edge_distance < 8; edge_distance++)
+	{
+		for (int rank = 0; rank < 8; rank++)
+		{
+			cparams[MG][count] = ScoreMG(weight_blocked_pawn_storm[edge_distance][rank]);
+			cparams[EG][count++] = ScoreEG(weight_blocked_pawn_storm[edge_distance][rank]);                        
+		}
+	}
+
+
+	for (int edge_distance = 0; edge_distance < 8; edge_distance++)
+	{
+		for (int rank = 0; rank < 8; rank++)
+		{
+			cparams[MG][count] = ScoreMG(weight_unblocked_pawn_storm[edge_distance][rank]);
+			cparams[EG][count++] = ScoreEG(weight_unblocked_pawn_storm[edge_distance][rank]);                        
+		}
 	}
 
 
@@ -606,8 +643,8 @@ void startTuner() {
 	assert(count == NTERMS);
 
 	std::fstream newfile;
-   	newfile.open ("lichess-big3-resolved.book", std::ios::in);	// NPOSITIONS = 7150000 roughly
-	// newfile.open ("quiet-labeled.epd", std::ios::in); 			// v6 NPOSITIONS = 725000 exact
+   	// newfile.open ("lichess-big3-resolved.book", std::ios::in);	// NPOSITIONS = 7150000 roughly
+	newfile.open ("quiet-labeled.epd", std::ios::in); 			// v6 NPOSITIONS = 725000 exact
 																// v7 NPOSITIONS = 1428000 exact
 	count = 0;
 
@@ -639,7 +676,7 @@ void startTuner() {
 
 			// for file "quiet-labeled.epd"
 
-			/*if (tp.find("1-0") != std::string::npos)	
+			if (tp.find("1-0") != std::string::npos)	
 				result = 1.0;
 			else if (tp.find("1/2-1/2") != std::string::npos) 
 				result = 0.5;
@@ -647,11 +684,11 @@ void startTuner() {
 				result = 0.0;
 			else 
 				continue;
-*/
+
 
 			// for file "4818922_positions_gm2600.txt"
 
-			if (tp.find("1.0") != std::string::npos)	
+			/*if (tp.find("1.0") != std::string::npos)	
 				result = 1.0;
 			else if (tp.find("0.5") != std::string::npos) 
 				result = 0.5;
@@ -659,7 +696,7 @@ void startTuner() {
 				result = 0.0;
 			else 
 				continue;
-
+*/
 			
 			assert(result == 1.0 || result == 0.5 || result == 0.0);
 
@@ -1133,11 +1170,6 @@ void saveWeights(TVector params, TVector cparams) {
    	myfile << "weight_queen_underdeveloped_pieces = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", \n\n"; count++;
 
 
-	myfile << "weight_king_pawn_shield = " 		<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", \n"; count++;   	
-	myfile << "weight_king_enemy_pawn_storm = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", \n"; count++;
-	myfile << "\n\n";
-
-
 	myfile << "arr_weight_knight_mobility[16] = { \n\n";
     for (int i = 0; i < 16; i++) {
     
@@ -1184,6 +1216,56 @@ void saveWeights(TVector params, TVector cparams) {
 
 
 	myfile << "\n\n";
+
+
+
+	myfile << "weight_pawn_shield[8][8] = { \n\n";
+    for (int edge_distance = 0; edge_distance < 8; edge_distance++)
+	{
+		for (int rank = 0; rank < 8; rank++)
+		{
+			myfile << "S(" 
+					<< std::setw(4) << (int)weights[MG][count] << "," 
+					<< std::setw(4) << (int)weights[EG][count] << ")" << ", "; count++; 
+				
+			if (((rank + 1) % 8) == 0) 
+				myfile << "\n";                     
+		}
+	}
+	myfile <<"}, \n";
+
+
+
+	myfile << "weight_blocked_pawn_storm[8][8] = { \n\n";
+    for (int edge_distance = 0; edge_distance < 8; edge_distance++)
+	{
+		for (int rank = 0; rank < 8; rank++)
+		{
+			myfile << "S(" 
+					<< std::setw(4) << (int)weights[MG][count] << "," 
+					<< std::setw(4) << (int)weights[EG][count] << ")" << ", "; count++; 
+				
+			if (((rank + 1) % 8) == 0) 
+				myfile << "\n";                     
+		}
+	}
+	myfile <<"}, \n";
+
+
+	myfile << "weight_unblocked_pawn_storm[8][8] = { \n\n";
+    for (int edge_distance = 0; edge_distance < 8; edge_distance++)
+	{
+		for (int rank = 0; rank < 8; rank++)
+		{
+			myfile << "S(" 
+					<< std::setw(4) << (int)weights[MG][count] << "," 
+					<< std::setw(4) << (int)weights[EG][count] << ")" << ", "; count++; 
+				
+			if (((rank + 1) % 8) == 0) 
+				myfile << "\n";                     
+		}
+	}
+	myfile <<"}, \n";
 
 
  	myfile << "weight_knight_attack = " 				<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", " ; count++;

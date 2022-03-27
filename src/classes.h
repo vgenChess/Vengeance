@@ -1,6 +1,8 @@
 #ifndef CLASSES_H
 #define CLASSES_H
 
+#include <cstring>
+
 #include "types.h"
 #include "constants.h"
 #include "functions.h"
@@ -161,13 +163,6 @@ public:
 
 	int queenUnderdevelopedPieces[U8_MAX_SIDES];
 
-
-	// King 
-
-	int kingPawnShield[U8_MAX_SIDES];
-	int kingEnemyPawnStorm[U8_MAX_SIDES];
-
-
 	// Pieces Mobility
 
 	int knightMobility[U8_MAX_SIDES][16];
@@ -187,6 +182,10 @@ public:
 	
 
 	// King Safety
+
+	int pawnShield[8][8][U8_MAX_SIDES];
+	int blockedStorm[8][8][U8_MAX_SIDES];
+	int unblockedStorm[8][8][U8_MAX_SIDES];
 
 	int knightAttack[U8_MAX_SIDES];
 	int bishopAttack[U8_MAX_SIDES];
@@ -303,11 +302,14 @@ public:
 			}
 		}
 	
+
+    	memset(pawnShield, 0, sizeof(int) * 8 * 8 * 2);
+    	memset(blockedStorm, 0, sizeof(int) * 8 * 8 * 2);
+    	memset(unblockedStorm, 0, sizeof(int) * 8 * 8 * 2);
+		
+
 		for (int i = 0; i < U8_MAX_SIDES; i++) 
-		{
-			kingPawnShield[i] = 0;
-			kingEnemyPawnStorm[i] = 0;
-	
+		{				
 	    	knightAttack[i] = 0;
 			bishopAttack[i] = 0;
 			rookAttack[i] = 0;

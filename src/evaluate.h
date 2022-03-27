@@ -13,7 +13,7 @@
 #include "utility.h"
 
 void setDist();
-
+void initForwardRankMask();
 void initTableDoublePawns();
 
 int traceFullEval(Side stm, TraceCoefficients *traceCoefficients, Thread *th);

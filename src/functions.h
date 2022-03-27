@@ -84,4 +84,17 @@ constexpr int S(const int mg, const int eg) {
 	return (int)((unsigned int)eg << 16) + mg;
 }
 
+
+#define RRANK(x, side) ((side) ? ((x) >> 3) ^ 7 : ((x) >> 3))
+
+inline int LSB(uint64_t x)
+{
+    return __builtin_ctzll(x);
+}
+
+inline int MSB(uint64_t x)
+{
+    return 63 - __builtin_clzll(x);
+}
+
 #endif

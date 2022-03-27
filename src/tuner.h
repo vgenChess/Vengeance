@@ -6,7 +6,7 @@
 #include "thread.h"
 #include "evaluate.h"
 
-#define NTERMS 64 * 6 + 130 + 6 + 8 + 8 + 8
+#define NTERMS 64 * 6 + 130 + 4 + 8 + 8 + 8 + 8*8 + 8*8 + 8*8
 #define KPRECISION 10
 
 typedef int TArray[NTERMS];

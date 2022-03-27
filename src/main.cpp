@@ -45,6 +45,7 @@ int main(int argc, char **argv)
     Zobrist::objZobrist.initPawnZobristKeys();  // should be called after initialising main zobrist keys
     initCastleMaskAndFlags();
     init_inbetween_bb(); 
+    initForwardRankMask();
     initPSQT();
     initKingZoneBB();
     HashManager::initHashTable(16);      // default hash size = 16 megabytes
