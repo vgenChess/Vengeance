@@ -25,8 +25,8 @@
 #define MAXEPOCHS		1000000000
 #define NPOSITIONS		1428000
 #define NPARTITIONS		4 
-#define BATCHSIZE		1024 
-#define LR              0.005 
+#define BATCHSIZE		512 
+#define LR              0.0025 
 #define DISPLAY_TIME	60				
 
 struct Score 
@@ -241,7 +241,7 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff)
 	{
 		for (int rank = 0; rank < 8; rank++)
 		{
-			loadCoeff->type[i] = SAFETY;	
+			loadCoeff->type[i] = NORMAL;	
 		    loadCoeff->coeffs[WHITE][i] = T->pawnShield[edge_distance][rank][WHITE];                         
 		    loadCoeff->coeffs[BLACK][i++] = T->pawnShield[edge_distance][rank][BLACK];                         
 		}
@@ -251,7 +251,7 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff)
 	{
 		for (int rank = 0; rank < 8; rank++)
 		{
-			loadCoeff->type[i] = SAFETY;	
+			loadCoeff->type[i] = NORMAL;	
 		    loadCoeff->coeffs[WHITE][i] = T->blockedStorm[edge_distance][rank][WHITE];                         
 		    loadCoeff->coeffs[BLACK][i++] = T->blockedStorm[edge_distance][rank][BLACK];                         
 		}
@@ -261,7 +261,7 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff)
 	{
 		for (int rank = 0; rank < 8; rank++)
 		{
-			loadCoeff->type[i] = SAFETY;	
+			loadCoeff->type[i] = NORMAL;	
 		    loadCoeff->coeffs[WHITE][i] = T->unblockedStorm[edge_distance][rank][WHITE];                         
 		    loadCoeff->coeffs[BLACK][i++] = T->unblockedStorm[edge_distance][rank][BLACK];                         
 		}
@@ -1084,6 +1084,7 @@ void saveWeights(TVector params, TVector cparams) {
 
     // Combine updated and current parameters
     for (int j = 0; j < NTERMS; j++) {
+
         weights[MG][j] = round(params[MG][j] + cparams[MG][j]);
         weights[EG][j] = round(params[EG][j] + cparams[EG][j]);
     }
@@ -1105,42 +1106,79 @@ void saveWeights(TVector params, TVector cparams) {
 	
 	myfile  <<", \n";
 
-	myfile  << "\nweight_isolated_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")"; count++; 
+	myfile  << "\nweight_isolated_pawn = "  << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")"; count++; 
 	myfile  << ",\nweight_backward_pawn = " << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")"; count++; 
 	myfile  << ",\nweight_double_pawn = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")"; count++; 
 	myfile  << ",\nweight_pawn_hole = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")"; count++;
-	
-	myfile <<", \n" << "arr_weight_pawn_chain[8] = { "; 
+
+	myfile  <<", \n";
+
+	myfile  << "arr_weight_pawn_chain[8] = { \n\n";
 	for(int i = 0; i < 8; i++) {
 
-		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", "; count++; 
+    	myfile << "S(" 
+					<< std::setw(4) << (int)weights[MG][count] << "," 
+					<< std::setw(4) << (int)weights[EG][count] << ")" << ", "; count++; 
+
+		if(((i + 1) % 4) == 0) 
+			myfile<<"\n";	
 	}
 	
-	myfile <<"}, \n" << "arr_weight_phalanx_pawn[8] = { "; 
+	myfile <<"}, \n";
+		
+	myfile << "arr_weight_phalanx_pawn[8] = { \n\n";
 	for(int i = 0; i < 8; i++) {
 
-		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", "; count++; 
+    	myfile << "S(" 
+					<< std::setw(4) << (int)weights[MG][count] << "," 
+					<< std::setw(4) << (int)weights[EG][count] << ")" << ", "; count++; 
+
+		if(((i + 1) % 4) == 0) 
+			myfile<<"\n";	
 	}
 
-	myfile <<"}, \n" << "arr_weight_defended_phalanx_pawn[8] = { "; 
+	myfile <<"}, \n";
+
+	myfile << "arr_weight_defended_phalanx_pawn[8] = { \n\n";
 	for(int i = 0; i < 8; i++) {
 
-		myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", "; count++; 
+    	myfile << "S(" 
+					<< std::setw(4) << (int)weights[MG][count] << "," 
+					<< std::setw(4) << (int)weights[EG][count] << ")" << ", "; count++; 
+
+		if(((i + 1) % 4) == 0) 
+			myfile<<"\n";
 	}
 
-	myfile <<"}, \n" << "arr_weight_passed_pawn[8] = { "; 
+	myfile <<"}, \n";
+
+	myfile << "arr_weight_passed_pawn[8] = { \n\n";
 	for(int i = 0; i < 8; i++) {
 
-		myfile << "S(" <<(int)weights[MG][count] << ", "<< (int)weights[EG][count]<<")" << ", "; count++; 
+    	myfile << "S(" 
+					<< std::setw(4) << (int)weights[MG][count] << "," 
+					<< std::setw(4) << (int)weights[EG][count] << ")" << ", "; count++; 
+
+		if(((i + 1) % 4) == 0) 
+			myfile<<"\n";
+			
 	}
+
+	myfile <<"}, \n";
 	
-	myfile << "}, \n" << "arr_weight_defended_passed_pawn[8] = { "; 
+	myfile << "arr_weight_defended_passed_pawn[8] = { \n\n";
+	
 	for(int i = 0; i < 8; i++) {
 
-		myfile << "S(" <<(int)weights[MG][count] << ", "<< (int)weights[EG][count]<<")" << ", "; count++;
+    	myfile << "S(" 
+					<< std::setw(4) << (int)weights[MG][count] << "," 
+					<< std::setw(4) << (int)weights[EG][count] << ")" << ", "; count++; 
+
+		if(((i + 1) % 4) == 0) 
+			myfile<<"\n";
 	}
    	
-   	myfile << "}, \n\n";
+	myfile <<"}, \n";
 	
 	
 	myfile << "weight_knight_all_pawns_count = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", \n"; count++;
@@ -1173,50 +1211,54 @@ void saveWeights(TVector params, TVector cparams) {
 	myfile << "arr_weight_knight_mobility[16] = { \n\n";
     for (int i = 0; i < 16; i++) {
     
-    	myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", "; count++;
-		
-		if(((i + 1) % 8) == 0) 
+    	myfile << "S(" 
+					<< std::setw(4) << (int)weights[MG][count] << "," 
+					<< std::setw(4) << (int)weights[EG][count] << ")" << ", "; count++; 
+			
+		if(((i + 1) % 4) == 0) 
 			myfile<<"\n";
 	}
-   	myfile << "\n"; 
-	myfile <<"}, "<<"\n";
+	myfile <<"}, \n";
 
 	myfile << "arr_weight_bishop_mobility[16] = { \n\n";
     for (int i = 0; i < 16; i++) {
     
-    	myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", "; count++;
-		
-		if(((i + 1) % 8) == 0) 
+    	myfile << "S(" 
+					<< std::setw(4) << (int)weights[MG][count] << "," 
+					<< std::setw(4) << (int)weights[EG][count] << ")" << ", "; count++; 
+				
+		if(((i + 1) % 4) == 0) 
 			myfile<<"\n";
 	}
-	myfile << "\n"; 
-	myfile <<"}, "<<"\n";
+	myfile <<"}, \n";
 
 	myfile << "arr_weight_rook_mobility[16] = { \n\n";
     for (int i = 0; i < 16; i++) {
     
-    	myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", "; count++;
-		
-		if(((i + 1) % 8) == 0) 
+    	myfile << "S(" 
+					<< std::setw(4) << (int)weights[MG][count] << "," 
+					<< std::setw(4) << (int)weights[EG][count] << ")" << ", "; count++; 
+
+		if(((i + 1) % 4) == 0) 
 			myfile<<"\n";
 	}
-	myfile << "\n"; 
-	myfile <<"}, "<<"\n";
+	myfile <<"}, \n";
 
 	myfile << "arr_weight_queen_mobility[32] = { \n\n";
     for (int i = 0; i < 32; i++) {
-    
-    	myfile << "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", "; count++;
-		
+
+		myfile << "S(" 
+					<< std::setw(4) << (int)weights[MG][count] << "," 
+					<< std::setw(4) << (int)weights[EG][count] << ")" << ", "; count++; 
+			
 		if(((i + 1) % 8) == 0) 
 			myfile<<"\n";
 	}
-	myfile << "\n"; 
-	myfile <<"}, ";
+	
+	myfile <<"}, \n";
 
 
 	myfile << "\n\n";
-
 
 
 	myfile << "weight_pawn_shield[8][8] = { \n\n";

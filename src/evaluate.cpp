@@ -1007,14 +1007,14 @@ int pKEval(Thread *th)
         int stormingRank = pawns ? RRANK((side ? MSB(pawns) : LSB(pawns)), side) : 0;
 
         int f = MIN(file, 7 - file);
-        score += weight_pawn_shield[f][defendingRank];
+        score += MakeScore(weight_pawn_shield[f][defendingRank], 0);
 
         #if defined(TUNE)
 			T->pawnShield[f][defendingRank][side]++;
 		#endif
 
         bool blocked = (defendingRank != 0) && defendingRank == stormingRank - 1;
-        score += (blocked) ? weight_blocked_pawn_storm[f][stormingRank] : weight_unblocked_pawn_storm[f][stormingRank];
+        score += (blocked) ? weight_blocked_pawn_storm[f][stormingRank] : MakeScore(weight_unblocked_pawn_storm[f][stormingRank], 0);
         
   		#if defined(TUNE)
 	        if (blocked)
@@ -1041,11 +1041,12 @@ int kingSafety(Thread *th)
 	
 	// King PSQT Score	
 	score += side ? kingPSQT[Mirror64[kingSq]] : kingPSQT[kingSq];
+	score += pKEval<side>(th);
 
 	if (	th->evalInfo.kingAttackersCount[side] > 
 			(1 - POPCOUNT(opp == WHITE ? th->whitePieceBB[QUEEN] : th->blackPieceBB[QUEEN])))
 	{ 
-		int safetyScore = th->evalInfo.kingAttackersWeight[side] + pKEval<side>(th);
+		int safetyScore = th->evalInfo.kingAttackersWeight[side];
 
 		U64 enemyPieces = opp == WHITE ? th->whitePieceBB[PIECES] : th->blackPieceBB[PIECES];	
 							
@@ -1131,41 +1132,6 @@ int kingSafety(Thread *th)
 			T->bishopAttack[side] 			=	0;
 			T->rookAttack[side] 			=	0;
 			T->queenAttack[side]	 		=	0;
-
-			for (int edge_distance = 0; edge_distance < 8; edge_distance++) 
-			{
-				for (int rank = 0; rank < 8; rank++)
-				{
-					for(int s = WHITE; s <= BLACK; s++)
-					{
-						T->pawnShield[edge_distance][rank][s] = 0;
-					}
-				}
-			}
-
-
-			for (int edge_distance = 0; edge_distance < 8; edge_distance++) 
-			{
-				for (int rank = 0; rank < 8; rank++)
-				{
-					for(int s = WHITE; s <= BLACK; s++)
-					{
-						T->blockedStorm[edge_distance][rank][s] = 0;
-					}
-				}
-			}
-
-			for (int edge_distance = 0; edge_distance < 8; edge_distance++) 
-			{
-				for (int rank = 0; rank < 8; rank++)
-				{
-					for(int s = WHITE; s <= BLACK; s++)
-					{
-						T->unblockedStorm[edge_distance][rank][s] = 0;
-					}
-				}
-			}
-		
     	#endif
     } 
 
