@@ -18,6 +18,8 @@ arr_weight_defended_phalanx_pawn[8] = { S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0,
 arr_weight_passed_pawn[8] = { S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) }, 
 arr_weight_defended_passed_pawn[8] = { S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0) }, 
 
+weight_minor_has_pawn_shield = S(0, 0),
+
 weight_knight_all_pawns_count = S(0, 0),
 weight_knight_outpost = S(0, 0),
 weight_undefended_knight = S(0, 0), 

@@ -129,6 +129,8 @@ public:
 	int passedPawn[U8_MAX_SIDES][8];
 	int defendedPassedPawn[U8_MAX_SIDES][8];
 	
+	int	minorPawnShield[U8_MAX_SIDES];
+
 	// Knights
 
 	int knightAllPawnsCount[U8_MAX_SIDES];
@@ -238,6 +240,8 @@ public:
 
 		for (int i = 0; i < U8_MAX_SIDES; i++) 
 		{
+			minorPawnShield[i] = 0;
+
 			knightAllPawnsCount[i] = 0;
 			knightOutpost[i] = 0;
 			undefendedKnight[i] = 0;

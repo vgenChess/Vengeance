@@ -541,6 +541,8 @@ int knightsEval(Thread *th)
 	
 	auto knightsBB = side ? th->blackPieceBB[KNIGHTS] : th->whitePieceBB[KNIGHTS];
 	
+	bool hasPawnShield;
+
 	int mobilityCount = 0, sq = -1;
 
 	int score = 0;
@@ -614,6 +616,18 @@ int knightsEval(Thread *th)
 			#endif
 		}
 
+		// Bonus if it is shielded by a pawn
+		hasPawnShield = side == WHITE ? ((1ULL << sq) << 8) & th->whitePieceBB[PAWNS]
+										: ((1ULL << sq) >> 8) & th->blackPieceBB[PAWNS];
+		if (hasPawnShield)
+		{
+			score += weight_minor_has_pawn_shield;
+				
+			#if defined(TUNE) 
+
+				T->minorPawnShield[side]++;
+			#endif
+		}
 
 		// Knight mobility
 		
@@ -653,7 +667,7 @@ int bishopsEval(Thread *th)
 
 	const auto kingSq = th->evalInfo.kingSq[side];
 
-	bool isDefended;
+	bool isDefended, hasPawnShield;
 
 	int mobilityCount = 0, sq = -1;
 	
@@ -699,6 +713,20 @@ int bishopsEval(Thread *th)
 			#if defined(TUNE)	
 			
 				T->undefendedBishop[side]++;			
+			#endif
+		}
+
+
+		// Bonus if it is shielded by a pawn
+		hasPawnShield = side == WHITE ? ((1ULL << sq) << 8) & th->whitePieceBB[PAWNS]
+										: ((1ULL << sq) >> 8) & th->blackPieceBB[PAWNS];
+		if (hasPawnShield)
+		{
+			score += weight_minor_has_pawn_shield;
+				
+			#if defined(TUNE) 
+
+				T->minorPawnShield[side]++;
 			#endif
 		}
 
