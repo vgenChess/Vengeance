@@ -49,6 +49,7 @@ U64 arrRanks[8] = {
 // TODO check datatype
 int PSQT[U8_MAX_PIECES][U8_MAX_SQUARES];
 U64 kingZoneBB[U8_MAX_SIDES][U8_MAX_SQUARES];
+U64 forwardRanksBB[U8_MAX_SIDES][8]; // @TODO rename variable name
 
 template<Side side>
 void initEvalInfo(Thread *th) 
@@ -169,13 +170,6 @@ int fullEval(U8 side, Thread *th)
 
 
 	th->evalInfo.clear();
-	th->evalInfo.pawnsHashHit = pawnsHashHit;
-
-	if (pawnsHashHit) 
-	{
-		th->evalInfo.pawnsKingEval[WHITE] = pawnsHashEntry->pawnsKingEval[WHITE];
-		th->evalInfo.pawnsKingEval[BLACK] = pawnsHashEntry->pawnsKingEval[BLACK];
-	}
 
 	const auto whitePawns = th->whitePieceBB[PAWNS];
 	const auto blackPawns = th->blackPieceBB[PAWNS];
@@ -241,12 +235,6 @@ int fullEval(U8 side, Thread *th)
 	// evaluation of other pieces other than king needs to be done first
 	// because of values required for king safety calculation
 	eval += kingSafety<WHITE>(th)	- 	kingSafety<BLACK>(th);
-
-	if (!pawnsHashHit)
-	{
-		pawnsHashEntry->pawnsKingEval[WHITE] = th->evalInfo.pawnsKingEval[WHITE];
-		pawnsHashEntry->pawnsKingEval[BLACK] = th->evalInfo.pawnsKingEval[BLACK];
-	}
 	
 	// Tapered evaluation 
 	int phase = 	4 * POPCOUNT(th->whitePieceBB[QUEEN] 	| 	th->blackPieceBB[QUEEN]) 
@@ -926,7 +914,6 @@ int queenEval(Thread *th)
 		score += side ? PSQT[QUEEN][Mirror64[sq]] : PSQT[QUEEN][sq];
 
 
-
 		if (	POPCOUNT(th->occupied) >= 22	// early game
 			&&	(side ? sq <= 48 : sq >= 15)) 
 		{ 
@@ -971,19 +958,6 @@ int queenEval(Thread *th)
 	return score;
 }
 
-U64 ForwardRanksMasks[U8_MAX_SIDES][8];
-
-void initForwardRankMask()
-{
-	for (int rank = 0; rank < 8; rank++) 
-	{
-	    for (int i = rank; i < 8; i++)
-	        ForwardRanksMasks[WHITE][rank] |= arrRanks[i];
-	
-	    ForwardRanksMasks[BLACK][rank] = ~ForwardRanksMasks[WHITE][rank] | arrRanks[rank];
-	}	
-}
-
 template<Side side>
 int pKEval(Thread *th) 
 {
@@ -1000,11 +974,11 @@ int pKEval(Thread *th)
     
 	for (int file = middle_file - 1; file <= middle_file + 1; file++)
     {   
-        U64 pawns = myPawns & arrFiles[file] & ForwardRanksMasks[side][kingRank];
-        int defendingRank = pawns ? RRANK((side ? MSB(pawns) : LSB(pawns)), side) : 0;
+        U64 pawns = myPawns & arrFiles[file] & forwardRanksBB[side][kingRank];
+        int defendingRank = pawns ? relativeRank((side ? MSB(pawns) : LSB(pawns)), side) : 0;
 
-        pawns = opponentPawns & arrFiles[file] & ForwardRanksMasks[side][kingRank];
-        int stormingRank = pawns ? RRANK((side ? MSB(pawns) : LSB(pawns)), side) : 0;
+        pawns = opponentPawns & arrFiles[file] & forwardRanksBB[side][kingRank];
+        int stormingRank = pawns ? relativeRank((side ? MSB(pawns) : LSB(pawns)), side) : 0;
 
         int f = MIN(file, 7 - file);
         score += MakeScore(weight_pawn_shield[f][defendingRank], 0);
@@ -1014,7 +988,8 @@ int pKEval(Thread *th)
 		#endif
 
         bool blocked = (defendingRank != 0) && defendingRank == stormingRank - 1;
-        score += (blocked) ? weight_blocked_pawn_storm[f][stormingRank] : MakeScore(weight_unblocked_pawn_storm[f][stormingRank], 0);
+        score += (blocked) ? weight_blocked_pawn_storm[f][stormingRank] 
+        					: MakeScore(weight_unblocked_pawn_storm[f][stormingRank], 0);
         
   		#if defined(TUNE)
 	        if (blocked)
@@ -1046,10 +1021,9 @@ int kingSafety(Thread *th)
 	if (	th->evalInfo.kingAttackersCount[side] > 
 			(1 - POPCOUNT(opp == WHITE ? th->whitePieceBB[QUEEN] : th->blackPieceBB[QUEEN])))
 	{ 
-		int safetyScore = th->evalInfo.kingAttackersWeight[side];
+		int safetyScore 	= 	th->evalInfo.kingAttackersWeight[side];
 
-		U64 enemyPieces = opp == WHITE ? th->whitePieceBB[PIECES] : th->blackPieceBB[PIECES];	
-							
+		U64 enemyPieces 	= 	opp == WHITE ? th->whitePieceBB[PIECES] : th->blackPieceBB[PIECES];						
 		U64 safeSquares 	= 	~(enemyPieces | th->evalInfo.attacks[side]);
 		U64 unsafeSquares   = 	~safeSquares;
 		U64 rookSquares 	= 	Rmagic(kingSq, th->occupied);
@@ -1109,14 +1083,12 @@ int kingSafety(Thread *th)
 			#endif
         }
 
-
 		safetyScore += 	weight_safety_adjustment;
-
 
 		#if defined(TUNE)
 
-			T->safetyAdjustment[side] 		=	1;
-	    	T->safety[side] 				= 	safetyScore;
+			T->safetyAdjustment[side]	=	1;
+	    	T->safety[side] 			= 	safetyScore;
 		#endif
 
 	
@@ -1128,10 +1100,10 @@ int kingSafety(Thread *th)
     {
     	#if defined(TUNE)
 	    	
-	    	T->knightAttack[side] 			= 	0;
-			T->bishopAttack[side] 			=	0;
-			T->rookAttack[side] 			=	0;
-			T->queenAttack[side]	 		=	0;
+	    	T->knightAttack[side]	= 	0;
+			T->bishopAttack[side] 	=	0;
+			T->rookAttack[side] 	=	0;
+			T->queenAttack[side]	=	0;
     	#endif
     } 
 
@@ -1166,6 +1138,16 @@ void initKingZoneBB()
 	}	
 }
 
+void initForwardRankMask()
+{
+	for (int rank = 0; rank < 8; rank++) 
+	{
+	    for (int i = rank; i < 8; i++)
+	        forwardRanksBB[WHITE][rank] |= arrRanks[i];
+	
+	    forwardRanksBB[BLACK][rank] = ~forwardRanksBB[WHITE][rank] | arrRanks[rank];
+	}	
+}
 
 
 

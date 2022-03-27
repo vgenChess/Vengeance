@@ -232,7 +232,6 @@ SearchThread* SearchThreadPool::getMainSearchThread()
     return threads[0];
 }
 
-// @TODO check logic
 SearchThread* SearchThreadPool::getBestThread()
 {
     auto bestThread = threads[0];

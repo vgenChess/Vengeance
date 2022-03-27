@@ -85,7 +85,7 @@ constexpr int S(const int mg, const int eg) {
 }
 
 
-#define RRANK(x, side) ((side) ? ((x) >> 3) ^ 7 : ((x) >> 3))
+#define relativeRank(x, side) ((side) ? ((x) >> 3) ^ 7 : ((x) >> 3))
 
 inline int LSB(uint64_t x)
 {
