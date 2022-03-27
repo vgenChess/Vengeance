@@ -958,8 +958,12 @@ int queenEval(Thread *th)
 	return score;
 }
 
+
+
+
+
 template<Side side>
-int pKEval(Thread *th) 
+int pKEval(Thread *th) //TODO refactor logic 
 {
 	constexpr Side opp = side == WHITE ? BLACK : WHITE;
 

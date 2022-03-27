@@ -10,31 +10,25 @@ setoption name Threads value 4
 
 Stuff blocking release
     - TODO logic 
-    - Eval refactor and tuning
 
 Priority
     - Node explosion control
     - Better endgame detection for null move etc
 
 TODO
-    - Use std::fill command to clear move ordering tables
-    - Evaluation Terms to add (Outpost, Knight outpost)
     - Rewrite logic for copy/paste code
     - Add tempo for eval and tuning
     - Check zobrist hashing logic, hash table implementation
     - Check square flipping for sides in evaluation
-    - Check rook check and queen check values for king safety
     
 Needs investigation
     - reduce search explosion for higher depths
     - delay reporting to the uci during initial seconds 
     - material imbalance evaluation
     - quiescense explosion
-    - Time related disconnection
 
 DONE (under observation)
     - Add 50 moves rule
-    - Endgame crash reproduction and fix
     
 Bugs
     - No response during endgame mate (connection stalls)
