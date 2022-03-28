@@ -20,15 +20,56 @@
 #include "utility.h"
 #include "fen.h"
 #include "functions.h"
-#include "weights.h"
 
-#define MAXEPOCHS		1000000000
-#define NPOSITIONS		1428000
-#define NPARTITIONS		4 
-#define BATCHSIZE		256 
-#define LR              0.00125 
-#define DISPLAY_TIME	60				
+#if defined(__TEST_TUNER)
 
+	#include "zerodEvals.h"
+	
+	#define MAXEPOCHS		500
+	#define NPARTITIONS		4 
+	#define BATCHSIZE		1024 
+	#define LR              0.005 
+	#define DISPLAY_TIME	5				
+	
+	#define DATASET			"quiet-labeled.epd"
+	#define NPOSITIONS		50000	// for v7, v6 has 725000
+
+	// #define DATASET			"lichess-big3-resolved.book"
+	// #define NPOSITIONS   7153652
+#else 
+	
+	#if defined (__TUNE)
+	
+		#include "zerodEvals.h"
+		
+		#define MAXEPOCHS		1050
+		#define NPARTITIONS		4 
+		#define BATCHSIZE		16 
+		#define LR              0.001 
+		#define DISPLAY_TIME	60		
+
+		#define DATASET			"quiet-labeled.epd"
+		#define NPOSITIONS		1428000	// for v7, v6 has 725000
+
+		// #define DATASET			"lichess-big3-resolved.book"
+		// #define NPOSITIONS   7153652		
+	#else 
+
+		#include "tunedEvals.h"
+		
+		#define MAXEPOCHS		1050
+		#define NPARTITIONS		4 
+		#define BATCHSIZE		256 
+		#define LR              0.001 
+		#define DISPLAY_TIME	60				
+
+		#define DATASET			"quiet-labeled.epd"
+		#define NPOSITIONS		1428000	// for v7, v6 has 725000
+
+		// #define DATASET			"lichess-big3-resolved.book"
+		// #define NPOSITIONS   7153652		
+	#endif
+#endif
 struct Score 
 {	
 	double mg;
@@ -651,9 +692,9 @@ void startTuner() {
 	assert(count == NTERMS);
 
 	std::fstream newfile;
-   	// newfile.open ("lichess-big3-resolved.book", std::ios::in);	// NPOSITIONS = 7150000 roughly
-	newfile.open ("quiet-labeled.epd", std::ios::in); 			// v6 NPOSITIONS = 725000 exact
-																// v7 NPOSITIONS = 1428000 exact
+   	
+	newfile.open(DATASET, std::ios::in);
+
 	count = 0;
 
 	TraceCoefficients *T = new TraceCoefficients();
@@ -810,18 +851,19 @@ void optimise(TVector params, TVector cparams) {
 
 	const double K = computeOptimalK();
 
-	double bestMae = 100, mae = 0, prevMae = 100;
+	double bestMae = 100, mae = 0, prevMae = 100, alpha1 = LR;
 
 	// For Adagrad
 	// TVector adagrad = {};
 	
 	// For RMS Prop
 	// TVector cache = {};
-	// double alpha1 = LR, beta1 = 0.9;
+	// double beta1 = 0.9;
 
 	// For Adam optimiser
-	double alpha1 = LR, beta1 = 0.9, beta2 = 0.999;
-	TVector M = {}, R = {};
+	double beta1 = 0.9, beta2 = 0.999;
+	TVector momentum = {}, velocity = {};
+   
 	
 	auto tunerStartTime = std::chrono::steady_clock::now();
 	
@@ -829,11 +871,16 @@ void optimise(TVector params, TVector cparams) {
 	uint64_t index = 0;
 
 	std::vector<Data> data_batch;
+
+	uint64_t epoch = 0, epochMultiplier = 0;
 	
-	for (uint64_t epoch = 1; epoch < MAXEPOCHS; epoch++) {
+	while (true) {
 
-		if (index >= dataList.size()) {
+		epochMultiplier++;
+		epoch = (epochMultiplier * BATCHSIZE / NPOSITIONS);
 
+		if (index >= dataList.size()) 
+		{
 			index = 0;
 			std::random_shuffle(dataList.begin(), dataList.end());	
 		}
@@ -850,36 +897,42 @@ void optimise(TVector params, TVector cparams) {
 
 
 		// Adagrad
+/*		#pragma omp parallel for schedule(auto)  
+		for (int i = 0; i < NTERMS; i++) {
+    
+            adagrad[MG][i] += pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
+            adagrad[EG][i] += pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
 
-        // adagrad[MG][i] += pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
-        // adagrad[EG][i] += pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
-        // params[MG][i] += (K / 200.0) * (gradient[MG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + adagrad[MG][i]));
-        // params[EG][i] += (K / 200.0) * (gradient[EG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + adagrad[EG][i]));
-
-
+            params[MG][i] += (K / 200.0) * (gradient[MG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + adagrad[MG][i]));
+            params[EG][i] += (K / 200.0) * (gradient[EG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + adagrad[EG][i]));
+        }
+*/		
 		// RMSProp (slower than Adam)
-/*		#pragma omp parallel for schedule(auto)
+		/*#pragma omp parallel for schedule(auto)
 		for (int i = 0; i < NTERMS; i++) {
 
 	        cache[MG][i] = beta1 * cache[MG][i] + (1.0 - beta1) * pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
-	        cache[EG][i] = beta1 * cache[EG][i] + (1.0 - beta1) * pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
-	        params[MG][i] += (K / 200.0) * (gradient[MG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + cache[MG][i]));
-	        params[EG][i] += (K / 200.0) * (gradient[EG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + cache[EG][i]));
-		}
-*/
+            cache[EG][i] = beta1 * cache[EG][i] + (1.0 - beta1) * pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
+            
+            params[MG][i] += (K / 200.0) * (gradient[MG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + cache[MG][i]));
+            params[EG][i] += (K / 200.0) * (gradient[EG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + cache[EG][i]));
+		}*/
 
 		// Adam
-		#pragma omp parallel for schedule(auto)
-		for (int i = 0; i < NTERMS; ++i) {
-			
-		    M[MG][i] = beta1 * M[MG][i] + (1.0 - beta1) * (K / 200.0) * gradient[MG][i] / BATCHSIZE;
-		    M[EG][i] = beta1 * M[EG][i] + (1.0 - beta1) * (K / 200.0) * gradient[EG][i] / BATCHSIZE;
+		#pragma omp parallel for schedule(auto)  
+		for (int i = 0; i < NTERMS; i++) {
 
-			R[MG][i] = beta2 * R[MG][i] + (1.0 - beta2) * pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
-        	R[EG][i] = beta2 * R[EG][i] + (1.0 - beta2) * pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
+            double mg_grad = (K / 200.0) * gradient[MG][i] / BATCHSIZE;
+            double eg_grad = (K / 200.0) * gradient[EG][i] / BATCHSIZE;
 
-        	params[MG][i] += alpha1 * (M[MG][i] / (1.0 - pow(beta1, epoch))) / (sqrt(R[MG][i] / (1.0 - pow(beta2, epoch))) + 1e-8);
-        	params[EG][i] += alpha1 * (M[EG][i] / (1.0 - pow(beta1, epoch))) / (sqrt(R[EG][i] / (1.0 - pow(beta2, epoch))) + 1e-8);
+            momentum[MG][i] = beta1 * momentum[MG][i] + (1.0 - beta1) * mg_grad;
+            momentum[EG][i] = beta1 * momentum[EG][i] + (1.0 - beta1) * eg_grad;
+
+            velocity[MG][i] = beta2 * velocity[MG][i] + (1.0 - beta2) * pow(mg_grad, 2);
+            velocity[EG][i] = beta2 * velocity[EG][i] + (1.0 - beta2) * pow(eg_grad, 2);
+
+            params[MG][i] += alpha1 * momentum[MG][i] / (1e-8 + sqrt(velocity[MG][i]));
+            params[EG][i] += alpha1 * momentum[EG][i] / (1e-8 + sqrt(velocity[EG][i]));
 		}
 	
 
@@ -892,7 +945,7 @@ void optimise(TVector params, TVector cparams) {
 
 			mae = tunedEvaluationErrors(params, K);
 
-			std::cout << "Epoch = [" << epoch * BATCHSIZE / NPOSITIONS << "], ";
+			std::cout << "Epoch = [" << epoch << "], ";
 			std::cout << "Error = [" << std::fixed << std::setprecision(8) << mae << "], ";
 			std::cout << "Rate = [" << std::fixed << std::setprecision(5) << LR << "], ";
 			std::cout << "Batch Size = [" << BATCHSIZE << "], ";
@@ -917,6 +970,12 @@ void optimise(TVector params, TVector cparams) {
 			} 
 
 			prevMae = mae;
+
+			if (epoch > MAXEPOCHS)
+			{
+				std::cout << "\n\nFinished tuning.";
+				break;
+			}
 		}
 	}
 } 
@@ -927,7 +986,7 @@ double staticEvaluationErrors(double K) {
 
     #pragma omp parallel shared(total) 
     {
-    	#pragma omp for schedule(static, NPOSITIONS / NPARTITIONS) reduction(+:total)
+    	#pragma omp for schedule(auto) reduction(+:total)
     	for (int i = 0; i < NPOSITIONS; i++)
             total += pow(dataList[i].result - sigmoid(K, dataList[i].sEval), 2);
     }
@@ -942,7 +1001,7 @@ double tunedEvaluationErrors(TVector weights, double K) {
 
     #pragma omp parallel shared(total)
     {
-  	    #pragma omp for schedule(static, NPOSITIONS / NPARTITIONS) reduction(+:total)
+  	    #pragma omp for schedule(auto) reduction(+:total)
   	      for (int i = 0; i < NPOSITIONS; i++)
           	total += pow(dataList[i].result - sigmoid(K, linearEvaluation(weights, dataList[i], NULL)), 2);  
     }
@@ -1044,7 +1103,7 @@ void computeGradient(TVector gradient, TVector weights, std::vector<Data> data_b
     {
         TVector local = {};
 
-		#pragma omp for schedule(static, BATCHSIZE / NPARTITIONS)   
+		#pragma omp for schedule(auto)   
         for (uint32_t i = 0; i < data_batch.size(); i++) 
         	updateSingleGradient(data_batch[i], local, weights, K);
         
@@ -1098,15 +1157,15 @@ void saveWeights(TVector params, TVector cparams) {
     }
 
 	std::ofstream myfile;
-	myfile.open ("weights.h");
+	myfile.open ("tunedEvals.h");
 		
 
 	int count = 0;
 
 	myfile << "\n";
 
-	myfile << "#ifndef WEIGHTS_H\n";
-	myfile << "#define WEIGHTS_H\n\n";
+	myfile << "#ifndef TUNED_EVALS_H\n";
+	myfile << "#define TUNED_EVALS_H\n\n";
 
 	myfile << "#include \"functions.h\"\n";
 	
@@ -1199,7 +1258,7 @@ void saveWeights(TVector params, TVector cparams) {
 			myfile<<"\n";
 	}
    	
-	myfile <<"\n}, \n";
+	myfile <<"\n}, \n\n";
 			
 	
 	myfile << "weight_minor_has_pawn_shield = " 	<< "S("<<(int)weights[MG][count]<<", "<<(int)weights[EG][count]<<")" << ", \n\n"; count++;

@@ -9,10 +9,16 @@ all:
 	$(CXX) $(CXXFLAGS) $(SRC) -o $(EXE) $(LDFLAGS)
 
 tune:
-	$(CXX) $(CXXFLAGS) $(SRC) -D TUNE -o $(EXE) $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(SRC) -D __TUNE -o $(EXE) $(LDFLAGS)
+
+tuneTest:
+	$(CXX) $(CXXFLAGS) $(SRC) -D __TEST_TUNER -o $(EXE) $(LDFLAGS)
+
+tuneWithTunedEvals:
+	$(CXX) $(CXXFLAGS) $(SRC) -D __TUNE_WITH_TUNED_EVALS -o $(EXE) $(LDFLAGS)
 
 debug:
-	$(CXX) $(CXXFLAGS) $(SRC) -g -D DEBUG -o $(EXE) $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(SRC) -g -D __DEBUG -o $(EXE) $(LDFLAGS)
 
 release: 
 	$(CXX) $(CXXFLAGS) $(SRC) -o $(EXE) $(LDFLAGS)

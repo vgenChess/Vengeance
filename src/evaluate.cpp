@@ -17,8 +17,14 @@
 #include "magicmoves.h"
 #include "nonslidingmoves.h"
 #include "tuner.h"
-#include "weights.h"
 #include "functions.h"
+
+#if defined(__TEST_TUNER) || defined (__TUNE)
+	#include "zerodEvals.h"
+#else
+	#include "tunedEvals.h"
+#endif
+
 
 TraceCoefficients *T;
 
@@ -120,7 +126,7 @@ int fullEval(U8 side, Thread *th)
 {	
 	bool pawnsHashHit = false;
 
-	#if defined(TUNE)
+	#if defined(__TUNE) || defined(__TEST_TUNER)
 	
 		U8 sq;
 		U64 bb;
@@ -197,12 +203,12 @@ int fullEval(U8 side, Thread *th)
 
 	int eval = 0;
 
-	#if defined(TUNE)
+	#if defined(__TUNE) || defined(__TEST_TUNER)
 
 		th->evalInfo.passedPawns[WHITE] = wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
 		th->evalInfo.passedPawns[BLACK] = bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]);
 
-		eval += pawnsEval<WHITE>(th) 	- pawnsEval<BLACK>(th);
+		eval += pawnsEval<WHITE>(th) - pawnsEval<BLACK>(th);
 	#else
 	
 	    if (!pawnsHashHit)
@@ -244,7 +250,7 @@ int fullEval(U8 side, Thread *th)
 
     int score = (ScoreMG(eval) * phase + ScoreEG(eval) * (24 - phase)) / 24;
 
-    #if defined(TUNE)
+    #if defined(__TUNE) || defined(__TEST_TUNER)
 
 		T->eval = eval;
 		T->phase = phase;
@@ -335,7 +341,7 @@ int pawnsEval(Thread *th)
 		
 			score += arr_weight_defended_phalanx_pawn[rank];
 			
-			#if defined(TUNE)	
+			#if defined(__TUNE) || defined(__TEST_TUNER)	
 			
 				T->defendedPhalanxPawn[rank][side]++;
 			#endif
@@ -346,7 +352,7 @@ int pawnsEval(Thread *th)
 
 			score += arr_weight_phalanx_pawn[rank];
 
-			#if defined(TUNE)	
+			#if defined(__TUNE) || defined(__TEST_TUNER)	
 			
 				T->phalanxPawn[rank][side]++;
 			#endif
@@ -379,7 +385,7 @@ int pawnsEval(Thread *th)
 		// add the score based on the rank of the member
 		score += arr_weight_pawn_chain[rank];
 		
-		#if defined(TUNE)	
+		#if defined(__TUNE) || defined(__TEST_TUNER)	
 		
 			T->pawnChain[rank][side]++;
 		#endif
@@ -400,7 +406,7 @@ int pawnsEval(Thread *th)
 
 	score += POPCOUNT(isolatedPawns<side>(th)) * weight_isolated_pawn;
 
-	#if defined(TUNE)	
+	#if defined(__TUNE) || defined(__TEST_TUNER)	
 		
 		T->isolatedPawns[side] = POPCOUNT(isolatedPawns<side>(th));
 	#endif
@@ -410,7 +416,7 @@ int pawnsEval(Thread *th)
 	
 	score += POPCOUNT(doublePawns<side>(th)) * weight_double_pawn;
 
-	#if defined(TUNE)	
+	#if defined(__TUNE) || defined(__TEST_TUNER)	
 		
 		T->doublePawns[side] = POPCOUNT(doublePawns<side>(th));
 	#endif
@@ -425,7 +431,7 @@ int pawnsEval(Thread *th)
 	
 	score += POPCOUNT(backwardPawns<side>(th)) * weight_backward_pawn;
 
-	#if defined(TUNE)	
+	#if defined(__TUNE) || defined(__TEST_TUNER)	
 		
 		T->backwardPawns[side] = POPCOUNT(backwardPawns<side>(th));
 	#endif
@@ -442,7 +448,7 @@ int pawnsEval(Thread *th)
 	
 	score += POPCOUNT(pawnHoles<side>(th)) * weight_pawn_hole;
 
-	#if defined(TUNE)	
+	#if defined(__TUNE) || defined(__TEST_TUNER)	
 		
 		T->pawnHoles[side] = POPCOUNT(pawnHoles<side>(th));
 	#endif
@@ -473,7 +479,7 @@ int pawnsEval(Thread *th)
 		{	
 			score += weight_rook_behind_stm_passed_pawn;
 			
-			#if defined(TUNE) 
+			#if defined(__TUNE) || defined(__TEST_TUNER) 
 
 				T->rookBehindStmPassedPawn[side]++;
 			#endif
@@ -483,7 +489,7 @@ int pawnsEval(Thread *th)
 		{	
 			score += weight_rook_behind_opp_passed_pawn;
 			
-			#if defined(TUNE) 
+			#if defined(__TUNE) || defined(__TEST_TUNER) 
 			
 				T->rookBehindOppPassedPawn[side]++;
 			#endif
@@ -508,7 +514,7 @@ int pawnsEval(Thread *th)
 		
 			score += arr_weight_defended_passed_pawn[rank];
 			
-			#if defined(TUNE)	
+			#if defined(__TUNE) || defined(__TEST_TUNER)	
 			
 				T->defendedPassedPawn[side][rank]++;
 			#endif
@@ -519,7 +525,7 @@ int pawnsEval(Thread *th)
 
 			score += arr_weight_passed_pawn[rank];
 
-			#if defined(TUNE)	
+			#if defined(__TUNE) || defined(__TEST_TUNER)	
 			
 				T->passedPawn[side][rank]++;
 			#endif
@@ -567,7 +573,7 @@ int knightsEval(Thread *th)
 
 		score += weight_knight_all_pawns_count * allPawnsCount;
 
-		#if defined (TUNE)
+		#if defined (__TUNE) || defined(__TEST_TUNER)
 
 			T->knightAllPawnsCount[side] += allPawnsCount; 	
 		#endif
@@ -580,7 +586,7 @@ int knightsEval(Thread *th)
 		{
 			score += weight_knight_outpost;
 
-			#if defined(TUNE) 
+			#if defined(__TUNE) || defined(__TEST_TUNER) 
 
 				T->knightOutpost[side]++;
 			#endif
@@ -595,7 +601,7 @@ int knightsEval(Thread *th)
 		{
 			score += weight_undefended_knight;
 
-			#if defined(TUNE)	
+			#if defined(__TUNE) || defined(__TEST_TUNER)	
 			
 				T->undefendedKnight[side]++;			
 			#endif
@@ -610,7 +616,7 @@ int knightsEval(Thread *th)
 		{
 			score += weight_knight_defended_by_pawn;
 
-			#if defined(TUNE)	
+			#if defined(__TUNE) || defined(__TEST_TUNER)	
 			
 				T->knightDefendedByPawn[side]++;
 			#endif
@@ -623,7 +629,7 @@ int knightsEval(Thread *th)
 		{
 			score += weight_minor_has_pawn_shield;
 				
-			#if defined(TUNE) 
+			#if defined(__TUNE) || defined(__TEST_TUNER) 
 
 				T->minorPawnShield[side]++;
 			#endif
@@ -637,7 +643,7 @@ int knightsEval(Thread *th)
 
 		score += arr_weight_knight_mobility[mobilityCount];
 
-		#if defined(TUNE)
+		#if defined(__TUNE) || defined(__TEST_TUNER)
 
 			T->knightMobility[side][mobilityCount]++;
 		#endif
@@ -650,7 +656,7 @@ int knightsEval(Thread *th)
  			th->evalInfo.kingAttackersCount[opp]++;
             th->evalInfo.kingAttackersWeight[opp] += weight_knight_attack;
 
-            #if defined(TUNE)	
+            #if defined(__TUNE) || defined(__TEST_TUNER)	
             
             	T->knightAttack[opp]++; 
             #endif
@@ -682,7 +688,7 @@ int bishopsEval(Thread *th)
 	{	
 		score += weight_bishop_pair;
 
-		#if defined(TUNE)	
+		#if defined(__TUNE) || defined(__TEST_TUNER)	
 			
 			T->bishopPair[side] = 1;
 		#endif
@@ -710,7 +716,7 @@ int bishopsEval(Thread *th)
 		{
 			score += weight_undefended_bishop;
 
-			#if defined(TUNE)	
+			#if defined(__TUNE) || defined(__TEST_TUNER)	
 			
 				T->undefendedBishop[side]++;			
 			#endif
@@ -724,7 +730,7 @@ int bishopsEval(Thread *th)
 		{
 			score += weight_minor_has_pawn_shield;
 				
-			#if defined(TUNE) 
+			#if defined(__TUNE) || defined(__TEST_TUNER) 
 
 				T->minorPawnShield[side]++;
 			#endif
@@ -737,7 +743,7 @@ int bishopsEval(Thread *th)
 
 		score += arr_weight_bishop_mobility[mobilityCount];
 
-		#if defined(TUNE) 
+		#if defined(__TUNE) || defined(__TEST_TUNER) 
 
 			T->bishopMobility[side][mobilityCount]++;
 		#endif
@@ -751,7 +757,7 @@ int bishopsEval(Thread *th)
  			th->evalInfo.kingAttackersCount[opp]++;
             th->evalInfo.kingAttackersWeight[opp] += weight_bishop_attack;
 
-            #if defined(TUNE)	
+            #if defined(__TUNE) || defined(__TEST_TUNER)	
             
             	T->bishopAttack[opp]++; 
             #endif
@@ -803,7 +809,7 @@ int rooksEval(Thread *th)
 		{
 			score += weight_rook_flank_outpost;
 			
-			#if defined(TUNE)
+			#if defined(__TUNE) || defined(__TEST_TUNER)
 
 				T->rookFlankOutpost[side]++;
 			#endif
@@ -816,7 +822,7 @@ int rooksEval(Thread *th)
 		{
 			score += weight_rook_half_open_file;
 		
-			#if defined(TUNE)	
+			#if defined(__TUNE) || defined(__TEST_TUNER)	
 			
 				T->halfOpenFile[side]++;
 			#endif
@@ -828,7 +834,7 @@ int rooksEval(Thread *th)
 		{
 			score += weight_rook_open_file;
 
-			#if defined(TUNE)	
+			#if defined(__TUNE) || defined(__TEST_TUNER)	
 			
 				T->openFile[side]++;
 			#endif
@@ -841,7 +847,7 @@ int rooksEval(Thread *th)
 		{
 			score += weight_rook_enemy_queen_same_file;
 
-			#if defined(TUNE)	
+			#if defined(__TUNE) || defined(__TEST_TUNER)	
 			
 				T->rookEnemyQueenSameFile[side]++;
 			#endif
@@ -853,7 +859,7 @@ int rooksEval(Thread *th)
 		{
 			score += weight_rook_on_seventh_rank;
 		
-			#if defined(TUNE)	
+			#if defined(__TUNE) || defined(__TEST_TUNER)	
 				
 				T->rookOnSeventhRank[side]++;
 			#endif
@@ -865,7 +871,7 @@ int rooksEval(Thread *th)
 		{
 			score += weight_rook_on_eight_rank;
 
-			#if defined(TUNE)	
+			#if defined(__TUNE) || defined(__TEST_TUNER)	
 
 				T->rookOnEightRank[side]++;							
 			#endif
@@ -878,7 +884,7 @@ int rooksEval(Thread *th)
 		{
 			score += weight_rook_supporting_friendly_rook;
 
-			#if defined(TUNE)	
+			#if defined(__TUNE) || defined(__TEST_TUNER)	
 				
 				T->rookSupportingFriendlyRook[side] = 1;
 			#endif
@@ -891,7 +897,7 @@ int rooksEval(Thread *th)
 
 		score += arr_weight_rook_mobility[mobilityCount]; 
 
-		#if defined(TUNE)	
+		#if defined(__TUNE) || defined(__TEST_TUNER)	
 			
 			T->rookMobility[side][mobilityCount]++; 
 		#endif
@@ -904,7 +910,7 @@ int rooksEval(Thread *th)
  			th->evalInfo.kingAttackersCount[opp]++;
             th->evalInfo.kingAttackersWeight[opp] += weight_rook_attack;
 
-            #if defined(TUNE)	
+            #if defined(__TUNE) || defined(__TEST_TUNER)	
             
             	T->rookAttack[opp]++; 
             #endif
@@ -953,7 +959,7 @@ int queenEval(Thread *th)
 
 			score += POPCOUNT(underdevelopedPiecesBB) * weight_queen_underdeveloped_pieces;
 			
-			#if defined(TUNE)	
+			#if defined(__TUNE) || defined(__TEST_TUNER)	
 	
 				T->queenUnderdevelopedPieces[side] += POPCOUNT(underdevelopedPiecesBB);
 			#endif
@@ -964,7 +970,7 @@ int queenEval(Thread *th)
 		
 		score += arr_weight_queen_mobility[POPCOUNT(attacksBB & th->empty)];
 
-		#if defined(TUNE)	
+		#if defined(__TUNE) || defined(__TEST_TUNER)	
 	
 			T->queenMobility[side][POPCOUNT(attacksBB & th->empty)]++;
 		#endif
@@ -976,7 +982,7 @@ int queenEval(Thread *th)
  			th->evalInfo.kingAttackersCount[opp]++;
             th->evalInfo.kingAttackersWeight[opp] += weight_queen_attack;
 
-            #if defined(TUNE)	
+            #if defined(__TUNE) || defined(__TEST_TUNER)	
     
             	T->queenAttack[opp]++; 
             #endif
@@ -1015,7 +1021,7 @@ int pKEval(Thread *th) //TODO refactor logic
         int f = MIN(file, 7 - file);
         score += MakeScore(weight_pawn_shield[f][defendingRank], 0);
 
-        #if defined(TUNE)
+        #if defined(__TUNE) || defined(__TEST_TUNER)
 			T->pawnShield[f][defendingRank][side]++;
 		#endif
 
@@ -1023,7 +1029,7 @@ int pKEval(Thread *th) //TODO refactor logic
         score += (blocked) ? weight_blocked_pawn_storm[f][stormingRank] 
         					: MakeScore(weight_unblocked_pawn_storm[f][stormingRank], 0);
         
-  		#if defined(TUNE)
+  		#if defined(__TUNE) || defined(__TEST_TUNER)
 	        if (blocked)
 				T->blockedStorm[f][stormingRank][side]++;
 	        else
@@ -1072,7 +1078,7 @@ int kingSafety(Thread *th)
 			safetyScore += 	weight_unsafe_queen_check 	* 	POPCOUNT(queenChecks & unsafeSquares);
 			safetyScore += 	weight_safe_queen_check 	* 	POPCOUNT(queenChecks & safeSquares);
 			
-			#if defined(TUNE)
+			#if defined(__TUNE) || defined(__TEST_TUNER)
 
 				T->unsafeQueenCheck[side] 	= 	POPCOUNT(queenChecks & unsafeSquares);
 				T->safeQueenCheck[side] 	= 	POPCOUNT(queenChecks & safeSquares);
@@ -1084,7 +1090,7 @@ int kingSafety(Thread *th)
 			safetyScore += 	weight_unsafe_rook_check 	* 	POPCOUNT(rookChecks & unsafeSquares);
 			safetyScore += 	weight_safe_rook_check 		* 	POPCOUNT(rookChecks & safeSquares);
 			
-			#if defined(TUNE)
+			#if defined(__TUNE) || defined(__TEST_TUNER)
 
 				T->unsafeRookCheck[side] 	= 	POPCOUNT(rookChecks & unsafeSquares);
 				T->safeRookCheck[side] 		= 	POPCOUNT(rookChecks & safeSquares);
@@ -1096,7 +1102,7 @@ int kingSafety(Thread *th)
 			safetyScore += 	weight_unsafe_bishop_check 	* 	POPCOUNT(bishopChecks & unsafeSquares);
 			safetyScore += 	weight_safe_bishop_check 	* 	POPCOUNT(bishopChecks & safeSquares);
 			
-			#if defined(TUNE)
+			#if defined(__TUNE) || defined(__TEST_TUNER)
 
 				T->unsafeBishopCheck[side] 	= 	POPCOUNT(bishopChecks & unsafeSquares);
 				T->safeBishopCheck[side] 	= 	POPCOUNT(bishopChecks & safeSquares);
@@ -1108,7 +1114,7 @@ int kingSafety(Thread *th)
 			safetyScore += 	weight_unsafe_knight_check 	* 	POPCOUNT(knightChecks & unsafeSquares);
 			safetyScore += 	weight_safe_knight_check 	* 	POPCOUNT(knightChecks & safeSquares);
 			
-			#if defined(TUNE)
+			#if defined(__TUNE) || defined(__TEST_TUNER)
 
 				T->unsafeKnightCheck[side] 	= 	POPCOUNT(knightChecks & unsafeSquares);
 				T->safeKnightCheck[side] 	= 	POPCOUNT(knightChecks & safeSquares);
@@ -1117,7 +1123,7 @@ int kingSafety(Thread *th)
 
 		safetyScore += 	weight_safety_adjustment;
 
-		#if defined(TUNE)
+		#if defined(__TUNE) || defined(__TEST_TUNER)
 
 			T->safetyAdjustment[side]	=	1;
 	    	T->safety[side] 			= 	safetyScore;
@@ -1130,7 +1136,7 @@ int kingSafety(Thread *th)
 	} 
     else 
     {
-    	#if defined(TUNE)
+    	#if defined(__TUNE) || defined(__TEST_TUNER)
 	    	
 	    	T->knightAttack[side]	= 	0;
 			T->bishopAttack[side] 	=	0;

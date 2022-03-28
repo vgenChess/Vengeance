@@ -278,7 +278,7 @@ void UciLoop() {
 
         else if (token == "tune") {
             
-            #if defined(TUNE)
+            #if defined(__TUNE) || defined(__TEST_TUNER)
                 std::cout<<"starting tuner..."<<std::endl; 
                 startTuner();
             #else
