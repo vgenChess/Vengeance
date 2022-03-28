@@ -13,19 +13,18 @@
 #include "utility.h"
 
 void setDist();
-void initForwardRankMask();
+void initForwardRanksBB();
 void initTableDoublePawns();
 
 int traceFullEval(Side stm, TraceCoefficients *traceCoefficients, Thread *th);
 int fullEval(U8 stm, Thread *th);
 
-template<Side stm> int evalBoard(Thread *th);
-template<Side stm> int pawnsEval(Thread *th);
-template<Side stm> int knightsEval(Thread *th);
-template<Side stm> int bishopsEval(Thread *th);
-template<Side stm> int rooksEval(Thread *th);
-template<Side stm> int queenEval(Thread *th); 
-template<Side stm> int kingSafety(Thread *th);
+template<Side stm> int evaluatePawns(Thread *th);
+template<Side stm> int evaluateKnights(Thread *th);
+template<Side stm> int evaluateBishops(Thread *th);
+template<Side stm> int evaluateRooks(Thread *th);
+template<Side stm> int evaluateQueen(Thread *th); 
+template<Side stm> int evaluateKing(Thread *th);
 
 void initPSQT();
 void initKingZoneBB();

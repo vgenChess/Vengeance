@@ -25,7 +25,6 @@
 	#include "tunedEvals.h"
 #endif
 
-
 TraceCoefficients *T;
 
 int Mirror64[U8_MAX_SQUARES] = {
@@ -55,7 +54,7 @@ U64 arrRanks[8] = {
 // TODO check datatype
 int PSQT[U8_MAX_PIECES][U8_MAX_SQUARES];
 U64 kingZoneBB[U8_MAX_SIDES][U8_MAX_SQUARES];
-U64 forwardRanksBB[U8_MAX_SIDES][8]; // @TODO rename variable name
+U64 forwardRanksBB[U8_MAX_SIDES][8]; 
 
 template<Side side>
 void initEvalInfo(Thread *th) 
@@ -181,17 +180,24 @@ int fullEval(U8 side, Thread *th)
 	const auto blackPawns = th->blackPieceBB[PAWNS];
 
 	th->evalInfo.openFilesBB = 
-		pawnsHashHit ? pawnsHashEntry->openFilesBB : openFiles(whitePawns, blackPawns); // @TODO check logic
+		pawnsHashHit ? pawnsHashEntry->openFilesBB : openFiles(whitePawns, blackPawns); 
 
 	th->evalInfo.halfOpenFilesBB[WHITE] = 
-		pawnsHashHit ? pawnsHashEntry->halfOpenFilesBB[WHITE] : halfOpenOrOpenFile(whitePawns) ^ th->evalInfo.openFilesBB; // @TODO check logic
+		pawnsHashHit ? pawnsHashEntry->halfOpenFilesBB[WHITE] 
+					 : halfOpenOrOpenFile(whitePawns) ^ th->evalInfo.openFilesBB;
+
 	th->evalInfo.halfOpenFilesBB[BLACK] =
-		pawnsHashHit ? pawnsHashEntry->halfOpenFilesBB[BLACK] :	halfOpenOrOpenFile(blackPawns) ^ th->evalInfo.openFilesBB; // @TODO check logic
+		pawnsHashHit ? pawnsHashEntry->halfOpenFilesBB[BLACK] 
+					 : halfOpenOrOpenFile(blackPawns) ^ th->evalInfo.openFilesBB;
 
 	th->evalInfo.allPawnAttacks[WHITE] =
-		pawnsHashHit ? pawnsHashEntry->allPawnAttacks[WHITE] : wPawnWestAttacks(whitePawns) | wPawnEastAttacks(whitePawns);
+		pawnsHashHit ? pawnsHashEntry->allPawnAttacks[WHITE] 
+					 : wPawnWestAttacks(whitePawns) | wPawnEastAttacks(whitePawns);
+
 	th->evalInfo.allPawnAttacks[BLACK] = 
-		pawnsHashHit ? pawnsHashEntry->allPawnAttacks[BLACK] : bPawnWestAttacks(blackPawns) | bPawnEastAttacks(blackPawns);
+		pawnsHashHit ? pawnsHashEntry->allPawnAttacks[BLACK] 
+					 : bPawnWestAttacks(blackPawns) | bPawnEastAttacks(blackPawns);
+
 
 	th->evalInfo.attacks[WHITE] |= th->evalInfo.allPawnAttacks[WHITE];
 	th->evalInfo.attacks[BLACK] |= th->evalInfo.allPawnAttacks[BLACK];
@@ -208,7 +214,7 @@ int fullEval(U8 side, Thread *th)
 		th->evalInfo.passedPawns[WHITE] = wPassedPawns(th->whitePieceBB[PAWNS], th->blackPieceBB[PAWNS]);
 		th->evalInfo.passedPawns[BLACK] = bPassedPawns(th->blackPieceBB[PAWNS], th->whitePieceBB[PAWNS]);
 
-		eval += pawnsEval<WHITE>(th) - pawnsEval<BLACK>(th);
+		eval += evaluatePawns<WHITE>(th) - evaluatePawns<BLACK>(th);
 	#else
 	
 	    if (!pawnsHashHit)
@@ -218,7 +224,7 @@ int fullEval(U8 side, Thread *th)
 
 	    	pawnsHashEntry->key = th->pawnsHashKey;
 	    
-	    	pawnsHashEntry->pawnsEval = pawnsEval<WHITE>(th) - pawnsEval<BLACK>(th);
+	    	pawnsHashEntry->pawnsEval = evaluatePawns<WHITE>(th) - evaluatePawns<BLACK>(th);
 	    
 			pawnsHashEntry->openFilesBB = th->evalInfo.openFilesBB;
 
@@ -233,14 +239,14 @@ int fullEval(U8 side, Thread *th)
    
 	#endif
 	
-	eval += knightsEval<WHITE>(th) 	- 	knightsEval<BLACK>(th);
-	eval += bishopsEval<WHITE>(th) 	-	bishopsEval<BLACK>(th);
-	eval += rooksEval<WHITE>(th) 	- 	rooksEval<BLACK>(th);
-	eval += queenEval<WHITE>(th) 	- 	queenEval<BLACK>(th);
+	eval += evaluateKnights<WHITE>(th) 	- 	evaluateKnights<BLACK>(th);
+	eval += evaluateBishops<WHITE>(th) 	-	evaluateBishops<BLACK>(th);
+	eval += evaluateRooks<WHITE>(th) 	- 	evaluateRooks<BLACK>(th);
+	eval += evaluateQueen<WHITE>(th) 	- 	evaluateQueen<BLACK>(th);
 
 	// evaluation of other pieces other than king needs to be done first
 	// because of values required for king safety calculation
-	eval += kingSafety<WHITE>(th)	- 	kingSafety<BLACK>(th);
+	eval += evaluateKing<WHITE>(th)		- 	evaluateKing<BLACK>(th);
 	
 	// Tapered evaluation 
 	int phase = 	4 * POPCOUNT(th->whitePieceBB[QUEEN] 	| 	th->blackPieceBB[QUEEN]) 
@@ -280,7 +286,7 @@ int fullEval(U8 side, Thread *th)
 */
 
 template <Side side>
-int pawnsEval(Thread *th) 
+int evaluatePawns(Thread *th) 
 {
 	constexpr auto opp = side == WHITE ? BLACK : WHITE;
 
@@ -288,7 +294,6 @@ int pawnsEval(Thread *th)
 	
 	int score = 0;
 	
-
 
 	auto ourPawns = side ? th->blackPieceBB[PAWNS] : th->whitePieceBB[PAWNS];
 	while (ourPawns) 
@@ -537,7 +542,7 @@ int pawnsEval(Thread *th)
 
 
 template <Side side>
-int knightsEval(Thread *th) 
+int evaluateKnights(Thread *th) 
 {
 	constexpr auto opp = side == WHITE ? BLACK : WHITE;
 
@@ -553,7 +558,7 @@ int knightsEval(Thread *th)
 
 	int score = 0;
 	
-	U64 attacksBB;
+	U64 attacksBB, squareBB;
 	
 	while (knightsBB) 
 	{
@@ -561,7 +566,9 @@ int knightsEval(Thread *th)
 		POP_POSITION(knightsBB);
 
 		assert(sq >= 0 && sq <= 63);
-		
+			
+		squareBB = (1ULL << sq);	
+
 		// Knight PSQT Score
 		score += side ? PSQT[KNIGHTS][Mirror64[sq]] : PSQT[KNIGHTS][sq];
 
@@ -582,7 +589,7 @@ int knightsEval(Thread *th)
 		// 	Outpost
 		//	An outpost is a square on the fourth, fifth, sixth, 
 		//	or seventh rank which is protected by a pawn and which cannot be attacked by an opponent's pawn.
-		if (oppPawnHoles & (1ULL << sq) & th->evalInfo.allPawnAttacks[side]) 
+		if (oppPawnHoles & squareBB & th->evalInfo.allPawnAttacks[side]) 
 		{
 			score += weight_knight_outpost;
 
@@ -595,7 +602,7 @@ int knightsEval(Thread *th)
 		
 		// Penalty for an undefended minor piece
 		
-		bool isDefended = (1ULL << sq) & th->evalInfo.attacks[side]; 
+		bool isDefended = squareBB & th->evalInfo.attacks[side]; 
 
 		if (!isDefended) 
 		{
@@ -610,7 +617,7 @@ int knightsEval(Thread *th)
 		
 		// Marginal bonus for a knight defended by a pawn
 		
-		bool isDefendedByAPawn = (1ULL << sq) & th->evalInfo.allPawnAttacks[side];
+		bool isDefendedByAPawn = squareBB & th->evalInfo.allPawnAttacks[side];
 		
 		if (isDefendedByAPawn) 
 		{
@@ -623,8 +630,8 @@ int knightsEval(Thread *th)
 		}
 
 		// Bonus if it is shielded by a pawn
-		hasPawnShield = side == WHITE ? ((1ULL << sq) << 8) & th->whitePieceBB[PAWNS]
-										: ((1ULL << sq) >> 8) & th->blackPieceBB[PAWNS];
+		hasPawnShield = (side == WHITE) ? (squareBB << 8) & th->whitePieceBB[PAWNS]
+						     			: (squareBB >> 8) & th->blackPieceBB[PAWNS];
 		if (hasPawnShield)
 		{
 			score += weight_minor_has_pawn_shield;
@@ -667,7 +674,7 @@ int knightsEval(Thread *th)
 }
 
 template <Side side>
-int bishopsEval(Thread *th) 
+int evaluateBishops(Thread *th) 
 {
 	constexpr auto opp = side == WHITE ? BLACK : WHITE;
 
@@ -681,7 +688,7 @@ int bishopsEval(Thread *th)
 	
 	auto bishopBB = side ? th->blackPieceBB[BISHOPS] : th->whitePieceBB[BISHOPS];
 
-	U64 attacksBB;
+	U64 attacksBB, squareBB;
 	
 	// Bishop pair
 	if (POPCOUNT(bishopBB) == 2) 
@@ -701,6 +708,8 @@ int bishopsEval(Thread *th)
 
 		assert(sq >= 0 && sq <= 63);
 		
+		squareBB = (1ULL << sq);	
+
 		attacksBB = th->evalInfo.bishopAttacks[side][sq];		
 
 
@@ -710,7 +719,7 @@ int bishopsEval(Thread *th)
 
 		// Penalty for an undefended minor piece
 		
-		isDefended = (1ULL << sq) & th->evalInfo.attacks[side]; 
+		isDefended = squareBB & th->evalInfo.attacks[side]; 
 
 		if (!isDefended) 
 		{
@@ -724,8 +733,8 @@ int bishopsEval(Thread *th)
 
 
 		// Bonus if it is shielded by a pawn
-		hasPawnShield = side == WHITE ? ((1ULL << sq) << 8) & th->whitePieceBB[PAWNS]
-										: ((1ULL << sq) >> 8) & th->blackPieceBB[PAWNS];
+		hasPawnShield = (side == WHITE) ? (squareBB << 8) & th->whitePieceBB[PAWNS]
+						     			: (squareBB >> 8) & th->blackPieceBB[PAWNS];
 		if (hasPawnShield)
 		{
 			score += weight_minor_has_pawn_shield;
@@ -769,7 +778,7 @@ int bishopsEval(Thread *th)
 
 
 template <Side side>
-int rooksEval(Thread *th) 
+int evaluateRooks(Thread *th) 
 {	
 	constexpr auto opp = side == WHITE ? BLACK : WHITE;
 
@@ -780,7 +789,7 @@ int rooksEval(Thread *th)
 	
 	auto rooksBB = side ? th->blackPieceBB[ROOKS] : th->whitePieceBB[ROOKS];
 	
-	U64 attacksBB;
+	U64 attacksBB, squareBB;
 
 	int score = 0;
 	int sq = -1, mobilityCount = 0;
@@ -792,6 +801,7 @@ int rooksEval(Thread *th)
 
 		assert(sq >= 0 && sq <= 63);
 
+		squareBB = (1ULL << sq);	
 
 		attacksBB = th->evalInfo.rookAttacks[side][sq];		
 
@@ -805,7 +815,7 @@ int rooksEval(Thread *th)
 		// the ideal piece to make use of the outpost is a rook. 
 		// This is because the rook can put pressure on all the squares along the rank
 		
-		if (oppFlankPawnHoles & (1ULL << sq) & th->evalInfo.allPawnAttacks[side]) 
+		if (oppFlankPawnHoles & squareBB & th->evalInfo.allPawnAttacks[side]) 
 		{
 			score += weight_rook_flank_outpost;
 			
@@ -818,7 +828,7 @@ int rooksEval(Thread *th)
 
 		// Rook on half open file
 		
-		if ((1ULL << sq) & th->evalInfo.halfOpenFilesBB[side]) 
+		if (squareBB & th->evalInfo.halfOpenFilesBB[side]) 
 		{
 			score += weight_rook_half_open_file;
 		
@@ -830,7 +840,7 @@ int rooksEval(Thread *th)
 
 		// Rook on open file
 		
-		if ((1ULL << sq) & th->evalInfo.openFilesBB) 
+		if (squareBB & th->evalInfo.openFilesBB) 
 		{
 			score += weight_rook_open_file;
 
@@ -842,8 +852,8 @@ int rooksEval(Thread *th)
 
 		// Rook on same file as enemy Queen
 		
-		if (arrFiles[sq & 7] & 
-			(opp ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN])) 
+		if (	arrFiles[sq & 7] 
+			&	(opp ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN])) 
 		{
 			score += weight_rook_enemy_queen_same_file;
 
@@ -855,7 +865,7 @@ int rooksEval(Thread *th)
 
 		// Rook on Seventh rank
 		
-		if ((1ULL << sq) & (side ? RANK_2 : RANK_7)) 
+		if (squareBB & (side ? RANK_2 : RANK_7)) 
 		{
 			score += weight_rook_on_seventh_rank;
 		
@@ -867,7 +877,7 @@ int rooksEval(Thread *th)
 
 		// Rook on Eight rank
 		
-		if ((1ULL << sq) & (side ? RANK_1 : RANK_8)) 
+		if (squareBB & (side ? RANK_1 : RANK_8)) 
 		{
 			score += weight_rook_on_eight_rank;
 
@@ -903,7 +913,7 @@ int rooksEval(Thread *th)
 		#endif
 
 
-		// Update values required for King safety later in kingEval
+		// Update values required for King safety later in evaluateKing
 		
 		if (attacksBB & kingZoneBB[opp][kingSq]) 
 		{	
@@ -922,7 +932,7 @@ int rooksEval(Thread *th)
 
 
 template <Side side>
-int queenEval(Thread *th) 
+int evaluateQueen(Thread *th) 
 {
 	constexpr auto opp = side == WHITE ? BLACK : WHITE;
 
@@ -976,7 +986,7 @@ int queenEval(Thread *th)
 		#endif
 
 
-		// Update values required for King safety later in kingEval
+		// Update values required for King safety later in evaluateKing
 		if (attacksBB & kingZoneBB[opp][kingSq]) 
 		{	
  			th->evalInfo.kingAttackersCount[opp]++;
@@ -994,55 +1004,86 @@ int queenEval(Thread *th)
 
 
 
-
-
 template<Side side>
-int pKEval(Thread *th) //TODO refactor logic 
+int evaluatePawnAndKing(Thread *th) 
 {
 	constexpr Side opp = side == WHITE ? BLACK : WHITE;
 
 	const auto kingSq = th->evalInfo.kingSq[side];
 	const auto kingRank = kingSq / 8;
+	const auto kingFile = kingSq % 8;
 
-	int score = 0;
+	bool isBlocked;
+	int score = 0, pawnShieldRank, pawnStormRank, f;
 	
-	int middle_file = MAX(1, MIN(6, kingSq % 8));
-    U64 myPawns = side == WHITE ? th->whitePieceBB[PAWNS] : th->blackPieceBB[PAWNS];
+	int middle_file = MAX(1, MIN(6, kingFile));
+
+	U64 pawns;
+    U64 friendlyPawns = (side == WHITE ? th->whitePieceBB[PAWNS] : th->blackPieceBB[PAWNS]) 
+    			& ~th->evalInfo.allPawnAttacks[opp];
     U64 opponentPawns = opp == WHITE ? th->whitePieceBB[PAWNS] : th->blackPieceBB[PAWNS];
     
+    // loop through files before and after the king file
 	for (int file = middle_file - 1; file <= middle_file + 1; file++)
     {   
-        U64 pawns = myPawns & arrFiles[file] & forwardRanksBB[side][kingRank];
-        int defendingRank = pawns ? relativeRank((side ? MSB(pawns) : LSB(pawns)), side) : 0;
+    		//*********PAWN SHEILD**********// 
+    	// get all friendly pawns in front of the king for the file
+        pawns = friendlyPawns & arrFiles[file] & forwardRanksBB[side][kingRank];
 
+        // get the rank of the nearest friendly pawn w.r.t side for the file
+        pawnShieldRank = pawns ? relativeRank(side == WHITE ? lsb(pawns) : msb(pawns), side) : 0;
+		
+
+    		//*********OPPONENT PAWN STORM**********//
+		// get all opponent pawns in front of the king for the file
         pawns = opponentPawns & arrFiles[file] & forwardRanksBB[side][kingRank];
-        int stormingRank = pawns ? relativeRank((side ? MSB(pawns) : LSB(pawns)), side) : 0;
 
-        int f = MIN(file, 7 - file);
-        score += MakeScore(weight_pawn_shield[f][defendingRank], 0);
+		// get the rank of the nearest opponent pawn w.r.t side for the file
+        pawnStormRank = pawns ? relativeRank(side == WHITE ? lsb(pawns) : msb(pawns), side) : 0;
 
+
+
+    	f = MIN(file, 7 - file);
+
+
+        // add the pawn shield score for this file and rank
+        score += MakeScore(weight_pawn_shield[f][pawnShieldRank], 0);
+
+        // update values for tuning
         #if defined(__TUNE) || defined(__TEST_TUNER)
-			T->pawnShield[f][defendingRank][side]++;
+
+			T->pawnShield[f][pawnShieldRank][side]++;
 		#endif
 
-        bool blocked = (defendingRank != 0) && defendingRank == stormingRank - 1;
-        score += (blocked) ? weight_blocked_pawn_storm[f][stormingRank] 
-        					: MakeScore(weight_unblocked_pawn_storm[f][stormingRank], 0);
+
+		// check if opponent pawn is blocked by a friendly pawn
+        isBlocked = (pawnShieldRank != 0) && pawnShieldRank == (pawnStormRank - 1);
         
+        // add the pawn storm score for this file and rank
+        // add different values for blocked opponent pawn and unblocked opponent pawn
+        score += isBlocked	? weight_blocked_pawn_storm[f][pawnStormRank] 
+        					: MakeScore(weight_unblocked_pawn_storm[f][pawnStormRank], 0);
+        
+        // update values for tuning
   		#if defined(__TUNE) || defined(__TEST_TUNER)
-	        if (blocked)
-				T->blockedStorm[f][stormingRank][side]++;
+	    
+	        if (isBlocked)
+	        {
+				T->blockedStorm[f][pawnStormRank][side]++;
+	        }
 	        else
-				T->unblockedStorm[f][stormingRank][side]++;
+	        {
+				T->unblockedStorm[f][pawnStormRank][side]++;
+	        }
         #endif
     }
 
 	return score;
 }
-				
+	
 
 template <Side side>
-int kingSafety(Thread *th) 
+int evaluateKing(Thread *th) 
 {	
 	int score = 0;
 
@@ -1052,10 +1093,13 @@ int kingSafety(Thread *th)
 	
 	assert(kingSq >= 0 && kingSq < 64);
 	
-	// King PSQT Score	
+	// Piece Square Table Score for King	
 	score += side ? kingPSQT[Mirror64[kingSq]] : kingPSQT[kingSq];
-	score += pKEval<side>(th);
+	
+	// Pawn King Score for Pawn Shield and Opponent Pawns Storm
+	score += evaluatePawnAndKing<side>(th);
 
+	// King Safety Score for Opponent attacks and checks
 	if (	th->evalInfo.kingAttackersCount[side] > 
 			(1 - POPCOUNT(opp == WHITE ? th->whitePieceBB[QUEEN] : th->blackPieceBB[QUEEN])))
 	{ 
@@ -1163,8 +1207,8 @@ void initPSQT()
 
 void initKingZoneBB()
 {
-	for (int sq = 0; sq < U8_MAX_SQUARES; sq++) {
-
+	for (int sq = 0; sq < U8_MAX_SQUARES; sq++) 
+	{
 	    kingZoneBB[WHITE][sq] = get_king_attacks(sq) | (1ULL << sq) | (get_king_attacks(sq) << 8);
 	    kingZoneBB[BLACK][sq] = get_king_attacks(sq) | (1ULL << sq) | (get_king_attacks(sq) >> 8);
 
@@ -1176,13 +1220,15 @@ void initKingZoneBB()
 	}	
 }
 
-void initForwardRankMask()
+void initForwardRanksBB()
 {
 	for (int rank = 0; rank < 8; rank++) 
 	{
 	    for (int i = rank; i < 8; i++)
-	        forwardRanksBB[WHITE][rank] |= arrRanks[i];
-	
+	    {
+	        forwardRanksBB[WHITE][rank] |= arrRanks[i];	
+	    }
+
 	    forwardRanksBB[BLACK][rank] = ~forwardRanksBB[WHITE][rank] | arrRanks[rank];
 	}	
 }

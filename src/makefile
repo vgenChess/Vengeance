@@ -14,9 +14,6 @@ tune:
 tuneTest:
 	$(CXX) $(CXXFLAGS) $(SRC) -D __TEST_TUNER -o $(EXE) $(LDFLAGS)
 
-tuneWithTunedEvals:
-	$(CXX) $(CXXFLAGS) $(SRC) -D __TUNE_WITH_TUNED_EVALS -o $(EXE) $(LDFLAGS)
-
 debug:
 	$(CXX) $(CXXFLAGS) $(SRC) -g -D __DEBUG -o $(EXE) $(LDFLAGS)
 

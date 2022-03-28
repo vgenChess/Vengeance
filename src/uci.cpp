@@ -282,7 +282,7 @@ void UciLoop() {
                 std::cout<<"starting tuner..."<<std::endl; 
                 startTuner();
             #else
-                std::cout<<"Not a tuning build. TUNE not set." << std::endl;
+                std::cout<<"Not a tuning build." << std::endl;
             #endif
         } 
 

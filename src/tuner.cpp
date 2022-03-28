@@ -42,10 +42,11 @@
 	
 		#include "zerodEvals.h"
 		
-		#define MAXEPOCHS		1050
+		#define MAXEPOCHS		10000
 		#define NPARTITIONS		4 
-		#define BATCHSIZE		16 
-		#define LR              0.001 
+		#define BATCHSIZE		1428000 
+		#define LR              0.01 
+		
 		#define DISPLAY_TIME	60		
 
 		#define DATASET			"quiet-labeled.epd"
@@ -70,6 +71,7 @@
 		// #define NPOSITIONS   7153652		
 	#endif
 #endif
+
 struct Score 
 {	
 	double mg;
@@ -283,33 +285,33 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff)
 	}
 
 
-	for (int edge_distance = 0; edge_distance < 8; edge_distance++)
+	for (int fileDistance = 0; fileDistance < 8; fileDistance++)
 	{
 		for (int rank = 0; rank < 8; rank++)
 		{
 			loadCoeff->type[i] = NORMAL;	
-		    loadCoeff->coeffs[WHITE][i] = T->pawnShield[edge_distance][rank][WHITE];                         
-		    loadCoeff->coeffs[BLACK][i++] = T->pawnShield[edge_distance][rank][BLACK];                         
+		    loadCoeff->coeffs[WHITE][i] = T->pawnShield[fileDistance][rank][WHITE];                         
+		    loadCoeff->coeffs[BLACK][i++] = T->pawnShield[fileDistance][rank][BLACK];                         
 		}
 	}
 
-	for (int edge_distance = 0; edge_distance < 8; edge_distance++)
+	for (int fileDistance = 0; fileDistance < 8; fileDistance++)
 	{
 		for (int rank = 0; rank < 8; rank++)
 		{
 			loadCoeff->type[i] = NORMAL;	
-		    loadCoeff->coeffs[WHITE][i] = T->blockedStorm[edge_distance][rank][WHITE];                         
-		    loadCoeff->coeffs[BLACK][i++] = T->blockedStorm[edge_distance][rank][BLACK];                         
+		    loadCoeff->coeffs[WHITE][i] = T->blockedStorm[fileDistance][rank][WHITE];                         
+		    loadCoeff->coeffs[BLACK][i++] = T->blockedStorm[fileDistance][rank][BLACK];                         
 		}
 	}
 
-	for (int edge_distance = 0; edge_distance < 8; edge_distance++)
+	for (int fileDistance = 0; fileDistance < 8; fileDistance++)
 	{
 		for (int rank = 0; rank < 8; rank++)
 		{
 			loadCoeff->type[i] = NORMAL;	
-		    loadCoeff->coeffs[WHITE][i] = T->unblockedStorm[edge_distance][rank][WHITE];                         
-		    loadCoeff->coeffs[BLACK][i++] = T->unblockedStorm[edge_distance][rank][BLACK];                         
+		    loadCoeff->coeffs[WHITE][i] = T->unblockedStorm[fileDistance][rank][WHITE];                         
+		    loadCoeff->coeffs[BLACK][i++] = T->unblockedStorm[fileDistance][rank][BLACK];                         
 		}
 	}
 
@@ -575,32 +577,32 @@ void startTuner() {
 	}
 
 
-	for (int edge_distance = 0; edge_distance < 8; edge_distance++)
+	for (int fileDistance = 0; fileDistance < 8; fileDistance++)
 	{
 		for (int rank = 0; rank < 8; rank++)
 		{
-			cparams[MG][count] = ScoreMG(weight_pawn_shield[edge_distance][rank]);
-			cparams[EG][count++] = ScoreEG(weight_pawn_shield[edge_distance][rank]);                       
+			cparams[MG][count] = ScoreMG(weight_pawn_shield[fileDistance][rank]);
+			cparams[EG][count++] = ScoreEG(weight_pawn_shield[fileDistance][rank]);                       
 		}
 	}
 
 
-	for (int edge_distance = 0; edge_distance < 8; edge_distance++)
+	for (int fileDistance = 0; fileDistance < 8; fileDistance++)
 	{
 		for (int rank = 0; rank < 8; rank++)
 		{
-			cparams[MG][count] = ScoreMG(weight_blocked_pawn_storm[edge_distance][rank]);
-			cparams[EG][count++] = ScoreEG(weight_blocked_pawn_storm[edge_distance][rank]);                        
+			cparams[MG][count] = ScoreMG(weight_blocked_pawn_storm[fileDistance][rank]);
+			cparams[EG][count++] = ScoreEG(weight_blocked_pawn_storm[fileDistance][rank]);                        
 		}
 	}
 
 
-	for (int edge_distance = 0; edge_distance < 8; edge_distance++)
+	for (int fileDistance = 0; fileDistance < 8; fileDistance++)
 	{
 		for (int rank = 0; rank < 8; rank++)
 		{
-			cparams[MG][count] = ScoreMG(weight_unblocked_pawn_storm[edge_distance][rank]);
-			cparams[EG][count++] = ScoreEG(weight_unblocked_pawn_storm[edge_distance][rank]);                        
+			cparams[MG][count] = ScoreMG(weight_unblocked_pawn_storm[fileDistance][rank]);
+			cparams[EG][count++] = ScoreEG(weight_unblocked_pawn_storm[fileDistance][rank]);                        
 		}
 	}
 
@@ -1353,7 +1355,7 @@ void saveWeights(TVector params, TVector cparams) {
 
 	myfile << "weight_pawn_shield[8][8] = { \n\n";
     
-    for (int edge_distance = 0; edge_distance < 8; edge_distance++)
+    for (int fileDistance = 0; fileDistance < 8; fileDistance++)
 	{
 		for (int rank = 0; rank < 8; rank++)
 		{
@@ -1372,7 +1374,7 @@ void saveWeights(TVector params, TVector cparams) {
 
 	myfile << "weight_blocked_pawn_storm[8][8] = { \n\n";
     
-    for (int edge_distance = 0; edge_distance < 8; edge_distance++)
+    for (int fileDistance = 0; fileDistance < 8; fileDistance++)
 	{
 		for (int rank = 0; rank < 8; rank++)
 		{
@@ -1390,7 +1392,7 @@ void saveWeights(TVector params, TVector cparams) {
 
 	myfile << "weight_unblocked_pawn_storm[8][8] = { \n\n";
     
-    for (int edge_distance = 0; edge_distance < 8; edge_distance++)
+    for (int fileDistance = 0; fileDistance < 8; fileDistance++)
 	{
 		for (int rank = 0; rank < 8; rank++)
 		{
