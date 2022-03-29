@@ -40,9 +40,9 @@
 	// #define DATASET			"lichess-big3-resolved.book"
 	// #define NPOSITIONS   	100000
 
-	constexpr auto NTRAINING = (int)(NPOSITIONS * 0.8);
-	constexpr auto NTESTING = NPOSITIONS - NTRAINING;
-	constexpr auto BATCHSIZE = MIN(1024, NTRAINING);
+	constexpr auto NTRAINING 	= (int)(NPOSITIONS * 0.8);
+	constexpr auto NTESTING 	= NPOSITIONS - NTRAINING;
+	constexpr auto BATCHSIZE 	= NTRAINING;
 
 #else 
 	
@@ -56,15 +56,15 @@
 		
 		#define DISPLAY_TIME	60		
 
-		#define DATASET			"quiet-labeled.epd"
-		#define NPOSITIONS		1428000	// for v7, v6 has 725000
+		// #define DATASET			"quiet-labeled.epd"
+		// #define NPOSITIONS		1428000	// for v7, v6 has 725000
 
-		// #define DATASET			"lichess-big3-resolved.book"
-		// #define NPOSITIONS   7153652		
+		#define DATASET			"lichess-big3-resolved.book"
+		#define NPOSITIONS   7153652		
 
-		constexpr auto NTRAINING = (int)(NPOSITIONS * 0.8);
-		constexpr auto NTESTING = NPOSITIONS - NTRAINING;
-		constexpr auto BATCHSIZE = MIN(1428000, NTRAINING);
+		constexpr auto NTRAINING 	= (int)(NPOSITIONS * 0.8);
+		constexpr auto NTESTING 	= NPOSITIONS - NTRAINING;
+		constexpr auto BATCHSIZE 	= NTRAINING;
 
 	#else 
 
@@ -81,9 +81,9 @@
 		// #define DATASET			"lichess-big3-resolved.book"
 		// #define NPOSITIONS   7153652		
 
-		constexpr auto NTRAINING = (int)(NPOSITIONS * 0.8);
-		constexpr auto NTESTING = NPOSITIONS - NTRAINING;
-		constexpr auto BATCHSIZE = MIN(1428000, NTRAINING);
+		constexpr auto NTRAINING 	= (int)(NPOSITIONS * 0.8);
+		constexpr auto NTESTING 	= NPOSITIONS - NTRAINING;
+		constexpr auto BATCHSIZE 	= NTRAINING;
 
 	#endif
 #endif
