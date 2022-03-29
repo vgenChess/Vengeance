@@ -476,7 +476,7 @@ int divide(U8 depth, U8 sideToMove, Thread *th) {
         
         nodes = 0;
 
-        if (sideToMove ? !(isKingInCheck<BLACK>(th)) : !(isKingInCheck<WHITE>(th))) {
+        if (sideToMove ? !(isKingInCheck(BLACK, th)) : !(isKingInCheck(WHITE, th))) {
 
             count++;
 

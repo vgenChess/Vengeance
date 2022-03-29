@@ -398,7 +398,7 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
     }
 
 
-    const auto isInCheck = isKingInCheck<stm>(th);
+    const auto isInCheck = isKingInCheck(stm, th);
    
     const auto sEval =    isSingularSearch  ?   th->moveStack[ply].sEval 
                         : isInCheck         ?   I32_UNKNOWN 
@@ -619,7 +619,7 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
         make_move(ply, currentMove.move, th);
 
         // check if psuedo-legal move is valid
-        if (isKingInCheck<stm>(th)) 
+        if (isKingInCheck(stm, th)) 
         {
             unmake_move(ply, currentMove.move, th);
             continue;
@@ -1030,7 +1030,7 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
 
         make_move(ply, currentMove.move, th);
 
-        if (isKingInCheck<stm>(th)) 
+        if (isKingInCheck(stm, th)) 
         {
             unmake_move(ply, currentMove.move, th);
 

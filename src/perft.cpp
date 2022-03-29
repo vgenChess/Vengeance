@@ -90,7 +90,7 @@ U64 perft(int ply, U8 depth, Side side, Thread *th) {
         // check if psuedo-legal move is valid
         if (side == WHITE)
         {
-            if (isKingInCheck<WHITE>(th)) 
+            if (isKingInCheck(WHITE, th)) 
             {
                 unmake_move(ply, currentMove.move, th);
                 continue;
@@ -98,7 +98,7 @@ U64 perft(int ply, U8 depth, Side side, Thread *th) {
         }
         else 
         {
-            if (isKingInCheck<BLACK>(th)) 
+            if (isKingInCheck(BLACK, th)) 
             {
                 unmake_move(ply, currentMove.move, th);
                 continue;

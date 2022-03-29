@@ -1014,7 +1014,7 @@ int evaluatePawnAndKing(Thread *th)
 	const auto kingFile = kingSq % 8;
 
 	bool isBlocked;
-	int score = 0, pawnShieldRank, pawnStormRank, f;
+	int score = 0, pawnShieldRank, pawnStormRank, fileDistance;
 	
 	int middleFile = MAX(1, MIN(6, kingFile));
 

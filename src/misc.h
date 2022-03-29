@@ -23,8 +23,7 @@ inline bool isRepetition(int ply, Thread *th)
     return flag;
 }
 
-template<Side side>
-inline bool isKingInCheck(Thread *th) 
+inline bool isKingInCheck(Side side, Thread *th) 
 {    
     const auto opp = side == WHITE ? BLACK : WHITE;      
     const auto kingSq = GET_POSITION(side ? th->blackPieceBB[KING] : th->whitePieceBB[KING]);
@@ -70,9 +69,9 @@ inline bool isKingInCheck(Thread *th)
     }
     
     attacks = opp == WHITE ? 
-    wPawnWestAttacks(th->whitePieceBB[PAWNS]) | wPawnEastAttacks(th->whitePieceBB[PAWNS]) :
-    bPawnWestAttacks(th->blackPieceBB[PAWNS]) | bPawnEastAttacks(th->blackPieceBB[PAWNS]);
-    
+                wPawnWestAttacks(th->whitePieceBB[PAWNS]) | wPawnEastAttacks(th->whitePieceBB[PAWNS]) :
+                bPawnWestAttacks(th->blackPieceBB[PAWNS]) | bPawnEastAttacks(th->blackPieceBB[PAWNS]);
+
     if (attacks & (1ULL << kingSq))
     {
         return true;
