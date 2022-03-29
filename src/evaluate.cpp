@@ -852,7 +852,7 @@ int evaluateRooks(Thread *th)
 
 		// Rook on same file as enemy Queen
 		
-		if (	arrFiles[sq & 7] 
+		if (	arrFiles[sq % 8] 
 			&	(opp ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN])) 
 		{
 			score += weight_rook_enemy_queen_same_file;
@@ -1020,13 +1020,15 @@ int evaluatePawnAndKing(Thread *th)
 
 	U64 pawns;
     U64 friendlyPawns = (side == WHITE ? th->whitePieceBB[PAWNS] : th->blackPieceBB[PAWNS]) 
-    			& ~th->evalInfo.allPawnAttacks[opp];
+    					& ~th->evalInfo.allPawnAttacks[opp];
     U64 opponentPawns = opp == WHITE ? th->whitePieceBB[PAWNS] : th->blackPieceBB[PAWNS];
     
     // loop through files before and after the king file
 	for (int file = middle_file - 1; file <= middle_file + 1; file++)
     {   
-    		//*********PAWN SHEILD**********// 
+    	
+    	//*********KING PAWN SHEILD**********// 
+
     	// get all friendly pawns in front of the king for the file
         pawns = friendlyPawns & arrFiles[file] & forwardRanksBB[side][kingRank];
 
@@ -1034,7 +1036,8 @@ int evaluatePawnAndKing(Thread *th)
         pawnShieldRank = pawns ? relativeRank(side == WHITE ? lsb(pawns) : msb(pawns), side) : 0;
 		
 
-    		//*********OPPONENT PAWN STORM**********//
+    	//*********OPPONENT PAWN STORM**********//
+	
 		// get all opponent pawns in front of the king for the file
         pawns = opponentPawns & arrFiles[file] & forwardRanksBB[side][kingRank];
 
@@ -1059,9 +1062,10 @@ int evaluatePawnAndKing(Thread *th)
 		// check if opponent pawn is blocked by a friendly pawn
         isBlocked = (pawnShieldRank != 0) && pawnShieldRank == (pawnStormRank - 1);
         
+
         // add the pawn storm score for this file and rank
         // add different values for blocked opponent pawn and unblocked opponent pawn
-        score += isBlocked	? weight_blocked_pawn_storm[f][pawnStormRank] 
+        score += isBlocked	? weight_blocked_pawn_storm[pawnStormRank] 
         					: MakeScore(weight_unblocked_pawn_storm[f][pawnStormRank], 0);
         
         // update values for tuning
@@ -1069,7 +1073,7 @@ int evaluatePawnAndKing(Thread *th)
 	    
 	        if (isBlocked)
 	        {
-				T->blockedStorm[f][pawnStormRank][side]++;
+				T->blockedStorm[pawnStormRank][side]++;
 	        }
 	        else
 	        {

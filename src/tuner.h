@@ -6,7 +6,7 @@
 #include "thread.h"
 #include "evaluate.h"
 
-#define NTERMS 64 * 6 + 130 + 5 + 8 + 8 + 8 + 8*8 + 8*8 + 8*8
+#define NTERMS 64 * 6 + 130 + 5 + 8 + 8 + 8 + 8 + 8*8 + 8*8
 #define KPRECISION 10
 
 typedef int TArray[NTERMS];
@@ -30,8 +30,9 @@ void updateSingleGradient(Data data, TVector gradient, TVector weights, double K
 
 double linearEvaluation(TVector weights, Data data, TGradientData *gradientData);
 
-double tunedEvaluationErrors(TVector weights, double K);
 double staticEvaluationErrors(double K);
+double tunedEvaluationErrorsForTrainingData(TVector weights, double K);
+double tunedEvaluationErrorsForTestData(TVector weights, double K);
 
 double computeOptimalK();
 

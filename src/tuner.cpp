@@ -1,6 +1,7 @@
 
 #include <assert.h> 
 
+#include <cstdlib>
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -25,17 +26,21 @@
 
 	#include "zerodEvals.h"
 	
-	#define MAXEPOCHS		500
+	#define MAXEPOCHS		10000
 	#define NPARTITIONS		4 
 	#define BATCHSIZE		1024 
 	#define LR              0.005 
-	#define DISPLAY_TIME	5				
+	#define DISPLAY_TIME	10				
 	
 	#define DATASET			"quiet-labeled.epd"
-	#define NPOSITIONS		50000	// for v7, v6 has 725000
+	#define NPOSITIONS		1428000	// for v7, v6 has 725000
 
 	// #define DATASET			"lichess-big3-resolved.book"
-	// #define NPOSITIONS   7153652
+	// #define NPOSITIONS   	100000
+
+	constexpr auto NTRAINING = (int)(NPOSITIONS * 0.8);
+	constexpr auto NTESTING = NPOSITIONS - NTRAINING;
+
 #else 
 	
 	#if defined (__TUNE)
@@ -54,6 +59,10 @@
 
 		// #define DATASET			"lichess-big3-resolved.book"
 		// #define NPOSITIONS   7153652		
+
+		constexpr auto NTRAINING = (int)(NPOSITIONS * 0.8);
+		constexpr auto NTESTING = NPOSITIONS - NTRAINING;
+
 	#else 
 
 		#include "tunedEvals.h"
@@ -69,6 +78,10 @@
 
 		// #define DATASET			"lichess-big3-resolved.book"
 		// #define NPOSITIONS   7153652		
+
+		constexpr auto NTRAINING = (int)(NPOSITIONS * 0.8);
+		constexpr auto NTESTING = NPOSITIONS - NTRAINING;
+
 	#endif
 #endif
 
@@ -295,14 +308,11 @@ void loadCoefficients(TraceCoefficients *T, LoadCoeff *loadCoeff)
 		}
 	}
 
-	for (int fileDistance = 0; fileDistance < 8; fileDistance++)
+	for (int rank = 0; rank < 8; rank++)
 	{
-		for (int rank = 0; rank < 8; rank++)
-		{
-			loadCoeff->type[i] = NORMAL;	
-		    loadCoeff->coeffs[WHITE][i] = T->blockedStorm[fileDistance][rank][WHITE];                         
-		    loadCoeff->coeffs[BLACK][i++] = T->blockedStorm[fileDistance][rank][BLACK];                         
-		}
+		loadCoeff->type[i] = NORMAL;	
+	    loadCoeff->coeffs[WHITE][i] = T->blockedStorm[rank][WHITE];                         
+	    loadCoeff->coeffs[BLACK][i++] = T->blockedStorm[rank][BLACK];                         
 	}
 
 	for (int fileDistance = 0; fileDistance < 8; fileDistance++)
@@ -587,13 +597,10 @@ void startTuner() {
 	}
 
 
-	for (int fileDistance = 0; fileDistance < 8; fileDistance++)
+	for (int rank = 0; rank < 8; rank++)
 	{
-		for (int rank = 0; rank < 8; rank++)
-		{
-			cparams[MG][count] = ScoreMG(weight_blocked_pawn_storm[fileDistance][rank]);
-			cparams[EG][count++] = ScoreEG(weight_blocked_pawn_storm[fileDistance][rank]);                        
-		}
+		cparams[MG][count] = ScoreMG(weight_blocked_pawn_storm[rank]);
+		cparams[EG][count++] = ScoreEG(weight_blocked_pawn_storm[rank]);                        
 	}
 
 
@@ -739,7 +746,7 @@ void startTuner() {
 
 			// for file "4818922_positions_gm2600.txt"
 
-			/*if (tp.find("1.0") != std::string::npos)	
+		/*	if (tp.find("1.0") != std::string::npos)	
 				result = 1.0;
 			else if (tp.find("0.5") != std::string::npos) 
 				result = 0.5;
@@ -849,11 +856,11 @@ void startTuner() {
 }
 
 
-void optimise(TVector params, TVector cparams) {
-
+void optimise(TVector params, TVector cparams) 
+{
 	const double K = computeOptimalK();
 
-	double bestMae = 100, mae = 0, prevMae = 100, alpha1 = LR;
+	double bestTestError = 100, alpha1 = LR;
 
 	// For Adagrad
 	// TVector adagrad = {};
@@ -876,15 +883,20 @@ void optimise(TVector params, TVector cparams) {
 
 	uint64_t epoch = 0, epochMultiplier = 0;
 	
-	while (true) {
-
+	// shuffle the data
+	std::random_shuffle(dataList.begin(), dataList.end());	
+	
+	index = NTESTING;
+	
+	while (true) 
+	{
 		epochMultiplier++;
 		epoch = (epochMultiplier * BATCHSIZE / NPOSITIONS);
 
 		if (index >= dataList.size()) 
 		{
-			index = 0;
-			std::random_shuffle(dataList.begin(), dataList.end());	
+			index = NTESTING;
+			std::random_shuffle(dataList.begin() + NTESTING, dataList.end());	
 		}
 
 		data_batch.clear();
@@ -922,8 +934,8 @@ void optimise(TVector params, TVector cparams) {
 
 		// Adam
 		#pragma omp parallel for schedule(auto)  
-		for (int i = 0; i < NTERMS; i++) {
-
+		for (int i = 0; i < NTERMS; i++) 
+		{
             double mg_grad = (K / 200.0) * gradient[MG][i] / BATCHSIZE;
             double eg_grad = (K / 200.0) * gradient[EG][i] / BATCHSIZE;
 
@@ -941,37 +953,34 @@ void optimise(TVector params, TVector cparams) {
 
 		auto tunerTimeNow = std::chrono::steady_clock::now();
 
-		if (std::chrono::duration_cast<std::chrono::seconds>(tunerTimeNow - tunerStartTime).count() > DISPLAY_TIME) {
-
+		if (std::chrono::duration_cast<std::chrono::seconds>(tunerTimeNow - tunerStartTime).count() > DISPLAY_TIME) 
+		{
 			tunerStartTime = std::chrono::steady_clock::now();
 
-			mae = tunedEvaluationErrors(params, K);
+			const auto trainErrors = tunedEvaluationErrorsForTrainingData(params, K);
+			const auto testErrors = tunedEvaluationErrorsForTestData(params, K);
 
 			std::cout << "Epoch = [" << epoch << "], ";
-			std::cout << "Error = [" << std::fixed << std::setprecision(8) << mae << "], ";
+			std::cout << "Train Data Error = [" << std::fixed << std::setprecision(8) << trainErrors << "], ";
+			std::cout << "Test Data Error = [" << std::fixed << std::setprecision(8) << testErrors << "], ";
 			std::cout << "Rate = [" << std::fixed << std::setprecision(5) << LR << "], ";
-			std::cout << "Batch Size = [" << BATCHSIZE << "], ";
+			std::cout << "Batch Size = [" << BATCHSIZE << "]";
 			
-			if (prevMae > mae)
-				std::cout << "Error loss = [" << std::fixed << std::setprecision(8) << prevMae - mae << "]" << std::endl;
-			else
-				std::cout << "Error gain = [" << std::fixed << std::setprecision(8) << mae - prevMae << "]" << std::endl;
+			std::cout << "\n";
 
 			counter++;
-			if (counter > 4) {
-
+			if (counter > 4) 
+			{
 				counter = 0;
 
-				if (mae < bestMae) {
-
-					bestMae = mae;
+				if (testErrors < bestTestError) 
+				{
+					bestTestError = testErrors;
 
 					std::cout << "Saving weights..\n";
 					std::async(saveWeights, params, cparams);			
 				}
 			} 
-
-			prevMae = mae;
 
 			if (epoch > MAXEPOCHS)
 			{
@@ -982,8 +991,8 @@ void optimise(TVector params, TVector cparams) {
 	}
 } 
 
-double staticEvaluationErrors(double K) {
-
+double staticEvaluationErrors(double K) 
+{
     double total = 0.0;
 
     #pragma omp parallel shared(total) 
@@ -997,32 +1006,59 @@ double staticEvaluationErrors(double K) {
 }
 
 
-double tunedEvaluationErrors(TVector weights, double K) {
-
+double tunedEvaluationErrorsForTrainingData(TVector weights, double K) 
+{
     double total = 0.0;
 
     #pragma omp parallel shared(total)
     {
   	    #pragma omp for schedule(auto) reduction(+:total)
-  	      for (int i = 0; i < NPOSITIONS; i++)
-          	total += pow(dataList[i].result - sigmoid(K, linearEvaluation(weights, dataList[i], NULL)), 2);  
+		for (int i = NTESTING; i < NPOSITIONS; i++)
+		{
+			total += pow(dataList[i].result - sigmoid(K, linearEvaluation(weights, dataList[i], NULL)), 2);       	
+		}
     }
 
-    return total / (double) NPOSITIONS;
+    return total / (double) (NPOSITIONS - NTESTING);
+}
+
+double tunedEvaluationErrorsForTestData(TVector weights, double K) 
+{
+    double total = 0.0;
+
+    #pragma omp parallel shared(total)
+    {
+		#pragma omp for schedule(auto) reduction(+:total)
+		for (int i = 0; i < NTESTING; i++)
+		{
+  			total += pow(dataList[i].result - sigmoid(K, linearEvaluation(weights, dataList[i], NULL)), 2);  
+		}
+    }
+
+    return total / (double) NTESTING;
 }
 
 
-double linearEvaluation(TVector weights, Data data, TGradientData *gradientData) {
-
+double linearEvaluation(TVector weights, Data data, TGradientData *gradientData) 
+{
     double midgame, endgame, wsafety[2], bsafety[2];
     double normal[2], safety[2];
     double mg[2][2] = {}, eg[2][2] = {};
 
+
 	std::vector<CoefficientsInfo> list = data.coefficientsInfoList;
+
+	const auto listSize = list.size();
+
+    uint64_t rand1 = listSize == 0 ? 0 : rand() % list.size(); 
+
     // Save any modifications for MG or EG for each evaluation type
 	#pragma omp parallel for schedule(auto)
-	for (uint64_t i = 0; i < list.size(); i++)
+	for (uint64_t i = 0; i < listSize; i++)
 	{
+		if (i == rand1) 
+			continue;
+
 		mg[list[i].type][WHITE] += (double) list[i].wcoeff * weights[MG][list[i].index];
         mg[list[i].type][BLACK] += (double) list[i].bcoeff * weights[MG][list[i].index];
         eg[list[i].type][WHITE] += (double) list[i].wcoeff * weights[EG][list[i].index];
@@ -1052,7 +1088,8 @@ double linearEvaluation(TVector weights, Data data, TGradientData *gradientData)
 
       // Save this information since we need it to compute the gradients
 	if (gradientData != NULL) 
-		*gradientData = (TGradientData) {
+		*gradientData = (TGradientData) 
+		{
     		wsafety[MG], bsafety[MG], wsafety[EG], bsafety[EG]
 		};
 
@@ -1065,8 +1102,8 @@ double linearEvaluation(TVector weights, Data data, TGradientData *gradientData)
     return (midgame * data.phase + endgame * (24.0 - data.phase)) / 24.0;
 } 
 
-void updateSingleGradient(Data data, TVector gradient, TVector weights, double K) {
-
+void updateSingleGradient(Data data, TVector gradient, TVector weights, double K) 
+{
 	TGradientData gradientData;
 
     double E = linearEvaluation(weights, data, &gradientData);
@@ -1099,8 +1136,8 @@ void updateSingleGradient(Data data, TVector gradient, TVector weights, double K
 }
 
 
-void computeGradient(TVector gradient, TVector weights, std::vector<Data> data_batch,  double K) {
-
+void computeGradient(TVector gradient, TVector weights, std::vector<Data> data_batch,  double K) 
+{
 	#pragma omp parallel shared(gradient) 
     {
         TVector local = {};
@@ -1110,25 +1147,26 @@ void computeGradient(TVector gradient, TVector weights, std::vector<Data> data_b
         	updateSingleGradient(data_batch[i], local, weights, K);
         
         #pragma omp for schedule(auto)
-        for (uint32_t i = 0; i < NTERMS; i++) {
-
+        for (uint32_t i = 0; i < NTERMS; i++) 
+        {
             gradient[MG][i] += local[MG][i];
             gradient[EG][i] += local[EG][i];
         }
     }
 }
 
-double computeOptimalK() {
-
+double computeOptimalK() 
+{
     double start = -10, end = 10, step = 1;
     double curr = start, error, best = staticEvaluationErrors(start);
 
     printf("\n\nComputing optimal K\n");
 
-    for (int i = 0; i < KPRECISION; i++) {
-
+    for (int i = 0; i < KPRECISION; i++) 
+    {
         curr = start - step;
-        while (curr < end) {
+        while (curr < end) 
+        {
             curr = curr + step;
             error = staticEvaluationErrors(curr);
             if (error <= best)
@@ -1147,13 +1185,13 @@ double computeOptimalK() {
     return start;
 }
 
-void saveWeights(TVector params, TVector cparams) {
-	
+void saveWeights(TVector params, TVector cparams) 
+{	
 	TVector weights = {};
 
     // Combine updated and current parameters
-    for (int j = 0; j < NTERMS; j++) {
-
+    for (int j = 0; j < NTERMS; j++) 
+    {
         weights[MG][j] = round(params[MG][j] + cparams[MG][j]);
         weights[EG][j] = round(params[EG][j] + cparams[EG][j]);
     }
@@ -1372,19 +1410,16 @@ void saveWeights(TVector params, TVector cparams) {
 		
 
 
-	myfile << "weight_blocked_pawn_storm[8][8] = { \n\n";
+	myfile << "weight_blocked_pawn_storm[8] = { \n\n";
     
-    for (int fileDistance = 0; fileDistance < 8; fileDistance++)
+	for (int rank = 0; rank < 8; rank++)
 	{
-		for (int rank = 0; rank < 8; rank++)
-		{
-			myfile << "S(" 
-					<< std::setw(4) << (int)weights[MG][count] << "," 
-					<< std::setw(4) << (int)weights[EG][count] << ")" << ", "; count++; 
-				
-			if (((rank + 1) % 8) == 0) 
-				myfile << "\n";                     
-		}
+		myfile << "S(" 
+				<< std::setw(4) << (int)weights[MG][count] << "," 
+				<< std::setw(4) << (int)weights[EG][count] << ")" << ", "; count++; 
+			
+		if (((rank + 1) % 8) == 0) 
+			myfile << "\n";                     
 	}
 
 	myfile <<"\n}, \n";

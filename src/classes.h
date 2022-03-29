@@ -181,7 +181,7 @@ public:
 	// King Safety
 
 	int pawnShield[8][8][U8_MAX_SIDES];
-	int blockedStorm[8][8][U8_MAX_SIDES];
+	int blockedStorm[8][U8_MAX_SIDES];
 	int unblockedStorm[8][8][U8_MAX_SIDES];
 
 	int knightAttack[U8_MAX_SIDES];
@@ -303,7 +303,7 @@ public:
 	
 
     	memset(pawnShield, 0, sizeof(int) * 8 * 8 * 2);
-    	memset(blockedStorm, 0, sizeof(int) * 8 * 8 * 2);
+    	memset(blockedStorm, 0, sizeof(int) * 8 * 2);
     	memset(unblockedStorm, 0, sizeof(int) * 8 * 8 * 2);
 		
 
