@@ -75,21 +75,6 @@ public:
         entry->sEval = sEval;
         entry->age = age;
     }
-    
-    
-    // Check for valid entries of the first 1000 entries of hash table
-    
-    inline int hashfull() 
-    {
-        int count = 0;
-        for (unsigned int i = 0; i < 1000; i++) 
-        {
-            if (hashTable[i].key != 0)
-                count++;
-        }
-        
-        return count;
-    }
 };
 
 #endif

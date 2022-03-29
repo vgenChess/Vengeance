@@ -42,7 +42,7 @@ inline void reportPV(SearchThread *th) {
     std::cout << " time " << TimeManager::time_elapsed_milliseconds(
          TimeManager::sTimeManager.getStartTime()); 
     std::cout << " nodes " << searchThreads.totalNodes();
-    std::cout/*<< " hashfull " << hashfull()*/ << " tbhits " << searchThreads.totalTTHits();
+    std::cout << " tbhits " << searchThreads.totalTTHits();
     std::cout << " score cp " << score << " pv";
     
     U32 move;
