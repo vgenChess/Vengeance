@@ -615,7 +615,7 @@ int evaluateKnights(Thread *th)
 		}
 
 		
-		// Marginal bonus for a knight defended by a pawn
+		// Marginal bonus for a knight defended by a pawn (TODO check weight and consider removing this)
 		
 		bool isDefendedByAPawn = squareBB & th->evalInfo.allPawnAttacks[side];
 		
@@ -1016,7 +1016,7 @@ int evaluatePawnAndKing(Thread *th)
 	bool isBlocked;
 	int score = 0, pawnShieldRank, pawnStormRank, f;
 	
-	int middle_file = MAX(1, MIN(6, kingFile));
+	int middleFile = MAX(1, MIN(6, kingFile));
 
 	U64 pawns;
     U64 friendlyPawns = (side == WHITE ? th->whitePieceBB[PAWNS] : th->blackPieceBB[PAWNS]) 
@@ -1024,9 +1024,8 @@ int evaluatePawnAndKing(Thread *th)
     U64 opponentPawns = opp == WHITE ? th->whitePieceBB[PAWNS] : th->blackPieceBB[PAWNS];
     
     // loop through files before and after the king file
-	for (int file = middle_file - 1; file <= middle_file + 1; file++)
+	for (int file = middleFile - 1; file <= middleFile + 1; file++)
     {   
-    	
     	//*********KING PAWN SHEILD**********// 
 
     	// get all friendly pawns in front of the king for the file
@@ -1046,16 +1045,16 @@ int evaluatePawnAndKing(Thread *th)
 
 
 
-    	f = MIN(file, 7 - file);
+    	fileDistance = MIN(file, 7 - file);
 
 
         // add the pawn shield score for this file and rank
-        score += MakeScore(weight_pawn_shield[f][pawnShieldRank], 0);
+        score += MakeScore(weight_pawn_shield[fileDistance][pawnShieldRank], 0);
 
         // update values for tuning
         #if defined(__TUNE) || defined(__TEST_TUNER)
 
-			T->pawnShield[f][pawnShieldRank][side]++;
+			T->pawnShield[fileDistance][pawnShieldRank][side]++;
 		#endif
 
 
@@ -1066,7 +1065,7 @@ int evaluatePawnAndKing(Thread *th)
         // add the pawn storm score for this file and rank
         // add different values for blocked opponent pawn and unblocked opponent pawn
         score += isBlocked	? weight_blocked_pawn_storm[pawnStormRank] 
-        					: MakeScore(weight_unblocked_pawn_storm[f][pawnStormRank], 0);
+        					: MakeScore(weight_unblocked_pawn_storm[fileDistance][pawnStormRank], 0);
         
         // update values for tuning
   		#if defined(__TUNE) || defined(__TEST_TUNER)
@@ -1077,7 +1076,7 @@ int evaluatePawnAndKing(Thread *th)
 	        }
 	        else
 	        {
-				T->unblockedStorm[f][pawnStormRank][side]++;
+				T->unblockedStorm[fileDistance][pawnStormRank][side]++;
 	        }
         #endif
     }
@@ -1224,7 +1223,7 @@ void initKingZoneBB()
 	}	
 }
 
-void initForwardRanksBB()
+void initForwardRanksBB() 
 {
 	for (int rank = 0; rank < 8; rank++) 
 	{

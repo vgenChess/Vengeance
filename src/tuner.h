@@ -28,7 +28,7 @@ void computeGradient(TVector gradient, TVector weights, std::vector<Data> data_b
 
 void updateSingleGradient(Data data, TVector gradient, TVector weights, double K);
 
-double linearEvaluation(TVector weights, Data data, TGradientData *gradientData);
+double linearEvaluation(TVector weights, Data data, TGradientData *gradientData, bool dropout); 
 
 double staticEvaluationErrors(double K);
 double tunedEvaluationErrorsForTrainingData(TVector weights, double K);
