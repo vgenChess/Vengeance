@@ -22,6 +22,9 @@
 #include "fen.h"
 #include "functions.h"
 
+#define Adam 1
+#define RMSProp 0
+
 #if defined(__TEST_TUNER)
 
 	#include "zerodEvals.h"
@@ -33,7 +36,7 @@
 	#define DISPLAY_TIME	10				
 	
 	#define DATASET			"quiet-labeled.epd"
-	#define NPOSITIONS		1428000	// for v7, v6 has 725000
+	#define NPOSITIONS		50000	// for v7, v6 has 725000
 
 	// #define DATASET			"lichess-big3-resolved.book"
 	// #define NPOSITIONS   	100000
@@ -725,38 +728,22 @@ void startTuner() {
 				continue;
 
 
-			// unsigned first = fen.find('{') + 1;
-			// unsigned last = fen.find('}');
-			// std::string strNew = fen.substr (first, last-first);
-			
-			// int stored_eval = std::stoi(strNew);
-
-
-			// for file "quiet-labeled.epd"
-
-			if (tp.find("1-0") != std::string::npos)	
-				result = 1.0;
-			else if (tp.find("1/2-1/2") != std::string::npos) 
+			if (tp.find("1-0") != std::string::npos) 
+			{
+				result = 1.0;		
+			}	
+			else if (tp.find("1/2-1/2") != std::string::npos || tp.find("0.5") != std::string::npos) 
+			{
 				result = 0.5;
-			else if (tp.find("0-1") != std::string::npos)	
+			}
+			else if (tp.find("0-1") != std::string::npos || tp.find("0.0") != std::string::npos)	
+			{
 				result = 0.0;
-			else 
+			}
+			else 	
+			{
 				continue;
-
-
-			// for file "4818922_positions_gm2600.txt"
-
-		/*	if (tp.find("1.0") != std::string::npos)	
-				result = 1.0;
-			else if (tp.find("0.5") != std::string::npos) 
-				result = 0.5;
-			else if (tp.find("0.0") != std::string::npos)	
-				result = 0.0;
-			else 
-				continue;
-*/
-			
-			assert(result == 1.0 || result == 0.5 || result == 0.0);
+			}
 
 
 			T->clear();
@@ -910,47 +897,44 @@ void optimise(TVector params, TVector cparams)
 		computeGradient(gradient, params, data_batch, K);
 
 
-		// Adagrad
-/*		#pragma omp parallel for schedule(auto)  
-		for (int i = 0; i < NTERMS; i++) {
-    
-            adagrad[MG][i] += pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
-            adagrad[EG][i] += pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
-
-            params[MG][i] += (K / 200.0) * (gradient[MG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + adagrad[MG][i]));
-            params[EG][i] += (K / 200.0) * (gradient[EG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + adagrad[EG][i]));
-        }
-*/		
-		// RMSProp (slower than Adam)
-		/*#pragma omp parallel for schedule(auto)
-		for (int i = 0; i < NTERMS; i++) {
-
-	        cache[MG][i] = beta1 * cache[MG][i] + (1.0 - beta1) * pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
-            cache[EG][i] = beta1 * cache[EG][i] + (1.0 - beta1) * pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
-            
-            params[MG][i] += (K / 200.0) * (gradient[MG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + cache[MG][i]));
-            params[EG][i] += (K / 200.0) * (gradient[EG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + cache[EG][i]));
-		}*/
-
 		// Adam
 		#pragma omp parallel for schedule(auto)  
 		for (int i = 0; i < NTERMS; i++) 
 		{
-            double mg_grad = (K / 200.0) * gradient[MG][i] / BATCHSIZE;
-            double eg_grad = (K / 200.0) * gradient[EG][i] / BATCHSIZE;
+			#if Adam
 
-            momentum[MG][i] = beta1 * momentum[MG][i] + (1.0 - beta1) * mg_grad;
-            momentum[EG][i] = beta1 * momentum[EG][i] + (1.0 - beta1) * eg_grad;
+	            double mg_grad = (K / 200.0) * gradient[MG][i] / BATCHSIZE;
+	            double eg_grad = (K / 200.0) * gradient[EG][i] / BATCHSIZE;
 
-            velocity[MG][i] = beta2 * velocity[MG][i] + (1.0 - beta2) * pow(mg_grad, 2);
-            velocity[EG][i] = beta2 * velocity[EG][i] + (1.0 - beta2) * pow(eg_grad, 2);
+	            momentum[MG][i] = beta1 * momentum[MG][i] + (1.0 - beta1) * mg_grad;
+	            momentum[EG][i] = beta1 * momentum[EG][i] + (1.0 - beta1) * eg_grad;
 
-            params[MG][i] += alpha1 * momentum[MG][i] / (1e-8 + sqrt(velocity[MG][i]));
-            params[EG][i] += alpha1 * momentum[EG][i] / (1e-8 + sqrt(velocity[EG][i]));
+	            velocity[MG][i] = beta2 * velocity[MG][i] + (1.0 - beta2) * pow(mg_grad, 2);
+	            velocity[EG][i] = beta2 * velocity[EG][i] + (1.0 - beta2) * pow(eg_grad, 2);
+
+	            params[MG][i] += alpha1 * momentum[MG][i] / (1e-8 + sqrt(velocity[MG][i]));
+	            params[EG][i] += alpha1 * momentum[EG][i] / (1e-8 + sqrt(velocity[EG][i]));
+			
+			#elif RMSProp
+	    	
+	    		cache[MG][i] = beta1 * cache[MG][i] + (1.0 - beta1) * pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
+	            cache[EG][i] = beta1 * cache[EG][i] + (1.0 - beta1) * pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
+	            
+	            params[MG][i] += (K / 200.0) * (gradient[MG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + cache[MG][i]));
+	            params[EG][i] += (K / 200.0) * (gradient[EG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + cache[EG][i]));
+			
+	        #else
+
+	            adagrad[MG][i] += pow((K / 200.0) * gradient[MG][i] / BATCHSIZE, 2.0);
+	            adagrad[EG][i] += pow((K / 200.0) * gradient[EG][i] / BATCHSIZE, 2.0);
+
+	            params[MG][i] += (K / 200.0) * (gradient[MG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + adagrad[MG][i]));
+	            params[EG][i] += (K / 200.0) * (gradient[EG][i] / BATCHSIZE) * (alpha1 / sqrt(1e-8 + adagrad[EG][i]));
+	        
+	        #endif
 		}
 	
-
-
+	
 		auto tunerTimeNow = std::chrono::steady_clock::now();
 
 		if (std::chrono::duration_cast<std::chrono::seconds>(tunerTimeNow - tunerStartTime).count() > DISPLAY_TIME) 
