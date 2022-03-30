@@ -118,7 +118,7 @@ int traceFullEval(Side side, TraceCoefficients *traceCoefficients, Thread *th)
 {
 	T = traceCoefficients;
 
-	return side ? fullEval(BLACK, th) : fullEval(WHITE, th);
+	return side == WHITE ? fullEval(WHITE, th) : fullEval(BLACK, th);
 }
 
 int fullEval(U8 side, Thread *th) 
@@ -176,27 +176,25 @@ int fullEval(U8 side, Thread *th)
 
 	th->evalInfo.clear();
 
+	th->evalInfo.pawnsHashHit = pawnsHashHit;
+
 	const auto whitePawns = th->whitePieceBB[PAWNS];
 	const auto blackPawns = th->blackPieceBB[PAWNS];
 
-	th->evalInfo.openFilesBB = 
-		pawnsHashHit ? pawnsHashEntry->openFilesBB : openFiles(whitePawns, blackPawns); 
+	th->evalInfo.openFilesBB = pawnsHashHit ? pawnsHashEntry->openFilesBB 
+											: openFiles(whitePawns, blackPawns); 
 
-	th->evalInfo.halfOpenFilesBB[WHITE] = 
-		pawnsHashHit ? pawnsHashEntry->halfOpenFilesBB[WHITE] 
-					 : halfOpenOrOpenFile(whitePawns) ^ th->evalInfo.openFilesBB;
+	th->evalInfo.halfOpenFilesBB[WHITE] = pawnsHashHit ? pawnsHashEntry->halfOpenFilesBB[WHITE] 
+					 								   : halfOpenOrOpenFile(whitePawns) ^ th->evalInfo.openFilesBB;
 
-	th->evalInfo.halfOpenFilesBB[BLACK] =
-		pawnsHashHit ? pawnsHashEntry->halfOpenFilesBB[BLACK] 
-					 : halfOpenOrOpenFile(blackPawns) ^ th->evalInfo.openFilesBB;
+	th->evalInfo.halfOpenFilesBB[BLACK] = pawnsHashHit ? pawnsHashEntry->halfOpenFilesBB[BLACK] 
+					 								   : halfOpenOrOpenFile(blackPawns) ^ th->evalInfo.openFilesBB;
 
-	th->evalInfo.allPawnAttacks[WHITE] =
-		pawnsHashHit ? pawnsHashEntry->allPawnAttacks[WHITE] 
-					 : wPawnWestAttacks(whitePawns) | wPawnEastAttacks(whitePawns);
+	th->evalInfo.allPawnAttacks[WHITE] = pawnsHashHit ? pawnsHashEntry->allPawnAttacks[WHITE] 
+					 								  : wPawnWestAttacks(whitePawns) | wPawnEastAttacks(whitePawns);
 
-	th->evalInfo.allPawnAttacks[BLACK] = 
-		pawnsHashHit ? pawnsHashEntry->allPawnAttacks[BLACK] 
-					 : bPawnWestAttacks(blackPawns) | bPawnEastAttacks(blackPawns);
+	th->evalInfo.allPawnAttacks[BLACK] = pawnsHashHit ? pawnsHashEntry->allPawnAttacks[BLACK] 
+					 								  : bPawnWestAttacks(blackPawns) | bPawnEastAttacks(blackPawns);
 
 
 	th->evalInfo.attacks[WHITE] |= th->evalInfo.allPawnAttacks[WHITE];
@@ -224,8 +222,6 @@ int fullEval(U8 side, Thread *th)
 
 	    	pawnsHashEntry->key = th->pawnsHashKey;
 	    
-	    	pawnsHashEntry->pawnsEval = evaluatePawns<WHITE>(th) - evaluatePawns<BLACK>(th);
-	    
 			pawnsHashEntry->openFilesBB = th->evalInfo.openFilesBB;
 
 			pawnsHashEntry->halfOpenFilesBB[WHITE] = th->evalInfo.halfOpenFilesBB[WHITE];
@@ -233,6 +229,14 @@ int fullEval(U8 side, Thread *th)
 
 			pawnsHashEntry->allPawnAttacks[WHITE] = th->evalInfo.allPawnAttacks[WHITE];
 			pawnsHashEntry->allPawnAttacks[BLACK] = th->evalInfo.allPawnAttacks[BLACK];
+
+			pawnsHashEntry->pawnsEval = evaluatePawns<WHITE>(th) - evaluatePawns<BLACK>(th);
+	    }
+	    else 
+	    {
+	    	// fetch the PawnKing eval from the Pawn Hash table required for evaluateKing() later
+			th->evalInfo.pkEval[WHITE] = pawnsHashEntry->pkEval[WHITE];
+			th->evalInfo.pkEval[BLACK] = pawnsHashEntry->pkEval[BLACK];	
 	    }
 
      	eval += pawnsHashEntry->pawnsEval;
@@ -248,13 +252,23 @@ int fullEval(U8 side, Thread *th)
 	// because of values required for king safety calculation
 	eval += evaluateKing<WHITE>(th)		- 	evaluateKing<BLACK>(th);
 	
+
+	// save Pawn and King related information to the Pawn Hash Table
+	if (!pawnsHashHit)
+	{
+		pawnsHashEntry->pkEval[WHITE] = th->evalInfo.pkEval[WHITE];
+		pawnsHashEntry->pkEval[BLACK] = th->evalInfo.pkEval[BLACK];
+	}
+
 	// Tapered evaluation 
-	int phase = 	4 * POPCOUNT(th->whitePieceBB[QUEEN] 	| 	th->blackPieceBB[QUEEN]) 
-				+ 	2 * POPCOUNT(th->whitePieceBB[ROOKS] 	| 	th->blackPieceBB[ROOKS])
-      			+ 	1 * POPCOUNT(th->whitePieceBB[BISHOPS] 	| 	th->blackPieceBB[BISHOPS])
-      			+ 	1 * POPCOUNT(th->whitePieceBB[KNIGHTS]	| 	th->blackPieceBB[KNIGHTS]);
+	int phase =   4 * POPCOUNT(th->whitePieceBB[QUEEN]   | th->blackPieceBB[QUEEN]) 
+				+ 2 * POPCOUNT(th->whitePieceBB[ROOKS]   | th->blackPieceBB[ROOKS])
+      			+ 1 * POPCOUNT(th->whitePieceBB[BISHOPS] | th->blackPieceBB[BISHOPS])
+      			+ 1 * POPCOUNT(th->whitePieceBB[KNIGHTS] | th->blackPieceBB[KNIGHTS]);
+
 
     int score = (ScoreMG(eval) * phase + ScoreEG(eval) * (24 - phase)) / 24;
+
 
     #if defined(__TUNE) || defined(__TEST_TUNER)
 
@@ -1099,8 +1113,13 @@ int evaluateKing(Thread *th)
 	// Piece Square Table Score for King	
 	score += side ? kingPSQT[Mirror64[kingSq]] : kingPSQT[kingSq];
 	
+	if (!th->evalInfo.pawnsHashHit)
+	{
+		th->evalInfo.pkEval[side] = evaluatePawnAndKing<side>(th);
+	}
+
 	// Pawn King Score for Pawn Shield and Opponent Pawns Storm
-	score += evaluatePawnAndKing<side>(th);
+	score += th->evalInfo.pkEval[side];
 
 	// King Safety Score for Opponent attacks and checks
 	if (	th->evalInfo.kingAttackersCount[side] > 

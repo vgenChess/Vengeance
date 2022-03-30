@@ -86,9 +86,10 @@ void UciLoop() {
          
             std::cout << "id name Vengeance " << NAME << "\n";
             std::cout << "id author Amar Thapa\n";
-            std::cout << "option name Hash type spin default 16 min 2 max 131072\n";
-            std::cout << "option name Threads type spin default 1 min 1 max 2048\n";
+            std::cout << "option name Hash type spin default 16 min 2 max 1024\n";
+            std::cout << "option name Threads type spin default 1 min 1 max 64\n";
             std::cout << "uciok\n";
+
         } else if (token == "setoption") {
             
             setOption(cmd);

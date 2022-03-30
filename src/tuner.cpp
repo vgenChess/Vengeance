@@ -22,7 +22,7 @@
 #include "fen.h"
 #include "functions.h"
 
-#define Adam 1
+#define Adam 	1
 #define RMSProp 0
 
 #if defined(__TEST_TUNER)
@@ -34,15 +34,15 @@
 	#define LR              0.005 
 	#define DISPLAY_TIME	10				
 	
-	#define DATASET			"quiet-labeled.epd"
-	#define NPOSITIONS		50000	// for v7, v6 has 725000
+	// #define DATASET			"quiet-labeled.epd"
+	// #define NPOSITIONS		50000	// for v7, v6 has 725000
 
-	// #define DATASET			"lichess-big3-resolved.book"
-	// #define NPOSITIONS   	100000
+	#define DATASET			"lichess-big3-resolved.book"
+	#define NPOSITIONS   	50000
 
 	constexpr auto NTRAINING 	= (int)(NPOSITIONS * 0.8);
 	constexpr auto NTESTING 	= NPOSITIONS - NTRAINING;
-	constexpr auto BATCHSIZE 	= NTRAINING;
+	constexpr auto BATCHSIZE 	= 1024;
 
 #else 
 	
@@ -60,11 +60,11 @@
 		// #define NPOSITIONS		1428000	// for v7, v6 has 725000
 
 		#define DATASET			"lichess-big3-resolved.book"
-		#define NPOSITIONS   7153652		
+		#define NPOSITIONS   	7153652		
 
 		constexpr auto NTRAINING 	= (int)(NPOSITIONS * 0.8);
 		constexpr auto NTESTING 	= NPOSITIONS - NTRAINING;
-		constexpr auto BATCHSIZE 	= NTRAINING;
+		constexpr auto BATCHSIZE 	= 4096;
 
 	#else 
 
@@ -83,7 +83,7 @@
 
 		constexpr auto NTRAINING 	= (int)(NPOSITIONS * 0.8);
 		constexpr auto NTESTING 	= NPOSITIONS - NTRAINING;
-		constexpr auto BATCHSIZE 	= NTRAINING;
+		constexpr auto BATCHSIZE 	= 512;
 
 	#endif
 #endif
@@ -713,7 +713,6 @@ void startTuner() {
 	// read data from file to a vector
 	if (newfile.is_open()) 
 	{   	
-		Side side;
 		std::string tp;
 		double result;
 		std::string fen;
@@ -727,22 +726,27 @@ void startTuner() {
 				continue;	
 			} 
 			
-			if (tp.find("1-0") != std::string::npos) 
-			{
-				result = 1.0;		
-			}	
-			else if (tp.find("1/2-1/2") != std::string::npos || tp.find("0.5") != std::string::npos) 
-			{
+		// for file "quiet-labeled.epd"
+
+		/*	if (tp.find("1-0") != std::string::npos)	
+				result = 1.0;
+			else if (tp.find("1/2-1/2") != std::string::npos) 
 				result = 0.5;
-			}
-			else if (tp.find("0-1") != std::string::npos || tp.find("0.0") != std::string::npos)	
-			{
+			else if (tp.find("0-1") != std::string::npos)	
 				result = 0.0;
-			}
-			else 	
-			{
+			else 
 				continue;
-			}
+		*/
+
+		
+			if (tp.find("1.0") != std::string::npos)	
+				result = 1.0;
+			else if (tp.find("0.5") != std::string::npos) 
+				result = 0.5;
+			else if (tp.find("0.0") != std::string::npos)	
+				result = 0.0;
+			else 
+				continue;
 
 
 			T->clear();
@@ -754,19 +758,18 @@ void startTuner() {
 		
 			Data data = {};	
 			data.result = result;
-
 	
-			side = parseFen(fen, th);
+			data.side = parseFen(fen, th);
 			
-			data.sEval = traceFullEval(side, T, th);
+			data.sEval = traceFullEval(data.side, T, th);
 				
 			delete th; // free resources after use
 
-			if (side == BLACK) {
-
+			if (data.side == BLACK) 
+			{
 				data.sEval = -data.sEval;
 			}
-					
+			
 			data.eval = T->eval;
 
 			data.pfactors[MG] = 0 + T->phase / 24.0;
@@ -780,14 +783,15 @@ void startTuner() {
 			loadCoefficients(T, loadCoeff);
 
 			std::vector<CoefficientsInfo> infoList;
-			for (uint16_t i = 0; i < NTERMS; i++) {
-
+			for (uint16_t i = 0; i < NTERMS; i++) 
+			{
 				// std::cout<<coeffs[WHITE][i]<<","<<coeffs[BLACK][i]<<"\n";
 
 				if (	loadCoeff->type[i] == NORMAL 
-					&&	loadCoeff->coeffs[WHITE][i] - loadCoeff->coeffs[BLACK][i] != 0.0) {
-
-					CoefficientsInfo coefficientsInfo = {
+					&&	loadCoeff->coeffs[WHITE][i] - loadCoeff->coeffs[BLACK][i] != 0.0) 
+				{
+					CoefficientsInfo coefficientsInfo = 
+					{
 						i, 
 						loadCoeff->coeffs[WHITE][i], 
 						loadCoeff->coeffs[BLACK][i],
@@ -798,9 +802,10 @@ void startTuner() {
 				}
 
 				if (	loadCoeff->type[i] != NORMAL 
-					&&	(loadCoeff->coeffs[WHITE][i] != 0.0 || loadCoeff->coeffs[BLACK][i] != 0.0)) {
-
-					CoefficientsInfo coefficientsInfo = {
+					&&	(loadCoeff->coeffs[WHITE][i] != 0.0 || loadCoeff->coeffs[BLACK][i] != 0.0)) 
+				{
+					CoefficientsInfo coefficientsInfo = 
+					{
 						i, 
 						loadCoeff->coeffs[WHITE][i], 
 						loadCoeff->coeffs[BLACK][i],
@@ -820,13 +825,13 @@ void startTuner() {
 
 			count++;
 
-			if (count % 10000 == 0)	{
-
+			if (count % 10000 == 0)	
+			{
 				std::cout << (count * 100) / NPOSITIONS << "% loaded\n";
 			}
 
-			if (count >= NPOSITIONS) {
-
+			if (count >= NPOSITIONS) 
+			{
 				break;			
 			}	
 		}
@@ -1075,10 +1080,8 @@ double linearEvaluation(TVector weights, Data data, TGradientData *gradientData,
 		};
 	} 
 		
-
     midgame = normal[MG] + safety[MG];
     endgame = normal[EG] + safety[EG];
-
 
     return (midgame * data.phase + endgame * (24.0 - data.phase)) / 24.0;
 } 

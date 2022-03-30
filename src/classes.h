@@ -18,6 +18,9 @@ class EvalInfo
 
 public:
 
+	bool pawnsHashHit;
+	int pkEval[U8_MAX_SIDES];
+
 	U64 openFilesBB;
 	U64 halfOpenFilesBB[U8_MAX_SIDES]; 
 
@@ -43,9 +46,13 @@ public:
 
     void clear() {
 
+    	pawnsHashHit = false;
+
 		openFilesBB = 0ULL;
 
 		for (int i = 0; i < U8_MAX_SIDES; i++) {
+
+			pkEval[i] = 0;
 
 			passedPawns[i] = 0ULL;
 	

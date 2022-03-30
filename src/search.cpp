@@ -78,9 +78,13 @@ void SearchThread::startSearch(Side stm)
         searchThreads.search<false>(); 
 
         if (stm == WHITE)
+        {
             iterativeDeepening<WHITE>(this); 
+        }
         else
+        {
             iterativeDeepening<BLACK>(this); 
+        }
         
         SearchThread::stopSearch = true;    
         SearchThread::abortSearch = true;
@@ -95,9 +99,13 @@ void SearchThread::startSearch(Side stm)
     else 
     {
         if (stm == WHITE)
+        {
             iterativeDeepening<WHITE>(this); 
+        }
         else
+        {
             iterativeDeepening<BLACK>(this); 
+        }
     }
 }
 
@@ -481,6 +489,8 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
 
         const auto R = depth > 6 ? 2 : 1;        
     
+        th->moveStack[ply].move = NO_MOVE;
+
         searchInfo.ply = ply + 1;
         searchInfo.depth = depth - R - 1;
         searchInfo.line[0] = NO_MOVE;
@@ -1063,10 +1073,12 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
                 auto line = &searchInfo.line[0]; 
                 
                 *pline++ = currentMove.move;
+                
                 while (*line != NO_MOVE)
                 {
                     *pline++ = *line++;
                 }
+
                 *pline = NO_MOVE;
                 
                 if (score >= beta) 

@@ -22,7 +22,7 @@ typedef struct
 {    
     U64 key; 
     int pawnsEval;
-    int pawnsKingEval[U8_MAX_SIDES];
+    int pkEval[U8_MAX_SIDES];
     U64 openFilesBB;
     U64 halfOpenFilesBB[U8_MAX_SIDES];
     U64 allPawnAttacks[U8_MAX_SIDES];
@@ -107,6 +107,8 @@ struct Data
     int eval;
     int sEval;
     int safety[2];
+
+    Side side;
 };
 
 #endif
