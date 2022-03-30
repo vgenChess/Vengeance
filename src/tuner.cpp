@@ -22,8 +22,8 @@
 #include "fen.h"
 #include "functions.h"
 
-#define Adam 	1
-#define RMSProp 0
+#define Adam 	0
+#define RMSProp 1
 
 #if defined(__TEST_TUNER)
 
@@ -52,7 +52,7 @@
 		
 		#define MAXEPOCHS		10000
 		#define NPARTITIONS		4 
-		#define LR              0.01 
+		#define LR              0.02 
 		
 		#define DISPLAY_TIME	60		
 
@@ -853,16 +853,14 @@ void optimise(TVector params, TVector cparams)
 
 	double bestTestError = 100, alpha1 = LR, beta1 = 0.9, beta2 = 0.999;
 	
-	// For Adagrad
-	// TVector adagrad = {};
-	
-	// For RMS Prop
-	// TVector cache = {};
-	
-	// For Adam optimiser
-	TVector momentum = {}, velocity = {};
-   
-	
+	#if Adam
+		TVector momentum = {}, velocity = {};
+	#elif RMSProp
+		TVector cache = {};
+	#else
+		TVector adagrad = {};
+	#endif
+
 	auto tunerStartTime = std::chrono::steady_clock::now();
 	
 	int counter = 0;
@@ -1061,14 +1059,14 @@ double linearEvaluation(TVector weights, Data data, TGradientData *gradientData,
     bsafety[EG] = (double) ScoreEG(data.safety[BLACK]) + eg[SAFETY][BLACK];
 
     // Remove the original "safety" evaluation that was double counted into the "normal" evaluation
-    normal[MG] -= MIN(0, -ScoreMG(data.safety[WHITE]) * std::abs(ScoreMG(data.safety[WHITE])) / 720.0)
-                - MIN(0, -ScoreMG(data.safety[BLACK]) * std::abs(ScoreMG(data.safety[BLACK])) / 720.0);
-    normal[EG] -= MIN(0, -ScoreEG(data.safety[WHITE]) / 20.0) - MIN(0, -ScoreEG(data.safety[BLACK]) / 20.0);
+    normal[MG] -= __min(0, -ScoreMG(data.safety[WHITE]) * std::abs(ScoreMG(data.safety[WHITE])) / 720.0)
+                - __min(0, -ScoreMG(data.safety[BLACK]) * std::abs(ScoreMG(data.safety[BLACK])) / 720.0);
+    normal[EG] -= __min(0, -ScoreEG(data.safety[WHITE]) / 20.0) - __min(0, -ScoreEG(data.safety[BLACK]) / 20.0);
 
     // Compute the new, true "safety" evaluations for each side
-    safety[MG] = MIN(0, -wsafety[MG] * fabs(-wsafety[MG]) / 720.0)
-               - MIN(0, -bsafety[MG] * fabs(-bsafety[MG]) / 720.0);
-    safety[EG] = MIN(0, -wsafety[EG] / 20.0) - MIN(0, -bsafety[EG] / 20.0);
+    safety[MG] = __min(0, -wsafety[MG] * fabs(-wsafety[MG]) / 720.0)
+               - __min(0, -bsafety[MG] * fabs(-bsafety[MG]) / 720.0);
+    safety[EG] = __min(0, -wsafety[EG] / 20.0) - __min(0, -bsafety[EG] / 20.0);
 
 
      // Save this information since we need it to compute the gradients

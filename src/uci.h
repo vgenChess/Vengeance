@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 
+// TODO remove global variables below
 extern bool quit;
 extern int option_thread_count;
 

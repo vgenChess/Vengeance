@@ -1030,7 +1030,7 @@ int evaluatePawnAndKing(Thread *th)
 	bool isBlocked;
 	int score = 0, pawnShieldRank, pawnStormRank, fileDistance;
 	
-	int middleFile = MAX(1, MIN(6, kingFile));
+	int middleFile = __max(1, __min(6, kingFile));
 
 	U64 pawns;
     U64 friendlyPawns = (side == WHITE ? th->whitePieceBB[PAWNS] : th->blackPieceBB[PAWNS]) 
@@ -1059,7 +1059,7 @@ int evaluatePawnAndKing(Thread *th)
 
 
 
-    	fileDistance = MIN(file, 7 - file);
+    	fileDistance = __min(file, 7 - file);
 
 
         // add the pawn shield score for this file and rank
@@ -1198,7 +1198,7 @@ int evaluateKing(Thread *th)
 	
  		const auto mg = ScoreMG(safetyScore), eg = ScoreEG(safetyScore);
 
-        score += MakeScore(-mg * MAX(0, mg) / 720, -MAX(0, eg) / 20); 
+        score += MakeScore(-mg * __max(0, mg) / 720, -__max(0, eg) / 20); 
 	} 
     else 
     {

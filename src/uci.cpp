@@ -31,7 +31,7 @@
 #include "see.h"
 #include "time.h"
 
-#define NAME "V0.9"
+#define VERSION "1.0"
 #define START_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 bool quit;
@@ -41,27 +41,8 @@ int MOVE_OVERHEAD = 300;
 
 U8 HashManager::age;
 
-void setOption(std::string &line) {
-
-    if (line.rfind("setoption name Hash value", 0) == 0) {
-
-        int hash_size = std::stoi(line.substr(26, std::string::npos));
-    
-        HashManager::initHashTable(hash_size);
-     
-        std::cout << "info string set Hash to " << hash_size << "MB\n";
-    } else if (line.rfind("setoption name Threads value", 0) == 0) {
-
-        option_thread_count = std::stoi(line.substr(29, std::string::npos));
-
-        searchThreads.createThreadPool(option_thread_count);
-
-        std::cout<<"info string set Threads to " << option_thread_count << "\n";
-    } 
-}
-
-void UciLoop() {
-
+void UciLoop() 
+{
     initThread.clear();
     initThread.init();
 
@@ -69,32 +50,52 @@ void UciLoop() {
 
     quit = false;
     
-    std::string cmd, token;
+    std::string line, command;
 
-    do {
+    while (true) 
+    {
+        if (!getline(std::cin, line))
+        {
+            line = "quit";    
+        } 
+        
+        std::istringstream is(line);
 
-        if (!getline(std::cin, cmd)) // Block here waiting for input or EOF 
-            cmd = "quit";
+        command.clear();
 
-        std::istringstream is(cmd);
+        is >> std::skipws >> command;
 
-        token.clear(); // Avoid a stale if getline() returns empty or blank line
-        is >> std::skipws >> token;
-
-
-        if (token == "uci") {
-         
-            std::cout << "id name Vengeance " << NAME << "\n";
+        if (command == "uci") 
+        { 
+            std::cout << "id name Vengeance " << VERSION << "\n";
             std::cout << "id author Amar Thapa\n";
             std::cout << "option name Hash type spin default 16 min 2 max 1024\n";
             std::cout << "option name Threads type spin default 1 min 1 max 64\n";
             std::cout << "uciok\n";
+        } 
 
-        } else if (token == "setoption") {
+        else if (command == "setoption") 
+        {    
+            if (line.rfind("setoption name Hash value", 0) == 0) 
+            {
+                int hash_size = std::stoi(line.substr(26, std::string::npos));
             
-            setOption(cmd);
-        } else if (token == "ucinewgame") {
-            
+                HashManager::initHashTable(hash_size);
+             
+                std::cout << "info string set Hash to " << hash_size << "MB\n";
+            } 
+            else if (line.rfind("setoption name Threads value", 0) == 0) 
+            {
+                option_thread_count = std::stoi(line.substr(29, std::string::npos));
+
+                searchThreads.createThreadPool(option_thread_count);
+
+                std::cout<<"info string set Threads to " << option_thread_count << "\n";
+            } 
+        } 
+
+        else if (command == "ucinewgame") 
+        {    
             HashManager::age = 0;
             HashManager::clearHashTable();
 
@@ -104,8 +105,10 @@ void UciLoop() {
             }
             
             initThread.clear();
-        } else if (token == "position") {
-            
+        } 
+
+        else if (command == "position") 
+        {    
             initThread.clear();
             initThread.init();
 
@@ -113,26 +116,28 @@ void UciLoop() {
             initThread.movesHistory[0].hashKey = initThread.hashKey;
             initThread.movesHistory[0].fiftyMovesCounter = 0;
 
-            is>>token;
+            is >> command;
 
             std::string fen;
 
-            //TODO refactor logic
-            if (token == "startpos") 
+            if (command == "startpos") 
             {
                 fen = START_FEN;
-                is>>token;
-            } else if (token == "fen") 
+                is >> command;
+            } 
+            else if (command == "fen") 
             {
-                while (is >> token && token != "moves")
-                    fen += token + " ";
+                while (is >> command && command != "moves")
+                {
+                    fen += command + " ";
+                }
             }
 
             U8 sideToMove = parseFen(fen, &initThread);
 
             std::vector<Move> moves;
 
-            while (is>>token) 
+            while (is >> command) 
             {
                 moves.clear();
 
@@ -140,7 +145,7 @@ void UciLoop() {
                 
                 for (Move m : moves) 
                 {
-                    if (getMoveNotation(m.move) == token) 
+                    if (getMoveNotation(m.move) == command) 
                     {
                         make_move(0, m.move, &initThread);
                         
@@ -156,11 +161,13 @@ void UciLoop() {
 
             initThread.side = sideToMove == WHITE ? WHITE : BLACK;   
         } 
-        else if (token == "isready") 
+        
+        else if (command == "isready") 
         {
             std::cout << "readyok\n";
-        } 
-        else if (token == "go") 
+        }
+
+        else if (command == "go") 
         {
             TimeManager::sTimeManager.setStartTime(std::chrono::steady_clock::now());
 
@@ -168,40 +175,41 @@ void UciLoop() {
 
             int32_t time = -1, moveTime = -1, nodes = 0, inc = 0, movesToGo = -1, depthCurrent = 0;
 
-            while (is >> token) {
-
-                     if (token == "wtime" && initThread.side == WHITE)     is >> time;
-                else if (token == "btime" && initThread.side == BLACK)     is >> time;
-                else if (token == "winc"  && initThread.side == WHITE)     is >> inc;
-                else if (token == "binc"  && initThread.side == BLACK)     is >> inc;
-                else if (token == "movestogo")  is >> movesToGo;
-                else if (token == "depth")      is >> depthCurrent;
-                else if (token == "nodes")      is >> nodes;
-                else if (token == "movetime")   is >> moveTime;                    
+            while (is >> command) 
+            {
+                     if (command == "wtime" && initThread.side == WHITE)     is >> time;
+                else if (command == "btime" && initThread.side == BLACK)     is >> time;
+                else if (command == "winc"  && initThread.side == WHITE)     is >> inc;
+                else if (command == "binc"  && initThread.side == BLACK)     is >> inc;
+                else if (command == "movestogo")  is >> movesToGo;
+                else if (command == "depth")      is >> depthCurrent;
+                else if (command == "nodes")      is >> nodes;
+                else if (command == "movetime")   is >> moveTime;                    
             }
             
-
-            if (moveTime != -1) {
-                
+            if (moveTime != -1) 
+            {    
                 TimeManager::sTimeManager.updateTimeSet(true);
                 TimeManager::sTimeManager.updateTimePerMove(moveTime);
                 
                 TimeManager::sTimeManager.setStopTime(TimeManager::sTimeManager.getStartTime() 
                     + std::chrono::milliseconds(moveTime));
-            } else {
-                
+            } 
+            else 
+            {    
                 TimeManager::sTimeManager.updateTimeSet(time != -1 ? true : false);
 
-                if (time != -1) {
-                
-                    if (movesToGo == -1) {
-
+                if (time != -1) 
+                {
+                    if (movesToGo == -1) 
+                    {
                         // TODO redo logic  
                         const auto total = (int)fmax(1, time + 50 * inc - MOVE_OVERHEAD);
 
                         TimeManager::sTimeManager.updateTimePerMove((int)fmin(time * 0.33, total / 20.0));
-                    } else {
-                    
+                    } 
+                    else 
+                    {
                         const auto total = (int)fmax(1, time + movesToGo * inc - MOVE_OVERHEAD);
                         
                         TimeManager::sTimeManager.updateTimePerMove(total / movesToGo);
@@ -209,8 +217,8 @@ void UciLoop() {
                     
                     TimeManager::sTimeManager.setStopTime(
                         TimeManager::sTimeManager.getStartTime() + std::chrono::milliseconds((int)(time * 0.75)));           
-                } else {
-
+                } else 
+                {
                     TimeManager::sTimeManager.updateTimeSet(false);
                 }
             }
@@ -218,13 +226,13 @@ void UciLoop() {
             searchThreads.search<true>();
         } 
 
-        else if (token == "stop") {
-
+        else if (command == "stop") 
+        {
             SearchThread::stopSearch = true;
         }
 
-        else if (token == "quit") {
-        
+        else if (command == "quit") 
+        {
             SearchThread::stopSearch = true;  
         
             break;
@@ -236,33 +244,34 @@ void UciLoop() {
 
         // Debugging commands
 
-        else if (token == "perft") {
-            
+        else if (command == "perft") 
+        {    
             std::thread t4(startPerft, initThread.side, 10, &initThread);
 
             t4.join();
         } 
 
-        else if (token == "divide") {
-
+        else if (command == "divide") 
+        {
             int d = 0;
             
-            while (is >> token)
-             if (token == "divide")     is >> d;
+            while (is >> command)
+                if (command == "divide")     is >> d;
 
-            if (d <= 0) {
-
+            if (d <= 0) 
+            {
                 printf("Depth should be greater than 0\n");
-            } else {
-
+            } 
+            else 
+            {
                 std::thread t5(divide, d, initThread.side, &initThread);
 
                 t5.join();
             }
         } 
 
-        else if (token == "evaluate") {
-            
+        else if (command == "evaluate") 
+        {    
             print_board(initThread.occupied, &initThread);
             printf("\n\n");
 
@@ -277,18 +286,20 @@ void UciLoop() {
             printf("Black score = %d\n", scoreBlack);
         } 
 
-        else if (token == "tune") {
-            
+        else if (command == "tune") 
+        {    
             #if defined(__TUNE) || defined(__TEST_TUNER)
-                std::cout<<"starting tuner..."<<std::endl; 
+                
+                std::cout << "starting tuner..." << std::endl; 
                 startTuner();
             #else
-                std::cout<<"Not a tuning build." << std::endl;
+
+                std::cout << "Not a tuning build." << std::endl;
             #endif
         } 
 
-        else if (token == "see") {
-
+        else if (command == "see") 
+        {
             int sq;
             char ch;
 
@@ -302,5 +313,5 @@ void UciLoop() {
 
             debugSEE(ch, sq);
         }
-    } while(true);
+    }
 }

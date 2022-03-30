@@ -48,8 +48,8 @@ int main(int argc, char **argv)
     initForwardRanksBB();
     initPSQT();
     initKingZoneBB();
-    HashManager::initHashTable(16);      // default hash size = 16 megabytes
-    searchThreads.createThreadPool(1);         // default threads size = 1
+    HashManager::initHashTable(16);             // default hash size = 16 megabytes
+    searchThreads.createThreadPool(1);          // default threads size = 1
     omp_set_num_threads(omp_get_max_threads()); // for tuning
 
     TimeManager::sTimeManager.updateTimeSet(false);

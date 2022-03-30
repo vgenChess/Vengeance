@@ -748,7 +748,7 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
             score = -alphabeta<opp, NUL, NON_SING>(-beta, -alpha, mate - 1, th, &searchInfo);
         } 
         else 
-        { // Late Move Reductions (Under observation)
+        { // Late Move Reductions 
         
             if (	depth > 2
                 &&	movesPlayed > 1

@@ -71,8 +71,8 @@
 #define ScoreMG(s) ((int16_t)((uint16_t)((unsigned)((s)))))
 #define ScoreEG(s) ((int16_t)((uint16_t)((unsigned)((s) + 0x8000) >> 16)))
 
-#define MIN(A, B) ((A) < (B) ? (A) : (B))
-#define MAX(A, B) ((A) > (B) ? (A) : (B))
+#define __min(a, b) ((a) < (b) ? (a) : (b))
+#define __max(a, b) ((a) > (b) ? (a) : (b))
 
 inline int MakeScore(int mg, int eg) {
 
