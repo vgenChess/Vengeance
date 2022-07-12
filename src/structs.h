@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "types.h"
+#include "constants.h"
 
 typedef struct 
 {   
@@ -68,6 +69,8 @@ typedef struct
     int material;
     U64 hashKey;
     U64 pawnsHashKey;
+
+    uint16_t accumulator[2][128];
 } UNDO_MOVE_STACK;
 
 typedef struct 

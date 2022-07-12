@@ -65,6 +65,8 @@ void UciLoop() {
     initThread.clear();
     initThread.init();
 
+    initThread.isInit = true;
+
     parseFen(START_FEN, &initThread);
 
     quit = false;

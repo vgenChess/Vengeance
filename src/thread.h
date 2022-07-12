@@ -17,6 +17,8 @@ class Thread
 
 public:
 
+	bool isInit = false;
+
 	Side side;
     
 	U16 moves_history_counter;
@@ -29,8 +31,10 @@ public:
     U64 hashKey, pawnsHashKey;
 	U64 occupied, empty;
 
-    U64 whitePieceBB[U8_MAX_PIECES];
-	U64 blackPieceBB[U8_MAX_PIECES];
+    alignas(64) U64 whitePieceBB[U8_MAX_PIECES];
+	alignas(64)	U64 blackPieceBB[U8_MAX_PIECES];
+
+	alignas(64) int16_t accumulator[2][NN_SIZE];
 
 	std::vector<MOVE_LIST> moveList;
 	std::vector<PV> pvLine;

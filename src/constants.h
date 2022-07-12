@@ -47,6 +47,9 @@ const float F_PRANK_EXT = 1;
 const float F_PROMOTION_EXT = 0.75;
 const float F_SINGULAR_EXT = 1.25;
 
+
+const int NN_SIZE = 128;
+
 #endif
 
 

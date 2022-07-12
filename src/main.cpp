@@ -27,6 +27,7 @@
 #include "zobrist.h"
 #include "utility.h"
 #include "HashManagement.h"
+#include "nnue.h"
 
 Zobrist Zobrist::objZobrist;
 TimeManager TimeManager::sTimeManager;
@@ -36,6 +37,9 @@ std::vector<HashEntry> HashManager::hashTable;
 
 int main(int argc, char **argv) 
 {    
+
+    loadNetwork();
+
     initLMR();
     initLMP();
     init_king_attacks();

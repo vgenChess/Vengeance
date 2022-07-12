@@ -3,6 +3,7 @@
 
 #include "thread.h"
 #include "search.h"
+#include "nnue.h"
 
 Thread initThread;
 SearchThreadPool searchThreads;
@@ -171,6 +172,9 @@ void SearchThread::initialise()
 
     hashKey = initThread.hashKey;
     pawnsHashKey = initThread.pawnsHashKey;
+
+    refresh_accumulator(this, WHITE);
+    refresh_accumulator(this, BLACK);
 }
 
 void SearchThreadPool::createThreadPool(int n)

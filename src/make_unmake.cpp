@@ -15,6 +15,8 @@
 #include "functions.h"
 #include "constants.h"
 #include "zobrist.h"
+#include "nnue.h"
+#include <string.h>
 
 U64 quiet, prevCap, cap, prevEp, ep, prevCas, cas, check, prom;
 U8 rookCastleFlagMask[64];
@@ -543,6 +545,107 @@ void make_move(int ply, U32 move, Thread *th) {
     
     
     th->hashKey ^= Zobrist::objZobrist.KEY_SIDE_TO_MOVE;
+
+
+    // update accumulator after each move
+
+    if (!th->isInit && piece != DUMMY) {
+
+
+        memcpy(th->undoMoveStack[ply].accumulator[WHITE],
+                 th->accumulator[WHITE], sizeof(int16_t) * NN_SIZE);
+        memcpy(th->undoMoveStack[ply].accumulator[BLACK],
+                 th->accumulator[BLACK], sizeof(int16_t) * NN_SIZE);
+
+
+        if (piece == KING || mtype == MOVE_CASTLE) {
+
+            refresh_accumulator(th, WHITE);
+            refresh_accumulator(th, BLACK);
+        } else {
+
+            // TODO check logic
+
+            std::vector<int> white_added_features;
+            std::vector<int> white_removed_features;
+            std::vector<int> black_added_features;
+            std::vector<int> black_removed_features;
+
+
+            auto p = piece - 1;
+            auto cp = target - 1;
+
+            auto wKingSq = GET_POSITION(th->whitePieceBB[KING]);
+            auto bKingSq = GET_POSITION(th->blackPieceBB[KING]) ^ 63;
+
+            auto fromW = fromSq;
+            auto toW = toSq;
+
+            auto fromB = fromSq ^ 63;
+            auto toB = toSq ^ 63;
+
+            auto indexW = (p << 1) + stm;
+            auto indexB = (p << 1) + (1 - stm);
+
+
+            auto featureW = (640 * wKingSq) + (64 * indexW) + (fromW);
+            auto featureB = (640 * bKingSq) + (64 * indexB) + (fromB);
+
+            // remove the feature index from the initial position
+            white_removed_features.push_back(featureW);
+            black_removed_features.push_back(featureB);
+
+
+            if (mtype == MOVE_PROMOTION) {
+
+                int pType = promType(move);
+
+                if (pType == PROMOTE_TO_QUEEN)  p = QUEEN - 1;
+                if (pType == PROMOTE_TO_ROOK)   p = ROOKS - 1;
+                if (pType == PROMOTE_TO_BISHOP) p = BISHOPS - 1;
+                if (pType == PROMOTE_TO_KNIGHT) p = KNIGHTS - 1;
+
+                indexW = (p << 1) + stm;
+                indexB = (p << 1) + (1 - stm);
+            }
+
+            featureW = (640 * wKingSq) + (64 * indexW) + (toW);
+            featureB = (640 * bKingSq) + (64 * indexB) + (toB);
+
+
+            // add the feature index to the destination position
+            white_added_features.push_back(featureW);
+            black_added_features.push_back(featureB);
+
+
+            auto target_piece_side = 1 - stm;
+
+            if ((  mtype == MOVE_CAPTURE
+                || mtype == MOVE_PROMOTION
+                || mtype == MOVE_ENPASSANT)
+                && target != DUMMY) {
+
+                indexW = (cp << 1) + target_piece_side;
+                indexB = (cp << 1) + 1 - target_piece_side;
+
+                const auto toSquare =
+                    mtype == MOVE_ENPASSANT ? (stm ? toSq + 8 : toSq - 8) : toSq;
+
+                toW = toSquare;
+                toB = toSquare ^ 63;
+
+                featureW = (640 * wKingSq) + (64 * indexW) + (toW);
+                featureB = (640 * bKingSq) + (64 * indexB) + (toB);
+
+                // remove any feature index of the captured piece
+                white_removed_features.push_back(featureW);
+                black_removed_features.push_back(featureB);
+            }
+
+            update_accumulator(th, white_removed_features, white_added_features, WHITE);
+            update_accumulator(th, black_removed_features, black_added_features, BLACK);
+        }
+    }
 }
 
 
@@ -747,10 +850,23 @@ void unmake_move(int ply, U32 move, Thread *th) {
             break;
         }
     }
-    
-    
+
+
     th->occupied = th->whitePieceBB[PIECES] | th->blackPieceBB[PIECES];
     th->empty = ~(th->occupied);
+
+
+    if (!th->isInit) {
+
+
+        memcpy(th->accumulator[WHITE],
+               th->undoMoveStack[ply].accumulator[WHITE],
+               sizeof(int16_t) * NN_SIZE);
+
+        memcpy(th->accumulator[BLACK],
+               th->undoMoveStack[ply].accumulator[BLACK],
+               sizeof(int16_t) * NN_SIZE);
+    }
 }
 
 
@@ -772,6 +888,15 @@ void makeNullMove(int ply, Thread *th) { // Needs investigation
     
     
     th->hashKey ^= Zobrist::objZobrist.KEY_SIDE_TO_MOVE;
+
+
+    if (!th->isInit) {
+
+        memcpy(th->undoMoveStack[ply].accumulator[WHITE],
+               th->accumulator[WHITE], sizeof(int16_t) * NN_SIZE);
+        memcpy(th->undoMoveStack[ply].accumulator[BLACK],
+               th->accumulator[BLACK], sizeof(int16_t) * NN_SIZE);
+    }
 }
 
 
@@ -787,6 +912,19 @@ void unmakeNullMove(int ply, Thread *th) {
     const auto mhCounter = th->moves_history_counter + ply; // Needs investigation
     
     th->movesHistory[mhCounter].fiftyMovesCounter = th->undoMoveStack[ply].fiftyMovesCounter;
+
+
+    if (!th->isInit) {
+
+
+        memcpy(th->accumulator[WHITE],
+               th->undoMoveStack[ply].accumulator[WHITE],
+               sizeof(int16_t) * NN_SIZE);
+
+        memcpy(th->accumulator[BLACK],
+               th->undoMoveStack[ply].accumulator[BLACK],
+               sizeof(int16_t) * NN_SIZE);
+    }
 }
 
 

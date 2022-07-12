@@ -36,6 +36,7 @@
 #include "misc.h"
 #include "TimeManagement.h"
 #include "HashManagement.h"
+#include "nnue.h"
 
 bool SearchThread::abortSearch = false, SearchThread::stopSearch = false;
 int option_thread_count, stableMoveCount = 0, MAX_DEPTH = 100, LMR[64][64], LMP[2][U8_LMP_DEPTH];
@@ -402,8 +403,8 @@ int alphabeta(int alpha, int beta, const int mate, SearchThread *th, SearchInfo 
    
     const auto sEval =    isSingularSearch  ?   th->moveStack[ply].sEval 
                         : isInCheck         ?   I32_UNKNOWN 
-                        : hashHit           ?   ((hashEntry->sEval == I32_UNKNOWN) ? fullEval(stm, th) : hashEntry->sEval) 
-                        : fullEval(stm, th);
+                        : hashHit           ?   ((hashEntry->sEval == I32_UNKNOWN) ? predict(stm, th) : hashEntry->sEval)
+                        : predict(stm, th);
 
     const auto improving = isInCheck ? false : ply >= 2 ? sEval > th->moveStack[ply - 2].sEval : true;
 
@@ -934,7 +935,7 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
     
     if (ply >= U16_MAX_PLY - 1) 
     {
-        return fullEval(stm, th);
+        return predict(stm, th);
     }
     
     
@@ -965,7 +966,7 @@ int quiescenseSearch(int alpha, int beta, SearchThread *th, SearchInfo* si) {
     int bestScore = -I32_MATE;
 
     auto sEval = hashHit ? ((hashEntry->sEval == I32_UNKNOWN) ? 
-                                    fullEval(stm, th) : hashEntry->sEval) : fullEval(stm, th);
+                                    predict(stm, th) : hashEntry->sEval) : predict(stm, th);
     if (!hashHit)
     {
         th->hashManager.recordHash(th->hashKey, NO_MOVE, I16_NO_DEPTH, I32_UNKNOWN, U8_NO_BOUND, sEval);
