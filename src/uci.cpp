@@ -202,14 +202,14 @@ void UciLoop() {
 
                         TimeManager::sTimeManager.updateTimePerMove((int)fmin(time * 0.33, total / 20.0));
                     } else {
-                    
-                        const auto total = (int)fmax(1, time + movesToGo * inc - MOVE_OVERHEAD);
-                        
+
+                        const auto total = (int)std::max(1.0f, (float)(time + movesToGo * inc - MOVE_OVERHEAD));
+
                         TimeManager::sTimeManager.updateTimePerMove(total / movesToGo);
                     }
-                    
+
                     TimeManager::sTimeManager.setStopTime(
-                        TimeManager::sTimeManager.getStartTime() + std::chrono::milliseconds((int)(time * 0.75)));           
+                        TimeManager::sTimeManager.getStartTime() + std::chrono::milliseconds((int)(time * 0.75)));
                 } else {
 
                     TimeManager::sTimeManager.updateTimeSet(false);

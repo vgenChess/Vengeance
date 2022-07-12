@@ -67,6 +67,8 @@ public:
 
 	U64 nodes, ttHits;
     
+	int stableMoveCount;
+
     std::thread mThread;
 
 	std::mutex mMutex;

@@ -111,7 +111,7 @@ void iterativeDeepening(SearchThread *th)
     th->depth = I16_NO_DEPTH;
     th->completedDepth = I16_NO_DEPTH;
 
-    stableMoveCount = 0;
+    th->stableMoveCount = 0;
 
     for (int depth = 1; depth < MAX_DEPTH; depth++) 
     {
@@ -129,40 +129,50 @@ void iterativeDeepening(SearchThread *th)
             continue;
         }
         
-        const auto completedDepth = th->completedDepth;
-        if (TimeManager::sTimeManager.isTimeSet() && completedDepth >= 4) 
+        if (TimeManager::sTimeManager.isTimeSet() && th->completedDepth >= 4)
         {
-            // score change
-            int prevScore = th->pvLine[completedDepth-3].score;
-            int currentScore = th->pvLine[completedDepth].score;
+            float multiplier = 1;
+            const auto timePerMove = TimeManager::sTimeManager.getTimePerMove();
 
-            const auto scoreChangeFactor = prevScore > currentScore ? 
-                fmax(0.5, fmin(1.5, ((prevScore - currentScore) * 0.05))) : 0.5;
-            
-            // best move change
-            assert(th->pvLine[completedDepth].line[0] != NO_MOVE 
+            const auto completedDepth = th->completedDepth;
+
+            const auto prevScore = th->pvLine[completedDepth-3].score;
+            const auto currentScore = th->pvLine[completedDepth].score;
+
+            // reduce time for winning scores
+            if (std::abs(currentScore) >= 10000) {
+
+                multiplier = 0.5;
+            } else {
+
+                auto scoreDiff = prevScore - currentScore;
+
+                     if (scoreDiff < 10) multiplier = 0.5;
+                else if (scoreDiff > 40) multiplier = 1.5;
+                else if (scoreDiff > 25) multiplier = 1.3;
+                else if (scoreDiff > 15) multiplier = 1.15;
+            }
+
+
+            // Stable Move
+
+            assert(th->pvLine[completedDepth].line[0] != NO_MOVE
                 && th->pvLine[completedDepth-1].line[0] != NO_MOVE);
 
             const auto previousMove = th->pvLine[completedDepth-1].line[0];
             const auto currentMove = th->pvLine[completedDepth].line[0];
-            
-            stableMoveCount = previousMove == currentMove ? stableMoveCount + 1 : 0;
-            stableMoveCount = std::min(10, stableMoveCount);
 
-            const auto stableMoveFactor =  1.25 - stableMoveCount * 0.05;
+            th->stableMoveCount = previousMove == currentMove ? th->stableMoveCount + 1 : 0;
 
-            
-            // win factor
-            const auto winFactor = currentScore >= U16_WIN_SCORE ? 0.5 : 1;
-            
-            
-            const auto totalFactor = scoreChangeFactor * stableMoveFactor * winFactor;
-            
-            // Check for time 
-            if (TimeManager::sTimeManager.time_elapsed_milliseconds(TimeManager::sTimeManager.getStartTime()) 
-                    > (TimeManager::sTimeManager.getTimePerMove() * totalFactor)) 
-            {
+            if (th->stableMoveCount > 7)
+                multiplier = 0.5;
+
+
+            if (TimeManager::sTimeManager.time_elapsed_milliseconds(
+                TimeManager::sTimeManager.getStartTime()) >= timePerMove * multiplier) {
+
                 SearchThread::stopSearch = true;
+
                 break;
             }
         }
