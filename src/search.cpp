@@ -22,7 +22,6 @@
 #include <cstdint>
 
 #include "search.h"
-#include "evaluate.h"
 #include "movegen.h"
 #include "make_unmake.h"
 #include "utility.h"

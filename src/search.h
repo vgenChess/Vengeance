@@ -8,7 +8,6 @@
 #include "types.h"
 #include "functions.h"
 #include "thread.h"
-#include "evaluate.h"
 
 void initLMR();
 void initLMP();

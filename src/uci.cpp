@@ -23,13 +23,12 @@
 #include "movegen.h"
 #include "search.h"
 #include "perft.h"
-#include "evaluate.h"
 #include "thread.h"
-#include "tuner.h"
 #include "ucireport.h"
 #include "functions.h"
 #include "see.h"
 #include "time.h"
+#include "nnue.h"
 
 #define NAME "V0.9"
 #define START_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -267,13 +266,13 @@ void UciLoop() {
             print_board(initThread.occupied, &initThread);
             printf("\n\n");
 
-            int scoreWhite = fullEval(WHITE, &initThread);
+            int scoreWhite = predict(WHITE, &initThread);
             
             printf("White score = %d\n", scoreWhite);
             
             printf("\n");
 
-            int scoreBlack = fullEval(BLACK, &initThread);
+            int scoreBlack = predict(BLACK, &initThread);
 
             printf("Black score = %d\n", scoreBlack);
         } 
