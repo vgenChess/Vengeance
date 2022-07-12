@@ -277,15 +277,6 @@ void UciLoop() {
             printf("Black score = %d\n", scoreBlack);
         } 
 
-        else if (token == "tune") {
-            
-            #if defined(TUNE)
-                std::cout<<"starting tuner..."<<std::endl; 
-                startTuner();
-            #else
-                std::cout<<"Not a tuning build. TUNE not set." << std::endl;
-            #endif
-        } 
 
         else if (token == "see") {
 

@@ -1,11 +1,7 @@
 #!/bin/bash
 
-# get current branch and push
+# get current branch
 current_branch=$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')
-
-# git pull
-git pull origin "$current_branch"
-echo "====pull changes from '$current_branch' branch"
 
 # get the argument message
 message="$1"
@@ -24,6 +20,4 @@ echo "====staged all git files"
 git commit -m "$message"
 echo "====added the commit with message: '$message'"
 
-# git push
-git push origin "$current_branch"
-echo "====pushed changes to '$current_branch' branch"
+
