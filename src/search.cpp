@@ -336,14 +336,17 @@ void aspirationWindow(int index, GameInfo *gi)
     assert (score > alpha && score < beta);
 
 
-    auto time_elapsed_milliseconds = TimeManager::sTm.time_elapsed_milliseconds(
-        TimeManager::sTm.getStartTime()
-    );
+    if (index == 0) {
 
-     if (index == 0 && ((gi->depth > 1 && time_elapsed_milliseconds >= 3000))) {
+        auto time_elapsed_milliseconds = TimeManager::sTm.time_elapsed_milliseconds(
+            TimeManager::sTm.getStartTime()
+        );
 
-        reportPV(infos[0], getStats<NODES>(), getStats<TTHITS>());
-     }
+        if (gi->depth > 1 && time_elapsed_milliseconds >= 3000) {
+
+            reportPV(infos[0], getStats<NODES>(), getStats<TTHITS>());
+        }
+    }
 }
 
 
