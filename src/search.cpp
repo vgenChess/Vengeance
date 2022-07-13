@@ -134,9 +134,33 @@ void startSearch(int index, GameInfo *gi)
         th.join();
 
 
-    // TODO implement best thread
+    // Display the best move
 
-    U32 bestMove = infos[0]->pvLine[infos[0]->completedDepth].line[0];
+    auto bestThread = infos[0];
+
+    int bestThreadDepth, currentThreadDepth;
+    int bestThreadScore, currentThreadScore;
+
+    GameInfo* th;
+    for (uint16_t i = 1; i < infos.size(); i++)
+    {
+        th = infos[i];
+
+        bestThreadDepth = bestThread->completedDepth;
+        currentThreadDepth = th->completedDepth;
+
+        bestThreadScore = bestThread->pvLine[bestThreadDepth].score;
+        currentThreadScore = th->pvLine[currentThreadDepth].score;
+
+        if (    currentThreadScore > bestThreadScore
+            &&  currentThreadDepth > bestThreadDepth)
+        {
+            bestThread = th;
+        }
+    }
+
+
+    U32 bestMove = bestThread->pvLine[infos[0]->completedDepth].line[0];
 
     std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
 
