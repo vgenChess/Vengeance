@@ -156,24 +156,23 @@ void startSearch(int index, GameInfo *gi)
     auto bestIndex = 0;
     auto bestThread = infos[0];
 
-    int bestThreadDepth, currentThreadDepth;
-    int bestThreadScore, currentThreadScore;
+    int bestDepth, currentDepth;
+    int bestScore, currentScore;
 
-    GameInfo* th;
     for (uint16_t i = 1; i < infos.size(); i++)
     {
-        th = infos[i];
+        GameInfo* g = infos[i];
 
-        bestThreadDepth = bestThread->completedDepth;
-        currentThreadDepth = th->completedDepth;
+        bestDepth = bestThread->completedDepth;
+        currentDepth = g->completedDepth;
 
-        bestThreadScore = bestThread->pvLine[bestThreadDepth].score;
-        currentThreadScore = th->pvLine[currentThreadDepth].score;
+        bestScore = bestThread->pvLine[bestDepth].score;
+        currentScore = g->pvLine[currentDepth].score;
 
-        if (    currentThreadScore > bestThreadScore
-            &&  currentThreadDepth > bestThreadDepth)
+        if (    currentScore > bestScore
+            &&  currentDepth > bestDepth)
         {
-            bestThread = th;
+            bestThread = g;
             bestIndex = i;
         }
     }

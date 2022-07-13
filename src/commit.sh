@@ -1,5 +1,7 @@
 #!/bin/bash
 
+make clean
+
 # get current branch
 current_branch=$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')
 
