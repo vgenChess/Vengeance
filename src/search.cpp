@@ -160,7 +160,7 @@ void startSearch(int index, GameInfo *gi)
     }
 
 
-    U32 bestMove = bestThread->pvLine[infos[0]->completedDepth].line[0];
+    U32 bestMove = bestThread->pvLine[bestThread->completedDepth].line[0];
 
     std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
 
