@@ -73,6 +73,7 @@ void initLMP()
 
 void spawnThreads(GameInfo *gameInfo ) {
 
+
     for (int count = 1; count < option_thread_count; count++) {
 
         GameInfo *lGi = new GameInfo();
@@ -122,6 +123,9 @@ void startSearch(int index, GameInfo *gi)
 
         search<BLACK>(index, gi);
     }
+
+
+    assert(index == 0);
 
 
     GameInfo::abortSearch = true;
@@ -382,8 +386,6 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
         &&  TimeManager::sTimeManager.isTimeSet()
         &&  gi->nodes % CHECK_NODES == 0)
     {
-        std::cout << "." ;
-
         checkTime();
     }
     
