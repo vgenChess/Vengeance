@@ -49,6 +49,23 @@ int fmargin[4] = { 0, 200, 300, 500 };
 std::vector<std::thread> threads;
 std::vector<GameInfo*> infos;
 
+enum Stats {
+
+    NODES, TTHITS
+};
+
+template<Stats stats>
+inline U64 getStats() {
+
+    U64 sum = 0;
+    for (GameInfo *gi : infos) {
+
+        sum += stats == NODES ? gi->nodes : (stats == TTHITS ? gi->ttHits : 0);
+    }
+
+    return sum;
+}
+
 void initLMR() 
 {
     const float a = 0.1, b = 2;
@@ -136,6 +153,7 @@ void startSearch(int index, GameInfo *gi)
 
     // Display the best move
 
+    auto bestIndex = 0;
     auto bestThread = infos[0];
 
     int bestThreadDepth, currentThreadDepth;
@@ -156,9 +174,13 @@ void startSearch(int index, GameInfo *gi)
             &&  currentThreadDepth > bestThreadDepth)
         {
             bestThread = th;
+            bestIndex = i;
         }
     }
 
+
+    if (bestIndex != 0)
+        reportPV(bestThread, getStats<NODES>(), getStats<TTHITS>());
 
     U32 bestMove = bestThread->pvLine[bestThread->completedDepth].line[0];
 
@@ -247,25 +269,6 @@ void iterativeDeepening(int index, GameInfo *gi)
             }
         }
     } 
-}
-
-
-
-enum Stats {
-
-    NODES, TTHITS
-};
-
-template<Stats stats>
-inline U64 getStats() {
-
-    U64 sum = 0;
-    for (GameInfo *gi : infos) {
-
-        sum += stats == NODES ? gi->nodes : (stats == TTHITS ? gi->ttHits : 0);
-    }
-
-    return sum;
 }
 
 
