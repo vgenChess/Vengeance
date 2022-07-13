@@ -90,114 +90,98 @@ void initLMP()
 }
 
 
-void spawnThreads(GameInfo *gameInfo ) {
-
-
-    for (int count = 1; count < option_thread_count; count++) {
-
-        GameInfo *lGi = new GameInfo();
-
-        lGi->clone( gameInfo );
-
-        refresh_accumulator( lGi, WHITE);
-        refresh_accumulator( lGi, BLACK);
-
-        infos.push_back( lGi );
-
-        if ( lGi->stm == WHITE)
-            threads.emplace_back(search<WHITE>, count, lGi );
-        else
-            threads.emplace_back(search<BLACK>, count, lGi );
-    }
-}
-
-
 // FIXME during last move all time is used up and it loses on time
 void startSearch(int index, GameInfo *gi)
 {
     // only the main thread should be able to call this function
-    assert(index == 0);
 
-    HashManager::age++;
+    if (index == 0) {
 
-    GameInfo::searching = true;
-    GameInfo::abortSearch = false;
+        HashManager::age++;
 
-    threads.clear();
-    infos.clear();
+        GameInfo::searching = true;
+        GameInfo::abortSearch = false;
 
-    refresh_accumulator(gi, WHITE);
-    refresh_accumulator(gi, BLACK);
+        threads.clear();
+        infos.clear();
 
-    infos.push_back(gi);
+        refresh_accumulator(gi, WHITE);
+        refresh_accumulator(gi, BLACK);
 
-
-    spawnThreads(gi);
+        infos.push_back(gi);
 
 
-    if (gi->stm == WHITE) {
+        // Spawn threads
 
-        search<WHITE>(index, gi);
-    } else {
+        for (int i = 1; i < option_thread_count; i++) {
 
-        search<BLACK>(index, gi);
-    }
+            GameInfo *lGi = new GameInfo();
 
+            lGi->clone( gi );
 
-    assert(index == 0);
+            refresh_accumulator( lGi, WHITE);
+            refresh_accumulator( lGi, BLACK);
 
+            infos.push_back( lGi );
 
-    GameInfo::abortSearch = true;
-
-    for (std::thread& th: threads)
-        th.join();
-
-
-    // Display the best move
-
-    auto bestIndex = 0;
-    auto bestThread = infos[0];
-
-    int bestDepth, currentDepth;
-    int bestScore, currentScore;
-
-    for (uint16_t i = 1; i < infos.size(); i++)
-    {
-        GameInfo* g = infos[i];
-
-        bestDepth = bestThread->completedDepth;
-        currentDepth = g->completedDepth;
-
-        bestScore = bestThread->pvLine[bestDepth].score;
-        currentScore = g->pvLine[currentDepth].score;
-
-        if (    currentScore > bestScore
-            &&  currentDepth > bestDepth)
-        {
-            bestThread = g;
-            bestIndex = i;
+            threads.emplace_back(startSearch, i, lGi);
         }
+
     }
 
 
-    if (bestIndex != 0)
-        reportPV(bestThread, getStats<NODES>(), getStats<TTHITS>());
-
-    U32 bestMove = bestThread->pvLine[bestThread->completedDepth].line[0];
-
-    std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
-
-    TimeManager::sTm.updateTimeSet(false);
-    TimeManager::sTm.updateStopped(false);
-
-    GameInfo::searching = false;
-}
+    if (gi->stm == WHITE)
+        iterativeDeepening<WHITE>(index, gi);
+    else
+        iterativeDeepening<BLACK>(index, gi);
 
 
-template<Side stm>
-void search(int index, GameInfo *gi) {
+    if (index == 0) {
 
-    iterativeDeepening<stm>(index, gi);
+        GameInfo::abortSearch = true;
+
+        for (std::thread& th: threads)
+            th.join();
+
+        // Display the best move
+
+        auto bestIndex = 0;
+        auto bestThread = infos[0];
+
+        int bestDepth, currentDepth;
+        int bestScore, currentScore;
+
+        for (uint16_t i = 1; i < infos.size(); i++)
+        {
+            GameInfo* g = infos[i];
+
+            bestDepth = bestThread->completedDepth;
+            currentDepth = g->completedDepth;
+
+            bestScore = bestThread->pvLine[bestDepth].score;
+            currentScore = g->pvLine[currentDepth].score;
+
+            if (    currentScore > bestScore
+                &&  currentDepth > bestDepth)
+            {
+                bestThread = g;
+                bestIndex = i;
+            }
+        }
+
+
+        if (bestIndex != 0)
+            reportPV(bestThread, getStats<NODES>(), getStats<TTHITS>());
+
+        U32 bestMove = bestThread->pvLine[bestThread->completedDepth].line[0];
+
+        std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
+
+        TimeManager::sTm.updateTimeSet(false);
+        TimeManager::sTm.updateStopped(false);
+
+        GameInfo::searching = false;
+    }
 }
 
 
