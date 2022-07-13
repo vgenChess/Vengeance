@@ -19,7 +19,7 @@ private:
 
 public:
     
-    static U8 age;
+    static U16 age;
 
     inline static void initHashTable(int size) 
     {

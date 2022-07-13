@@ -38,8 +38,6 @@ bool quit;
 int option_hash_size;
 int MOVE_OVERHEAD = 300;
 
-U8 HashManager::age;
-
 std::thread searchThread;
 
 void setOption(std::string &line) {

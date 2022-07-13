@@ -37,6 +37,8 @@
 #include "HashManagement.h"
 #include "nnue.h"
 
+U16 HashManager::age = 0;
+
 bool GameInfo::abortSearch = false;
 bool GameInfo::searching = false;
 
@@ -116,7 +118,7 @@ void startSearch(int index, GameInfo *gi)
     // only the main thread should be able to call this function
     assert(index == 0);
 
-    HashManager::age += 1;
+    HashManager::age++;
 
     GameInfo::searching = true;
     GameInfo::abortSearch = false;
