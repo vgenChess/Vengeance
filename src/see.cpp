@@ -7,7 +7,7 @@
 
 int SEE_VALUE[8] = {0, 100, 300, 300, 500, 900, 2000, 0}; 
 
-U64 attacksTo(U64 occ, U8 square, U8 sideToMove, Thread *th) { // TODO check logic
+U64 attacksTo(U64 occ, U8 square, U8 sideToMove, GameInfo *th) { // TODO check logic
 
 	U64 attacks = 0ULL;
 	U64 sqBitboard = 1ULL << square;
@@ -37,7 +37,7 @@ U64 attacksTo(U64 occ, U8 square, U8 sideToMove, Thread *th) { // TODO check log
 	return attacks & occ;
 }
 
-int SEE(Side sideToMove, U32 move, Thread *th) {
+int SEE(Side sideToMove, U32 move, GameInfo *th) {
 
 	int moveType = move_type(move);	
 	if (moveType == MOVE_CASTLE || moveType == MOVE_ENPASSANT || moveType == MOVE_PROMOTION) 

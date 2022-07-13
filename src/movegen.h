@@ -15,18 +15,18 @@
 #include "thread.h"
 #include "structs.h"
 
-void genMoves(Side stm, int ply, std::vector<Move> &moves, Thread *th);
-void genPushes(Side stm, std::vector<Move> &moves, Thread *th);
-void genAttacks(Side stm, int ply, std::vector<Move> &moves, Thread *th);
-void generateCaptures(Side stm, std::vector<Move> &moves, Thread *th);
-void generatePushes(Side stm, std::vector<Move> &moves, Thread *th);
-void genSpecialMoves(Side stm, int ply, std::vector<Move> &moves, Thread *th);
+void genMoves(Side stm, int ply, std::vector<Move> &moves, GameInfo *th);
+void genPushes(Side stm, std::vector<Move> &moves, GameInfo *th);
+void genAttacks(Side stm, int ply, std::vector<Move> &moves, GameInfo *th);
+void generateCaptures(Side stm, std::vector<Move> &moves, GameInfo *th);
+void generatePushes(Side stm, std::vector<Move> &moves, GameInfo *th);
+void genSpecialMoves(Side stm, int ply, std::vector<Move> &moves, GameInfo *th);
 
-void genCastlingMoves(Side stm, int ply, std::vector<Move> &moves, Thread *th);
-void genEnpassantMoves(Side stm, int ply, std::vector<Move> &moves, Thread *th);
-void genPromotionsNormal(Side stm, std::vector<Move> &moves, Thread *th);
-void genPromotionsAttacks(Side stm, std::vector<Move> &moves, Thread *th);
+void genCastlingMoves(Side stm, int ply, std::vector<Move> &moves, GameInfo *th);
+void genEnpassantMoves(Side stm, int ply, std::vector<Move> &moves, GameInfo *th);
+void genPromotionsNormal(Side stm, std::vector<Move> &moves, GameInfo *th);
+void genPromotionsAttacks(Side stm, std::vector<Move> &moves, GameInfo *th);
 
-Move getNextMove(Side stm, int ply, Thread *th, MOVE_LIST *moveList);
+Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList);
 
 #endif /* movegen_h */

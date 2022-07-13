@@ -6,14 +6,14 @@
 #include "magicmoves.h"
 
 extern int MAX_DEPTH;
-extern U8 rookCastleFlagMask[U8_MAX_SQUARES];
+extern U8 rookCastleFlagMask[MAX_SQUARES];
 
-inline bool isRepetition(int ply, Thread *th) 
+inline bool isRepetition(int ply, GameInfo *gi)
 {    
     bool flag = false;
-    for (int i = th->moves_history_counter + ply; i >= 0; i--) 
+    for (int i = gi->moves_history_counter + ply; i >= 0; i--)
     {
-        if (th->movesHistory[i].hashKey == th->hashKey) 
+        if (gi->movesHistory[i].hashKey == gi->hashKey)
         {
             flag = true;
             break;
@@ -24,10 +24,10 @@ inline bool isRepetition(int ply, Thread *th)
 }
 
 template<Side side>
-inline bool isKingInCheck(Thread *th) 
-{    
+inline bool isKingInCheck(GameInfo *gi) {
+
     const auto opp = side == WHITE ? BLACK : WHITE;      
-    const auto kingSq = GET_POSITION(side ? th->blackPieceBB[KING] : th->whitePieceBB[KING]);
+    const auto kingSq = GET_POSITION(side ? gi->blackPieceBB[KING] : gi->whitePieceBB[KING]);
     
     // Staggered check to return early saving time
     
@@ -35,43 +35,43 @@ inline bool isKingInCheck(Thread *th)
     
     attacks = get_knight_attacks(kingSq);        
     
-    if (attacks & (opp == WHITE ? th->whitePieceBB[KNIGHTS] : th->blackPieceBB[KNIGHTS]))
+    if (attacks & (opp == WHITE ? gi->whitePieceBB[KNIGHTS] : gi->blackPieceBB[KNIGHTS]))
     {
         return true;
     }
     
-    attacks = Bmagic(kingSq, th->occupied);
+    attacks = Bmagic(kingSq, gi->occupied);
     
-    if (attacks & (opp == WHITE ? th->whitePieceBB[BISHOPS] : th->blackPieceBB[BISHOPS]))
+    if (attacks & (opp == WHITE ? gi->whitePieceBB[BISHOPS] : gi->blackPieceBB[BISHOPS]))
     {
         return true;
     }
-    if (attacks & (opp == WHITE ? th->whitePieceBB[QUEEN] : th->blackPieceBB[QUEEN]))
+    if (attacks & (opp == WHITE ? gi->whitePieceBB[QUEEN] : gi->blackPieceBB[QUEEN]))
     {
         return true;
     }
     
-    attacks = Rmagic(kingSq, th->occupied);
+    attacks = Rmagic(kingSq, gi->occupied);
     
-    if (attacks & (opp == WHITE ? th->whitePieceBB[ROOKS] : th->blackPieceBB[ROOKS]))
+    if (attacks & (opp == WHITE ? gi->whitePieceBB[ROOKS] : gi->blackPieceBB[ROOKS]))
     {
         return true;
     }
-    if (attacks & (opp == WHITE ? th->whitePieceBB[QUEEN] : th->blackPieceBB[QUEEN]))
+    if (attacks & (opp == WHITE ? gi->whitePieceBB[QUEEN] : gi->blackPieceBB[QUEEN]))
     {
         return true;
     }
     
     attacks = get_king_attacks(kingSq);
     
-    if (attacks & (opp == WHITE ? th->whitePieceBB[KING] : th->blackPieceBB[KING])) 
+    if (attacks & (opp == WHITE ? gi->whitePieceBB[KING] : gi->blackPieceBB[KING]))
     {
         return true;        
     }
     
     attacks = opp == WHITE ? 
-    wPawnWestAttacks(th->whitePieceBB[PAWNS]) | wPawnEastAttacks(th->whitePieceBB[PAWNS]) :
-    bPawnWestAttacks(th->blackPieceBB[PAWNS]) | bPawnEastAttacks(th->blackPieceBB[PAWNS]);
+    wPawnWestAttacks(gi->whitePieceBB[PAWNS]) | wPawnEastAttacks(gi->whitePieceBB[PAWNS]) :
+    bPawnWestAttacks(gi->blackPieceBB[PAWNS]) | bPawnEastAttacks(gi->blackPieceBB[PAWNS]);
     
     if (attacks & (1ULL << kingSq))
     {

@@ -2,6 +2,7 @@
 #define ZOBRIST_H
 
 #include "types.h"
+#include "constants.h"
  
  class Zobrist {
      
@@ -20,8 +21,8 @@
      
      static Zobrist objZobrist;
      
-     U64 zobristKey[U8_MAX_PIECES][U8_MAX_SIDES][U8_MAX_SQUARES];
-     U64 pawnZobristKey[U8_MAX_SQUARES];
+     U64 zobristKey[MAX_PIECES][MAX_SIDES][MAX_SQUARES];
+     U64 pawnZobristKey[MAX_SQUARES];
      
      U64 KEY_EP_A_FILE;
      U64 KEY_EP_B_FILE;
@@ -39,9 +40,9 @@
      
      void initZobristKeys() {
          
-         for (int i = 0; i < U8_MAX_PIECES; i++) {
-             for (int j = 0; j < U8_MAX_SIDES; j++) {
-                 for (int k = 0; k < U8_MAX_SQUARES; k++) {
+         for (int i = 0; i < MAX_PIECES; i++) {
+             for (int j = 0; j < MAX_SIDES; j++) {
+                 for (int k = 0; k < MAX_SQUARES; k++) {
                      
                      zobristKey[i][j][k] = KISS;
                  }            

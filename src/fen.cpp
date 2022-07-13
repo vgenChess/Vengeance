@@ -40,7 +40,7 @@ size_t split(const std::string &txt, std::vector<std::string> &strs, char ch) {
 }
 
 
-Side parseFen(std::string str, Thread *th) {
+Side parseFen(std::string str, GameInfo *th) {
 
 
     th->hashKey = 0ULL;

@@ -30,19 +30,19 @@ inline std::string getMoveNotation(const U32 move) {
     return str;
 }
 
-inline void reportPV(SearchThread *th) {
+inline void reportPV(GameInfo *gi, U64 totalNodes, U64 totalTTHits) {
 
-    const auto depth = th->completedDepth;
-    const auto selDepth = th->selDepth;
-    const auto pvLine = th->pvLine[th->completedDepth].line;
+    const auto depth = gi->completedDepth;
+    const auto selDepth = gi->selDepth;
+    const auto pvLine = gi->pvLine[gi->completedDepth].line;
 
-    int score = th->pvLine[th->completedDepth].score;
+    int score = gi->pvLine[gi->completedDepth].score;
     
     std::cout << "info depth " << depth << " seldepth " << selDepth; 
     std::cout << " time " << TimeManager::time_elapsed_milliseconds(
          TimeManager::sTimeManager.getStartTime()); 
-    std::cout << " nodes " << searchThreads.totalNodes();
-    std::cout/*<< " hashfull " << hashfull()*/ << " tbhits " << searchThreads.totalTTHits();
+    std::cout << " nodes " << totalNodes;
+    std::cout/*<< " hashfull " << hashfull()*/ << " tbhits " << totalTTHits;
     std::cout << " score cp " << score << " pv";
     
     U32 move;
@@ -59,18 +59,6 @@ inline void reportPV(SearchThread *th) {
     }
     
     std::cout << "\n";
-}
-
-inline void reportBestMove() {
-
-    auto bestThread = searchThreads.getBestThread();
-
-    if (bestThread != searchThreads.getMainSearchThread())
-        reportPV(bestThread);
-
-    U32 bestMove = bestThread->pvLine[bestThread->completedDepth].line[0];
-
-    std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
 }
 
 #endif

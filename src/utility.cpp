@@ -57,7 +57,7 @@ void print_bb(U64 board) {
     printf(" ---------- \n");
 }
 
-void print_board(U64 board, Thread *th) {
+void print_board(U64 board, GameInfo *th) {
 
     printf("\n -------------------- \n");
     printf("|                    |");
@@ -139,7 +139,7 @@ U64 flipVertical(U64 x) {
             ( (x >> 56) );
 }
 
-U64 getAttacks(const U8 stm, Thread *th) {
+U64 getAttacks(const U8 stm, GameInfo *th) {
 
     U64 attacks = 0ULL, b;
 
@@ -186,7 +186,7 @@ U64 getAttacks(const U8 stm, Thread *th) {
  * Function to check if a kingSq is attacked.
  * @return true or false
  */
-bool isSqAttacked(U8 sq, U8 side, Thread *th) {
+bool isSqAttacked(U8 sq, U8 side, GameInfo *th) {
     
     U64 attacks;
     
@@ -414,7 +414,7 @@ std::string algSq[64] = {
     "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
 }; 
 
-int divide(U8 depth, U8 sideToMove, Thread *th) {
+int divide(U8 depth, U8 sideToMove, GameInfo *th) {
     
     char pieceName[2][8] = { { ' ', (char) 0, 'N', 'B', 'R', 'Q', 'K', '\0'}, { ' ', (char) 0, 'n', 'b', 'r', 'q', 'k', '\0'}};
     
@@ -504,7 +504,7 @@ int divide(U8 depth, U8 sideToMove, Thread *th) {
     return 0;
 }
 
-void initHashKey(Thread *th) {
+void initHashKey( GameInfo *th) {
 	
     int sq;
 	U64 bitboard;
@@ -533,7 +533,7 @@ void initHashKey(Thread *th) {
     th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE; 
 }
 
-void initPawnHashKey(U8 side, Thread *th) {
+void initPawnHashKey(U8 side, GameInfo *th) {
 
     U64 bitboard = th->blackPieceBB[PAWNS] | th->whitePieceBB[PAWNS];
     
@@ -553,7 +553,7 @@ void initPawnHashKey(U8 side, Thread *th) {
 }
 
 
-void initMovesHistoryTable(Thread *th) {
+void initMovesHistoryTable( GameInfo *th) {
 	
 	for (int i = 0; i < U16_MAX_PLY; i++) {
 		
@@ -565,7 +565,7 @@ void initMovesHistoryTable(Thread *th) {
     th->moves_history_counter = 0;
 }
 
-void clearKillerMovesTable(Thread *th) {
+void clearKillerMovesTable( GameInfo *th) {
 	
 	for (int i = 0; i < U16_MAX_PLY; i++) {
 
@@ -576,7 +576,7 @@ void clearKillerMovesTable(Thread *th) {
 
 void initCastleMaskAndFlags() 
 {    
-    for (int i = 0; i < U8_MAX_SQUARES; i++) 
+    for (int i = 0; i < MAX_SQUARES; i++) 
     {
         rookCastleFlagMask[i] = 15;
     }
@@ -589,9 +589,9 @@ void initCastleMaskAndFlags()
 
 void init_inbetween_bb() 
 {    
-    for (int i = 0; i < U8_MAX_SQUARES; i++) 
+    for (int i = 0; i < MAX_SQUARES; i++) 
     {
-        for(int j = 0; j < U8_MAX_SQUARES; j++) 
+        for(int j = 0; j < MAX_SQUARES; j++) 
         {
             arrInBetween[i][j] = inBetweenOnTheFly(i, j);
         }
@@ -634,7 +634,7 @@ U64 xrayBishopAttacks(U64 occ, U64 blockers, U8 bishopSq) {
    return attacks ^ Bmagic(bishopSq, occ ^ blockers);
 }
 
-U64 pinners(U8 kingSq, U8 side, Thread *th) {
+U64 pinners(U8 kingSq, U8 side, GameInfo *th) {
 
     U64 pinners1 = xrayRookAttacks(th->occupied, side ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES],
                                    kingSq) & (side ^ 1 ? th->blackPieceBB[ROOKS] | th->blackPieceBB[QUEEN] : th->whitePieceBB[ROOKS] | th->whitePieceBB[QUEEN]);
@@ -646,7 +646,7 @@ U64 pinners(U8 kingSq, U8 side, Thread *th) {
     return pinners1 | pinners2;
 }
 
-U64 pinnedPieces(U8 kingSq, U8 side, Thread *th) {
+U64 pinnedPieces(U8 kingSq, U8 side, GameInfo *th) {
 
     U64 pinned = 0ULL;
     
@@ -671,7 +671,7 @@ U64 pinnedPieces(U8 kingSq, U8 side, Thread *th) {
     return pinned;
 }
 
-U64 pinned(U64 pinners, U8 kingSq, U8 side, Thread *th) 
+U64 pinned(U64 pinners, U8 kingSq, U8 side, GameInfo *th) 
 {
     U64 pinned = 0ULL;
     

@@ -6,20 +6,31 @@
 #include <mutex>
 #include <thread>
 #include <vector>
+#include <cstring>
 
 #include "constants.h"
 #include "classes.h"
 #include "structs.h"
 #include "HashManagement.h"
 
-class Thread 
-{
 
+class GameInfo
+{
 public:
+
+	static bool abortSearch, stopSearch;
+
+    bool mTerminate, mSearching;
+
+	int mIndex, depth, completedDepth, selDepth;
+
+	U64 nodes, ttHits;
+
+	int stableMoveCount;
 
 	bool isInit = false;
 
-	Side side;
+	Side stm;
     
 	U16 moves_history_counter;
 
@@ -31,8 +42,8 @@ public:
     U64 hashKey, pawnsHashKey;
 	U64 occupied, empty;
 
-    alignas(64) U64 whitePieceBB[U8_MAX_PIECES];
-	alignas(64)	U64 blackPieceBB[U8_MAX_PIECES];
+    alignas(64) U64 whitePieceBB[MAX_PIECES];
+	alignas(64)	U64 blackPieceBB[MAX_PIECES];
 
 	alignas(64) int16_t accumulator[2][NN_SIZE];
 
@@ -47,90 +58,40 @@ public:
     EvalInfo evalInfo;
     HashManager hashManager;
 
-	Thread();
-    ~Thread();
+	GameInfo();
+    ~GameInfo();
 
-    void init();
+	void init();
 	void clear();
+
+	void clone(GameInfo *gameInfo) {
+
+		stm = gameInfo->stm;
+
+		moveStack[0].castleFlags = gameInfo->moveStack[0].castleFlags;
+		moveStack[0].epFlag = gameInfo->moveStack[0].epFlag;
+		moveStack[0].epSquare = gameInfo->moveStack[0].epSquare;
+
+		for (int i = 0; i < 8192; i++)
+		{
+			movesHistory[i].hashKey = gameInfo->movesHistory[i].hashKey;
+			movesHistory[i].fiftyMovesCounter = gameInfo->movesHistory[i].fiftyMovesCounter;
+		}
+
+		moves_history_counter = gameInfo->moves_history_counter;
+
+		memcpy(whitePieceBB, gameInfo->whitePieceBB, sizeof(U64) * MAX_PIECES);
+		memcpy(blackPieceBB, gameInfo->blackPieceBB, sizeof(U64) * MAX_PIECES);
+
+		occupied = gameInfo->occupied;
+		empty = gameInfo->empty;
+
+		hashKey = gameInfo->hashKey;
+		pawnsHashKey = gameInfo->pawnsHashKey;
+	}
 };
 
-class SearchThread : public Thread 
-{
 
-public:
-
-	static bool abortSearch, stopSearch;
-    
-    bool mTerminate, mSearching;
-
-	int mIndex, depth, completedDepth, selDepth;
-
-	U64 nodes, ttHits;
-    
-	int stableMoveCount;
-
-    std::thread mThread;
-
-	std::mutex mMutex;
-	std::condition_variable mCv;
-	
-	SearchThread(int index);
-	~SearchThread();
-
-	int getIndex() { return mIndex; }
-	
-	void initialise();
-	void search();
-	void startSearch(Side stm);
-	void waitIfSearching();
-	void searchThreadLifeCycle();
-};
-
-class SearchThreadPool 
-{
-
-std::vector<SearchThread*> threads;
-
-public:
-
-	void createThreadPool(int n);
-	void clear();
-	void waitForAll();
-
-	U64 totalNodes();
-	U64 totalTTHits();
-
-	SearchThread* getMainSearchThread();
-	SearchThread* getBestThread();
-
-    std::vector<SearchThread*> getSearchThreads();
-    
-    template <bool isInit>
-    void search()
-    {
-        auto mainThread = threads[0];
-
-        if (isInit) {
-            
-            mainThread->waitIfSearching();
-            
-            SearchThread::stopSearch = false;
-            
-            for (SearchThread* th : threads) th->initialise();
-            
-            mainThread->search();
-        } 
-        else 
-        {
-            for (SearchThread* th : threads)
-            {
-                if (th != mainThread) th->search();
-            }
-        }
-    }
-};
-
-extern Thread initThread;
-extern SearchThreadPool searchThreads;
+extern GameInfo initThread;
 
 #endif 

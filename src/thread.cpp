@@ -5,16 +5,14 @@
 #include "search.h"
 #include "nnue.h"
 
-Thread initThread;
-SearchThreadPool searchThreads;
+GameInfo initThread;
 
-Thread::Thread()
+GameInfo::GameInfo()
 {
-    clear();
     init();
 }
 
-void Thread::clear()
+void GameInfo::clear()
 {
     moveList.clear();
     pvLine.clear();
@@ -34,7 +32,7 @@ void Thread::clear()
     empty = 0;
 }
 
-void Thread::init()
+void GameInfo::init()
 {
     moveList = 		std::vector<MOVE_LIST> (U16_MAX_MOVES);
     pvLine = 		std::vector<PV> (U16_MAX_PLY);
@@ -54,7 +52,7 @@ void Thread::init()
     empty = 0;
 }
 
-Thread::~Thread()
+GameInfo::~GameInfo()
 {
     moveList.clear();
     pvLine.clear();
@@ -64,7 +62,7 @@ Thread::~Thread()
     pawnsHashTable.clear();
     evalHashTable.clear();
 }
-
+/*
 SearchThread::SearchThread(int index)
 {
     std::unique_lock<std::mutex> lk(mMutex);
@@ -96,7 +94,7 @@ void SearchThread::searchThreadLifeCycle()
 
         if (!mTerminate)
         {
-            startSearch(side);        
+            startSearch( stm );
         } 
     }
 }
@@ -133,7 +131,7 @@ void SearchThread::search()
 
 void SearchThread::initialise()
 {
-    side = initThread.side;
+    stm = initThread.stm;
 
     pvLine.clear();
     moveStack.clear();
@@ -269,3 +267,4 @@ std::vector<SearchThread*> SearchThreadPool::getSearchThreads()
 {
     return threads;
 }
+*/

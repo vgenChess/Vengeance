@@ -58,7 +58,7 @@ public:
         
         const auto isValidHash = (entry->key ^ dataKey) == key; 
         
-        if ((age - entry->age) < U8_HASH_AGE && isValidHash && depth < entry->depth) 
+        if ((age - entry->age) < HASH_AGE && isValidHash && depth < entry->depth) 
         { // Check whether to overwrite previous information
             return;           
         }

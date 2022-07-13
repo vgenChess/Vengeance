@@ -102,7 +102,7 @@ LayerSize<1> layer3_size;
 
 
 void refresh_accumulator(
-    Thread* th,
+    GameInfo* gi,
     Side side
 ) {
 
@@ -121,13 +121,13 @@ void refresh_accumulator(
 
 
     auto kingSq = side == WHITE ?
-        GET_POSITION(th->whitePieceBB[KING]) : GET_POSITION(th->blackPieceBB[KING]) ^ 63;
+        GET_POSITION( gi->whitePieceBB[KING]) : GET_POSITION( gi->blackPieceBB[KING]) ^ 63;
 
 
     // TODO check logic
     for (int piece = PAWNS - 1 ; piece < KING - 1; piece++) {
 
-        auto pieceBB = th->whitePieceBB[piece + 1];
+        auto pieceBB = gi->whitePieceBB[piece + 1];
         auto piece_color = WHITE;
 
 
@@ -150,7 +150,7 @@ void refresh_accumulator(
         }
 
 
-        pieceBB = th->blackPieceBB[piece + 1];
+        pieceBB = gi->blackPieceBB[piece + 1];
         piece_color = BLACK;
 
         while (pieceBB) {
@@ -175,14 +175,14 @@ void refresh_accumulator(
 
     for (int i = 0; i < num_chunks; ++i) {
 
-        _mm256_store_si256((__m256i*)&th->accumulator[side][i * register_width], regs[i]);
+        _mm256_store_si256((__m256i*)&gi->accumulator[side][i * register_width], regs[i]);
     }
 }
 
 
 
 
-void update_accumulator(Thread* th, const std::vector< int >& removed_features, const std::vector< int >& added_features, Side side)
+void update_accumulator ( GameInfo* gi, const std::vector< int >& removed_features, const std::vector< int >& added_features, Side side )
 {
 
     constexpr int register_width = 256 / 16;
@@ -194,7 +194,7 @@ void update_accumulator(Thread* th, const std::vector< int >& removed_features, 
     for (int i = 0; i < num_chunks; ++i) {
 
         regs[i] = _mm256_load_si256(
-                      reinterpret_cast<__m256i*>(&th->accumulator[side][i * register_width]));
+                      reinterpret_cast<__m256i*>(&gi->accumulator[side][i * register_width]));
     }
 
     for (int r : removed_features) {
@@ -215,7 +215,7 @@ void update_accumulator(Thread* th, const std::vector< int >& removed_features, 
 
     for (int i = 0; i < num_chunks; ++i) {
 
-        _mm256_store_si256((__m256i*)&th->accumulator[side][i * register_width], regs[i]);
+        _mm256_store_si256((__m256i*)&gi->accumulator[side][i * register_width], regs[i]);
     }
 }
 
@@ -659,7 +659,8 @@ exit:
 }
 
 
-int predict (Side stm, Thread *th) {
+int predict ( Side stm, GameInfo* gi )
+{
 
 
     LayerData<layer1_size.size, layer1_size.size> layer1_data;
@@ -676,8 +677,8 @@ int predict (Side stm, Thread *th) {
     int offset = layer0_size.size / 2;
     for (int i = 0; i < layer0_size.size / 2; i++) {
 
-        input[i] = th->accumulator[WHITE][i];
-        input[offset + i] = th->accumulator[BLACK][i];
+        input[i] = gi->accumulator[WHITE][i];
+        input[offset + i] = gi->accumulator[BLACK][i];
     }
 
 

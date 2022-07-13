@@ -40,6 +40,8 @@ int MOVE_OVERHEAD = 300;
 
 U8 HashManager::age;
 
+std::thread searchThread;
+
 void setOption(std::string &line) {
 
     if (line.rfind("setoption name Hash value", 0) == 0) {
@@ -53,24 +55,25 @@ void setOption(std::string &line) {
 
         option_thread_count = std::stoi(line.substr(29, std::string::npos));
 
-        searchThreads.createThreadPool(option_thread_count);
-
         std::cout<<"info string set Threads to " << option_thread_count << "\n";
     } 
 }
 
 void UciLoop() {
 
-    initThread.clear();
-    initThread.init();
+    GameInfo *gameInfo = new GameInfo();
 
-    initThread.isInit = true;
+    gameInfo->clear();
+    gameInfo->init();
 
-    parseFen(START_FEN, &initThread);
+    parseFen(START_FEN, gameInfo);
 
     quit = false;
     
     std::string cmd, token;
+
+
+    std::vector<std::thread> threads;
 
     do {
 
@@ -98,20 +101,22 @@ void UciLoop() {
             HashManager::age = 0;
             HashManager::clearHashTable();
 
-            for (Thread *thread : searchThreads.getSearchThreads())
-            {
-                thread->clear();
-            }
+//             for ( GameInfo *thread : searchThreads.getSearchThreads())
+//             {
+//                 thread->clear();
+//             }
             
-            initThread.clear();
+            gameInfo->clear();
         } else if (token == "position") {
             
-            initThread.clear();
-            initThread.init();
+            gameInfo->clear();
+            gameInfo->init();
 
-            initThread.moves_history_counter = 0;
-            initThread.movesHistory[0].hashKey = initThread.hashKey;
-            initThread.movesHistory[0].fiftyMovesCounter = 0;
+            gameInfo->isInit = true;
+
+            gameInfo->moves_history_counter = 0;
+            gameInfo->movesHistory[0].hashKey = initThread.hashKey;
+            gameInfo->movesHistory[0].fiftyMovesCounter = 0;
 
             is>>token;
 
@@ -128,7 +133,7 @@ void UciLoop() {
                     fen += token + " ";
             }
 
-            U8 sideToMove = parseFen(fen, &initThread);
+            U8 sideToMove = parseFen(fen, gameInfo);
 
             std::vector<Move> moves;
 
@@ -136,16 +141,16 @@ void UciLoop() {
             {
                 moves.clear();
 
-                genMoves(sideToMove == WHITE ? WHITE : BLACK, 0, moves, &initThread);
+                genMoves(sideToMove == WHITE ? WHITE : BLACK, 0, moves, gameInfo);
                 
                 for (Move m : moves) 
                 {
                     if (getMoveNotation(m.move) == token) 
                     {
-                        make_move(0, m.move, &initThread);
+                        make_move(0, m.move, gameInfo);
                         
-                        initThread.moves_history_counter++;
-                        initThread.movesHistory[initThread.moves_history_counter].hashKey = initThread.hashKey;
+                        gameInfo->moves_history_counter++;
+                        gameInfo->movesHistory[gameInfo->moves_history_counter].hashKey = gameInfo->hashKey;
 
                         sideToMove ^= 1;
                         
@@ -154,7 +159,7 @@ void UciLoop() {
                 }
             }
 
-            initThread.side = sideToMove == WHITE ? WHITE : BLACK;   
+            gameInfo->stm = sideToMove == WHITE ? WHITE : BLACK;
         } 
         else if (token == "isready") 
         {
@@ -170,10 +175,10 @@ void UciLoop() {
 
             while (is >> token) {
 
-                     if (token == "wtime" && initThread.side == WHITE)     is >> time;
-                else if (token == "btime" && initThread.side == BLACK)     is >> time;
-                else if (token == "winc"  && initThread.side == WHITE)     is >> inc;
-                else if (token == "binc"  && initThread.side == BLACK)     is >> inc;
+                     if (token == "wtime" && initThread.stm == WHITE)     is >> time;
+                else if (token == "btime" && initThread.stm == BLACK)     is >> time;
+                else if (token == "winc"  && initThread.stm == WHITE)     is >> inc;
+                else if (token == "binc"  && initThread.stm == BLACK)     is >> inc;
                 else if (token == "movestogo")  is >> movesToGo;
                 else if (token == "depth")      is >> depthCurrent;
                 else if (token == "nodes")      is >> nodes;
@@ -215,18 +220,30 @@ void UciLoop() {
                 }
             }
 
-            searchThreads.search<true>();
-        } 
+            threads.emplace_back(startSearch, 0, gameInfo);
+        }
 
         else if (token == "stop") {
 
-            SearchThread::stopSearch = true;
+            GameInfo::stopSearch = true;
+
+            for (std::thread &th: threads) {
+
+                if (th.joinable())
+                    th.join();
+            }
         }
 
         else if (token == "quit") {
         
-            SearchThread::stopSearch = true;  
+            GameInfo::stopSearch = true;
         
+            for (std::thread &th: threads) {
+
+                if (th.joinable())
+                    th.join();
+            }
+
             break;
         } 
 
@@ -238,7 +255,7 @@ void UciLoop() {
 
         else if (token == "perft") {
             
-            std::thread t4(startPerft, initThread.side, 10, &initThread);
+            std::thread t4(startPerft, gameInfo->stm, 10, gameInfo);
 
             t4.join();
         } 
@@ -255,7 +272,7 @@ void UciLoop() {
                 printf("Depth should be greater than 0\n");
             } else {
 
-                std::thread t5(divide, d, initThread.side, &initThread);
+                std::thread t5(divide, d, gameInfo->stm, gameInfo);
 
                 t5.join();
             }
@@ -263,16 +280,16 @@ void UciLoop() {
 
         else if (token == "evaluate") {
             
-            print_board(initThread.occupied, &initThread);
+            print_board(gameInfo->occupied, gameInfo);
             printf("\n\n");
 
-            int scoreWhite = predict(WHITE, &initThread);
+            int scoreWhite = predict(WHITE, gameInfo);
             
             printf("White score = %d\n", scoreWhite);
             
             printf("\n");
 
-            int scoreBlack = predict(BLACK, &initThread);
+            int scoreBlack = predict(BLACK, gameInfo);
 
             printf("Black score = %d\n", scoreBlack);
         } 

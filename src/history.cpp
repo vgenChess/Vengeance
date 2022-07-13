@@ -4,7 +4,7 @@
 #include "thread.h"
 #include "functions.h"
 
-void updateHistory(Side stm, int ply, int depth, U32 bestMove, std::vector<U32> &quietMovesPlayed, Thread *th) {
+void updateHistory(Side stm, int ply, int depth, U32 bestMove, std::vector<U32> &quietMovesPlayed, GameInfo *th) {
 
 	// For debugging
 	// std::lock_guard<std::mutex> lk(mtx);
@@ -35,7 +35,7 @@ void updateHistory(Side stm, int ply, int depth, U32 bestMove, std::vector<U32> 
 	}
 }
 
-void updateCaptureHistory(int depth, U32 bestMove,std::vector<U32>&captureMovesPlayed, Thread *th) {
+void updateCaptureHistory(int depth, U32 bestMove,std::vector<U32>&captureMovesPlayed, GameInfo *th) {
 
 	// For debugging
 	// std::lock_guard<std::mutex> lk(mtx);

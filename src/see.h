@@ -6,6 +6,6 @@
 #include "magicmoves.h"
 #include "thread.h"
 
-int SEE(Side sideToMove, U32 move, Thread *th);
+int SEE(Side sideToMove, U32 move, GameInfo *th);
 void debugSEE(char ch, int square);
 #endif
