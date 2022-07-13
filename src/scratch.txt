@@ -56,4 +56,8 @@ Bugs
     r2qkb1r/pp3ppp/2nppn2/2p5/2P1P3/1P3N2/P2PQPPP/RNB2RK1 w kq - 1 9 // Took very long to move
     5k2/5ppp/1pN5/p2P3P/3K1P2/2rB3P/8/8 b - - 2 37 // Rook blindly captures piece which is defended by the opponent king
 
+    // NNUE
+
+    2k5/8/P7/8/4b3/2Br1p1p/5PpP/1R4K1 b - - 0 76 // Misses stalement and reports winning scores
+
 
