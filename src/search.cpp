@@ -38,6 +38,8 @@
 #include "nnue.h"
 
 bool GameInfo::abortSearch = false;
+bool GameInfo::searching = false;
+
 int option_thread_count, LMR[64][64], LMP[2][LMP_DEPTH];
 
 std::mutex mutex;
@@ -69,73 +71,83 @@ void initLMP()
 }
 
 
-// TODO signal stop
+void spawnThreads(GameInfo *gameInfo ) {
 
-void startSearch(int index, GameInfo *gameInfo)
-{
-    if (index == 0)
-    {
-        threads.clear();
-        infos.clear();
+    for (int count = 1; count < option_thread_count; count++) {
 
-        gameInfo->isInit = false;
+        GameInfo *lGi = new GameInfo();
 
-        refresh_accumulator(gameInfo, WHITE);
-        refresh_accumulator(gameInfo, BLACK);
+        lGi->clone( gameInfo );
 
-        HashManager::age += 1;
+        refresh_accumulator( lGi, WHITE);
+        refresh_accumulator( lGi, BLACK);
 
-        GameInfo::abortSearch = false;
+        infos.push_back( lGi );
 
-        infos.push_back(gameInfo);
-        
-        for (int n = 1; n < option_thread_count; n++) {
-
-            GameInfo *gi = new GameInfo();
-
-            gi->isInit = false;
-
-            gi->clone(gameInfo);
-
-            refresh_accumulator(gi, WHITE);
-            refresh_accumulator(gi, BLACK);
-
-            infos.push_back(gi);
-
-            threads.emplace_back(startSearch, n, gi);
-        }
-    }
-
-
-    if (gameInfo->stm == WHITE) {
-
-        iterativeDeepening<WHITE>(index, gameInfo);
-    } else {
-
-        iterativeDeepening<BLACK>(index, gameInfo);
-    }
-
-
-    if (index == 0) {
-
-        GameInfo::abortSearch = true;
-        //     searchThreads.waitForAll();
-
-        for (std::thread& th: threads)
-            th.join();
-
-
-        // TODO implement best thread
-
-        U32 bestMove = infos[0]->pvLine[infos[0]->completedDepth].line[0];
-
-        std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
-
-        TimeManager::sTimeManager.updateTimeSet(false);
-        TimeManager::sTimeManager.updateStopped(false);
+        if ( lGi->stm == WHITE)
+            threads.emplace_back(search<WHITE>, count, lGi );
+        else
+            threads.emplace_back(search<BLACK>, count, lGi );
     }
 }
 
+
+// FIXME during last move all time is used up and it loses on time
+void startSearch(int index, GameInfo *gi)
+{
+    // only the main thread should be able to call this function
+    assert(index == 0);
+
+    HashManager::age += 1;
+
+    GameInfo::searching = true;
+    GameInfo::abortSearch = false;
+
+    threads.clear();
+    infos.clear();
+
+    refresh_accumulator(gi, WHITE);
+    refresh_accumulator(gi, BLACK);
+
+    infos.push_back(gi);
+
+
+    spawnThreads(gi);
+
+
+    if (gi->stm == WHITE) {
+
+        search<WHITE>(index, gi);
+    } else {
+
+        search<BLACK>(index, gi);
+    }
+
+
+    GameInfo::abortSearch = true;
+
+    for (std::thread& th: threads)
+        th.join();
+
+
+    // TODO implement best thread
+
+    U32 bestMove = infos[0]->pvLine[infos[0]->completedDepth].line[0];
+
+    std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
+
+    TimeManager::sTimeManager.updateTimeSet(false);
+    TimeManager::sTimeManager.updateStopped(false);
+
+    GameInfo::searching = false;
+}
+
+
+template<Side stm>
+void search(int index, GameInfo *gi) {
+
+    iterativeDeepening<stm>(index, gi);
+}
 
 
 template<Side stm>
@@ -153,7 +165,7 @@ void iterativeDeepening(int index, GameInfo *gi)
     {
         gi->depth = depth;
 
-        aspirationWindow<stm>(index, gi);
+        aspirationWindow<stm>(index, gi );
 
         if (GameInfo::abortSearch)
             return;
@@ -188,7 +200,7 @@ void iterativeDeepening(int index, GameInfo *gi)
 
             // Stable Move
 
-            assert(gi->pvLine[completedDepth].line[0] != NO_MOVE
+            assert( gi->pvLine[completedDepth].line[0] != NO_MOVE
                 && gi->pvLine[completedDepth-1].line[0] != NO_MOVE);
 
             const auto previousMove = gi->pvLine[completedDepth-1].line[0];
@@ -196,7 +208,7 @@ void iterativeDeepening(int index, GameInfo *gi)
 
             gi->stableMoveCount = previousMove == currentMove ? gi->stableMoveCount + 1 : 0;
 
-            if (gi->stableMoveCount > 7)
+            if ( gi->stableMoveCount > 7)
                 multiplier = 0.5;
 
 
@@ -211,27 +223,23 @@ void iterativeDeepening(int index, GameInfo *gi)
 
 
 
-inline U64 getTotalNodes() {
+enum Stats {
 
-    U64 nodes = 0;
+    NODES, TTHITS
+};
+
+template<Stats stats>
+inline U64 getStats() {
+
+    U64 sum = 0;
     for (GameInfo *gi : infos) {
 
-        nodes += gi->nodes;
+        sum += stats == NODES ? gi->nodes : (stats == TTHITS ? gi->ttHits : 0);
     }
 
-    return nodes;
+    return sum;
 }
 
-inline U64 getTotalTTHits() {
-
-    U64 ttHits = 0;
-    for (GameInfo *gi : infos) {
-
-        ttHits += gi->ttHits;
-    }
-
-    return ttHits;
-}
 
 template<Side stm>
 void aspirationWindow(int index, GameInfo *gi)
@@ -288,7 +296,7 @@ void aspirationWindow(int index, GameInfo *gi)
         {
             beta = std::min(score + window, MATE );
             
-            if (std::abs(score) < U16_WIN_SCORE)
+            if (std::abs(score) < WIN_SCORE )
             {
                 failHighCounter++;
             }
@@ -322,12 +330,9 @@ void aspirationWindow(int index, GameInfo *gi)
 
     assert (score > alpha && score < beta);
 
-    if (index != 0)
-    {
-        return;
-    }
 
-    reportPV(infos[0], getTotalNodes(), getTotalTTHits());
+    if (index == 0)
+        reportPV(infos[0], getStats<NODES>(), getStats<TTHITS>());
 }
 
 
@@ -377,6 +382,8 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
         &&  TimeManager::sTimeManager.isTimeSet()
         &&  gi->nodes % CHECK_NODES == 0)
     {
+        std::cout << "." ;
+
         checkTime();
     }
     
@@ -484,8 +491,8 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
         &&	!pvNode
         &&	!isInCheck 
         &&	!singularSearch
-        &&	std::abs(alpha) < U16_WIN_SCORE
-        &&	std::abs(beta) < U16_WIN_SCORE 
+        &&	std::abs(alpha) < WIN_SCORE
+        &&	std::abs(beta) < WIN_SCORE
         &&  depth <= 3
         &&	oppPiecesCount > 3) 
     { 
@@ -496,7 +503,7 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
         if (sEval - fmargin[depth] >= beta)       // Reverse Futility Pruning
             return beta;          
     
-
+        // TODO check logic. The quiescense call seems costly
         if (sEval + U16_RAZOR_MARGIN < beta)      // Razoring
         {
             const auto rscore = quiescenseSearch<stm>(alpha, beta, gi, si );
@@ -567,7 +574,7 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
         if (score >= beta)
             return beta;
     
-        if (std::abs(score) >= U16_WIN_SCORE) // Mate threat
+        if (std::abs(score) >= WIN_SCORE ) // Mate threat
             mateThreat = true;
     }
     
@@ -582,7 +589,7 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
         &&  depth >= 7
         &&  hashHit
         &&  ttMove != NO_MOVE 
-        &&  std::abs(ttScore) < U16_WIN_SCORE
+        &&  std::abs(ttScore) < WIN_SCORE
         &&  hashEntry->flags == hashfBETA
         &&  hashEntry->depth >= depth - 3)
     {

@@ -112,11 +112,11 @@ void UciLoop() {
             gameInfo->clear();
             gameInfo->init();
 
-            gameInfo->isInit = true;
-
             gameInfo->moves_history_counter = 0;
-            gameInfo->movesHistory[0].hashKey = initThread.hashKey;
+            gameInfo->movesHistory[0].hashKey = gameInfo->hashKey;
             gameInfo->movesHistory[0].fiftyMovesCounter = 0;
+
+            gameInfo->searching = false;
 
             is>>token;
 
@@ -175,10 +175,10 @@ void UciLoop() {
 
             while (is >> token) {
 
-                     if (token == "wtime" && initThread.stm == WHITE)     is >> time;
-                else if (token == "btime" && initThread.stm == BLACK)     is >> time;
-                else if (token == "winc"  && initThread.stm == WHITE)     is >> inc;
-                else if (token == "binc"  && initThread.stm == BLACK)     is >> inc;
+                     if (token == "wtime" && gameInfo->stm == WHITE)     is >> time;
+                else if (token == "btime" && gameInfo->stm == BLACK)     is >> time;
+                else if (token == "winc"  && gameInfo->stm == WHITE)     is >> inc;
+                else if (token == "binc"  && gameInfo->stm == BLACK)     is >> inc;
                 else if (token == "movestogo")  is >> movesToGo;
                 else if (token == "depth")      is >> depthCurrent;
                 else if (token == "nodes")      is >> nodes;
@@ -213,8 +213,7 @@ void UciLoop() {
                     }
 
                     TimeManager::sTimeManager.setStopTime(
-                        TimeManager::sTimeManager.getStartTime()
-                        + std::chrono::milliseconds(time + (movesToGo > 1 ? inc : 0) - 50));
+                        TimeManager::sTimeManager.getStartTime() + std::chrono::milliseconds((int)(time * 0.75)));
                 } else {
 
                     TimeManager::sTimeManager.updateTimeSet(false);
@@ -313,7 +312,7 @@ void UciLoop() {
 
             std::cout<<"\n";
 
-            debugSEE(ch, sq);
+            debugSEE(ch, sq, gameInfo);
         }
     } while(true);
 }

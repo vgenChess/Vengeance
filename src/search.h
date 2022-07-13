@@ -12,7 +12,10 @@
 void initLMR();
 void initLMP();
 
-void startSearch(int index, GameInfo *gameInfo);
+void startSearch(int index, GameInfo *gi);
+
+template<Side stm>
+void search (int index, GameInfo* gi);
 
 template<Side stm>
 void iterativeDeepening(int index, GameInfo* gi);

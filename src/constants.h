@@ -14,9 +14,9 @@ const uint8_t HISTORY_PRUNING_DEPTH = 2;
 const uint8_t SEE_PRUNING_DEPTH = 1;
 
 const uint16_t MAX_PLY = 128;
-const uint16_t U16_MAX_MOVES = 256;
-const uint16_t U16_WIN_SCORE = 9000;
-const uint16_t U16_PV_DISPLAY_INTERVAL = 2500;
+const uint16_t MAX_MOVES = 256;
+const uint16_t WIN_SCORE = 9000;
+const uint16_t PV_DISPLAY_INTERVAL = 2500;
 const uint16_t CHECK_NODES = 1024;
 const uint16_t U16_COUNTER_MOVE_BONUS = 2500;
 const uint16_t U16_FPRUNE = 265;

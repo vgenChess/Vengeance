@@ -543,13 +543,13 @@ void make_move(int ply, U32 move, GameInfo *gi) {
     gi->occupied = gi->whitePieceBB[PIECES] | gi->blackPieceBB[PIECES];
     gi->empty = ~( gi->occupied);
     
-    
     gi->hashKey ^= Zobrist::objZobrist.KEY_SIDE_TO_MOVE;
+
 
 
     // update accumulator after each move
 
-    if (!gi->isInit && piece != DUMMY) {
+    if (GameInfo::searching && piece != DUMMY) {
 
 
         memcpy( gi->undoMoveStack[ply].accumulator[WHITE],
@@ -677,7 +677,7 @@ void unmake_move(int ply, U32 move, GameInfo *gi ) {
     gi->pawnsHashKey = gi->undoMoveStack[ply].pawnsHashKey;
     
     gi->movesHistory[gi->moves_history_counter + ply].fiftyMovesCounter =
-        gi->undoMoveStack[ply].fiftyMovesCounter;
+    gi->undoMoveStack[ply].fiftyMovesCounter;
     
     
     
@@ -856,8 +856,7 @@ void unmake_move(int ply, U32 move, GameInfo *gi ) {
     gi->empty = ~( gi->occupied);
 
 
-    if (!gi->isInit) {
-
+    if (GameInfo::searching) {
 
         memcpy( gi->accumulator[WHITE],
                  gi->undoMoveStack[ply].accumulator[WHITE],
@@ -890,7 +889,7 @@ void makeNullMove(int ply, GameInfo *gi ) { // Needs investigation
     gi->hashKey ^= Zobrist::objZobrist.KEY_SIDE_TO_MOVE;
 
 
-    if (!gi->isInit) {
+    if (GameInfo::searching) {
 
         memcpy( gi->undoMoveStack[ply].accumulator[WHITE],
                  gi->accumulator[WHITE], sizeof(int16_t) * NN_SIZE);
@@ -914,8 +913,7 @@ void unmakeNullMove(int ply, GameInfo *gi ) {
     gi->movesHistory[mhCounter].fiftyMovesCounter = gi->undoMoveStack[ply].fiftyMovesCounter;
 
 
-    if (!gi->isInit) {
-
+    if (GameInfo::searching) {
 
         memcpy( gi->accumulator[WHITE],
                  gi->undoMoveStack[ply].accumulator[WHITE],

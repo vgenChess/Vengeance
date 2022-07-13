@@ -19,16 +19,13 @@ class GameInfo
 public:
 
 	static bool abortSearch;
-
-    bool mTerminate, mSearching;
+	static bool searching;
 
 	int mIndex, depth, completedDepth, selDepth;
 
 	U64 nodes, ttHits;
 
 	int stableMoveCount;
-
-	bool isInit = false;
 
 	Side stm;
     
@@ -90,8 +87,5 @@ public:
 		pawnsHashKey = gameInfo->pawnsHashKey;
 	}
 };
-
-
-extern GameInfo initThread;
 
 #endif 
