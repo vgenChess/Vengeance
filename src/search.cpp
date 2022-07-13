@@ -49,6 +49,23 @@ int fmargin[4] = { 0, 200, 300, 500 };
 std::vector<std::thread> threads;
 std::vector<GameInfo*> infos;
 
+enum Stats {
+
+    NODES, TTHITS
+};
+
+template<Stats stats>
+inline U64 getStats() {
+
+    U64 sum = 0;
+    for (GameInfo *gi : infos) {
+
+        sum += stats == NODES ? gi->nodes : (stats == TTHITS ? gi->ttHits : 0);
+    }
+
+    return sum;
+}
+
 void initLMR() 
 {
     const float a = 0.1, b = 2;
@@ -134,9 +151,38 @@ void startSearch(int index, GameInfo *gi)
         th.join();
 
 
-    // TODO implement best thread
+    // Display the best move
 
-    U32 bestMove = infos[0]->pvLine[infos[0]->completedDepth].line[0];
+    auto bestIndex = 0;
+    auto bestThread = infos[0];
+
+    int bestThreadDepth, currentThreadDepth;
+    int bestThreadScore, currentThreadScore;
+
+    GameInfo* th;
+    for (uint16_t i = 1; i < infos.size(); i++)
+    {
+        th = infos[i];
+
+        bestThreadDepth = bestThread->completedDepth;
+        currentThreadDepth = th->completedDepth;
+
+        bestThreadScore = bestThread->pvLine[bestThreadDepth].score;
+        currentThreadScore = th->pvLine[currentThreadDepth].score;
+
+        if (    currentThreadScore > bestThreadScore
+            &&  currentThreadDepth > bestThreadDepth)
+        {
+            bestThread = th;
+            bestIndex = i;
+        }
+    }
+
+
+    if (bestIndex != 0)
+        reportPV(bestThread, getStats<NODES>(), getStats<TTHITS>());
+
+    U32 bestMove = bestThread->pvLine[bestThread->completedDepth].line[0];
 
     std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
 
@@ -223,25 +269,6 @@ void iterativeDeepening(int index, GameInfo *gi)
             }
         }
     } 
-}
-
-
-
-enum Stats {
-
-    NODES, TTHITS
-};
-
-template<Stats stats>
-inline U64 getStats() {
-
-    U64 sum = 0;
-    for (GameInfo *gi : infos) {
-
-        sum += stats == NODES ? gi->nodes : (stats == TTHITS ? gi->ttHits : 0);
-    }
-
-    return sum;
 }
 
 
