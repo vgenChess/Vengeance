@@ -555,7 +555,7 @@ void initPawnHashKey(U8 side, GameInfo *th) {
 
 void initMovesHistoryTable( GameInfo *th) {
 	
-	for (int i = 0; i < U16_MAX_PLY; i++) {
+	for (int i = 0; i < MAX_PLY; i++) {
 		
 		th->movesHistory[i].hashKey = 0ULL;
 	}
@@ -567,7 +567,7 @@ void initMovesHistoryTable( GameInfo *th) {
 
 void clearKillerMovesTable( GameInfo *th) {
 	
-	for (int i = 0; i < U16_MAX_PLY; i++) {
+	for (int i = 0; i < MAX_PLY; i++) {
 
         th->moveStack[i].killerMoves[0] = NO_MOVE;
         th->moveStack[i].killerMoves[1] = NO_MOVE;

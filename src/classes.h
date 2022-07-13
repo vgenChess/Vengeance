@@ -97,7 +97,7 @@ public:
 	
 	U32 skipMove;
     
-    U32 line[U16_MAX_PLY];
+    U32 line[MAX_PLY];
     
 	SearchInfo() 
 	{

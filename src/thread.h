@@ -18,7 +18,7 @@ class GameInfo
 {
 public:
 
-	static bool abortSearch, stopSearch;
+	static bool abortSearch;
 
     bool mTerminate, mSearching;
 

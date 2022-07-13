@@ -46,7 +46,7 @@ inline void reportPV(GameInfo *gi, U64 totalNodes, U64 totalTTHits) {
     std::cout << " score cp " << score << " pv";
     
     U32 move;
-    for (int i = 0; i < U16_MAX_PLY; i++) {
+    for (int i = 0; i < MAX_PLY; i++) {
         
         move = pvLine[i];
         

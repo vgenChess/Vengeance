@@ -37,7 +37,7 @@
 #include "HashManagement.h"
 #include "nnue.h"
 
-bool GameInfo::abortSearch = false, GameInfo::stopSearch = false;
+bool GameInfo::abortSearch = false;
 int option_thread_count, LMR[64][64], LMP[2][LMP_DEPTH];
 
 std::mutex mutex;
@@ -86,7 +86,6 @@ void startSearch(int index, GameInfo *gameInfo)
         HashManager::age += 1;
 
         GameInfo::abortSearch = false;
-        GameInfo::stopSearch = false;
 
         infos.push_back(gameInfo);
         
@@ -112,13 +111,13 @@ void startSearch(int index, GameInfo *gameInfo)
 
         iterativeDeepening<WHITE>(index, gameInfo);
     } else {
+
         iterativeDeepening<BLACK>(index, gameInfo);
     }
 
 
     if (index == 0) {
 
-        GameInfo::stopSearch = true;
         GameInfo::abortSearch = true;
         //     searchThreads.waitForAll();
 
@@ -156,7 +155,7 @@ void iterativeDeepening(int index, GameInfo *gi)
 
         aspirationWindow<stm>(index, gi);
 
-        if (GameInfo::stopSearch || GameInfo::abortSearch)
+        if (GameInfo::abortSearch)
             return;
 
         if ( index != 0)
@@ -273,7 +272,7 @@ void aspirationWindow(int index, GameInfo *gi)
         
         score = alphabeta<stm>(alpha, beta, MATE, gi, &searchInfo);
 
-        if (GameInfo::stopSearch || GameInfo::abortSearch)
+        if (GameInfo::abortSearch)
         {
             return;
         }
@@ -303,7 +302,7 @@ void aspirationWindow(int index, GameInfo *gi)
             PV pv;
             pv.score = score;
             
-            for (int i = 0; i < U16_MAX_PLY; i++) 
+            for (int i = 0; i < MAX_PLY; i++)
             {
                 pv.line[i] = searchInfo.line[i];
             
@@ -335,7 +334,7 @@ void aspirationWindow(int index, GameInfo *gi)
 
 inline void checkTime() 
 {
-    GameInfo::stopSearch = TimeManager::time_now().time_since_epoch()
+    GameInfo::abortSearch = TimeManager::time_now().time_since_epoch()
                     >= TimeManager::sTimeManager.getStopTime().time_since_epoch();
 }
 
@@ -365,7 +364,7 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
 
     // Quiescense Search(under observation)
 
-    if (depth <= 0 || ply >= U16_MAX_PLY)
+    if (depth <= 0 || ply >= MAX_PLY )
     {
         si->line[0] = NO_MOVE;
         
@@ -376,15 +375,11 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
     // Check time spent
     if (    mainThread
         &&  TimeManager::sTimeManager.isTimeSet()
-        &&  gi->nodes % U16_CHECK_NODES == 0)
+        &&  gi->nodes % CHECK_NODES == 0)
     {
         checkTime();
     }
     
-    if (mainThread && GameInfo::stopSearch)
-    {
-        return 0;
-    }
 
     if (GameInfo::abortSearch)
     {
@@ -982,14 +977,9 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
 
     // Check if time limit has been reached
     if (    TimeManager::sTimeManager.isTimeSet() 
-        &&  mainThread && gi->nodes % U16_CHECK_NODES == 0)
+        &&  mainThread && gi->nodes % CHECK_NODES == 0)
     {
         checkTime();
-    }
-    
-    if ( mainThread && GameInfo::stopSearch)
-    {
-        return 0;
     }
     
     if (GameInfo::abortSearch)
@@ -1027,7 +1017,7 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     gi->movesHistory[gi->moves_history_counter + ply + 1].hashKey = gi->hashKey;
 
     
-    if (ply >= U16_MAX_PLY - 1) 
+    if (ply >= MAX_PLY - 1)
     {
         return predict(stm, gi);
     }

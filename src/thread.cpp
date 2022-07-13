@@ -35,9 +35,9 @@ void GameInfo::clear()
 void GameInfo::init()
 {
     moveList = 		std::vector<MOVE_LIST> (U16_MAX_MOVES);
-    pvLine = 		std::vector<PV> (U16_MAX_PLY);
-    moveStack = 	std::vector<MOVE_STACK> (U16_MAX_PLY);
-    undoMoveStack = std::vector<UNDO_MOVE_STACK> (U16_MAX_PLY);
+    pvLine = 		std::vector<PV> ( MAX_PLY );
+    moveStack = 	std::vector<MOVE_STACK> ( MAX_PLY );
+    undoMoveStack = std::vector<UNDO_MOVE_STACK> ( MAX_PLY );
     movesHistory  = std::vector<MOVES_HISTORY> (8192);
     pawnsHashTable = std::vector<PawnsHashEntry>(U16_PAWN_HASH_TABLE_RECORDS);
     evalHashTable = std::vector<EvalHashEntry>(U16_EVAL_HASH_TABLE_RECORDS);

@@ -16,7 +16,7 @@ typedef struct
 typedef struct 
 {    
     int score;
-    U32 line[U16_MAX_PLY];
+    U32 line[MAX_PLY];
 } PV;
 
 typedef struct 

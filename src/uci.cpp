@@ -213,7 +213,8 @@ void UciLoop() {
                     }
 
                     TimeManager::sTimeManager.setStopTime(
-                        TimeManager::sTimeManager.getStartTime() + std::chrono::milliseconds((int)(time * 0.75)));
+                        TimeManager::sTimeManager.getStartTime()
+                        + std::chrono::milliseconds(time + (movesToGo > 1 ? inc : 0) - 50));
                 } else {
 
                     TimeManager::sTimeManager.updateTimeSet(false);
@@ -225,24 +226,28 @@ void UciLoop() {
 
         else if (token == "stop") {
 
-            GameInfo::stopSearch = true;
+            GameInfo::abortSearch = true;
 
-            for (std::thread &th: threads) {
+            for (auto &th: threads) {
 
                 if (th.joinable())
                     th.join();
             }
+
+            threads.clear();
         }
 
         else if (token == "quit") {
         
-            GameInfo::stopSearch = true;
-        
-            for (std::thread &th: threads) {
+            GameInfo::abortSearch = true;
+
+            for (auto &th: threads) {
 
                 if (th.joinable())
                     th.join();
             }
+
+            threads.clear();
 
             break;
         } 
