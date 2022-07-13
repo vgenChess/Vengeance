@@ -32,7 +32,7 @@ Zobrist Zobrist::objZobrist;
 TimeManager TimeManager::sTm;
 
 int HashManager::hashTableSize;
-std::vector<HashEntry> HashManager::hashTable; 
+HashEntry* HashManager::hashTable;
 
 int main(int argc, char **argv) 
 {    

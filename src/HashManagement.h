@@ -15,7 +15,8 @@ private:
     // Since hash table is shared between threads,
     // it is declared as static to make it accessible, 
     // for all threads.
-    static std::vector<HashEntry> hashTable; 
+
+    static HashEntry* hashTable;
 
 public:
     
@@ -23,14 +24,14 @@ public:
 
     inline static void initHashTable(int size) 
     {
-        hashTable.clear();
         hashTableSize = (size * 1024 * 1024) / sizeof(HashEntry);
-        hashTable = std::vector<HashEntry>(hashTableSize);
+
+        hashTable = new HashEntry[hashTableSize];
     }
     
     inline static void clearHashTable()
     {
-        hashTable.clear();
+        std::memset(hashTable, 0, sizeof(HashEntry) * hashTableSize);
     }
     
     inline HashEntry* getHashEntry(const U64 key)
