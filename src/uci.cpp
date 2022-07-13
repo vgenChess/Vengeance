@@ -167,9 +167,9 @@ void UciLoop() {
         } 
         else if (token == "go") 
         {
-            TimeManager::sTimeManager.setStartTime(std::chrono::steady_clock::now());
+            TimeManager::sTm.setStartTime(std::chrono::steady_clock::now());
 
-            TimeManager::sTimeManager.updateTimeSet(false);
+            TimeManager::sTm.updateTimeSet(false);
 
             int32_t time = -1, moveTime = -1, nodes = 0, inc = 0, movesToGo = -1, depthCurrent = 0;
 
@@ -188,35 +188,43 @@ void UciLoop() {
 
             if (moveTime != -1) {
                 
-                TimeManager::sTimeManager.updateTimeSet(true);
-                TimeManager::sTimeManager.updateTimePerMove(moveTime);
+                TimeManager::sTm.updateTimeSet(true);
+                TimeManager::sTm.updateTimePerMove(moveTime);
                 
-                TimeManager::sTimeManager.setStopTime(TimeManager::sTimeManager.getStartTime() 
+                TimeManager::sTm.setStopTime(TimeManager::sTm.getStartTime()
                     + std::chrono::milliseconds(moveTime));
             } else {
                 
-                TimeManager::sTimeManager.updateTimeSet(time != -1 ? true : false);
+                TimeManager::sTm.updateTimeSet(time != -1 ? true : false);
 
                 if (time != -1) {
-                
+
+                    int timePerMove = 0;
+
                     if (movesToGo == -1) {
 
                         // TODO redo logic  
                         const auto total = (int)fmax(1, time + 50 * inc - MOVE_OVERHEAD);
 
-                        TimeManager::sTimeManager.updateTimePerMove((int)fmin(time * 0.33, total / 20.0));
+                        timePerMove = (int)fmin(time * 0.33, total / 20.0);
+
+                        TimeManager::sTm.updateTimePerMove(timePerMove);
                     } else {
 
                         const auto total = (int)std::max(1.0f, (float)(time + movesToGo * inc - MOVE_OVERHEAD));
 
-                        TimeManager::sTimeManager.updateTimePerMove(total / movesToGo);
+                        timePerMove = total / movesToGo;
+
+                        TimeManager::sTm.updateTimePerMove(timePerMove);
                     }
 
-                    TimeManager::sTimeManager.setStopTime(
-                        TimeManager::sTimeManager.getStartTime() + std::chrono::milliseconds((int)(time * 0.75)));
+                    int maxTime = (int)std::max(1.0, time * 0.75);
+
+                    TimeManager::sTm.setStopTime(
+                        TimeManager::sTm.getStartTime() + std::chrono::milliseconds(maxTime));
                 } else {
 
-                    TimeManager::sTimeManager.updateTimeSet(false);
+                    TimeManager::sTm.updateTimeSet(false);
                 }
             }
 

@@ -29,7 +29,7 @@
 #include "nnue.h"
 
 Zobrist Zobrist::objZobrist;
-TimeManager TimeManager::sTimeManager;
+TimeManager TimeManager::sTm;
 
 int HashManager::hashTableSize;
 std::vector<HashEntry> HashManager::hashTable; 
@@ -54,8 +54,8 @@ int main(int argc, char **argv)
 
     omp_set_num_threads(omp_get_max_threads()); // for tuning
 
-    TimeManager::sTimeManager.updateTimeSet(false);
-    TimeManager::sTimeManager.updateStopped(false);
+    TimeManager::sTm.updateTimeSet(false);
+    TimeManager::sTm.updateStopped(false);
     
     bool isBenchmark = argc > 1 && strcmp(argv[1], "bench") == 0;
 

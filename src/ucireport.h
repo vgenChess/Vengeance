@@ -40,7 +40,7 @@ inline void reportPV(GameInfo *gi, U64 totalNodes, U64 totalTTHits) {
     
     std::cout << "info depth " << depth << " seldepth " << selDepth; 
     std::cout << " time " << TimeManager::time_elapsed_milliseconds(
-         TimeManager::sTimeManager.getStartTime()); 
+         TimeManager::sTm.getStartTime()); 
     std::cout << " nodes " << totalNodes;
     std::cout/*<< " hashfull " << hashfull()*/ << " tbhits " << totalTTHits;
     std::cout << " score cp " << score << " pv";

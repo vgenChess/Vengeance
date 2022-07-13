@@ -140,8 +140,8 @@ void startSearch(int index, GameInfo *gi)
 
     std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
 
-    TimeManager::sTimeManager.updateTimeSet(false);
-    TimeManager::sTimeManager.updateStopped(false);
+    TimeManager::sTm.updateTimeSet(false);
+    TimeManager::sTm.updateStopped(false);
 
     GameInfo::searching = false;
 }
@@ -177,10 +177,10 @@ void iterativeDeepening(int index, GameInfo *gi)
         if ( index != 0)
             continue;
 
-        if (TimeManager::sTimeManager.isTimeSet() && gi->completedDepth >= 4)
+        if (TimeManager::sTm.isTimeSet() && gi->completedDepth >= 4)
         {
             float multiplier = 1;
-            const auto timePerMove = TimeManager::sTimeManager.getTimePerMove();
+            const auto timePerMove = TimeManager::sTm.getTimePerMove();
 
             const auto completedDepth = gi->completedDepth;
 
@@ -216,8 +216,8 @@ void iterativeDeepening(int index, GameInfo *gi)
                 multiplier = 0.5;
 
 
-            if (TimeManager::sTimeManager.time_elapsed_milliseconds(
-                TimeManager::sTimeManager.getStartTime()) >= timePerMove * multiplier) {
+            if (TimeManager::sTm.time_elapsed_milliseconds(
+                TimeManager::sTm.getStartTime()) >= timePerMove * multiplier) {
 
                 return;
             }
@@ -275,7 +275,7 @@ void aspirationWindow(int index, GameInfo *gi)
 
     int failHighCounter = 0;
 
-    while (true) 
+    while (true)
     {
         searchInfo.depth = std::max(1, gi->depth - failHighCounter);
         searchInfo.line[0] = NO_MOVE;
@@ -288,7 +288,7 @@ void aspirationWindow(int index, GameInfo *gi)
         {
             return;
         }
-        
+
         if (score <= alpha) 
         {
             beta = (alpha + beta) / 2;
@@ -332,19 +332,18 @@ void aspirationWindow(int index, GameInfo *gi)
         window += window / 4; 
     }
 
+
     assert (score > alpha && score < beta);
 
 
-    if (index == 0)
+    auto time_elapsed_milliseconds = TimeManager::sTm.time_elapsed_milliseconds(
+        TimeManager::sTm.getStartTime()
+    );
+
+     if (index == 0 && ((gi->depth > 1 && time_elapsed_milliseconds >= 3000))) {
+
         reportPV(infos[0], getStats<NODES>(), getStats<TTHITS>());
-}
-
-
-
-inline void checkTime() 
-{
-    GameInfo::abortSearch = TimeManager::time_now().time_since_epoch()
-                    >= TimeManager::sTimeManager.getStopTime().time_since_epoch();
+     }
 }
 
 
@@ -383,10 +382,11 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
 
     // Check time spent
     if (    mainThread
-        &&  TimeManager::sTimeManager.isTimeSet()
+        &&  TimeManager::sTm.isTimeSet()
         &&  gi->nodes % CHECK_NODES == 0)
     {
-        checkTime();
+        GameInfo::abortSearch = TimeManager::time_now().time_since_epoch()
+            >= TimeManager::sTm.getStopTime().time_since_epoch();
     }
     
 
@@ -724,8 +724,8 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
         // report current depth, moves played and current move being searched
         if ( rootNode && mainThread )
         {
-            if (TimeManager::sTimeManager.time_elapsed_milliseconds(
-                TimeManager::sTimeManager.getStartTime()) > CURRMOVE_INTERVAL )
+            if (TimeManager::sTm.time_elapsed_milliseconds(
+                TimeManager::sTm.getStartTime()) > CURRMOVE_INTERVAL )
             {
                 std::cout << "info depth " << si->realDepth << " currmove ";
                 std::cout << getMoveNotation(currentMove.move) << " currmovenumber " << movesPlayed << "\n";
@@ -985,10 +985,11 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     const auto ply = si->ply;
 
     // Check if time limit has been reached
-    if (    TimeManager::sTimeManager.isTimeSet() 
+    if (    TimeManager::sTm.isTimeSet()
         &&  mainThread && gi->nodes % CHECK_NODES == 0)
     {
-        checkTime();
+        GameInfo::abortSearch = TimeManager::time_now().time_since_epoch()
+            >= TimeManager::sTm.getStopTime().time_since_epoch();
     }
     
     if (GameInfo::abortSearch)
