@@ -9,8 +9,10 @@
 #ifndef utility_h
 #define utility_h
 
-#include "thread.h"
 #include "functions.h"
+#include "namespaces.h"
+
+using namespace game;
 
 void print_bb(U64 board);
 

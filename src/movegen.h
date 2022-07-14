@@ -12,8 +12,10 @@
 #include <vector>
 
 #include "types.h"
-#include "thread.h"
 #include "structs.h"
+#include "namespaces.h"
+
+using namespace game;
 
 void genMoves(Side stm, int ply, std::vector<Move> &moves, GameInfo *th);
 void genPushes(Side stm, std::vector<Move> &moves, GameInfo *th);

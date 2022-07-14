@@ -8,7 +8,7 @@ const uint8_t MAX_PIECES = 8;
 const uint8_t MAX_SQUARES = 64;
 const uint8_t HASH_AGE = 6;
 const uint8_t LMP_DEPTH = 8;
-const uint8_t U8_NO_BOUND = 50;
+const uint8_t NO_BOUND = 50;
 const uint8_t U8_AP_WINDOW = 20;
 const uint8_t HISTORY_PRUNING_DEPTH = 2;
 const uint8_t SEE_PRUNING_DEPTH = 1;
@@ -24,7 +24,7 @@ const uint16_t U16_EXT_FPRUNE = 515;
 const uint16_t U16_RAZOR_MARGIN = 250;
 const uint16_t U16_RVRFPRUNE = 265;
 const uint16_t U16_EXT_RVRFPRUNE = 515;
-const uint16_t U16_Q_DELTA = 150;
+const uint16_t VAL_Q_DELTA = 150;
 const uint16_t CURRMOVE_INTERVAL = 3000;
 
 const int16_t NO_DEPTH = -127;
@@ -36,16 +36,16 @@ const uint16_t PAWN_HASH_TABLE_RECORDS = 1024 * 4;
 const uint16_t EVAL_HASH_TABLE_RECORDS = 1024 * 8;
 
 const int32_t I32_INF = 50000;
-const int32_t I32_UNKNOWN = 40000;
+const int32_t VAL_UNKNOWN = 40000;
 const int32_t MATE = 30000;
 
-const float F_ONE_PLY = 1.25;
-const float F_CHECK_EXT = 0.5;
-const float F_MATE_THREAT_EXT = 0.5;
-const float F_RECAPTURE_EXT = 0.75;
-const float F_PRANK_EXT = 1;
-const float F_PROMOTION_EXT = 0.75;
-const float F_SINGULAR_EXT = 1.25;
+const float VAL_ONE_PLY = 1.25;
+const float VAL_CHECK_EXT = 0.5;
+const float VAL_MATE_THREAT_EXT = 0.5;
+const float VAL_RECAPTURE_EXT = 0.75;
+const float VAL_PRANK_EXT = 1;
+const float VAL_PROMOTION_EXT = 0.75;
+const float VAL_SINGULAR_EXT = 1.25;
 
 
 const int NN_SIZE = 128;

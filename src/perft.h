@@ -9,7 +9,9 @@
 #ifndef perft_h
 #define perft_h
 
-#include "thread.h"
+#include "namespaces.h"
+
+using namespace game;
 
 U64 perft(int perft, U8 depth, Side color, GameInfo *th);
 void startPerft(Side side, U8 depth, GameInfo *th);

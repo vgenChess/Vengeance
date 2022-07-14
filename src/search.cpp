@@ -27,7 +27,6 @@
 #include "utility.h"
 #include "nonslidingmoves.h"
 #include "magicmoves.h"
-#include "thread.h"
 #include "see.h"
 #include "constants.h"
 #include "history.h"
@@ -36,11 +35,10 @@
 #include "TimeManagement.h"
 #include "HashManagement.h"
 #include "nnue.h"
+#include "enums.h"
+#include "namespaces.h"
 
-U16 HashManager::age = 0;
-
-bool GameInfo::abortSearch = false;
-bool GameInfo::searching = false;
+using namespace game;
 
 int option_thread_count, LMR[64][64], LMP[2][LMP_DEPTH];
 
@@ -48,25 +46,8 @@ std::mutex mutex;
 
 int fmargin[4] = { 0, 200, 300, 500 };
 
-std::vector<std::thread> threads;
-std::vector<GameInfo*> infos;
 
-enum Stats {
 
-    NODES, TTHITS
-};
-
-template<Stats stats>
-inline U64 getStats() {
-
-    U64 sum = 0;
-    for (GameInfo *gi : infos) {
-
-        sum += stats == NODES ? gi->nodes : (stats == TTHITS ? gi->ttHits : 0);
-    }
-
-    return sum;
-}
 
 void initLMR() 
 {
@@ -97,10 +78,10 @@ void startSearch(int index, GameInfo *gi)
 
     if (index == 0) {
 
-        HashManager::age++;
+        tt::age++;
 
-        GameInfo::searching = true;
-        GameInfo::abortSearch = false;
+        searching = true;
+        abortSearch = false;
 
         threads.clear();
         infos.clear();
@@ -124,7 +105,7 @@ void startSearch(int index, GameInfo *gi)
 
             infos.push_back( lGi );
 
-            threads.emplace_back(startSearch, i, lGi);
+            game::threads.emplace_back(startSearch, i, lGi);
         }
     }
 
@@ -137,7 +118,7 @@ void startSearch(int index, GameInfo *gi)
 
     if (index == 0) {
 
-        GameInfo::abortSearch = true;
+        abortSearch = true;
 
         for (std::thread& th: threads)
             th.join();
@@ -172,14 +153,14 @@ void startSearch(int index, GameInfo *gi)
         if (bestIndex != 0)
             reportPV(bestThread, getStats<NODES>(), getStats<TTHITS>());
 
-        U32 bestMove = bestThread->pvLine[bestThread->completedDepth].line[0];
+        const auto bestMove = bestThread->pvLine[bestThread->completedDepth].line[0];
 
         std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
 
-        TimeManager::sTm.updateTimeSet(false);
-        TimeManager::sTm.updateStopped(false);
+        tmg::timeManager.updateTimeSet(false);
+        tmg::timeManager.updateStopped(false);
 
-        GameInfo::searching = false;
+        searching = false;
     }
 }
 
@@ -201,16 +182,16 @@ void iterativeDeepening(int index, GameInfo *gi)
 
         aspirationWindow<stm>(index, gi );
 
-        if (GameInfo::abortSearch)
+        if (abortSearch)
             return;
 
         if ( index != 0)
             continue;
 
-        if (TimeManager::sTm.isTimeSet() && gi->completedDepth >= 4)
+        if (tmg::timeManager.isTimeSet() && gi->completedDepth >= 4)
         {
             float multiplier = 1;
-            const auto timePerMove = TimeManager::sTm.getTimePerMove();
+            const auto timePerMove = tmg::timeManager.getTimePerMove();
 
             const auto completedDepth = gi->completedDepth;
 
@@ -246,8 +227,8 @@ void iterativeDeepening(int index, GameInfo *gi)
                 multiplier = 0.5;
 
 
-            if (TimeManager::sTm.time_elapsed_milliseconds(
-                TimeManager::sTm.getStartTime()) >= timePerMove * multiplier) {
+            if (tmg::timeManager.timeElapsed<MILLISECONDS>(
+                        tmg::timeManager.getStartTime()) >= timePerMove * multiplier) {
 
                 return;
             }
@@ -295,7 +276,7 @@ void aspirationWindow(int index, GameInfo *gi)
         
         score = alphabeta<stm>(alpha, beta, MATE, gi, &searchInfo);
 
-        if (GameInfo::abortSearch)
+        if (game::abortSearch)
         {
             return;
         }
@@ -349,13 +330,12 @@ void aspirationWindow(int index, GameInfo *gi)
 
     if (index == 0) {
 
-        auto time_elapsed_milliseconds = TimeManager::sTm.time_elapsed_milliseconds(
-            TimeManager::sTm.getStartTime()
-        );
+        auto time_elapsed_milliseconds = tmg::timeManager.timeElapsed<MILLISECONDS>(
+                                             tmg::timeManager.getStartTime());
 
         if (gi->depth > 1 && time_elapsed_milliseconds >= 3000) {
 
-            reportPV(infos[0], getStats<NODES>(), getStats<TTHITS>());
+            reportPV(game::infos[0], game::getStats<NODES>(), game::getStats<TTHITS>());
         }
     }
 }
@@ -396,15 +376,15 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
 
     // Check time spent
     if (    mainThread
-        &&  TimeManager::sTm.isTimeSet()
+        &&  tmg::timeManager.isTimeSet()
         &&  gi->nodes % CHECK_NODES == 0)
     {
-        GameInfo::abortSearch = TimeManager::time_now().time_since_epoch()
-            >= TimeManager::sTm.getStopTime().time_since_epoch();
+        game::abortSearch = TimeManager::time_now().time_since_epoch()
+            >= tmg::timeManager.getStopTime().time_since_epoch();
     }
     
 
-    if (GameInfo::abortSearch)
+    if (game::abortSearch)
     {
         return 0; 
     }
@@ -454,7 +434,7 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
     
     const auto hashHit = gi->hashManager.probeHash(hashEntry, gi->hashKey);
     
-    int ttScore = I32_UNKNOWN;
+    int ttScore = VAL_UNKNOWN;
     U32 ttMove = NO_MOVE;
     
     if (hashHit) 
@@ -464,7 +444,7 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
         ttScore = hashEntry->value;
         ttMove =  hashEntry->bestMove;
     
-        if (!rootNode && !pvNode && hashEntry->depth >= depth && ttScore != I32_UNKNOWN)
+        if (!rootNode && !pvNode && hashEntry->depth >= depth && ttScore != VAL_UNKNOWN)
         {
             if (    hashEntry->flags == hashfEXACT 
                 ||  (hashEntry->flags == hashfBETA && ttScore >= beta)
@@ -486,15 +466,15 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
     const auto sEval =
         singularSearch
             ? gi->moveStack[ply].sEval : isInCheck
-            ? I32_UNKNOWN : hashHit
-            ? ((hashEntry->sEval == I32_UNKNOWN)
+            ? VAL_UNKNOWN : hashHit
+            ? ((hashEntry->sEval == VAL_UNKNOWN)
             ? predict(stm, gi) : hashEntry->sEval) : predict(stm, gi);
 
     const auto improving = isInCheck ? false : ply >= 2 ? sEval > gi->moveStack[ply - 2].sEval : true;
 
     if (!singularSearch && !isInCheck && !hashHit)
     {
-        gi->hashManager.recordHash(gi->hashKey, NO_MOVE, NO_DEPTH, I32_UNKNOWN, U8_NO_BOUND, sEval);
+        gi->hashManager.recordHash(gi->hashKey, NO_MOVE, NO_DEPTH, VAL_UNKNOWN, NO_BOUND, sEval);
     }
 
 
@@ -513,7 +493,7 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
         &&	oppPiecesCount > 3) 
     { 
 
-        assert(sEval != I32_UNKNOWN);
+        assert(sEval != VAL_UNKNOWN);
         
 
         if (sEval - fmargin[depth] >= beta)       // Reverse Futility Pruning
@@ -738,8 +718,8 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
         // report current depth, moves played and current move being searched
         if ( rootNode && mainThread )
         {
-            if (TimeManager::sTm.time_elapsed_milliseconds(
-                TimeManager::sTm.getStartTime()) > CURRMOVE_INTERVAL )
+            if (tmg::timeManager.timeElapsed<MILLISECONDS>(
+                        tmg::timeManager.getStartTime()) > CURRMOVE_INTERVAL )
             {
                 std::cout << "info depth " << si->realDepth << " currmove ";
                 std::cout << getMoveNotation(currentMove.move) << " currmovenumber " << movesPlayed << "\n";
@@ -777,22 +757,22 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
 
             if (currentMove.move == ttMove && singularMove ) // Singular extension
             {
-                extension += F_SINGULAR_EXT;
+                extension += VAL_SINGULAR_EXT;
             }
             
             if (isInCheck) 
             {
-                extension += F_CHECK_EXT;	// Check extension
+                extension += VAL_CHECK_EXT;	// Check extension
             }
             
             if (mateThreat)
             {
-                extension += F_MATE_THREAT_EXT; // Mate threat extension
+                extension += VAL_MATE_THREAT_EXT; // Mate threat extension
             }
             
             if (currentMoveType == MOVE_PROMOTION) 
             {
-                extension += F_PROMOTION_EXT;   // Promotion extension
+                extension += VAL_PROMOTION_EXT;   // Promotion extension
             }
             
             bool isPrank = stm ? 
@@ -801,7 +781,7 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
             
             if (pieceCurrMove == PAWNS && isPrank)
             {
-                extension += F_PRANK_EXT;       // Pawn push extension
+                extension += VAL_PRANK_EXT;       // Pawn push extension
             }
             
             U8 prevMoveType = move_type(previousMove);
@@ -811,17 +791,17 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
                 U8 prevMoveToSq = to_sq(previousMove);
             
                 if (currentMoveToSq == prevMoveToSq)
-                    extension += F_RECAPTURE_EXT;   // Recapture extension
+                    extension += VAL_RECAPTURE_EXT;   // Recapture extension
             }
 
-            if (extension >= F_ONE_PLY) 
+            if (extension >= VAL_ONE_PLY)
             {
                 extend = 1;
-                extension -= F_ONE_PLY;
+                extension -= VAL_ONE_PLY;
 
-                if (extension >= F_ONE_PLY)
+                if (extension >= VAL_ONE_PLY)
                 {
-                    extension = 3 * F_ONE_PLY / 4;
+                    extension = 3 * VAL_ONE_PLY / 4;
                 }
             }
         } 
@@ -999,14 +979,14 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     const auto ply = si->ply;
 
     // Check if time limit has been reached
-    if (    TimeManager::sTm.isTimeSet()
+    if (    tmg::timeManager.isTimeSet()
         &&  mainThread && gi->nodes % CHECK_NODES == 0)
     {
-        GameInfo::abortSearch = TimeManager::time_now().time_since_epoch()
-            >= TimeManager::sTm.getStopTime().time_since_epoch();
+        game::abortSearch = TimeManager::time_now().time_since_epoch()
+            >= tmg::timeManager.getStopTime().time_since_epoch();
     }
     
-    if (GameInfo::abortSearch)
+    if (game::abortSearch)
     {
         return 0; 
     }
@@ -1051,7 +1031,7 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     
     const auto hashHit = gi->hashManager.probeHash(hashEntry, gi->hashKey);
     
-    int ttScore = I32_UNKNOWN;
+    int ttScore = VAL_UNKNOWN;
 
     if (hashHit) 
     { // no depth check required since its 0 in quiescense search
@@ -1060,7 +1040,7 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
 
         ttScore = hashEntry->value;
 
-        if (    ttScore != I32_UNKNOWN 
+        if (    ttScore != VAL_UNKNOWN
             &&  (    hashEntry->flags == hashfEXACT 
                 ||  (hashEntry->flags == hashfBETA && ttScore >= beta)
                 ||  (hashEntry->flags == hashfALPHA && ttScore <= alpha))) 
@@ -1073,11 +1053,11 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     U32 bestMove = NO_MOVE;
     int bestScore = -MATE;
 
-    auto sEval = hashHit ? ((hashEntry->sEval == I32_UNKNOWN) ? 
+    auto sEval = hashHit ? ((hashEntry->sEval == VAL_UNKNOWN) ?
                                     predict(stm, gi) : hashEntry->sEval) : predict(stm, gi);
     if (!hashHit)
     {
-        gi->hashManager.recordHash(gi->hashKey, NO_MOVE, NO_DEPTH, I32_UNKNOWN, U8_NO_BOUND, sEval);
+        gi->hashManager.recordHash(gi->hashKey, NO_MOVE, NO_DEPTH, VAL_UNKNOWN, NO_BOUND, sEval);
     }
     
 
@@ -1102,7 +1082,7 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     gi->moveList[ply].badCaptures.clear();
 
     const auto oppPiecesCount = POPCOUNT(opp ? gi->blackPieceBB[PIECES] : gi->whitePieceBB[PIECES]);
-    const auto qFutilityBase = sEval + U16_Q_DELTA; 
+    const auto qFutilityBase = sEval + VAL_Q_DELTA;
 
     U8 hashf = hashfALPHA, capPiece = DUMMY;
     int movesPlayed = 0; 

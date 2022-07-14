@@ -1,7 +1,7 @@
 #include <vector>
+#include <algorithm>
 
 #include "history.h"
-#include "thread.h"
 #include "functions.h"
 
 void updateHistory(Side stm, int ply, int depth, U32 bestMove, std::vector<U32> &quietMovesPlayed, GameInfo *th) {

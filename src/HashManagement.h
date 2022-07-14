@@ -2,43 +2,34 @@
 #define HASH_MANAGEMENT_H
 
 #include <vector>
+#include <string.h>
+
 #include "structs.h"
 #include "constants.h"
+#include "namespaces.h"
 
 class HashManager 
 {
     
-private:
-        
-    static int hashTableSize;
-    
-    // Since hash table is shared between threads,
-    // it is declared as static to make it accessible, 
-    // for all threads.
-
-    static HashEntry* hashTable;
-
 public:
     
-    static U16 age;
-
     inline static void initHashTable(int size) 
     {
-        delete[] hashTable;
+        delete[] tt::hashTable;
 
-        hashTableSize = (size * 1024 * 1024) / sizeof(HashEntry);
+        tt::size = (size * 1024 * 1024) / sizeof(HashEntry);
 
-        hashTable = new HashEntry[hashTableSize];
+        tt::hashTable = new HashEntry[tt::size];
     }
     
     inline static void clearHashTable()
     {
-        std::memset(hashTable, 0, sizeof(HashEntry) * hashTableSize);
+        std::memset(tt::hashTable, 0, sizeof(HashEntry) * tt::size);
     }
     
     inline HashEntry* getHashEntry(const U64 key)
     {
-        return &hashTable[key % hashTableSize];
+        return &tt::hashTable[key % tt::size];
     }
     
     inline bool probeHash(HashEntry* entry, U64 key) 
@@ -55,13 +46,13 @@ public:
     
     inline void recordHash(U64 key, U32 bestMove, int depth, int value, int hashf, int sEval) 
     {
-        auto entry = &hashTable[key % hashTableSize];
+        auto entry = &tt::hashTable[key % tt::size];
         
         U32 dataKey = entry->bestMove ^ entry->value ^ entry->depth ^ entry->flags ^ entry->sEval;
         
         const auto isValidHash = (entry->key ^ dataKey) == key; 
         
-        if ((age - entry->age) < HASH_AGE && isValidHash && depth < entry->depth) 
+        if ((tt::age - entry->age) < HASH_AGE && isValidHash && depth < entry->depth)
         { // Check whether to overwrite previous information
             return;           
         }
@@ -76,7 +67,7 @@ public:
         entry->depth = depth;
         entry->bestMove = bestMove;
         entry->sEval = sEval;
-        entry->age = age;
+        entry->age = tt::age;
     }
     
     
@@ -87,7 +78,7 @@ public:
         int count = 0;
         for (unsigned int i = 0; i < 1000; i++) 
         {
-            if (hashTable[i].key != 0)
+            if (tt::hashTable[i].key != 0)
                 count++;
         }
         
@@ -96,7 +87,7 @@ public:
 
     inline static void deleteHashTable() {
 
-        delete[] hashTable;
+        delete[] tt::hashTable;
     }
 };
 

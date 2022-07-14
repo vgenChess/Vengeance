@@ -1,9 +1,12 @@
 #ifndef CLASSES_H
 #define CLASSES_H
 
+#include <string>
+
 #include "types.h"
 #include "constants.h"
 #include "functions.h"
+#include "enums.h"
 
 class Notation 
 {    

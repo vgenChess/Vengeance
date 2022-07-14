@@ -5,8 +5,9 @@
 #include <vector>
 #include <iostream>
 
-#include "thread.h"
-#include "TimeManagement.h"
+#include "namespaces.h"
+
+using namespace game;
 
 inline std::string getMoveNotation(const U32 move) {
 
@@ -39,8 +40,8 @@ inline void reportPV(GameInfo *gi, U64 totalNodes, U64 totalTTHits) {
     int score = gi->pvLine[gi->completedDepth].score;
     
     std::cout << "info depth " << depth << " seldepth " << selDepth; 
-    std::cout << " time " << TimeManager::time_elapsed_milliseconds(
-         TimeManager::sTm.getStartTime()); 
+    std::cout << " time " << tmg::timeManager.timeElapsed<MILLISECONDS> (
+                  tmg::timeManager.getStartTime());
     std::cout << " nodes " << totalNodes;
     std::cout/*<< " hashfull " << hashfull()*/ << " tbhits " << totalTTHits;
     std::cout << " score cp " << score << " pv";

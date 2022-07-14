@@ -23,12 +23,12 @@
 #include "movegen.h"
 #include "search.h"
 #include "perft.h"
-#include "thread.h"
 #include "ucireport.h"
 #include "functions.h"
 #include "see.h"
 #include "time.h"
 #include "nnue.h"
+#include "namespaces.h"
 
 #define NAME "V0.9"
 #define START_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -38,7 +38,7 @@ bool quit;
 int option_hash_size;
 int MOVE_OVERHEAD = 300;
 
-std::thread searchThread;
+using namespace game;
 
 void setOption(std::string &line) {
 
@@ -59,12 +59,10 @@ void setOption(std::string &line) {
 
 void UciLoop() {
 
-    GameInfo *gameInfo = new GameInfo();
+    initInfo->clear();
+    initInfo->init();
 
-    gameInfo->clear();
-    gameInfo->init();
-
-    parseFen(START_FEN, gameInfo);
+    parseFen(START_FEN, game::initInfo);
 
     quit = false;
     
@@ -96,7 +94,7 @@ void UciLoop() {
             setOption(cmd);
         } else if (token == "ucinewgame") {
             
-            HashManager::age = 0;
+            tt::age = 0;
             HashManager::clearHashTable();
 
 //             for ( GameInfo *thread : searchThreads.getSearchThreads())
@@ -104,17 +102,17 @@ void UciLoop() {
 //                 thread->clear();
 //             }
             
-            gameInfo->clear();
+            initInfo->clear();
         } else if (token == "position") {
             
-            gameInfo->clear();
-            gameInfo->init();
+            initInfo->clear();
+            initInfo->init();
 
-            gameInfo->moves_history_counter = 0;
-            gameInfo->movesHistory[0].hashKey = gameInfo->hashKey;
-            gameInfo->movesHistory[0].fiftyMovesCounter = 0;
+            initInfo->moves_history_counter = 0;
+            initInfo->movesHistory[0].hashKey = initInfo->hashKey;
+            initInfo->movesHistory[0].fiftyMovesCounter = 0;
 
-            gameInfo->searching = false;
+            game::searching = false;
 
             is>>token;
 
@@ -131,7 +129,7 @@ void UciLoop() {
                     fen += token + " ";
             }
 
-            U8 sideToMove = parseFen(fen, gameInfo);
+            U8 sideToMove = parseFen(fen, initInfo);
 
             std::vector<Move> moves;
 
@@ -139,16 +137,16 @@ void UciLoop() {
             {
                 moves.clear();
 
-                genMoves(sideToMove == WHITE ? WHITE : BLACK, 0, moves, gameInfo);
+                genMoves(sideToMove == WHITE ? WHITE : BLACK, 0, moves, initInfo);
                 
                 for (Move m : moves) 
                 {
                     if (getMoveNotation(m.move) == token) 
                     {
-                        make_move(0, m.move, gameInfo);
+                        make_move(0, m.move, initInfo);
                         
-                        gameInfo->moves_history_counter++;
-                        gameInfo->movesHistory[gameInfo->moves_history_counter].hashKey = gameInfo->hashKey;
+                        initInfo->moves_history_counter++;
+                        initInfo->movesHistory[initInfo->moves_history_counter].hashKey = initInfo->hashKey;
 
                         sideToMove ^= 1;
                         
@@ -157,7 +155,7 @@ void UciLoop() {
                 }
             }
 
-            gameInfo->stm = sideToMove == WHITE ? WHITE : BLACK;
+            initInfo->stm = sideToMove == WHITE ? WHITE : BLACK;
         } 
         else if (token == "isready") 
         {
@@ -165,18 +163,18 @@ void UciLoop() {
         } 
         else if (token == "go") 
         {
-            TimeManager::sTm.setStartTime(std::chrono::steady_clock::now());
+            tmg::timeManager.setStartTime(std::chrono::steady_clock::now());
 
-            TimeManager::sTm.updateTimeSet(false);
+            tmg::timeManager.updateTimeSet(false);
 
             int32_t time = -1, moveTime = -1, nodes = 0, inc = 0, movesToGo = -1, depthCurrent = 0;
 
             while (is >> token) {
 
-                     if (token == "wtime" && gameInfo->stm == WHITE)     is >> time;
-                else if (token == "btime" && gameInfo->stm == BLACK)     is >> time;
-                else if (token == "winc"  && gameInfo->stm == WHITE)     is >> inc;
-                else if (token == "binc"  && gameInfo->stm == BLACK)     is >> inc;
+                     if (token == "wtime" && initInfo->stm == WHITE)     is >> time;
+                else if (token == "btime" && initInfo->stm == BLACK)     is >> time;
+                else if (token == "winc"  && initInfo->stm == WHITE)     is >> inc;
+                else if (token == "binc"  && initInfo->stm == BLACK)     is >> inc;
                 else if (token == "movestogo")  is >> movesToGo;
                 else if (token == "depth")      is >> depthCurrent;
                 else if (token == "nodes")      is >> nodes;
@@ -186,14 +184,14 @@ void UciLoop() {
 
             if (moveTime != -1) {
                 
-                TimeManager::sTm.updateTimeSet(true);
-                TimeManager::sTm.updateTimePerMove(moveTime);
+                tmg::timeManager.updateTimeSet(true);
+                tmg::timeManager.updateTimePerMove(moveTime);
                 
-                TimeManager::sTm.setStopTime(TimeManager::sTm.getStartTime()
+                tmg::timeManager.setStopTime(tmg::timeManager.getStartTime()
                     + std::chrono::milliseconds(moveTime));
             } else {
                 
-                TimeManager::sTm.updateTimeSet(time != -1 ? true : false);
+                tmg::timeManager.updateTimeSet(time != -1 ? true : false);
 
                 if (time != -1) {
 
@@ -206,32 +204,32 @@ void UciLoop() {
 
                         timePerMove = (int)fmin(time * 0.33, total / 20.0);
 
-                        TimeManager::sTm.updateTimePerMove(timePerMove);
+                        tmg::timeManager.updateTimePerMove(timePerMove);
                     } else {
 
                         const auto total = (int)std::max(1.0f, (float)(time + movesToGo * inc - MOVE_OVERHEAD));
 
                         timePerMove = total / movesToGo;
 
-                        TimeManager::sTm.updateTimePerMove(timePerMove);
+                        tmg::timeManager.updateTimePerMove(timePerMove);
                     }
 
                     int maxTime = (int)std::max(1.0, time * 0.75);
 
-                    TimeManager::sTm.setStopTime(
-                        TimeManager::sTm.getStartTime() + std::chrono::milliseconds(maxTime));
+                    tmg::timeManager.setStopTime(
+                        tmg::timeManager.getStartTime() + std::chrono::milliseconds(maxTime));
                 } else {
 
-                    TimeManager::sTm.updateTimeSet(false);
+                    tmg::timeManager.updateTimeSet(false);
                 }
             }
 
-            threads.emplace_back(startSearch, 0, gameInfo);
+            threads.emplace_back(startSearch, 0, initInfo);
         }
 
         else if (token == "stop") {
 
-            GameInfo::abortSearch = true;
+            game::abortSearch = true;
 
             for (auto &th: threads) {
 
@@ -244,7 +242,7 @@ void UciLoop() {
 
         else if (token == "quit") {
         
-            GameInfo::abortSearch = true;
+            game::abortSearch = true;
 
             for (auto &th: threads) {
 
@@ -265,7 +263,7 @@ void UciLoop() {
 
         else if (token == "perft") {
             
-            std::thread t4(startPerft, gameInfo->stm, 10, gameInfo);
+            std::thread t4(startPerft, initInfo->stm, 10, initInfo);
 
             t4.join();
         } 
@@ -282,7 +280,7 @@ void UciLoop() {
                 printf("Depth should be greater than 0\n");
             } else {
 
-                std::thread t5(divide, d, gameInfo->stm, gameInfo);
+                std::thread t5(divide, d, initInfo->stm, initInfo);
 
                 t5.join();
             }
@@ -290,16 +288,16 @@ void UciLoop() {
 
         else if (token == "evaluate") {
             
-            print_board(gameInfo->occupied, gameInfo);
+            print_board(initInfo->occupied, initInfo);
             printf("\n\n");
 
-            int scoreWhite = predict(WHITE, gameInfo);
+            int scoreWhite = predict(WHITE, initInfo);
             
             printf("White score = %d\n", scoreWhite);
             
             printf("\n");
 
-            int scoreBlack = predict(BLACK, gameInfo);
+            int scoreBlack = predict(BLACK, initInfo);
 
             printf("Black score = %d\n", scoreBlack);
         } 
@@ -318,7 +316,7 @@ void UciLoop() {
 
             std::cout<<"\n";
 
-            debugSEE(ch, sq, gameInfo);
+            debugSEE(ch, sq, initInfo);
         }
     } while(true);
 }
