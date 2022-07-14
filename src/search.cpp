@@ -105,7 +105,7 @@ void startSearch(int index, GameInfo *gi)
 
             infos.push_back( lGi );
 
-            game::threads.emplace_back(startSearch, i, lGi);
+            threads.emplace_back(startSearch, i, lGi);
         }
     }
 
@@ -276,7 +276,7 @@ void aspirationWindow(int index, GameInfo *gi)
         
         score = alphabeta<stm>(alpha, beta, MATE, gi, &searchInfo);
 
-        if (game::abortSearch)
+        if (abortSearch)
         {
             return;
         }
@@ -335,7 +335,7 @@ void aspirationWindow(int index, GameInfo *gi)
 
         if (gi->depth > 1 && time_elapsed_milliseconds >= 3000) {
 
-            reportPV(game::infos[0], game::getStats<NODES>(), game::getStats<TTHITS>());
+            reportPV(infos[0], getStats<NODES>(), getStats<TTHITS>());
         }
     }
 }
@@ -379,12 +379,12 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
         &&  tmg::timeManager.isTimeSet()
         &&  gi->nodes % CHECK_NODES == 0)
     {
-        game::abortSearch = TimeManager::time_now().time_since_epoch()
+        abortSearch = TimeManager::time_now().time_since_epoch()
             >= tmg::timeManager.getStopTime().time_since_epoch();
     }
     
 
-    if (game::abortSearch)
+    if (abortSearch)
     {
         return 0; 
     }
@@ -982,11 +982,11 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     if (    tmg::timeManager.isTimeSet()
         &&  mainThread && gi->nodes % CHECK_NODES == 0)
     {
-        game::abortSearch = TimeManager::time_now().time_since_epoch()
+        abortSearch = TimeManager::time_now().time_since_epoch()
             >= tmg::timeManager.getStopTime().time_since_epoch();
     }
     
-    if (game::abortSearch)
+    if (abortSearch)
     {
         return 0; 
     }

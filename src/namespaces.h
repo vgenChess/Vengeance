@@ -90,6 +90,9 @@ namespace game {
             movesHistory.clear();
             pawnsHashTable.clear();
             evalHashTable.clear();
+
+
+            // TODO delete all arrays
         }
 
         void init() {
