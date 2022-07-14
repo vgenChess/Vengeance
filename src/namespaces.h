@@ -4,6 +4,7 @@
 #include <vector>
 #include <cstring>
 #include <thread>
+#include <algorithm>
 
 #include "TimeManagement.h"
 #include "zobrist.h"
@@ -15,6 +16,17 @@
 namespace tmg {
 
     inline TimeManager timeManager;
+
+    template<TimeFormat format>
+    inline int gameElaspsedTime() {
+
+        if (format == MILLISECONDS)
+            return timeManager.timeElapsed<MILLISECONDS>(timeManager.getStartTime());
+        else if (format == SECONDS)
+            return timeManager.timeElapsed<SECONDS>(timeManager.getStartTime());
+
+        return 0;
+    }
 };
 
 namespace tt {
@@ -57,82 +69,29 @@ namespace game {
         U64 empty;
 
         // TODO check alignment and datatype and test
-        int historyScore[2][64][64];
-        int captureHistoryScore[8][64][8]; // [piece][to][c_piece]
-        U32 counterMove[2][64][64];
+        int historyScore[2][64][64] = {};
+        int captureHistoryScore[8][64][8] = {}; // [piece][to][c_piece]
+        U32 counterMove[2][64][64] = {};
 
-        alignas(64) int16_t accumulator[2][NN_SIZE];
-        alignas(64) U64 whitePieceBB[MAX_PIECES];
-        alignas(64)	U64 blackPieceBB[MAX_PIECES];
+        alignas(64) int16_t accumulator[2][NN_SIZE] = {};
+        alignas(64) U64 whitePieceBB[MAX_PIECES] = {};
+        alignas(64)	U64 blackPieceBB[MAX_PIECES] = {};
 
-        std::vector<MOVE_LIST> moveList;
-        std::vector<PV> pvLine;
-        std::vector<MOVE_STACK> moveStack;
-        std::vector<UNDO_MOVE_STACK> undoMoveStack;
-        std::vector<MOVES_HISTORY> movesHistory;
-        std::vector<PawnsHashEntry> pawnsHashTable;
-        std::vector<EvalHashEntry> evalHashTable;
+        std::vector<MOVE_LIST> moveList =               std::vector<MOVE_LIST> ( MAX_MOVES );
+        std::vector<PV> pvLine          =               std::vector<PV> ( MAX_PLY );
+        std::vector<MOVE_STACK> moveStack   =           std::vector<MOVE_STACK> ( MAX_PLY );
+        std::vector<UNDO_MOVE_STACK> undoMoveStack =    std::vector<UNDO_MOVE_STACK> ( MAX_PLY );
+        std::vector<MOVES_HISTORY> movesHistory =       std::vector<MOVES_HISTORY> (8192);
+        std::vector<PawnsHashEntry> pawnsHashTable =    std::vector<PawnsHashEntry> (PAWN_HASH_TABLE_RECORDS);
+        std::vector<EvalHashEntry> evalHashTable  =     std::vector<EvalHashEntry> (EVAL_HASH_TABLE_RECORDS);
 
         EvalInfo evalInfo;
         HashManager hashManager;
 
         GameInfo() {
-
-            init();
         }
 
         ~GameInfo() {
-
-            moveList.clear();
-            pvLine.clear();
-            moveStack.clear();
-            undoMoveStack.clear();
-            movesHistory.clear();
-            pawnsHashTable.clear();
-            evalHashTable.clear();
-
-
-            // TODO delete all arrays
-        }
-
-        void init() {
-
-            moveList = 		std::vector<MOVE_LIST> ( MAX_MOVES );
-            pvLine = 		std::vector<PV> ( MAX_PLY );
-            moveStack = 	std::vector<MOVE_STACK> ( MAX_PLY );
-            undoMoveStack = std::vector<UNDO_MOVE_STACK> ( MAX_PLY );
-            movesHistory  = std::vector<MOVES_HISTORY> (8192);
-            pawnsHashTable = std::vector<PawnsHashEntry>(PAWN_HASH_TABLE_RECORDS);
-            evalHashTable = std::vector<EvalHashEntry>(EVAL_HASH_TABLE_RECORDS);
-
-            memset(captureHistoryScore, 0, sizeof(int) * 8 * 64 * 8);
-            memset(historyScore, 0, sizeof(int) * 2 * 64 * 64);
-            memset(counterMove, 0, sizeof(U32) * 2 * 64 * 64);
-            memset(whitePieceBB, 0, sizeof(U64) * 8);
-            memset(blackPieceBB, 0, sizeof(U64) * 8);
-
-            occupied = 0;
-            empty = 0;
-        }
-
-        void clear() {
-
-            moveList.clear();
-            pvLine.clear();
-            moveStack.clear();
-            undoMoveStack.clear();
-            movesHistory.clear();
-            pawnsHashTable.clear();
-            evalHashTable.clear();
-
-            memset(captureHistoryScore, 0, sizeof(int) * 8 * 64 * 8);
-            memset(historyScore, 0, sizeof(int) * 2 * 64 * 64);
-            memset(counterMove, 0, sizeof(U32) * 2 * 64 * 64);
-            memset(whitePieceBB, 0, sizeof(U64) * 8);
-            memset(blackPieceBB, 0, sizeof(U64) * 8);
-
-            occupied = 0;
-            empty = 0;
         }
 
         void clone(GameInfo *gameInfo) {
@@ -159,8 +118,16 @@ namespace game {
 
             hashKey = gameInfo->hashKey;
             pawnsHashKey = gameInfo->pawnsHashKey;
+
+            memcpy(accumulator[WHITE], gameInfo->accumulator[WHITE], sizeof(int16_t) * NN_SIZE);
+            memcpy(accumulator[BLACK], gameInfo->accumulator[BLACK], sizeof(int16_t) * NN_SIZE);
         }
     };
+
+
+
+
+
 
     inline GameInfo *initInfo = new GameInfo();
 

@@ -9,7 +9,7 @@ const uint8_t MAX_SQUARES = 64;
 const uint8_t HASH_AGE = 6;
 const uint8_t LMP_DEPTH = 8;
 const uint8_t NO_BOUND = 50;
-const uint8_t U8_AP_WINDOW = 20;
+const uint8_t AP_WINDOW = 20;
 const uint8_t HISTORY_PRUNING_DEPTH = 2;
 const uint8_t SEE_PRUNING_DEPTH = 1;
 

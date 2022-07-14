@@ -63,7 +63,14 @@ int main(int argc, char **argv)
         UciLoop();
     }
     
+
+
     HashManager::deleteHashTable();
     
+    for (GameInfo *g: infos)
+        delete g;
+
+    infos.clear();
+
     return 0;
 }
