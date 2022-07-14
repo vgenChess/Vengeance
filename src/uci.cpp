@@ -59,10 +59,9 @@ void setOption(std::string &line) {
 
 void UciLoop() {
 
-    initInfo->clear();
-    initInfo->init();
-
-    parseFen(START_FEN, game::initInfo);
+    parseFen(START_FEN, initInfo);
+    refresh_accumulator(initInfo, WHITE);
+    refresh_accumulator(initInfo, BLACK);
 
     quit = false;
     
@@ -94,25 +93,24 @@ void UciLoop() {
             setOption(cmd);
         } else if (token == "ucinewgame") {
             
-            tt::age = 0;
-            HashManager::clearHashTable();
+            if (initInfo)
+                delete initInfo;
 
-//             for ( GameInfo *thread : searchThreads.getSearchThreads())
-//             {
-//                 thread->clear();
-//             }
-            
-            initInfo->clear();
+            initInfo = new GameInfo();
+
+            tt::age = 0;
+
+            HashManager::clearHashTable();
         } else if (token == "position") {
             
-            initInfo->clear();
-            initInfo->init();
+            if (initInfo)
+                delete initInfo;
+
+            initInfo = new GameInfo();
 
             initInfo->moves_history_counter = 0;
             initInfo->movesHistory[0].hashKey = initInfo->hashKey;
             initInfo->movesHistory[0].fiftyMovesCounter = 0;
-
-            game::searching = false;
 
             is>>token;
 
@@ -156,6 +154,9 @@ void UciLoop() {
             }
 
             initInfo->stm = sideToMove == WHITE ? WHITE : BLACK;
+
+            refresh_accumulator(initInfo, WHITE);
+            refresh_accumulator(initInfo, BLACK);
         } 
         else if (token == "isready") 
         {
@@ -224,7 +225,7 @@ void UciLoop() {
                 }
             }
 
-            threads.emplace_back(startSearch, 0, initInfo);
+            threads.emplace_back(startSearch);
         }
 
         else if (token == "stop") {

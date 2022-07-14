@@ -47,8 +47,6 @@ std::mutex mutex;
 int fmargin[4] = { 0, 200, 300, 500 };
 
 
-
-
 void initLMR() 
 {
     const float a = 0.1, b = 2;
@@ -71,97 +69,119 @@ void initLMP()
 }
 
 
-// FIXME during last move all time is used up and it loses on time
-void startSearch(int index, GameInfo *gi)
+void startSearch()
 {
-    // only the main thread should be able to call this function
+    // increment the age which will be used in hash entry to phase out old entries
+    tt::age++;
 
-    if (index == 0) {
+    searching = true;
+    abortSearch = false;
 
-        tt::age++;
+    for (GameInfo *g: infos) {
 
-        searching = true;
-        abortSearch = false;
+        // do not delete the info for initialising data for other threads
+        if (g == initInfo)
+            continue;
 
-        threads.clear();
-        infos.clear();
+        // free resources allocated if any for the previous search
+        delete g;
+    }
 
-        refresh_accumulator(gi, WHITE);
-        refresh_accumulator(gi, BLACK);
+    // clear the previous search infos and threads
+    infos.clear();
+    threads.clear();
 
-        infos.push_back(gi);
+
+    for (int i = 0; i < option_thread_count; i++) {
+
+        GameInfo* lGi = new GameInfo();
+
+        lGi->clone(initInfo);
+
+        infos.push_back(lGi);
+    }
 
 
-        // Spawn threads
+    // Spawn more threads if requested via the uci interface
 
-        for (int i = 1; i < option_thread_count; i++) {
+    for (int i = 1; i < option_thread_count; i++) {
 
-            GameInfo *lGi = new GameInfo();
+        if (initInfo->stm == WHITE) {
 
-            lGi->clone( gi );
+            threads.emplace_back(iterativeDeepening<WHITE>, i, infos[i]);
+        } else {
 
-            refresh_accumulator( lGi, WHITE);
-            refresh_accumulator( lGi, BLACK);
-
-            infos.push_back( lGi );
-
-            threads.emplace_back(startSearch, i, lGi);
+            threads.emplace_back(iterativeDeepening<BLACK>, i, infos[i]);
         }
     }
 
 
-    if (gi->stm == WHITE)
-        iterativeDeepening<WHITE>(index, gi);
-    else
-        iterativeDeepening<BLACK>(index, gi);
+    // start the search for the main thread
+    if (initInfo->stm == WHITE) {
+
+        iterativeDeepening<WHITE>(0, infos[0]);
+    }
+    else {
+
+        iterativeDeepening<BLACK>(0, infos[0]);
+    }
 
 
-    if (index == 0) {
 
-        abortSearch = true;
+    // after the main thread return from the search
+    // signal abort for other threads if any
+    abortSearch = true;
 
-        for (std::thread& th: threads)
-            th.join();
 
-        // Display the best move
+    // wait for other threads before proceeding to display the best move
+    for (std::thread& th: threads)
+        th.join();
 
-        auto bestIndex = 0;
-        auto bestThread = infos[0];
 
-        int bestDepth, currentDepth;
-        int bestScore, currentScore;
 
-        for (uint16_t i = 1; i < infos.size(); i++)
+
+    // Display the best move from the search
+
+    auto bestIndex = 0;
+    auto bestThread = infos[0];
+
+    int bestDepth, currentDepth;
+    int bestScore, currentScore;
+
+    for (uint16_t i = 1; i < infos.size(); i++)
+    {
+        GameInfo* g = infos[i];
+
+        bestDepth = bestThread->completedDepth;
+        currentDepth = g->completedDepth;
+
+        bestScore = bestThread->pvLine[bestDepth].score;
+        currentScore = g->pvLine[currentDepth].score;
+
+        if (    currentScore > bestScore
+            &&  currentDepth > bestDepth)
         {
-            GameInfo* g = infos[i];
-
-            bestDepth = bestThread->completedDepth;
-            currentDepth = g->completedDepth;
-
-            bestScore = bestThread->pvLine[bestDepth].score;
-            currentScore = g->pvLine[currentDepth].score;
-
-            if (    currentScore > bestScore
-                &&  currentDepth > bestDepth)
-            {
-                bestThread = g;
-                bestIndex = i;
-            }
+            bestThread = g;
+            bestIndex = i;
         }
-
-
-        if (bestIndex != 0)
-            reportPV(bestThread, getStats<NODES>(), getStats<TTHITS>());
-
-        const auto bestMove = bestThread->pvLine[bestThread->completedDepth].line[0];
-
-        std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
-
-        tmg::timeManager.updateTimeSet(false);
-        tmg::timeManager.updateStopped(false);
-
-        searching = false;
     }
+
+
+    if (bestIndex != 0)
+        reportPV(bestThread, getStats<NODES>(), getStats<TTHITS>());
+
+    const auto bestMove = bestThread->pvLine[bestThread->completedDepth].line[0];
+
+    std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
+
+
+
+    // finally finish the search
+
+    tmg::timeManager.updateTimeSet(false);
+    tmg::timeManager.updateStopped(false);
+
+    searching = false;
 }
 
 
@@ -247,7 +267,7 @@ void aspirationWindow(int index, GameInfo *gi)
     
     if (gi->depth > 4 && gi->completedDepth > 0)
     {
-        window = U8_AP_WINDOW;
+        window = AP_WINDOW;
 
         int scoreKnown = gi->pvLine.at(gi->completedDepth).score;
 

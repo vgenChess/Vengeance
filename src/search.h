@@ -15,7 +15,7 @@ using namespace game;
 void initLMR();
 void initLMP();
 
-void startSearch(int index, GameInfo *gi);
+void startSearch();
 
 template<Side stm>
 void iterativeDeepening(int index, GameInfo* gi);
