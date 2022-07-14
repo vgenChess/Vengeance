@@ -24,6 +24,8 @@ public:
 
     inline static void initHashTable(int size) 
     {
+        delete[] hashTable;
+
         hashTableSize = (size * 1024 * 1024) / sizeof(HashEntry);
 
         hashTable = new HashEntry[hashTableSize];
@@ -90,6 +92,11 @@ public:
         }
         
         return count;
+    }
+
+    inline static void deleteHashTable() {
+
+        delete[] hashTable;
     }
 };
 

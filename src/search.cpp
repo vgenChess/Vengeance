@@ -126,7 +126,6 @@ void startSearch(int index, GameInfo *gi)
 
             threads.emplace_back(startSearch, i, lGi);
         }
-
     }
 
 

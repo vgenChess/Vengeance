@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <omp.h>
 #include <thread>
 #include <iostream>
 
@@ -36,7 +35,6 @@ HashEntry* HashManager::hashTable;
 
 int main(int argc, char **argv) 
 {    
-
     loadNetwork();
 
     initLMR();
@@ -52,8 +50,6 @@ int main(int argc, char **argv)
 
     option_thread_count = 1;
 
-    omp_set_num_threads(omp_get_max_threads()); // for tuning
-
     TimeManager::sTm.updateTimeSet(false);
     TimeManager::sTm.updateStopped(false);
     
@@ -61,14 +57,14 @@ int main(int argc, char **argv)
 
     if (isBenchmark) 
     {
-        printf("OVERALL: %47d nodes %12d nps\n", 100, 3000000);
+        printf("OVERALL: %47d nodes %12d nps\n", 100, 1250000);
     } 
     else 
     {
         UciLoop();
     }
     
-    HashManager::clearHashTable();
+    HashManager::deleteHashTable();
     
     return 0;
 }
