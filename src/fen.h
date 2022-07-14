@@ -12,7 +12,9 @@
 #include <stdio.h>
 
 #include "types.h"
-#include "thread.h"
+#include "namespaces.h"
+
+using namespace game;
 
 Side parseFen(std::string str, GameInfo* th);
 size_t split(const std::string &txt, std::vector<std::string> &strs, char ch);

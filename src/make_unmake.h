@@ -10,7 +10,9 @@
 #define make_unmake_h
 
 #include "types.h"
-#include "thread.h"
+#include "namespaces.h"
+
+using namespace game;
 
 void make_move(int ply, U32 move, GameInfo *th);
 void unmake_move(int ply, U32 move, GameInfo *th);

@@ -10,7 +10,6 @@
 
 #include "nnue.h"
 #include "structs.h"
-#include "thread.h"
 #include "incbin.h"
 
 extern "C" {

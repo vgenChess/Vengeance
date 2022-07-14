@@ -7,7 +7,10 @@
 
 #include "types.h"
 #include "functions.h"
-#include "thread.h"
+#include "namespaces.h"
+#include "classes.h"
+
+using namespace game;
 
 void initLMR();
 void initLMP();

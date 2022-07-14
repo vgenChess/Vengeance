@@ -26,12 +26,7 @@
 #include "utility.h"
 #include "HashManagement.h"
 #include "nnue.h"
-
-Zobrist Zobrist::objZobrist;
-TimeManager TimeManager::sTm;
-
-int HashManager::hashTableSize;
-HashEntry* HashManager::hashTable;
+#include "namespaces.h"
 
 int main(int argc, char **argv) 
 {    
@@ -42,16 +37,20 @@ int main(int argc, char **argv)
     init_king_attacks();
     init_knight_attacks();
     init_magic_moves();
-    Zobrist::objZobrist.initZobristKeys();
-    Zobrist::objZobrist.initPawnZobristKeys();  // should be called after initialising main zobrist keys
+    zobrist::zobrist.initZobristKeys();
+    zobrist::zobrist.initPawnZobristKeys();  // should be called after initialising main zobrist keys
     initCastleMaskAndFlags();
     init_inbetween_bb(); 
+
+
+
+
     HashManager::initHashTable(16);      // default hash size = 16 megabytes
 
     option_thread_count = 1;
 
-    TimeManager::sTm.updateTimeSet(false);
-    TimeManager::sTm.updateStopped(false);
+    tmg::timeManager.updateTimeSet(false);
+    tmg::timeManager.updateStopped(false);
     
     bool isBenchmark = argc > 1 && strcmp(argv[1], "bench") == 0;
 

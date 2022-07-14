@@ -19,8 +19,6 @@
      
  public:
      
-     static Zobrist objZobrist;
-     
      U64 zobristKey[MAX_PIECES][MAX_SIDES][MAX_SQUARES];
      U64 pawnZobristKey[MAX_SQUARES];
      

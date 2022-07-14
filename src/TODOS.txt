@@ -3,3 +3,4 @@
 -> Check implementation of hash age
 -> Improve time management
 -> Cleanup thread implementation
+-> Cleanup NNUE implementation

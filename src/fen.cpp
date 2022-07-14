@@ -17,7 +17,7 @@
 #include "fen.h"
 #include "utility.h"
 #include "structs.h"
-#include "zobrist.h"
+#include "namespaces.h"
 
 size_t split(const std::string &txt, std::vector<std::string> &strs, char ch) {
 
@@ -63,7 +63,7 @@ Side parseFen(std::string str, GameInfo *th) {
 
     assert (side == WHITE || side == BLACK);
 
-    if (side) th->hashKey ^= Zobrist::objZobrist.KEY_SIDE_TO_MOVE;
+    if (side) th->hashKey ^= zobrist::zobrist.KEY_SIDE_TO_MOVE;
     
     //-------------------------------------------------------
 
@@ -83,22 +83,22 @@ Side parseFen(std::string str, GameInfo *th) {
             
             flag |= CASTLE_FLAG_WHITE_KING;
 
-            th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
+            th->hashKey ^= zobrist::zobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
         } else if (ch == 'k') {
             
             flag |= CASTLE_FLAG_BLACK_KING;
 
-            th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE; 
+            th->hashKey ^= zobrist::zobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE;
         } else if (ch == 'Q') {
             
             flag |= CASTLE_FLAG_WHITE_QUEEN;
 
-            th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
+            th->hashKey ^= zobrist::zobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
         } else if (ch == 'q') {
             
             flag |= CASTLE_FLAG_BLACK_QUEEN;
 
-            th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
+            th->hashKey ^= zobrist::zobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
         }
     }
 
@@ -121,14 +121,14 @@ Side parseFen(std::string str, GameInfo *th) {
 
         U64 epSqBitboard = 1ULL << th->moveStack[0].epSquare;
 
-        if (     epSqBitboard & A_FILE) th->hashKey ^= Zobrist::objZobrist.KEY_EP_A_FILE;
-        else if (epSqBitboard & B_FILE) th->hashKey ^= Zobrist::objZobrist.KEY_EP_B_FILE;
-        else if (epSqBitboard & C_FILE) th->hashKey ^= Zobrist::objZobrist.KEY_EP_C_FILE;
-        else if (epSqBitboard & D_FILE) th->hashKey ^= Zobrist::objZobrist.KEY_EP_D_FILE;
-        else if (epSqBitboard & E_FILE) th->hashKey ^= Zobrist::objZobrist.KEY_EP_E_FILE;
-        else if (epSqBitboard & F_FILE) th->hashKey ^= Zobrist::objZobrist.KEY_EP_F_FILE;
-        else if (epSqBitboard & G_FILE) th->hashKey ^= Zobrist::objZobrist.KEY_EP_G_FILE;
-        else if (epSqBitboard & H_FILE) th->hashKey ^= Zobrist::objZobrist.KEY_EP_H_FILE;
+        if (     epSqBitboard & A_FILE) th->hashKey ^= zobrist::zobrist.KEY_EP_A_FILE;
+        else if (epSqBitboard & B_FILE) th->hashKey ^= zobrist::zobrist.KEY_EP_B_FILE;
+        else if (epSqBitboard & C_FILE) th->hashKey ^= zobrist::zobrist.KEY_EP_C_FILE;
+        else if (epSqBitboard & D_FILE) th->hashKey ^= zobrist::zobrist.KEY_EP_D_FILE;
+        else if (epSqBitboard & E_FILE) th->hashKey ^= zobrist::zobrist.KEY_EP_E_FILE;
+        else if (epSqBitboard & F_FILE) th->hashKey ^= zobrist::zobrist.KEY_EP_F_FILE;
+        else if (epSqBitboard & G_FILE) th->hashKey ^= zobrist::zobrist.KEY_EP_G_FILE;
+        else if (epSqBitboard & H_FILE) th->hashKey ^= zobrist::zobrist.KEY_EP_H_FILE;
     } else {
 		
         th->moveStack[0].epFlag = 0;
@@ -172,7 +172,7 @@ Side parseFen(std::string str, GameInfo *th) {
                     
                     th->blackPieceBB[KING] |= (1ULL << pos);
                     
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[KING][BLACK][pos];
+                    th->hashKey ^= zobrist::zobrist.zobristKey[KING][BLACK][pos];
                         
                     pos--;
                     break;
@@ -180,36 +180,36 @@ Side parseFen(std::string str, GameInfo *th) {
                     
                     th->blackPieceBB[QUEEN] |= (1ULL << pos);
                     
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[QUEEN][BLACK][pos];
+                    th->hashKey ^= zobrist::zobrist.zobristKey[QUEEN][BLACK][pos];
                         
                     pos--;
                     break;
                 case 'b':
                     th->blackPieceBB[BISHOPS] |= (1ULL << pos);
                     
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[BISHOPS][BLACK][pos];
+                    th->hashKey ^= zobrist::zobrist.zobristKey[BISHOPS][BLACK][pos];
                     
                     pos--;
                     break;
                 case 'n':
                     th->blackPieceBB[KNIGHTS] |= (1ULL << pos);
                    
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[KNIGHTS][BLACK][pos];
+                    th->hashKey ^= zobrist::zobrist.zobristKey[KNIGHTS][BLACK][pos];
                        
                     pos--;
                     break;
                 case 'r':
                     th->blackPieceBB[ROOKS] |= (1ULL << pos);
                    
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[ROOKS][BLACK][pos];
+                    th->hashKey ^= zobrist::zobrist.zobristKey[ROOKS][BLACK][pos];
                        
                     pos--;
                     break;
                 case 'p':
                     th->blackPieceBB[PAWNS] |= (1ULL << pos);
                    
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[PAWNS][BLACK][pos];
-                    th->pawnsHashKey ^= Zobrist::objZobrist.pawnZobristKey[pos];   
+                    th->hashKey ^= zobrist::zobrist.zobristKey[PAWNS][BLACK][pos];
+                    th->pawnsHashKey ^= zobrist::zobrist.pawnZobristKey[pos];
 
                     pos--;
                     break;
@@ -219,7 +219,7 @@ Side parseFen(std::string str, GameInfo *th) {
                 case 'K':
                     th->whitePieceBB[KING] |= (1ULL << pos);
                     
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[KING][WHITE][pos];
+                    th->hashKey ^= zobrist::zobrist.zobristKey[KING][WHITE][pos];
                      
                     pos--;
                     break;
@@ -227,7 +227,7 @@ Side parseFen(std::string str, GameInfo *th) {
 
                     th->whitePieceBB[QUEEN] |= (1ULL << pos);
                 
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[QUEEN][WHITE][pos];
+                    th->hashKey ^= zobrist::zobrist.zobristKey[QUEEN][WHITE][pos];
                  
                     pos--;
                     break;
@@ -235,7 +235,7 @@ Side parseFen(std::string str, GameInfo *th) {
 
                     th->whitePieceBB[BISHOPS] |= (1ULL << pos);
                 
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[BISHOPS][WHITE][pos];
+                    th->hashKey ^= zobrist::zobrist.zobristKey[BISHOPS][WHITE][pos];
                          
                     pos--;
                     break;
@@ -243,7 +243,7 @@ Side parseFen(std::string str, GameInfo *th) {
                 
                     th->whitePieceBB[KNIGHTS] |= (1ULL << pos);
                 
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[KNIGHTS][WHITE][pos];
+                    th->hashKey ^= zobrist::zobrist.zobristKey[KNIGHTS][WHITE][pos];
                      
                     pos--;
                     break;
@@ -251,7 +251,7 @@ Side parseFen(std::string str, GameInfo *th) {
                 
                     th->whitePieceBB[ROOKS] |= (1ULL << pos);
                 
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[ROOKS][WHITE][pos];
+                    th->hashKey ^= zobrist::zobrist.zobristKey[ROOKS][WHITE][pos];
                     
                     pos--;
                     break;
@@ -259,8 +259,8 @@ Side parseFen(std::string str, GameInfo *th) {
                 
                     th->whitePieceBB[PAWNS] |= (1ULL << pos);
                     
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[PAWNS][WHITE][pos];            
-                    th->pawnsHashKey ^= Zobrist::objZobrist.pawnZobristKey[pos];
+                    th->hashKey ^= zobrist::zobrist.zobristKey[PAWNS][WHITE][pos];
+                    th->pawnsHashKey ^= zobrist::zobrist.pawnZobristKey[pos];
 
                     pos--;
                     break;

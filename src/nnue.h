@@ -1,11 +1,11 @@
-#pragma once
-#include "structs.h"
-
-#include "thread.h"
 
 #ifndef NN_H_INCLUDED
 #define NN_H_INCLUDED
 
+#include "structs.h"
+#include "namespaces.h"
+
+using namespace game;
 
 bool loadNetwork();
 void nnue_init(void);

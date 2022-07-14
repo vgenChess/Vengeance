@@ -20,8 +20,9 @@
 #include "movegen.h"
 #include "perft.h"
 #include "functions.h"
-#include "zobrist.h"
 #include "misc.h"
+#include "namespaces.h"
+#include "classes.h"
 
 U64 arrInBetween[64][64];
 
@@ -522,15 +523,15 @@ void initHashKey( GameInfo *th) {
                     
                 assert(sq >= 0 && sq < 64);    
 
-				th->hashKey ^= Zobrist::objZobrist.zobristKey[piece][side][sq];
+				th->hashKey ^= zobrist::zobrist.zobristKey[piece][side][sq];
             }
         }
     }
 
-    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
-    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
-    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
-    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE; 
+    th->hashKey ^= zobrist::zobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
+    th->hashKey ^= zobrist::zobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
+    th->hashKey ^= zobrist::zobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
+    th->hashKey ^= zobrist::zobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE;
 }
 
 void initPawnHashKey(U8 side, GameInfo *th) {
@@ -545,11 +546,11 @@ void initPawnHashKey(U8 side, GameInfo *th) {
         sq = GET_POSITION(bitboard);
         POP_POSITION(bitboard);
 
-        th->pawnsHashKey ^= Zobrist::objZobrist.pawnZobristKey[sq];
+        th->pawnsHashKey ^= zobrist::zobrist.pawnZobristKey[sq];
     }
 
     if (side) 
-        th->hashKey ^= Zobrist::objZobrist.KEY_SIDE_TO_MOVE;
+        th->hashKey ^= zobrist::zobrist.KEY_SIDE_TO_MOVE;
 }
 
 
