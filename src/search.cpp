@@ -244,7 +244,7 @@ void iterativeDeepening(int index, GameInfo *gi)
 
             gi->stableMoveCount = previousMove == currentMove ? gi->stableMoveCount + 1 : 0;
 
-            if ( gi->stableMoveCount > 7 && multiplier <= 1)
+            if ( gi->stableMoveCount > 7)
                 multiplier = 0.5;
 
             if (tmg::timeManager.timeElapsed<MILLISECONDS>(
