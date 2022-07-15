@@ -189,9 +189,9 @@ void UciLoop() {
                     + std::chrono::milliseconds(moveTime));
             } else {
                 
-                tmg::timeManager.updateTimeSet(time != -1 ? true : false);
-
                 if (time != -1) {
+
+                    tmg::timeManager.updateTimeSet(true);
 
                     int timePerMove = 0;
 
@@ -207,12 +207,17 @@ void UciLoop() {
 
                         const auto total = (int)std::max(1.0f, (float)(time + movesToGo * inc - MOVE_OVERHEAD));
 
-                        timePerMove = total / movesToGo;
+                        auto factor = 1.6;
+                        auto target = total / movesToGo;
+
+                        timePerMove = factor * target;
 
                         tmg::timeManager.updateTimePerMove(timePerMove);
                     }
 
-                    int maxTime = (int)std::max(1.0, time * 0.75);
+                    // TODO add std::min(timePerMove * 5, time - 500);
+
+                    int maxTime = time - 500;
 
                     tmg::timeManager.setStopTime(
                         tmg::timeManager.getStartTime() + std::chrono::milliseconds(maxTime));

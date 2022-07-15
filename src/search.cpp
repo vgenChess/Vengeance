@@ -224,12 +224,13 @@ void iterativeDeepening(int index, GameInfo *gi)
                 multiplier = 0.5;
             } else {
 
-                auto scoreDiff = prevScore - currentScore;
+                const auto scoreDiff = prevScore - currentScore;
 
-                     if (scoreDiff < 10) multiplier = 0.5;
-                else if (scoreDiff > 40) multiplier = 1.5;
-                else if (scoreDiff > 25) multiplier = 1.3;
-                else if (scoreDiff > 15) multiplier = 1.15;
+                if (scoreDiff < 10) multiplier = 0.5;
+
+                if (scoreDiff > 15) multiplier += 0.20;
+                if (scoreDiff > 25) multiplier += 0.15;
+                if (scoreDiff > 35) multiplier += 0.10;
             }
 
 
@@ -243,9 +244,8 @@ void iterativeDeepening(int index, GameInfo *gi)
 
             gi->stableMoveCount = previousMove == currentMove ? gi->stableMoveCount + 1 : 0;
 
-            if ( gi->stableMoveCount > 7)
+            if ( gi->stableMoveCount > 7 && multiplier <= 1)
                 multiplier = 0.5;
-
 
             if (tmg::timeManager.timeElapsed<MILLISECONDS>(
                         tmg::timeManager.getStartTime()) >= timePerMove * multiplier) {
