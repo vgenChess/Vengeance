@@ -42,9 +42,6 @@ int main(int argc, char **argv)
     initCastleMaskAndFlags();
     init_inbetween_bb(); 
 
-
-
-
     HashManager::initHashTable(16);      // default hash size = 16 megabytes
 
     option_thread_count = 1;
