@@ -67,7 +67,6 @@ void UciLoop() {
     
     std::string cmd, token;
 
-
     std::vector<std::thread> threads;
 
     do {
@@ -97,8 +96,6 @@ void UciLoop() {
                 delete initInfo;
 
             initInfo = new GameInfo();
-
-            tt::age = 0;
 
             HashManager::clearHashTable();
         } else if (token == "position") {

@@ -20,11 +20,15 @@ public:
         tt::size = (size * 1024 * 1024) / sizeof(HashEntry);
 
         tt::hashTable = new HashEntry[tt::size];
+
+        tt::age = 0;
     }
     
     inline static void clearHashTable()
     {
         std::memset(tt::hashTable, 0, sizeof(HashEntry) * tt::size);
+
+        tt::age = 0;
     }
     
     inline HashEntry* getHashEntry(const U64 key)
