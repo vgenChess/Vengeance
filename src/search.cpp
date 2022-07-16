@@ -196,6 +196,7 @@ void iterativeDeepening(int index, GameInfo *gi)
 
     gi->stableMoveCount = 0;
 
+
     for (int depth = 1; depth < 100; depth++)
     {
         gi->depth = depth;
@@ -226,11 +227,11 @@ void iterativeDeepening(int index, GameInfo *gi)
 
                 const auto scoreDiff = prevScore - currentScore;
 
-                if (scoreDiff < 10) multiplier = 0.5;
+                if (scoreDiff <= 10) multiplier = 0.5;
 
-                if (scoreDiff > 15) multiplier += 0.20;
-                if (scoreDiff > 25) multiplier += 0.15;
-                if (scoreDiff > 35) multiplier += 0.10;
+                if (scoreDiff > 15) multiplier += 0.125;
+                if (scoreDiff > 25) multiplier += 0.125;
+                if (scoreDiff > 35) multiplier += 0.125;
             }
 
 
@@ -244,7 +245,7 @@ void iterativeDeepening(int index, GameInfo *gi)
 
             gi->stableMoveCount = previousMove == currentMove ? gi->stableMoveCount + 1 : 0;
 
-            if ( gi->stableMoveCount > 7)
+            if ( gi->stableMoveCount >= 10)
                 multiplier = 0.5;
 
             if (tmg::timeManager.timeElapsed<MILLISECONDS>(
@@ -253,7 +254,7 @@ void iterativeDeepening(int index, GameInfo *gi)
                 return;
             }
         }
-    } 
+    }
 }
 
 
