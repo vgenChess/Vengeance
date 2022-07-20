@@ -95,9 +95,6 @@ public:
 	bool nullMove;
 
 	int ply;
-	int depth;
-	int realDepth;
-	
 	U32 skipMove;
     
     U32 line[MAX_PLY];
@@ -110,8 +107,7 @@ public:
 		nullMove = false;
 
 		ply = 0;
-		depth = 0;
-	
+
 		skipMove = 0UL;
         
         line[0] = NO_MOVE;

@@ -121,7 +121,8 @@ void UciLoop() {
             {
                 fen = START_FEN;
                 is>>token;
-            } else if (token == "fen") 
+            }
+            else if (token == "fen")
             {
                 while (is >> token && token != "moves")
                     fen += token + " ";

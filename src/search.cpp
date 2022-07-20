@@ -167,8 +167,21 @@ void startSearch()
     }
 
 
-    if (bestIndex != 0)
-        reportPV(bestThread, getStats<NODES>(), getStats<TTHITS>());
+    if (bestIndex != 0) {
+
+        const auto timeElapsedMs = tmg::timeManager.timeElapsed<MILLISECONDS>(
+            tmg::timeManager.getStartTime());
+
+        U64 totalNodes = getStats<NODES>();
+
+        int nps = (int)(1000 * (totalNodes / (1 + timeElapsedMs)));
+
+        reportPV(bestDepth, bestThread->selDepth,
+                 bestThread->pvLine[bestDepth].score,
+                 nps,
+                 bestThread->pvLine[bestDepth].line,
+                 totalNodes, getStats<TTHITS>());
+    }
 
     const auto bestMove = bestThread->pvLine[bestThread->completedDepth].line[0];
 
@@ -196,10 +209,7 @@ void iterativeDeepening(int index, GameInfo *gi)
 
     gi->stableMoveCount = 0;
 
-
-    for (int depth = 1; depth < 100; depth++)
-    {
-        gi->depth = depth;
+    for (gi->depth = 1; gi->depth < 100; gi->depth++) {
 
         aspirationWindow<stm>(index, gi );
 
@@ -209,8 +219,8 @@ void iterativeDeepening(int index, GameInfo *gi)
         if ( index != 0)
             continue;
 
-        if (tmg::timeManager.isTimeSet() && gi->completedDepth >= 4)
-        {
+        if (tmg::timeManager.isTimeSet() && gi->completedDepth >= 4) {
+
             float multiplier = 1;
             const auto timePerMove = tmg::timeManager.getTimePerMove();
 
@@ -276,30 +286,43 @@ void aspirationWindow(int index, GameInfo *gi)
         beta  = std::min( MATE, scoreKnown + window);
     }
     
-    SearchInfo searchInfo;
+    SearchInfo si;
 
-    searchInfo.ply = 0;
-    searchInfo.rootNode = true;
-    searchInfo.nullMove = false;
-    searchInfo.singularSearch = false;
-    searchInfo.realDepth = gi->depth;
-    searchInfo.skipMove = NO_MOVE;
-    searchInfo.mainThread = index == 0;
+    si.ply = 0;
+    si.rootNode = true;
+    si.nullMove = false;
+    si.singularSearch = false;
+    si.skipMove = NO_MOVE;
+    si.mainThread = index == 0;
 
     int failHighCounter = 0;
 
     while (true)
     {
-        searchInfo.depth = std::max(1, gi->depth - failHighCounter);
-        searchInfo.line[0] = NO_MOVE;
+        si.line[0] = NO_MOVE;
         
         gi->selDepth = NO_DEPTH;
         
-        score = alphabeta<stm>(alpha, beta, MATE, gi, &searchInfo);
+        score = alphabeta<stm>(alpha, beta, MATE, std::max(1, gi->depth - failHighCounter), gi, &si);
 
         if (abortSearch)
         {
             return;
+        }
+
+        if (index == 0) {
+
+            const auto timeElapsedMs = tmg::timeManager.timeElapsed<MILLISECONDS>(
+                tmg::timeManager.getStartTime());
+
+            if ((score > alpha && score < beta) || (timeElapsedMs >= 3000)) {
+
+                U64 totalNodes = getStats<NODES>();
+
+                int nps = (int)(1000 * (totalNodes / (1 + timeElapsedMs)));
+
+                reportPV(gi->depth, gi->selDepth, score, nps, si.line, totalNodes, getStats<TTHITS>());
+            }
         }
 
         if (score <= alpha) 
@@ -329,7 +352,7 @@ void aspirationWindow(int index, GameInfo *gi)
             
             for (int i = 0; i < MAX_PLY; i++)
             {
-                pv.line[i] = searchInfo.line[i];
+                pv.line[i] = si.line[i];
             
                 if (pv.line[i] == NO_MOVE)
                 {
@@ -347,23 +370,11 @@ void aspirationWindow(int index, GameInfo *gi)
 
 
     assert (score > alpha && score < beta);
-
-
-    if (index == 0) {
-
-        auto time_elapsed_milliseconds = tmg::timeManager.timeElapsed<MILLISECONDS>(
-                                             tmg::timeManager.getStartTime());
-
-        if (gi->depth > 1 && time_elapsed_milliseconds >= 3000) {
-
-            reportPV(infos[0], getStats<NODES>(), getStats<TTHITS>());
-        }
-    }
 }
 
 
 template<Side stm>
-int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si )
+int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo *si )
 {
     // if (alpha >= beta) {
     // 	std::cout<<"realDepth=" << si->realDepth << ", depth=" << si->depth << ", ply =" << si->ply << "\n";
@@ -381,9 +392,6 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
     const auto nullMove = si->nullMove;
     const auto pvNode = alpha != beta - 1;
     
-
-    auto depth = si->depth;
-
 
     // Quiescense Search(under observation)
 
@@ -579,10 +587,9 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
         lSi.nullMove = true;
 
         lSi.ply = ply + 1;
-        lSi.depth = depth - R - 1;
         lSi.line[0] = NO_MOVE;
         
-        const auto score = -alphabeta<opp>(-beta, -beta + 1, mate - 1, gi, &lSi );
+        const auto score = -alphabeta<opp>(-beta, -beta + 1, mate - 1, depth - R - 1, gi, &lSi );
 
         unmakeNullMove(ply, gi);
 
@@ -617,10 +624,9 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
         lSi.nullMove = false;
         lSi.skipMove = ttMove;
         lSi.ply = ply;
-        lSi.depth = sDepth;
         lSi.line[0] = NO_MOVE;
 
-        const auto score = alphabeta<stm>(sBeta - 1, sBeta, mate, gi, &lSi );
+        const auto score = alphabeta<stm>(sBeta - 1, sBeta, mate, sDepth, gi, &lSi );
 
         lSi.skipMove = NO_MOVE;
         lSi.singularSearch = false;
@@ -739,11 +745,20 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
         // report current depth, moves played and current move being searched
         if ( rootNode && mainThread )
         {
-            if (tmg::timeManager.timeElapsed<MILLISECONDS>(
-                        tmg::timeManager.getStartTime()) > CURRMOVE_INTERVAL )
+            const auto timeElapsedMs = tmg::timeManager.timeElapsed<MILLISECONDS>(
+                tmg::timeManager.getStartTime());
+
+            if (timeElapsedMs > CURRMOVE_INTERVAL)
             {
-                std::cout << "info depth " << si->realDepth << " currmove ";
-                std::cout << getMoveNotation(currentMove.move) << " currmovenumber " << movesPlayed << "\n";
+                std::cout << "info depth " << gi->depth;
+                std::cout << " currmove " << getMoveNotation(currentMove.move);
+                std::cout << " currmovenumber " << movesPlayed << std::endl;
+
+                if (movesPlayed < 3) {
+
+                    std::cout << "info nodes " << getStats<NODES>();
+                    std::cout << " time " << timeElapsedMs << std::endl;
+                }
             }
         }
 
@@ -840,10 +855,9 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
         if (movesPlayed <= 1) 
         { // Principal Variation Search
 
-            lSi.depth = newDepth;
             lSi.line[0] = NO_MOVE;
 
-            score = -alphabeta<opp>(-beta, -alpha, mate - 1, gi, &lSi );
+            score = -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi );
         } 
         else 
         { // Late Move Reductions (Under observation)
@@ -878,10 +892,9 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
 
                 reduce = std::min(depth - 1, std::max(reduce, 1));
 
-                lSi.depth = newDepth - reduce;
                 lSi.line[0] = NO_MOVE;
                 
-                score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, gi, &lSi );
+                score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, newDepth - reduce, gi, &lSi );
             } else
             {
                 score = alpha + 1;
@@ -890,15 +903,12 @@ int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo *si 
             if (score > alpha) 
             {   // Research 
                 
-                lSi.depth = newDepth;
                 lSi.line[0] = NO_MOVE;
 
-                score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, gi, &lSi );
+                score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, newDepth, gi, &lSi );
                 
                 if (score > alpha && score < beta) 
-                {
-                    score = -alphabeta<opp>(-beta, -alpha, mate - 1, gi, &lSi );
-                }
+                    score = -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi );
             }
         }
 
