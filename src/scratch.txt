@@ -9,7 +9,7 @@ setoption name Hash value 120
 setoption name Threads value 4
 
 Stuff blocking release
-    - TODO logic 
+    - TODO logic
     - Eval refactor and tuning
 
 Priority
@@ -21,7 +21,7 @@ TODO
     - Rewrite logic for copy/paste code
     - Check zobrist hashing logic, hash table implementation
     - Check square flipping for sides in evaluation
-    
+
 Needs investigation
     - reduce search explosion for higher depths
     - delay reporting to the uci during initial seconds
