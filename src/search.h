@@ -24,7 +24,7 @@ template<Side stm>
 void aspirationWindow(int index, GameInfo* gi);
 
 template<Side stm>
-int alphabeta(int alpha, int beta, const int mate, GameInfo *gi, SearchInfo* si);
+int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo* si);
 
 template<Side stm> 
 int quiescenseSearch(int alpha, int beta, GameInfo* gi, SearchInfo* si);

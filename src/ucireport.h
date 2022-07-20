@@ -31,19 +31,14 @@ inline std::string getMoveNotation(const U32 move) {
     return str;
 }
 
-inline void reportPV(GameInfo *gi, U64 totalNodes, U64 totalTTHits) {
+inline void reportPV(int depth, int selDepth, int score, int nps, U32* pvLine, U64 totalNodes, U64 totalTTHits) {
 
-    const auto depth = gi->completedDepth;
-    const auto selDepth = gi->selDepth;
-    const auto pvLine = gi->pvLine[gi->completedDepth].line;
-
-    int score = gi->pvLine[gi->completedDepth].score;
-    
     std::cout << "info depth " << depth << " seldepth " << selDepth; 
     std::cout << " time " << tmg::timeManager.timeElapsed<MILLISECONDS> (
-                  tmg::timeManager.getStartTime());
+        tmg::timeManager.getStartTime());
     std::cout << " nodes " << totalNodes;
     std::cout/*<< " hashfull " << hashfull()*/ << " tbhits " << totalTTHits;
+    std::cout << " nps " << nps;
     std::cout << " score cp " << score << " pv";
     
     U32 move;
