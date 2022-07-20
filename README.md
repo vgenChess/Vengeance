@@ -11,4 +11,4 @@
 - Futility Pruning
 - Limited Razoring
 - Reverse Futility Pruning
-- Tuned Evaluation Function 
+- NNUE
