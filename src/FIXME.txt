@@ -1,5 +1,4 @@
 
-
 -> No infos shown in the uci display during the search
 -> During last move all time is used up and it loses on time
 -> Often plays bad king moves

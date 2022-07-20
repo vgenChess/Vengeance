@@ -57,7 +57,9 @@ void setOption(std::string &line) {
     } 
 }
 
+
 void UciLoop() {
+
 
     parseFen(START_FEN, initInfo);
     refresh_accumulator(initInfo, WHITE);
@@ -65,6 +67,7 @@ void UciLoop() {
 
     quit = false;
     
+
     std::string cmd, token;
 
     std::vector<std::thread> threads;
@@ -178,51 +181,43 @@ void UciLoop() {
                 else if (token == "nodes")      is >> nodes;
                 else if (token == "movetime")   is >> moveTime;                    
             }
-            
 
             if (moveTime != -1) {
                 
                 tmg::timeManager.updateTimeSet(true);
                 tmg::timeManager.updateTimePerMove(moveTime);
+
+                tmg::timeManager.setStopTime(
+                    tmg::timeManager.getStartTime() + std::chrono::milliseconds(moveTime));
+            }
+
+            else if (time > -1) {
+
+                tmg::timeManager.updateTimeSet(true);
+
+                int timePerMove = 0;
+
+                movesToGo = movesToGo > -1 ? movesToGo : 40;
+
+
+                const auto total = (int)std::max(1.0f, (float)(time + movesToGo * inc - MOVE_OVERHEAD));
+                const auto factor = 1.6;
+                const auto target = total / movesToGo;
+
+                timePerMove = factor * target;
+
+
+                tmg::timeManager.updateTimePerMove(timePerMove);
+
+                const auto maxTime = std::min(timePerMove * 5, time - 500);
+
+                tmg::timeManager.setStopTime(
+                    tmg::timeManager.getStartTime() + std::chrono::milliseconds(maxTime));
+            }
+
+            else {
                 
-                tmg::timeManager.setStopTime(tmg::timeManager.getStartTime()
-                    + std::chrono::milliseconds(moveTime));
-            } else {
-                
-                if (time != -1) {
-
-                    tmg::timeManager.updateTimeSet(true);
-
-                    int timePerMove = 0;
-
-                    if (movesToGo == -1) {
-
-                        // TODO redo logic  
-                        const auto total = (int)fmax(1, time + 50 * inc - MOVE_OVERHEAD);
-
-                        timePerMove = (int)fmin(time * 0.33, total / 20.0);
-
-                        tmg::timeManager.updateTimePerMove(timePerMove);
-                    } else {
-
-                        const auto total = (int)std::max(1.0f, (float)(time + movesToGo * inc - MOVE_OVERHEAD));
-
-                        auto factor = 1.6;
-                        auto target = total / movesToGo;
-
-                        timePerMove = factor * target;
-
-                        tmg::timeManager.updateTimePerMove(timePerMove);
-                    }
-
-                    const auto maxTime = std::min(timePerMove * 5, time - 500);
-
-                    tmg::timeManager.setStopTime(
-                        tmg::timeManager.getStartTime() + std::chrono::milliseconds(maxTime));
-                } else {
-
-                    tmg::timeManager.updateTimeSet(false);
-                }
+                tmg::timeManager.updateTimeSet(false);
             }
 
             threads.emplace_back(startSearch);

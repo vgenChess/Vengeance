@@ -1,6 +1,5 @@
 
-
--> Check implementation of hash age
 -> Improve time management
 -> Cleanup NNUE implementation
 -> Handle case where search is happening and a request for search happens via the uci command go
+-> Redo futility margin
