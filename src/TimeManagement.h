@@ -6,6 +6,7 @@
 #include <chrono>
 
 #include "types.h"
+#include "enums.h"
 
 // for time management
 
@@ -18,26 +19,28 @@ private:
     int mTimePerMove;
     
     TimePoint mStartTime, mStopTime;
-    
+
 public:
-    
-    static TimeManager sTimeManager;
     
     inline static TimePoint time_now() 
     {
         return std::chrono::steady_clock::now();
     } 
-    
-    inline static int time_elapsed_milliseconds(TimePoint t) 
-    {
-        return std::chrono::duration_cast<std::chrono::milliseconds>(time_now() - t).count();
-    } 
-    
-    inline static int time_elapsed_seconds(TimePoint t) 
-    {
-        return std::chrono::duration_cast<std::chrono::seconds>(time_now() - t).count();
+
+    template <TimeFormat timeFormat>
+    inline int timeElapsed(TimePoint t) {
+
+        if (timeFormat == MILLISECONDS) {
+
+            return std::chrono::duration_cast<std::chrono::milliseconds>(time_now() - t).count();
+
+        } else if (timeFormat == SECONDS) {
+
+            return std::chrono::duration_cast<std::chrono::seconds>(time_now() - t).count();
+        }
+
+        return 0;
     }
-    
     
     inline bool isTimeSet() const 
     {
@@ -89,7 +92,6 @@ public:
     {
         mStopTime = stopTime;
     }
-    
 };
 
 #endif

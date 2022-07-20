@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "types.h"
+#include "constants.h"
 
 typedef struct 
 {   
@@ -15,7 +16,7 @@ typedef struct
 typedef struct 
 {    
     int score;
-    U32 line[U16_MAX_PLY];
+    U32 line[MAX_PLY];
 } PV;
 
 typedef struct 
@@ -24,8 +25,8 @@ typedef struct
     int pawnsEval;
     int pawnKingEval;
     U64 openFilesBB;
-    U64 halfOpenFilesBB[U8_MAX_SIDES];
-    U64 allPawnAttacks[U8_MAX_SIDES];
+    U64 halfOpenFilesBB[MAX_SIDES];
+    U64 allPawnAttacks[MAX_SIDES];
 } PawnsHashEntry;
 
 typedef struct 
@@ -36,7 +37,8 @@ typedef struct
 
 typedef struct 
 {
-    U8 flags, age; 
+    U8 flags;
+    U16 age;
     int depth;
     int value;
     int sEval;
@@ -68,6 +70,8 @@ typedef struct
     int material;
     U64 hashKey;
     U64 pawnsHashKey;
+
+    uint16_t accumulator[2][128];
 } UNDO_MOVE_STACK;
 
 typedef struct 

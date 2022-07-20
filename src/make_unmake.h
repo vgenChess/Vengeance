@@ -10,12 +10,14 @@
 #define make_unmake_h
 
 #include "types.h"
-#include "thread.h"
+#include "namespaces.h"
 
-void make_move(int ply, U32 move, Thread *th);
-void unmake_move(int ply, U32 move, Thread *th);
+using namespace game;
 
-void makeNullMove(int ply, Thread *th);
-void unmakeNullMove(int ply, Thread *th); 
+void make_move(int ply, U32 move, GameInfo *th);
+void unmake_move(int ply, U32 move, GameInfo *th);
+
+void makeNullMove(int ply, GameInfo *th);
+void unmakeNullMove(int ply, GameInfo *th); 
 
 #endif /* make_unmake_h */

@@ -21,7 +21,7 @@
 
 // TODO fix perft 
 
-void startPerft(Side side, U8 depth, Thread *th) {
+void startPerft(Side side, U8 depth, GameInfo *th) {
     
     U64 nodes;
     
@@ -48,7 +48,7 @@ void startPerft(Side side, U8 depth, Thread *th) {
     }
 }
 
-U64 perft(int ply, U8 depth, Side side, Thread *th) {
+U64 perft(int ply, U8 depth, Side side, GameInfo *th) {
 
     U64 nodes = 0;
     

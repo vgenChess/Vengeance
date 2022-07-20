@@ -7,37 +7,37 @@
 
 int SEE_VALUE[8] = {0, 100, 300, 300, 500, 900, 2000, 0}; 
 
-U64 attacksTo(U64 occ, U8 square, U8 sideToMove, Thread *th) { // TODO check logic
+U64 attacksTo(U64 occ, U8 square, U8 sideToMove, GameInfo *gi ) { // TODO check logic
 
 	U64 attacks = 0ULL;
 	U64 sqBitboard = 1ULL << square;
 
 	if (sideToMove) {
 
-		attacks |= ((((sqBitboard << 7) & NOT_H_FILE) | ((sqBitboard << 9) & NOT_A_FILE)) & th->blackPieceBB[PAWNS]);
+		attacks |= ((((sqBitboard << 7) & NOT_H_FILE) | ((sqBitboard << 9) & NOT_A_FILE)) & gi->blackPieceBB[PAWNS]);
 	} else {
 
-		attacks |= ((((sqBitboard >> 7) & NOT_A_FILE) | ((sqBitboard >> 9) & NOT_H_FILE)) & th->whitePieceBB[PAWNS]);
+		attacks |= ((((sqBitboard >> 7) & NOT_A_FILE) | ((sqBitboard >> 9) & NOT_H_FILE)) & gi->whitePieceBB[PAWNS]);
 	}
 
 	/* check if a knight is attacking a square */
-	attacks |= (get_knight_attacks(square) & (sideToMove ? th->blackPieceBB[KNIGHTS] : th->whitePieceBB[KNIGHTS]));
+	attacks |= (get_knight_attacks(square) & (sideToMove ? gi->blackPieceBB[KNIGHTS] : gi->whitePieceBB[KNIGHTS]));
 
 	/* check if a bishop or queen is attacking a square */
 	attacks |= (Bmagic(square, occ)
-					& ((sideToMove ? th->blackPieceBB[BISHOPS] : th->whitePieceBB[BISHOPS]) | (sideToMove ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN])));
+					& ((sideToMove ? gi->blackPieceBB[BISHOPS] : gi->whitePieceBB[BISHOPS]) | (sideToMove ? gi->blackPieceBB[QUEEN] : gi->whitePieceBB[QUEEN])));
 
 	/* check if a rook or queen is attacking a square */
 	attacks |= (Rmagic(square, occ)
-					& ((sideToMove ? th->blackPieceBB[ROOKS] : th->whitePieceBB[ROOKS]) | (sideToMove ? th->blackPieceBB[QUEEN] : th->whitePieceBB[QUEEN])));
+					& ((sideToMove ? gi->blackPieceBB[ROOKS] : gi->whitePieceBB[ROOKS]) | (sideToMove ? gi->blackPieceBB[QUEEN] : gi->whitePieceBB[QUEEN])));
 
 	/* check if a king is attacking a sq */
-	attacks |= (get_king_attacks(square) & (sideToMove ? th->blackPieceBB[KING] : th->whitePieceBB[KING]));
+	attacks |= (get_king_attacks(square) & (sideToMove ? gi->blackPieceBB[KING] : gi->whitePieceBB[KING]));
 
 	return attacks & occ;
 }
 
-int SEE(Side sideToMove, U32 move, Thread *th) {
+int SEE(Side sideToMove, U32 move, GameInfo *gi ) {
 
 	int moveType = move_type(move);	
 	if (moveType == MOVE_CASTLE || moveType == MOVE_ENPASSANT || moveType == MOVE_PROMOTION) 
@@ -49,16 +49,16 @@ int SEE(Side sideToMove, U32 move, Thread *th) {
 	U8 piece = pieceType(move);
 	U8 target = cPieceType(move);
 
-	U64 occ = (th->occupied ^ (1ULL << from)) | (1ULL << to);
-	U64 attackers = attacksTo(occ, to, WHITE, th) | attacksTo(occ, to, BLACK, th); // TODO check logic
+	U64 occ = ( gi->occupied ^ (1ULL << from)) | (1ULL << to);
+	U64 attackers = attacksTo(occ, to, WHITE, gi ) | attacksTo(occ, to, BLACK, gi ); // TODO check logic
 
 	U64 diag = 
-			th->whitePieceBB[BISHOPS] |	th->blackPieceBB[BISHOPS] 
-		|	th->whitePieceBB[QUEEN] | th->blackPieceBB[QUEEN];
+			gi->whitePieceBB[BISHOPS] |	gi->blackPieceBB[BISHOPS]
+		|	gi->whitePieceBB[QUEEN] | gi->blackPieceBB[QUEEN];
 
 	U64 straight = 
-			th->whitePieceBB[ROOKS] | th->blackPieceBB[ROOKS] 
-		|	th->whitePieceBB[QUEEN] | th->blackPieceBB[QUEEN];
+			gi->whitePieceBB[ROOKS] | gi->blackPieceBB[ROOKS]
+		|	gi->whitePieceBB[QUEEN] | gi->blackPieceBB[QUEEN];
 
 
 	int swapList[32], idx = 1;
@@ -68,7 +68,7 @@ int SEE(Side sideToMove, U32 move, Thread *th) {
 
 	U8 stm = sideToMove ^ 1;
 
-	U64 stmAttackers = attackers & (stm ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]);
+	U64 stmAttackers = attackers & (stm ? gi->blackPieceBB[PIECES] : gi->whitePieceBB[PIECES]);
 
 	if (!stmAttackers)
 		return swapList[0];
@@ -76,7 +76,7 @@ int SEE(Side sideToMove, U32 move, Thread *th) {
 	U64 fromSet;
 	do {
 		
-		for (piece = PAWNS; !(fromSet = (stmAttackers & stm ? th->blackPieceBB[piece] : th->whitePieceBB[piece])); piece++) {
+		for (piece = PAWNS; !(fromSet = (stmAttackers & stm ? gi->blackPieceBB[piece] : gi->whitePieceBB[piece])); piece++) {
 			assert(piece < KING);
 		}
 
@@ -108,7 +108,7 @@ int SEE(Side sideToMove, U32 move, Thread *th) {
 
 		stm ^= 1;
 
-		stmAttackers = attackers & (stm ? th->blackPieceBB[PIECES] : th->whitePieceBB[PIECES]); 
+		stmAttackers = attackers & (stm ? gi->blackPieceBB[PIECES] : gi->whitePieceBB[PIECES]);
 
 		// Stop after a king capture
 		if (piece == KING && stmAttackers) {
@@ -130,7 +130,7 @@ int SEE(Side sideToMove, U32 move, Thread *th) {
 }
 
 
-void debugSEE(char ch, int square) {
+void debugSEE(char ch, int square, GameInfo *gi) {
 
 	U8 piece;
 	
@@ -170,7 +170,7 @@ void debugSEE(char ch, int square) {
 
 	std::vector<Move> moves; 
 
-   	genMoves(side == WHITE ? WHITE : BLACK, 0, moves, &initThread);   		  	
+   	genMoves(side == WHITE ? WHITE : BLACK, 0, moves, gi);
 	
 	U8 p, to;
 	U32 move;
@@ -196,7 +196,7 @@ void debugSEE(char ch, int square) {
 		return;
 	}
 
-	int value = side ? SEE(BLACK, move, &initThread) : SEE(WHITE, move, &initThread);
+	int value = side ? SEE(BLACK, move, gi) : SEE(WHITE, move, gi);
 
 	std::cout << "See score = " << value << std::endl;
 }

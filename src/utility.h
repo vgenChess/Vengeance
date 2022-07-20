@@ -9,16 +9,18 @@
 #ifndef utility_h
 #define utility_h
 
-#include "thread.h"
 #include "functions.h"
+#include "namespaces.h"
+
+using namespace game;
 
 void print_bb(U64 board);
 
-void print_board(U64 board, Thread *th);
+void print_board(U64 board, GameInfo *th);
 
-bool isSqAttacked(U8 sq, const U8 color, Thread *th);
+bool isSqAttacked(U8 sq, const U8 color, GameInfo *th);
 
-int divide(U8 depth, U8 sideToMove, Thread *th);
+int divide(U8 depth, U8 sideToMove, GameInfo *th);
 
 U8 squareFromAlgebricPos(const char* posName);
 
@@ -26,15 +28,15 @@ U64 flipVertical(U64 x);
 
 char* algebricPos(U8 sq);
 
-void clearKillerMovesTable(Thread *th);
+void clearKillerMovesTable( GameInfo *th);
 
-void initHashKey(Thread *th);
-void initPawnHashKey(U8 side, Thread *th);
-void initMovesHistoryTable(Thread *th);
+void initHashKey( GameInfo *th);
+void initPawnHashKey(U8 side, GameInfo *th);
+void initMovesHistoryTable( GameInfo *th);
 void init_inbetween_bb();
 void initCastleMaskAndFlags();
 
-U64 getAttacks(const U8 stm, Thread *th);
+U64 getAttacks(const U8 stm, GameInfo *th);
 
 inline U64 nortFill(U64 gen) 
 {
@@ -109,8 +111,8 @@ U64 inBetween(int from, int to);
 U64 xrayRookAttacks(U64 occ, U64 blockers, U8 rookSq);
 U64 xrayBishopAttacks(U64 occ, U64 blockers, U8 bishopSq);
 
-U64 pinnedPieces(U8 kingSq, U8 side, Thread *th);
-U64 pinners(U8 kingSq, U8 side, Thread *th);
-U64 pinned(U64 pinners, U8 kingSq, U8 side, Thread *th);
+U64 pinnedPieces(U8 kingSq, U8 side, GameInfo *th);
+U64 pinners(U8 kingSq, U8 side, GameInfo *th);
+U64 pinned(U64 pinners, U8 kingSq, U8 side, GameInfo *th);
 
 #endif /* utility_h */
