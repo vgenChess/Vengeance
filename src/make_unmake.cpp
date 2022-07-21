@@ -8,18 +8,20 @@
 
 #include <stdbool.h>
 #include <iostream>
+#include <cstring>
 
 #include "make_unmake.h"
 #include "utility.h"
-#include "thread.h"
 #include "functions.h"
 #include "constants.h"
 #include "zobrist.h"
+#include "nnue.h"
+#include "namespaces.h"
 
 U64 quiet, prevCap, cap, prevEp, ep, prevCas, cas, check, prom;
 U8 rookCastleFlagMask[64];
 
-void make_move(int ply, U32 move, Thread *th) {
+void make_move(int ply, U32 move, GameInfo *gi) {
     
     
     const U8 mtype = move_type(move);
@@ -40,35 +42,35 @@ void make_move(int ply, U32 move, Thread *th) {
     U64 from_to_bb = from_bb ^ to_bb;
     
     
-    th->undoMoveStack[ply].castleFlags = th->moveStack[ply].castleFlags;
-    th->undoMoveStack[ply].epFlag = th->moveStack[ply].epFlag;
-    th->undoMoveStack[ply].epSquare = th->moveStack[ply].epSquare;
-    th->undoMoveStack[ply].hashKey = th->hashKey;
-    th->undoMoveStack[ply].pawnsHashKey = th->pawnsHashKey;
+    gi->undoMoveStack[ply].castleFlags = gi->moveStack[ply].castleFlags;
+    gi->undoMoveStack[ply].epFlag = gi->moveStack[ply].epFlag;
+    gi->undoMoveStack[ply].epSquare = gi->moveStack[ply].epSquare;
+    gi->undoMoveStack[ply].hashKey = gi->hashKey;
+    gi->undoMoveStack[ply].pawnsHashKey = gi->pawnsHashKey;
     
     
-    const int mhCounter = th->moves_history_counter + ply; // Needs investigation 
+    const int mhCounter = gi->moves_history_counter + ply; // Needs investigation
     
-    th->undoMoveStack[ply].fiftyMovesCounter = th->movesHistory[mhCounter].fiftyMovesCounter;
+    gi->undoMoveStack[ply].fiftyMovesCounter = gi->movesHistory[mhCounter].fiftyMovesCounter;
     
     
-    if (th->moveStack[ply].epFlag != 0) {
+    if ( gi->moveStack[ply].epFlag != 0) {
         
-        const auto epSqBitboard = 1ULL << th->moveStack[ply].epSquare;
+        const auto epSqBitboard = 1ULL << gi->moveStack[ply].epSquare;
         
-        if (	 epSqBitboard & A_FILE)	th->hashKey ^= Zobrist::objZobrist.KEY_EP_A_FILE;
-        else if (epSqBitboard & B_FILE)	th->hashKey ^= Zobrist::objZobrist.KEY_EP_B_FILE;
-        else if (epSqBitboard & C_FILE)	th->hashKey ^= Zobrist::objZobrist.KEY_EP_C_FILE;
-        else if (epSqBitboard & D_FILE)	th->hashKey ^= Zobrist::objZobrist.KEY_EP_D_FILE;
-        else if (epSqBitboard & E_FILE)	th->hashKey ^= Zobrist::objZobrist.KEY_EP_E_FILE;
-        else if (epSqBitboard & F_FILE)	th->hashKey ^= Zobrist::objZobrist.KEY_EP_F_FILE;
-        else if (epSqBitboard & G_FILE)	th->hashKey ^= Zobrist::objZobrist.KEY_EP_G_FILE;
-        else if (epSqBitboard & H_FILE)	th->hashKey ^= Zobrist::objZobrist.KEY_EP_H_FILE;
+        if (	 epSqBitboard & A_FILE)	gi->hashKey ^= zobrist::zobrist.KEY_EP_A_FILE;
+        else if (epSqBitboard & B_FILE)	gi->hashKey ^= zobrist::zobrist.KEY_EP_B_FILE;
+        else if (epSqBitboard & C_FILE)	gi->hashKey ^= zobrist::zobrist.KEY_EP_C_FILE;
+        else if (epSqBitboard & D_FILE)	gi->hashKey ^= zobrist::zobrist.KEY_EP_D_FILE;
+        else if (epSqBitboard & E_FILE)	gi->hashKey ^= zobrist::zobrist.KEY_EP_E_FILE;
+        else if (epSqBitboard & F_FILE)	gi->hashKey ^= zobrist::zobrist.KEY_EP_F_FILE;
+        else if (epSqBitboard & G_FILE)	gi->hashKey ^= zobrist::zobrist.KEY_EP_G_FILE;
+        else if (epSqBitboard & H_FILE)	gi->hashKey ^= zobrist::zobrist.KEY_EP_H_FILE;
     }
     
     
     // making any move will make the ep move invalid
-    th->moveStack[ply].epFlag = 0;
+    gi->moveStack[ply].epFlag = 0;
     
     
     
@@ -78,75 +80,75 @@ void make_move(int ply, U32 move, Thread *th) {
         case MOVE_NORMAL: {
             
             
-            th->movesHistory[mhCounter].fiftyMovesCounter++;	
+            gi->movesHistory[mhCounter].fiftyMovesCounter++;
             
             
             if (stm) {  
                 
-                th->blackPieceBB[piece] ^= from_to_bb; 
-                th->blackPieceBB[PIECES] ^= from_to_bb;
+                gi->blackPieceBB[piece] ^= from_to_bb;
+                gi->blackPieceBB[PIECES] ^= from_to_bb;
             } else { 
                 
-                th->whitePieceBB[piece] ^= from_to_bb;
-                th->whitePieceBB[PIECES] ^= from_to_bb; 
+                gi->whitePieceBB[piece] ^= from_to_bb;
+                gi->whitePieceBB[PIECES] ^= from_to_bb;
             }
             
             
-            th->hashKey ^= Zobrist::objZobrist.zobristKey[piece][stm][fromSq] 
-            ^ Zobrist::objZobrist.zobristKey[piece][stm][toSq];
+            gi->hashKey ^= zobrist::zobrist.zobristKey[piece][stm][fromSq]
+            ^ zobrist::zobrist.zobristKey[piece][stm][toSq];
             
             
             if (piece == PAWNS) {
                 
-                th->pawnsHashKey ^= Zobrist::objZobrist.pawnZobristKey[fromSq] 
-                                ^ Zobrist::objZobrist.pawnZobristKey[toSq];
+                gi->pawnsHashKey ^= zobrist::zobrist.pawnZobristKey[fromSq]
+                                ^ zobrist::zobrist.pawnZobristKey[toSq];
                 
-                th->movesHistory[mhCounter].fiftyMovesCounter = 0;	
+                gi->movesHistory[mhCounter].fiftyMovesCounter = 0;
             } else if (piece == KING) { // TODO check logic
                 
                 if (stm == WHITE) {
                     
-                    if (th->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_QUEEN) {
+                    if ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_QUEEN) {
                         
-                        th->moveStack[ply].castleFlags &= ~CASTLE_FLAG_WHITE_QUEEN;
-                        th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
+                        gi->moveStack[ply].castleFlags &= ~CASTLE_FLAG_WHITE_QUEEN;
+                        gi->hashKey ^= zobrist::zobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
                     }
                     
-                    if (th->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_KING) {
+                    if ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_KING) {
                         
-                        th->moveStack[ply].castleFlags &= ~CASTLE_FLAG_WHITE_KING;
-                        th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
+                        gi->moveStack[ply].castleFlags &= ~CASTLE_FLAG_WHITE_KING;
+                        gi->hashKey ^= zobrist::zobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
                     }
                 } else {
                     
-                    if (th->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_QUEEN) {
+                    if ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_QUEEN) {
                         
-                        th->moveStack[ply].castleFlags &= ~CASTLE_FLAG_BLACK_QUEEN;
-                        th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
+                        gi->moveStack[ply].castleFlags &= ~CASTLE_FLAG_BLACK_QUEEN;
+                        gi->hashKey ^= zobrist::zobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
                     }
                     
-                    if (th->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_KING) {
+                    if ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_KING) {
                         
-                        th->moveStack[ply].castleFlags &= ~CASTLE_FLAG_BLACK_KING;
-                        th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE;
+                        gi->moveStack[ply].castleFlags &= ~CASTLE_FLAG_BLACK_KING;
+                        gi->hashKey ^= zobrist::zobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE;
                     }
                 }
             } else if (piece == ROOKS) { // TODO check logic
                 
-                th->moveStack[ply].castleFlags &= rookCastleFlagMask[fromSq];
+                gi->moveStack[ply].castleFlags &= rookCastleFlagMask[fromSq];
                 
-                if (fromSq == 0 && (th->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_QUEEN)) {
+                if (fromSq == 0 && ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_QUEEN)) {
                     
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
-                } else if (fromSq == 56 && (th->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_QUEEN)) {
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
+                } else if (fromSq == 56 && ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_QUEEN)) {
                     
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
-                } else if (fromSq == 7 && (th->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_KING)) {
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
+                } else if (fromSq == 7 && ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_KING)) {
                     
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
-                } else if (fromSq == 63 && (th->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_KING)) {
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
+                } else if (fromSq == 63 && ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_KING)) {
                     
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE;
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE;
                 }
             }
             
@@ -159,106 +161,106 @@ void make_move(int ply, U32 move, Thread *th) {
         
         case MOVE_CAPTURE: {
             
-            th->movesHistory[mhCounter].fiftyMovesCounter = 0;	
+            gi->movesHistory[mhCounter].fiftyMovesCounter = 0;
             
             if (stm) {  
                 
-                th->blackPieceBB[piece] ^= from_to_bb; 
-                th->blackPieceBB[PIECES] ^= from_to_bb;
+                gi->blackPieceBB[piece] ^= from_to_bb;
+                gi->blackPieceBB[PIECES] ^= from_to_bb;
                 
-                th->whitePieceBB[target] ^= to_bb;
-                th->whitePieceBB[PIECES] ^= to_bb;
+                gi->whitePieceBB[target] ^= to_bb;
+                gi->whitePieceBB[PIECES] ^= to_bb;
             } else { 
                 
-                th->whitePieceBB[piece] ^= from_to_bb;
-                th->whitePieceBB[PIECES] ^= from_to_bb; 
+                gi->whitePieceBB[piece] ^= from_to_bb;
+                gi->whitePieceBB[PIECES] ^= from_to_bb;
                 
-                th->blackPieceBB[target] ^= to_bb;
-                th->blackPieceBB[PIECES] ^= to_bb;
+                gi->blackPieceBB[target] ^= to_bb;
+                gi->blackPieceBB[PIECES] ^= to_bb;
             }
             
-            th->hashKey ^= Zobrist::objZobrist.zobristKey[piece][stm][fromSq] 
-                        ^ Zobrist::objZobrist.zobristKey[piece][stm][toSq];
-            th->hashKey ^= Zobrist::objZobrist.zobristKey[target][opp][toSq];
+            gi->hashKey ^= zobrist::zobrist.zobristKey[piece][stm][fromSq]
+                        ^ zobrist::zobrist.zobristKey[piece][stm][toSq];
+            gi->hashKey ^= zobrist::zobrist.zobristKey[target][opp][toSq];
             
             
             if (piece == PAWNS)	
-                th->pawnsHashKey ^= Zobrist::objZobrist.pawnZobristKey[fromSq] 
-                                ^ Zobrist::objZobrist.pawnZobristKey[toSq];
+                gi->pawnsHashKey ^= zobrist::zobrist.pawnZobristKey[fromSq]
+                                ^ zobrist::zobrist.pawnZobristKey[toSq];
             
             if (target == PAWNS)	
-                th->pawnsHashKey ^= Zobrist::objZobrist.pawnZobristKey[toSq];
+                gi->pawnsHashKey ^= zobrist::zobrist.pawnZobristKey[toSq];
             
             
             // update castle flags
             if (piece == KING) {
                 if (stm == WHITE) {
                     
-                    int castleQueenSide = th->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_QUEEN;
+                    int castleQueenSide = gi->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_QUEEN;
                     if (castleQueenSide) {
                         
-                        th->moveStack[ply].castleFlags &= ~CASTLE_FLAG_WHITE_QUEEN;
-                        th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
+                        gi->moveStack[ply].castleFlags &= ~CASTLE_FLAG_WHITE_QUEEN;
+                        gi->hashKey ^= zobrist::zobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
                     }
                     
-                    int castleKingSide = th->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_KING;
+                    int castleKingSide = gi->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_KING;
                     if (castleKingSide) {
                         
-                        th->moveStack[ply].castleFlags &= ~CASTLE_FLAG_WHITE_KING;
-                        th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
+                        gi->moveStack[ply].castleFlags &= ~CASTLE_FLAG_WHITE_KING;
+                        gi->hashKey ^= zobrist::zobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
                     }
                 } else {
                     
-                    int castleQueenSide = th->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_QUEEN;
+                    int castleQueenSide = gi->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_QUEEN;
                     if (castleQueenSide) {
                         
-                        th->moveStack[ply].castleFlags &= ~CASTLE_FLAG_BLACK_QUEEN;
-                        th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
+                        gi->moveStack[ply].castleFlags &= ~CASTLE_FLAG_BLACK_QUEEN;
+                        gi->hashKey ^= zobrist::zobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
                     }
                     
-                    int castleKingSide = th->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_KING;
+                    int castleKingSide = gi->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_KING;
                     if (castleKingSide) {
                         
-                        th->moveStack[ply].castleFlags &= ~CASTLE_FLAG_BLACK_KING;
-                        th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE;
+                        gi->moveStack[ply].castleFlags &= ~CASTLE_FLAG_BLACK_KING;
+                        gi->hashKey ^= zobrist::zobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE;
                     }
                 }
             } else if (piece == ROOKS) {
                 
-                th->moveStack[ply].castleFlags &= rookCastleFlagMask[fromSq];
+                gi->moveStack[ply].castleFlags &= rookCastleFlagMask[fromSq];
                 
-                if (fromSq == 0 && (th->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_QUEEN)) {
+                if (fromSq == 0 && ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_QUEEN)) {
                     
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
-                } else if (fromSq == 56 && (th->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_QUEEN)) {
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
+                } else if (fromSq == 56 && ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_QUEEN)) {
                     
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
-                } else if (fromSq == 7 && (th->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_KING)) {
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
+                } else if (fromSq == 7 && ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_KING)) {
                     
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
-                } else if (fromSq == 63 && (th->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_KING)) {
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
+                } else if (fromSq == 63 && ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_KING)) {
                     
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE;
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE;
                 }
             }
             
             
             if (target == ROOKS) {
                 
-                th->moveStack[ply].castleFlags &= rookCastleFlagMask[toSq];
+                gi->moveStack[ply].castleFlags &= rookCastleFlagMask[toSq];
                 
-                if (toSq == 0 && (th->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_QUEEN)) {
+                if (toSq == 0 && ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_QUEEN)) {
                     
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
-                } else if (toSq == 56 && (th->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_QUEEN)) {
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
+                } else if (toSq == 56 && ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_QUEEN)) {
                     
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
-                } else if (toSq == 7 && (th->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_KING)) {
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
+                } else if (toSq == 7 && ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_KING)) {
                     
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
-                } else if (toSq == 63 && (th->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_KING)) {
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
+                } else if (toSq == 63 && ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_KING)) {
                     
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE;
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE;
                 }
             }
             
@@ -271,27 +273,27 @@ void make_move(int ply, U32 move, Thread *th) {
         case MOVE_DOUBLE_PUSH: {
             
             
-            th->movesHistory[mhCounter].fiftyMovesCounter++;	
-            th->moveStack[ply].epFlag = 1;			
-            th->moveStack[ply].epSquare = stm ? toSq + 8 : toSq - 8;
+            gi->movesHistory[mhCounter].fiftyMovesCounter++;
+            gi->moveStack[ply].epFlag = 1;
+            gi->moveStack[ply].epSquare = stm ? toSq + 8 : toSq - 8;
             
             
             if (stm) {  
                 
-                th->blackPieceBB[piece] ^= from_to_bb; 
-                th->blackPieceBB[PIECES] ^= from_to_bb;		
+                gi->blackPieceBB[piece] ^= from_to_bb;
+                gi->blackPieceBB[PIECES] ^= from_to_bb;
             } else { 
                 
-                th->whitePieceBB[piece] ^= from_to_bb; 
-                th->whitePieceBB[PIECES] ^= from_to_bb;	
+                gi->whitePieceBB[piece] ^= from_to_bb;
+                gi->whitePieceBB[PIECES] ^= from_to_bb;
             }
             
             
-            th->hashKey ^= Zobrist::objZobrist.zobristKey[PAWNS][stm][fromSq] 
-                        ^ Zobrist::objZobrist.zobristKey[PAWNS][stm][toSq];
+            gi->hashKey ^= zobrist::zobrist.zobristKey[PAWNS][stm][fromSq]
+                        ^ zobrist::zobrist.zobristKey[PAWNS][stm][toSq];
             
-            th->pawnsHashKey ^= Zobrist::objZobrist.pawnZobristKey[fromSq] 
-                            ^ Zobrist::objZobrist.pawnZobristKey[toSq];
+            gi->pawnsHashKey ^= zobrist::zobrist.pawnZobristKey[fromSq]
+                            ^ zobrist::zobrist.pawnZobristKey[toSq];
             
             break;
         }
@@ -303,37 +305,37 @@ void make_move(int ply, U32 move, Thread *th) {
             
             
             
-            th->movesHistory[mhCounter].fiftyMovesCounter = 0;
+            gi->movesHistory[mhCounter].fiftyMovesCounter = 0;
             
             
             //  en_passant capture
             if (stm == WHITE) {
                 
-                th->whitePieceBB[PAWNS] ^= from_to_bb; 
-                th->whitePieceBB[PIECES] ^= from_to_bb; 
+                gi->whitePieceBB[PAWNS] ^= from_to_bb;
+                gi->whitePieceBB[PIECES] ^= from_to_bb;
                 
-                th->blackPieceBB[PAWNS] ^= (to_bb >> 8);
-                th->blackPieceBB[PIECES] ^= (to_bb >> 8);
+                gi->blackPieceBB[PAWNS] ^= (to_bb >> 8);
+                gi->blackPieceBB[PIECES] ^= (to_bb >> 8);
             } else {
                 
                 
-                th->blackPieceBB[PAWNS] ^= from_to_bb; 
-                th->blackPieceBB[PIECES] ^= from_to_bb; 
+                gi->blackPieceBB[PAWNS] ^= from_to_bb;
+                gi->blackPieceBB[PIECES] ^= from_to_bb;
                 
-                th->whitePieceBB[PAWNS] ^= (to_bb << 8);
-                th->whitePieceBB[PIECES] ^= (to_bb << 8);
+                gi->whitePieceBB[PAWNS] ^= (to_bb << 8);
+                gi->whitePieceBB[PIECES] ^= (to_bb << 8);
             }
             
             
             U8 sqOfCapturedPawn = stm ? toSq + 8 : toSq - 8;	
             
-            th->hashKey ^= Zobrist::objZobrist.zobristKey[PAWNS][stm][fromSq] 
-                        ^ Zobrist::objZobrist.zobristKey[PAWNS][stm][toSq];
-            th->hashKey ^= Zobrist::objZobrist.zobristKey[PAWNS][opp][sqOfCapturedPawn];
+            gi->hashKey ^= zobrist::zobrist.zobristKey[PAWNS][stm][fromSq]
+                        ^ zobrist::zobrist.zobristKey[PAWNS][stm][toSq];
+            gi->hashKey ^= zobrist::zobrist.zobristKey[PAWNS][opp][sqOfCapturedPawn];
             
-            th->pawnsHashKey ^= Zobrist::objZobrist.pawnZobristKey[fromSq] 
-                            ^ Zobrist::objZobrist.pawnZobristKey[toSq];
-            th->pawnsHashKey ^= Zobrist::objZobrist.pawnZobristKey[sqOfCapturedPawn]; 
+            gi->pawnsHashKey ^= zobrist::zobrist.pawnZobristKey[fromSq]
+                            ^ zobrist::zobrist.pawnZobristKey[toSq];
+            gi->pawnsHashKey ^= zobrist::zobrist.pawnZobristKey[sqOfCapturedPawn];
             
             
             break;
@@ -345,7 +347,7 @@ void make_move(int ply, U32 move, Thread *th) {
         case MOVE_CASTLE: {
             
             
-            th->movesHistory[mhCounter].fiftyMovesCounter++;	
+            gi->movesHistory[mhCounter].fiftyMovesCounter++;
             
             U8 castleDirection = castleDir(move);
             
@@ -354,97 +356,97 @@ void make_move(int ply, U32 move, Thread *th) {
                 if (castleDirection == WHITE_CASTLE_QUEEN_SIDE) {
                     
                     //clear out king and rook
-                    th->whitePieceBB[piece] ^= 0x0000000000000010U;
-                    th->whitePieceBB[target] ^= 0x0000000000000001U;
+                    gi->whitePieceBB[piece] ^= 0x0000000000000010U;
+                    gi->whitePieceBB[target] ^= 0x0000000000000001U;
                     
                     // set king and rook
-                    th->whitePieceBB[piece] ^= 0x0000000000000004U;
-                    th->whitePieceBB[target] ^= 0x0000000000000008U;
+                    gi->whitePieceBB[piece] ^= 0x0000000000000004U;
+                    gi->whitePieceBB[target] ^= 0x0000000000000008U;
                     
                     // update pieces
-                    th->whitePieceBB[PIECES] ^= 0x0000000000000011U;
-                    th->whitePieceBB[PIECES] ^= 0x000000000000000CU;
+                    gi->whitePieceBB[PIECES] ^= 0x0000000000000011U;
+                    gi->whitePieceBB[PIECES] ^= 0x000000000000000CU;
                     
                     
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[KING][WHITE][4] 
-                                ^ Zobrist::objZobrist.zobristKey[KING][WHITE][2];
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[ROOKS][WHITE][0] 
-                                ^ Zobrist::objZobrist.zobristKey[ROOKS][WHITE][3];
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
+                    gi->hashKey ^= zobrist::zobrist.zobristKey[KING][WHITE][4]
+                                ^ zobrist::zobrist.zobristKey[KING][WHITE][2];
+                    gi->hashKey ^= zobrist::zobrist.zobristKey[ROOKS][WHITE][0]
+                                ^ zobrist::zobrist.zobristKey[ROOKS][WHITE][3];
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
                     
                 } else if (castleDirection == WHITE_CASTLE_KING_SIDE) {
                     
                     //clear out king and rook
-                    th->whitePieceBB[piece] ^= 0x0000000000000010U;
-                    th->whitePieceBB[target] ^= 0x0000000000000080U;
+                    gi->whitePieceBB[piece] ^= 0x0000000000000010U;
+                    gi->whitePieceBB[target] ^= 0x0000000000000080U;
                     
                     // set king and rook
-                    th->whitePieceBB[piece] ^= 0x0000000000000040U;
-                    th->whitePieceBB[target] ^= 0x0000000000000020U;
+                    gi->whitePieceBB[piece] ^= 0x0000000000000040U;
+                    gi->whitePieceBB[target] ^= 0x0000000000000020U;
                     
                     // update pieces
-                    th->whitePieceBB[PIECES] ^= 0x0000000000000090U;
-                    th->whitePieceBB[PIECES] ^= 0x0000000000000060U;
+                    gi->whitePieceBB[PIECES] ^= 0x0000000000000090U;
+                    gi->whitePieceBB[PIECES] ^= 0x0000000000000060U;
                     
                     
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[KING][WHITE][4] 
-                                ^ Zobrist::objZobrist.zobristKey[KING][WHITE][6];
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[ROOKS][WHITE][7] 
-                                ^ Zobrist::objZobrist.zobristKey[ROOKS][WHITE][5];
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
+                    gi->hashKey ^= zobrist::zobrist.zobristKey[KING][WHITE][4]
+                                ^ zobrist::zobrist.zobristKey[KING][WHITE][6];
+                    gi->hashKey ^= zobrist::zobrist.zobristKey[ROOKS][WHITE][7]
+                                ^ zobrist::zobrist.zobristKey[ROOKS][WHITE][5];
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
                     
                 }
                 
-                th->moveStack[ply].castleFlags &= ~(CASTLE_FLAG_WHITE_KING | CASTLE_FLAG_WHITE_QUEEN);
+                gi->moveStack[ply].castleFlags &= ~(CASTLE_FLAG_WHITE_KING | CASTLE_FLAG_WHITE_QUEEN);
                 
             } else {
                 
                 if (castleDirection == BLACK_CASTLE_QUEEN_SIDE) {
                     
                     //clear out king and rook
-                    th->blackPieceBB[piece] ^= 0x1000000000000000U;
-                    th->blackPieceBB[target] ^= 0x0100000000000000U;
+                    gi->blackPieceBB[piece] ^= 0x1000000000000000U;
+                    gi->blackPieceBB[target] ^= 0x0100000000000000U;
                     
                     // set king and rook
-                    th->blackPieceBB[piece] ^= 0x0400000000000000U;
-                    th->blackPieceBB[target] ^= 0x0800000000000000U;
+                    gi->blackPieceBB[piece] ^= 0x0400000000000000U;
+                    gi->blackPieceBB[target] ^= 0x0800000000000000U;
                     
                     // update pieces
-                    th->blackPieceBB[PIECES] ^= 0x1100000000000000U;
-                    th->blackPieceBB[PIECES] ^= 0x0C00000000000000U;
+                    gi->blackPieceBB[PIECES] ^= 0x1100000000000000U;
+                    gi->blackPieceBB[PIECES] ^= 0x0C00000000000000U;
                     
                     
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[KING][BLACK][60] 
-                                ^ Zobrist::objZobrist.zobristKey[KING][BLACK][58];
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[ROOKS][BLACK][56] 
-                                ^ Zobrist::objZobrist.zobristKey[ROOKS][BLACK][59];
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
+                    gi->hashKey ^= zobrist::zobrist.zobristKey[KING][BLACK][60]
+                                ^ zobrist::zobrist.zobristKey[KING][BLACK][58];
+                    gi->hashKey ^= zobrist::zobrist.zobristKey[ROOKS][BLACK][56]
+                                ^ zobrist::zobrist.zobristKey[ROOKS][BLACK][59];
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
                     
                     
                 } else if (castleDirection == BLACK_CASTLE_KING_SIDE) {
                     
                     //clear out king and rook
-                    th->blackPieceBB[piece] ^= 0x1000000000000000U;
-                    th->blackPieceBB[target] ^= 0x8000000000000000U;
+                    gi->blackPieceBB[piece] ^= 0x1000000000000000U;
+                    gi->blackPieceBB[target] ^= 0x8000000000000000U;
                     
                     // set king and rook
-                    th->blackPieceBB[piece] ^= 0x4000000000000000U;
-                    th->blackPieceBB[target] ^= 0x2000000000000000U;
+                    gi->blackPieceBB[piece] ^= 0x4000000000000000U;
+                    gi->blackPieceBB[target] ^= 0x2000000000000000U;
                     
                     // update pieces
-                    th->blackPieceBB[PIECES] ^= 0x9000000000000000U;
-                    th->blackPieceBB[PIECES] ^= 0x6000000000000000U;
+                    gi->blackPieceBB[PIECES] ^= 0x9000000000000000U;
+                    gi->blackPieceBB[PIECES] ^= 0x6000000000000000U;
                     
                     
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[KING][BLACK][60] 
-                                ^ Zobrist::objZobrist.zobristKey[KING][BLACK][62];
-                    th->hashKey ^= Zobrist::objZobrist.zobristKey[ROOKS][BLACK][63] 
-                                ^ Zobrist::objZobrist.zobristKey[ROOKS][BLACK][61];
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE;
+                    gi->hashKey ^= zobrist::zobrist.zobristKey[KING][BLACK][60]
+                                ^ zobrist::zobrist.zobristKey[KING][BLACK][62];
+                    gi->hashKey ^= zobrist::zobrist.zobristKey[ROOKS][BLACK][63]
+                                ^ zobrist::zobrist.zobristKey[ROOKS][BLACK][61];
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE;
                     
                 }
                 
-                th->moveStack[ply].castleFlags &= ~(CASTLE_FLAG_BLACK_KING | CASTLE_FLAG_BLACK_QUEEN);	
+                gi->moveStack[ply].castleFlags &= ~(CASTLE_FLAG_BLACK_KING | CASTLE_FLAG_BLACK_QUEEN);
             }
             
             break;
@@ -458,7 +460,7 @@ void make_move(int ply, U32 move, Thread *th) {
             
             
             // promotion involves a pawn move
-            th->movesHistory[mhCounter].fiftyMovesCounter = 0;	
+            gi->movesHistory[mhCounter].fiftyMovesCounter = 0;
             
             U8 promoteTo = DUMMY;
             U8 pType = promType(move);
@@ -471,14 +473,14 @@ void make_move(int ply, U32 move, Thread *th) {
             
             if (stm) {
                 
-                th->blackPieceBB[PAWNS] ^= from_bb;
-                th->blackPieceBB[promoteTo] ^= to_bb;
-                th->blackPieceBB[PIECES] ^= from_to_bb;
+                gi->blackPieceBB[PAWNS] ^= from_bb;
+                gi->blackPieceBB[promoteTo] ^= to_bb;
+                gi->blackPieceBB[PIECES] ^= from_to_bb;
             } else {
                 
-                th->whitePieceBB[PAWNS] ^= from_bb;
-                th->whitePieceBB[promoteTo] ^= to_bb;
-                th->whitePieceBB[PIECES] ^= from_to_bb;
+                gi->whitePieceBB[PAWNS] ^= from_bb;
+                gi->whitePieceBB[promoteTo] ^= to_bb;
+                gi->whitePieceBB[PIECES] ^= from_to_bb;
             }
             
             
@@ -486,46 +488,46 @@ void make_move(int ply, U32 move, Thread *th) {
                 
                 if (stm) {
                     
-                    th->whitePieceBB[target] ^= to_bb;
-                    th->whitePieceBB[PIECES] ^= to_bb;
+                    gi->whitePieceBB[target] ^= to_bb;
+                    gi->whitePieceBB[PIECES] ^= to_bb;
                 } else {
                     
-                    th->blackPieceBB[target] ^= to_bb;
-                    th->blackPieceBB[PIECES] ^= to_bb;
+                    gi->blackPieceBB[target] ^= to_bb;
+                    gi->blackPieceBB[PIECES] ^= to_bb;
                 }
                 
-                th->hashKey ^= Zobrist::objZobrist.zobristKey[target][opp][toSq]; 
+                gi->hashKey ^= zobrist::zobrist.zobristKey[target][opp][toSq];
                 
             }
             
             
-            th->hashKey ^= Zobrist::objZobrist.zobristKey[PAWNS][stm][fromSq];
-            th->hashKey ^= Zobrist::objZobrist.zobristKey[promoteTo][stm][toSq];
+            gi->hashKey ^= zobrist::zobrist.zobristKey[PAWNS][stm][fromSq];
+            gi->hashKey ^= zobrist::zobrist.zobristKey[promoteTo][stm][toSq];
             
             
             if (target == ROOKS) {
                 
                 
-                if (toSq == 0 && (th->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_QUEEN)) {
+                if (toSq == 0 && ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_QUEEN)) {
                     
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
-                } else if (toSq == 56 && (th->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_QUEEN)) {
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_WHITE_CASTLE_QUEEN_SIDE;
+                } else if (toSq == 56 && ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_QUEEN)) {
                     
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
-                } else if (toSq == 7 && (th->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_KING)) {
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_BLACK_CASTLE_QUEEN_SIDE;
+                } else if (toSq == 7 && ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_WHITE_KING)) {
                     
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
-                } else if (toSq == 63 && (th->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_KING)) {
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_WHITE_CASTLE_KING_SIDE;
+                } else if (toSq == 63 && ( gi->moveStack[ply].castleFlags & CASTLE_FLAG_BLACK_KING)) {
                     
-                    th->hashKey ^= Zobrist::objZobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE;
+                    gi->hashKey ^= zobrist::zobrist.KEY_FLAG_BLACK_CASTLE_KING_SIDE;
                 }
                 
                 
-                th->moveStack[ply].castleFlags &= rookCastleFlagMask[toSq];
+                gi->moveStack[ply].castleFlags &= rookCastleFlagMask[toSq];
             }
             
             
-            th->pawnsHashKey ^= Zobrist::objZobrist.pawnZobristKey[fromSq];
+            gi->pawnsHashKey ^= zobrist::zobrist.pawnZobristKey[fromSq];
             
             break;
         }
@@ -538,16 +540,117 @@ void make_move(int ply, U32 move, Thread *th) {
     }
     
     
-    th->occupied = th->whitePieceBB[PIECES] | th->blackPieceBB[PIECES];	
-    th->empty = ~(th->occupied);
+    gi->occupied = gi->whitePieceBB[PIECES] | gi->blackPieceBB[PIECES];
+    gi->empty = ~( gi->occupied);
     
-    
-    th->hashKey ^= Zobrist::objZobrist.KEY_SIDE_TO_MOVE;
+    gi->hashKey ^= zobrist::zobrist.KEY_SIDE_TO_MOVE;
+
+
+
+    // update accumulator after each move
+
+    if (searching && piece != DUMMY) {
+
+
+        memcpy( gi->undoMoveStack[ply].accumulator[WHITE],
+                 gi->accumulator[WHITE], sizeof(int16_t) * NN_SIZE);
+        memcpy( gi->undoMoveStack[ply].accumulator[BLACK],
+                 gi->accumulator[BLACK], sizeof(int16_t) * NN_SIZE);
+
+
+        if (piece == KING || mtype == MOVE_CASTLE) {
+
+            refresh_accumulator( gi, WHITE);
+            refresh_accumulator( gi, BLACK);
+        } else {
+
+            // TODO check logic
+
+            std::vector<int> white_added_features;
+            std::vector<int> white_removed_features;
+            std::vector<int> black_added_features;
+            std::vector<int> black_removed_features;
+
+
+            auto p = piece - 1;
+            auto cp = target - 1;
+
+            auto wKingSq = GET_POSITION( gi->whitePieceBB[KING]);
+            auto bKingSq = GET_POSITION( gi->blackPieceBB[KING]) ^ 63;
+
+            auto fromW = fromSq;
+            auto toW = toSq;
+
+            auto fromB = fromSq ^ 63;
+            auto toB = toSq ^ 63;
+
+            auto indexW = (p << 1) + stm;
+            auto indexB = (p << 1) + (1 - stm);
+
+
+            auto featureW = (640 * wKingSq) + (64 * indexW) + (fromW);
+            auto featureB = (640 * bKingSq) + (64 * indexB) + (fromB);
+
+            // remove the feature index from the initial position
+            white_removed_features.push_back(featureW);
+            black_removed_features.push_back(featureB);
+
+
+            if (mtype == MOVE_PROMOTION) {
+
+                int pType = promType(move);
+
+                if (pType == PROMOTE_TO_QUEEN)  p = QUEEN - 1;
+                if (pType == PROMOTE_TO_ROOK)   p = ROOKS - 1;
+                if (pType == PROMOTE_TO_BISHOP) p = BISHOPS - 1;
+                if (pType == PROMOTE_TO_KNIGHT) p = KNIGHTS - 1;
+
+                indexW = (p << 1) + stm;
+                indexB = (p << 1) + (1 - stm);
+            }
+
+            featureW = (640 * wKingSq) + (64 * indexW) + (toW);
+            featureB = (640 * bKingSq) + (64 * indexB) + (toB);
+
+
+            // add the feature index to the destination position
+            white_added_features.push_back(featureW);
+            black_added_features.push_back(featureB);
+
+
+            auto target_piece_side = 1 - stm;
+
+            if ((  mtype == MOVE_CAPTURE
+                || mtype == MOVE_PROMOTION
+                || mtype == MOVE_ENPASSANT)
+                && target != DUMMY) {
+
+                indexW = (cp << 1) + target_piece_side;
+                indexB = (cp << 1) + 1 - target_piece_side;
+
+                const auto toSquare =
+                    mtype == MOVE_ENPASSANT ? (stm ? toSq + 8 : toSq - 8) : toSq;
+
+                toW = toSquare;
+                toB = toSquare ^ 63;
+
+                featureW = (640 * wKingSq) + (64 * indexW) + (toW);
+                featureB = (640 * bKingSq) + (64 * indexB) + (toB);
+
+                // remove any feature index of the captured piece
+                white_removed_features.push_back(featureW);
+                black_removed_features.push_back(featureB);
+            }
+
+            update_accumulator( gi, white_removed_features, white_added_features, WHITE);
+            update_accumulator( gi, black_removed_features, black_added_features, BLACK);
+        }
+    }
 }
 
 
 
-void unmake_move(int ply, U32 move, Thread *th) {
+void unmake_move(int ply, U32 move, GameInfo *gi ) {
     
     U8 castleDirection = castleDir(move);
     
@@ -566,15 +669,15 @@ void unmake_move(int ply, U32 move, Thread *th) {
     
     
     
-    th->moveStack[ply].castleFlags = th->undoMoveStack[ply].castleFlags;
-    th->moveStack[ply].epFlag = th->undoMoveStack[ply].epFlag;
-    th->moveStack[ply].epSquare = th->undoMoveStack[ply].epSquare;
+    gi->moveStack[ply].castleFlags = gi->undoMoveStack[ply].castleFlags;
+    gi->moveStack[ply].epFlag = gi->undoMoveStack[ply].epFlag;
+    gi->moveStack[ply].epSquare = gi->undoMoveStack[ply].epSquare;
     
-    th->hashKey = th->undoMoveStack[ply].hashKey;
-    th->pawnsHashKey = th->undoMoveStack[ply].pawnsHashKey;
+    gi->hashKey = gi->undoMoveStack[ply].hashKey;
+    gi->pawnsHashKey = gi->undoMoveStack[ply].pawnsHashKey;
     
-    th->movesHistory[th->moves_history_counter + ply].fiftyMovesCounter = 
-        th->undoMoveStack[ply].fiftyMovesCounter;
+    gi->movesHistory[gi->moves_history_counter + ply].fiftyMovesCounter =
+    gi->undoMoveStack[ply].fiftyMovesCounter;
     
     
     
@@ -585,12 +688,12 @@ void unmake_move(int ply, U32 move, Thread *th) {
             
             if (stm) {  
                 
-                th->blackPieceBB[piece] ^= from_to_bb; 
-                th->blackPieceBB[PIECES] ^= from_to_bb;
+                gi->blackPieceBB[piece] ^= from_to_bb;
+                gi->blackPieceBB[PIECES] ^= from_to_bb;
             } else { 
                 
-                th->whitePieceBB[piece] ^= from_to_bb;
-                th->whitePieceBB[PIECES] ^= from_to_bb; 
+                gi->whitePieceBB[piece] ^= from_to_bb;
+                gi->whitePieceBB[PIECES] ^= from_to_bb;
             }
             
             break;
@@ -601,18 +704,18 @@ void unmake_move(int ply, U32 move, Thread *th) {
             
             if (stm) {  
                 
-                th->blackPieceBB[piece] ^= from_to_bb; 
-                th->blackPieceBB[PIECES] ^= from_to_bb;
+                gi->blackPieceBB[piece] ^= from_to_bb;
+                gi->blackPieceBB[PIECES] ^= from_to_bb;
                 
-                th->whitePieceBB[target] ^= to_bb;
-                th->whitePieceBB[PIECES] ^= to_bb;
+                gi->whitePieceBB[target] ^= to_bb;
+                gi->whitePieceBB[PIECES] ^= to_bb;
             } else { 
                 
-                th->whitePieceBB[piece] ^= from_to_bb; 
-                th->whitePieceBB[PIECES] ^= from_to_bb;
+                gi->whitePieceBB[piece] ^= from_to_bb;
+                gi->whitePieceBB[PIECES] ^= from_to_bb;
                 
-                th->blackPieceBB[target] ^= to_bb;
-                th->blackPieceBB[PIECES] ^= to_bb;
+                gi->blackPieceBB[target] ^= to_bb;
+                gi->blackPieceBB[PIECES] ^= to_bb;
             }
             
             break;
@@ -623,12 +726,12 @@ void unmake_move(int ply, U32 move, Thread *th) {
             
             if (stm) {  
                 
-                th->blackPieceBB[piece] ^= from_to_bb; 
-                th->blackPieceBB[PIECES] ^= from_to_bb;
+                gi->blackPieceBB[piece] ^= from_to_bb;
+                gi->blackPieceBB[PIECES] ^= from_to_bb;
             } else { 
                 
-                th->whitePieceBB[piece] ^= from_to_bb; 
-                th->whitePieceBB[PIECES] ^= from_to_bb;
+                gi->whitePieceBB[piece] ^= from_to_bb;
+                gi->whitePieceBB[PIECES] ^= from_to_bb;
             }
             
             break;
@@ -639,19 +742,19 @@ void unmake_move(int ply, U32 move, Thread *th) {
             
             if (stm == WHITE) {
                 
-                th->whitePieceBB[PAWNS] ^= from_to_bb; 
-                th->whitePieceBB[PIECES] ^= from_to_bb; 
+                gi->whitePieceBB[PAWNS] ^= from_to_bb;
+                gi->whitePieceBB[PIECES] ^= from_to_bb;
                 
-                th->blackPieceBB[PAWNS] ^= (to_bb >> 8);
-                th->blackPieceBB[PIECES] ^= (to_bb >> 8);
+                gi->blackPieceBB[PAWNS] ^= (to_bb >> 8);
+                gi->blackPieceBB[PIECES] ^= (to_bb >> 8);
                 
             } else {
                 
-                th->blackPieceBB[PAWNS] ^= from_to_bb; 
-                th->blackPieceBB[PIECES] ^= from_to_bb;
+                gi->blackPieceBB[PAWNS] ^= from_to_bb;
+                gi->blackPieceBB[PIECES] ^= from_to_bb;
                 
-                th->whitePieceBB[PAWNS] ^= (to_bb << 8);
-                th->whitePieceBB[PIECES] ^= (to_bb << 8);
+                gi->whitePieceBB[PAWNS] ^= (to_bb << 8);
+                gi->whitePieceBB[PIECES] ^= (to_bb << 8);
             }
             
             break;
@@ -663,46 +766,46 @@ void unmake_move(int ply, U32 move, Thread *th) {
             if (castleDirection == WHITE_CASTLE_QUEEN_SIDE) {
                 
                 // clear king and rook
-                th->whitePieceBB[piece] ^= 0x0000000000000004U;
-                th->whitePieceBB[target] ^= 0x0000000000000008U;
+                gi->whitePieceBB[piece] ^= 0x0000000000000004U;
+                gi->whitePieceBB[target] ^= 0x0000000000000008U;
                 
                 //set king and rook
-                th->whitePieceBB[piece] ^= 0x0000000000000010U;
-                th->whitePieceBB[target] ^= 0x0000000000000001U;
+                gi->whitePieceBB[piece] ^= 0x0000000000000010U;
+                gi->whitePieceBB[target] ^= 0x0000000000000001U;
                 
                 // update pieces
-                th->whitePieceBB[PIECES] ^= 0x000000000000000CU;
-                th->whitePieceBB[PIECES] ^= 0x0000000000000011U;
+                gi->whitePieceBB[PIECES] ^= 0x000000000000000CU;
+                gi->whitePieceBB[PIECES] ^= 0x0000000000000011U;
             } else if (castleDirection == WHITE_CASTLE_KING_SIDE) {
                 
-                th->whitePieceBB[piece] ^= 0x0000000000000040U;
-                th->whitePieceBB[target] ^= 0x0000000000000020U;
+                gi->whitePieceBB[piece] ^= 0x0000000000000040U;
+                gi->whitePieceBB[target] ^= 0x0000000000000020U;
                 
-                th->whitePieceBB[piece] ^= 0x0000000000000010U;
-                th->whitePieceBB[target] ^= 0x0000000000000080U;
+                gi->whitePieceBB[piece] ^= 0x0000000000000010U;
+                gi->whitePieceBB[target] ^= 0x0000000000000080U;
                 
-                th->whitePieceBB[PIECES] ^= 0x0000000000000060U;
-                th->whitePieceBB[PIECES] ^= 0x0000000000000090U;
+                gi->whitePieceBB[PIECES] ^= 0x0000000000000060U;
+                gi->whitePieceBB[PIECES] ^= 0x0000000000000090U;
             } else if (castleDirection == BLACK_CASTLE_QUEEN_SIDE) {
                 
-                th->blackPieceBB[piece] ^= 0x0400000000000000U;
-                th->blackPieceBB[target] ^= 0x0800000000000000U;
+                gi->blackPieceBB[piece] ^= 0x0400000000000000U;
+                gi->blackPieceBB[target] ^= 0x0800000000000000U;
                 
-                th->blackPieceBB[piece] ^= 0x1000000000000000U;
-                th->blackPieceBB[target] ^= 0x0100000000000000U;
+                gi->blackPieceBB[piece] ^= 0x1000000000000000U;
+                gi->blackPieceBB[target] ^= 0x0100000000000000U;
                 
-                th->blackPieceBB[PIECES] ^= 0x0C00000000000000U;
-                th->blackPieceBB[PIECES] ^= 0x1100000000000000U;
+                gi->blackPieceBB[PIECES] ^= 0x0C00000000000000U;
+                gi->blackPieceBB[PIECES] ^= 0x1100000000000000U;
             } else if (castleDirection == BLACK_CASTLE_KING_SIDE) {
                 
-                th->blackPieceBB[piece] ^= 0x4000000000000000U;
-                th->blackPieceBB[target] ^= 0x2000000000000000U;
+                gi->blackPieceBB[piece] ^= 0x4000000000000000U;
+                gi->blackPieceBB[target] ^= 0x2000000000000000U;
                 
-                th->blackPieceBB[piece] ^= 0x1000000000000000U;
-                th->blackPieceBB[target] ^= 0x8000000000000000U;
+                gi->blackPieceBB[piece] ^= 0x1000000000000000U;
+                gi->blackPieceBB[target] ^= 0x8000000000000000U;
                 
-                th->blackPieceBB[PIECES] ^= 0x6000000000000000U;
-                th->blackPieceBB[PIECES] ^= 0x9000000000000000U;
+                gi->blackPieceBB[PIECES] ^= 0x6000000000000000U;
+                gi->blackPieceBB[PIECES] ^= 0x9000000000000000U;
             }
             
             break;
@@ -721,72 +824,105 @@ void unmake_move(int ply, U32 move, Thread *th) {
             
             if (stm) {
                 
-                th->blackPieceBB[PAWNS] ^= from_bb;
-                th->blackPieceBB[p] ^= to_bb;
-                th->blackPieceBB[PIECES] ^= from_to_bb;
+                gi->blackPieceBB[PAWNS] ^= from_bb;
+                gi->blackPieceBB[p] ^= to_bb;
+                gi->blackPieceBB[PIECES] ^= from_to_bb;
             } else {
                 
-                th->whitePieceBB[PAWNS] ^= from_bb;
-                th->whitePieceBB[p] ^= to_bb;
-                th->whitePieceBB[PIECES] ^= from_to_bb;
+                gi->whitePieceBB[PAWNS] ^= from_bb;
+                gi->whitePieceBB[p] ^= to_bb;
+                gi->whitePieceBB[PIECES] ^= from_to_bb;
             }
             
             if (target != DUMMY) {
                 
                 if (stm) {
                     
-                    th->whitePieceBB[target] ^= to_bb;
-                    th->whitePieceBB[PIECES] ^= to_bb;
+                    gi->whitePieceBB[target] ^= to_bb;
+                    gi->whitePieceBB[PIECES] ^= to_bb;
                 } else {
                     
-                    th->blackPieceBB[target] ^= to_bb;
-                    th->blackPieceBB[PIECES] ^= to_bb;
+                    gi->blackPieceBB[target] ^= to_bb;
+                    gi->blackPieceBB[PIECES] ^= to_bb;
                 }
             }
             
             break;
         }
     }
-    
-    
-    th->occupied = th->whitePieceBB[PIECES] | th->blackPieceBB[PIECES];
-    th->empty = ~(th->occupied);
+
+
+    gi->occupied = gi->whitePieceBB[PIECES] | gi->blackPieceBB[PIECES];
+    gi->empty = ~( gi->occupied);
+
+
+    if (searching) {
+
+        memcpy( gi->accumulator[WHITE],
+                 gi->undoMoveStack[ply].accumulator[WHITE],
+               sizeof(int16_t) * NN_SIZE);
+
+        memcpy( gi->accumulator[BLACK],
+                 gi->undoMoveStack[ply].accumulator[BLACK],
+               sizeof(int16_t) * NN_SIZE);
+    }
 }
 
 
 
-void makeNullMove(int ply, Thread *th) { // Needs investigation
+void makeNullMove(int ply, GameInfo *gi ) { // Needs investigation
     
-    const auto mhCounter = th->moves_history_counter + ply; // Needs investigation 
+    const auto mhCounter = gi->moves_history_counter + ply; // Needs investigation
     
-    th->undoMoveStack[ply].fiftyMovesCounter = th->movesHistory[mhCounter].fiftyMovesCounter;
+    gi->undoMoveStack[ply].fiftyMovesCounter = gi->movesHistory[mhCounter].fiftyMovesCounter;
     
-    th->undoMoveStack[ply].castleFlags = th->moveStack[ply].castleFlags;
-    th->undoMoveStack[ply].epFlag = th->moveStack[ply].epFlag;
-    th->undoMoveStack[ply].epSquare = th->moveStack[ply].epSquare;
-    th->undoMoveStack[ply].hashKey = th->hashKey;
-    th->undoMoveStack[ply].pawnsHashKey = th->pawnsHashKey;
+    gi->undoMoveStack[ply].castleFlags = gi->moveStack[ply].castleFlags;
+    gi->undoMoveStack[ply].epFlag = gi->moveStack[ply].epFlag;
+    gi->undoMoveStack[ply].epSquare = gi->moveStack[ply].epSquare;
+    gi->undoMoveStack[ply].hashKey = gi->hashKey;
+    gi->undoMoveStack[ply].pawnsHashKey = gi->pawnsHashKey;
     
     // making any move will make the ep move invalid
-    th->moveStack[ply].epFlag = 0;
+    gi->moveStack[ply].epFlag = 0;
     
     
-    th->hashKey ^= Zobrist::objZobrist.KEY_SIDE_TO_MOVE;
+    gi->hashKey ^= zobrist::zobrist.KEY_SIDE_TO_MOVE;
+
+
+    if (searching) {
+
+        memcpy( gi->undoMoveStack[ply].accumulator[WHITE],
+                 gi->accumulator[WHITE], sizeof(int16_t) * NN_SIZE);
+        memcpy( gi->undoMoveStack[ply].accumulator[BLACK],
+                 gi->accumulator[BLACK], sizeof(int16_t) * NN_SIZE);
+    }
 }
 
 
-void unmakeNullMove(int ply, Thread *th) {
+void unmakeNullMove(int ply, GameInfo *gi ) {
     
-    th->moveStack[ply].castleFlags = th->undoMoveStack[ply].castleFlags;
-    th->moveStack[ply].epFlag = th->undoMoveStack[ply].epFlag;
-    th->moveStack[ply].epSquare = th->undoMoveStack[ply].epSquare;
+    gi->moveStack[ply].castleFlags = gi->undoMoveStack[ply].castleFlags;
+    gi->moveStack[ply].epFlag = gi->undoMoveStack[ply].epFlag;
+    gi->moveStack[ply].epSquare = gi->undoMoveStack[ply].epSquare;
     
-    th->hashKey = th->undoMoveStack[ply].hashKey;
-    th->pawnsHashKey = th->undoMoveStack[ply].pawnsHashKey;
+    gi->hashKey = gi->undoMoveStack[ply].hashKey;
+    gi->pawnsHashKey = gi->undoMoveStack[ply].pawnsHashKey;
     
-    const auto mhCounter = th->moves_history_counter + ply; // Needs investigation
+    const auto mhCounter = gi->moves_history_counter + ply; // Needs investigation
     
-    th->movesHistory[mhCounter].fiftyMovesCounter = th->undoMoveStack[ply].fiftyMovesCounter;
+    gi->movesHistory[mhCounter].fiftyMovesCounter = gi->undoMoveStack[ply].fiftyMovesCounter;
+
+
+    if (searching) {
+
+        memcpy( gi->accumulator[WHITE],
+                 gi->undoMoveStack[ply].accumulator[WHITE],
+               sizeof(int16_t) * NN_SIZE);
+
+        memcpy( gi->accumulator[BLACK],
+                 gi->undoMoveStack[ply].accumulator[BLACK],
+               sizeof(int16_t) * NN_SIZE);
+    }
 }
 
 

@@ -5,8 +5,9 @@
 #include <vector>
 #include <iostream>
 
-#include "thread.h"
-#include "TimeManagement.h"
+#include "namespaces.h"
+
+using namespace game;
 
 inline std::string getMoveNotation(const U32 move) {
 
@@ -30,23 +31,18 @@ inline std::string getMoveNotation(const U32 move) {
     return str;
 }
 
-inline void reportPV(SearchThread *th) {
+inline void reportPV(int depth, int selDepth, int score, int nps, U32* pvLine, U64 totalNodes, U64 totalTTHits) {
 
-    const auto depth = th->completedDepth;
-    const auto selDepth = th->selDepth;
-    const auto pvLine = th->pvLine[th->completedDepth].line;
-
-    int score = th->pvLine[th->completedDepth].score;
-    
     std::cout << "info depth " << depth << " seldepth " << selDepth; 
-    std::cout << " time " << TimeManager::time_elapsed_milliseconds(
-         TimeManager::sTimeManager.getStartTime()); 
-    std::cout << " nodes " << searchThreads.totalNodes();
-    std::cout/*<< " hashfull " << hashfull()*/ << " tbhits " << searchThreads.totalTTHits();
+    std::cout << " time " << tmg::timeManager.timeElapsed<MILLISECONDS> (
+        tmg::timeManager.getStartTime());
+    std::cout << " nodes " << totalNodes;
+    std::cout/*<< " hashfull " << hashfull()*/ << " tbhits " << totalTTHits;
+    std::cout << " nps " << nps;
     std::cout << " score cp " << score << " pv";
     
     U32 move;
-    for (int i = 0; i < U16_MAX_PLY; i++) {
+    for (int i = 0; i < MAX_PLY; i++) {
         
         move = pvLine[i];
         
@@ -59,18 +55,6 @@ inline void reportPV(SearchThread *th) {
     }
     
     std::cout << "\n";
-}
-
-inline void reportBestMove() {
-
-    auto bestThread = searchThreads.getBestThread();
-
-    if (bestThread != searchThreads.getMainSearchThread())
-        reportPV(bestThread);
-
-    U32 bestMove = bestThread->pvLine[bestThread->completedDepth].line[0];
-
-    std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
 }
 
 #endif

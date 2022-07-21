@@ -67,7 +67,7 @@ inline Move getNoMove() {
     return noMove;
 }
 
-void generatePushes(Side stm, std::vector<Move> &moves, Thread *th) {
+void generatePushes(Side stm, std::vector<Move> &moves, GameInfo *th) {
     
     U8 from, to; 
     U64 bitboard, pushes, empty = th->empty; 
@@ -147,7 +147,7 @@ void generatePushes(Side stm, std::vector<Move> &moves, Thread *th) {
     }
 }
 
-void generateCaptures(Side stm, std::vector<Move> &moves, Thread *th) {
+void generateCaptures(Side stm, std::vector<Move> &moves, GameInfo *th) {
     
     int from, to; 
     U64 cPieceBB, fromBB;
@@ -205,7 +205,7 @@ void generateCaptures(Side stm, std::vector<Move> &moves, Thread *th) {
     }
 }
 
-void genCastlingMoves(Side stm, int ply, std::vector<Move> &moves, Thread *th) {
+void genCastlingMoves(Side stm, int ply, std::vector<Move> &moves, GameInfo *th) {
 
     Move move;
 
@@ -276,7 +276,7 @@ void genCastlingMoves(Side stm, int ply, std::vector<Move> &moves, Thread *th) {
     }
 }
 
-void genEnpassantMoves(Side stm, int ply, std::vector<Move> &moves, Thread *th) {
+void genEnpassantMoves(Side stm, int ply, std::vector<Move> &moves, GameInfo *th) {
     
     if (th->moveStack[ply].epFlag) {
         
@@ -312,7 +312,7 @@ void genEnpassantMoves(Side stm, int ply, std::vector<Move> &moves, Thread *th) 
     }
 }
 
-void genPromotionsNormal(Side stm, std::vector<Move> &moves, Thread *th) {
+void genPromotionsNormal(Side stm, std::vector<Move> &moves, GameInfo *th) {
     
     U8 from;
     U8 to;
@@ -353,7 +353,7 @@ void genPromotionsNormal(Side stm, std::vector<Move> &moves, Thread *th) {
     }
 }
 
-void genPromotionsAttacks(Side stm, std::vector<Move> &moves, Thread *th) {
+void genPromotionsAttacks(Side stm, std::vector<Move> &moves, GameInfo *th) {
     
     U8 from;
     U8 to;
@@ -409,7 +409,7 @@ void genPromotionsAttacks(Side stm, std::vector<Move> &moves, Thread *th) {
     }
 }
 
-bool isValidMove(Side stm, const int ply, const U32 move, Thread *th) {
+bool isValidMove(Side stm, const int ply, const U32 move, GameInfo *th) {
     
     if (move == NO_MOVE) 
         return false;
@@ -529,20 +529,20 @@ bool isValidMove(Side stm, const int ply, const U32 move, Thread *th) {
 }
 
 
-void genSpecialMoves(Side stm, int ply, std::vector<Move> &moves, Thread *th) {
+void genSpecialMoves(Side stm, int ply, std::vector<Move> &moves, GameInfo *th) {
      
     genPromotionsAttacks(stm, moves, th);
     genPromotionsNormal(stm, moves, th);
     genCastlingMoves(stm, ply, moves, th);  
 }
 
-void genAttacks(Side stm, int ply, std::vector<Move> &moves, Thread *th) {
+void genAttacks(Side stm, int ply, std::vector<Move> &moves, GameInfo *th) {
     
     genEnpassantMoves(stm, ply, moves, th);
     generateCaptures(stm, moves, th);
 }
 
-void genMoves(Side stm, int ply, std::vector<Move> &moves, Thread *th) {
+void genMoves(Side stm, int ply, std::vector<Move> &moves, GameInfo *th) {
    
    if (stm) {
     
@@ -573,7 +573,7 @@ inline int getBestMoveIndex(std::vector<Move> &moves) {
 }
 
 
-void scoreCaptureMoves(Thread *th, MOVE_LIST *moveList) {
+void scoreCaptureMoves( GameInfo *th, MOVE_LIST *moveList) {
 
     int piece, to, target, mt;
    
@@ -592,7 +592,7 @@ void scoreCaptureMoves(Thread *th, MOVE_LIST *moveList) {
     }
 }
 
-void scoreNormalMoves(Side stm, int ply, Thread *th, MOVE_LIST *moveList) {
+void scoreNormalMoves(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
     U32 previousMove = ply == 0 ? NO_MOVE : th->moveStack[ply - 1].move;
 
@@ -608,7 +608,7 @@ void scoreNormalMoves(Side stm, int ply, Thread *th, MOVE_LIST *moveList) {
     }
 }
 
-Move getNextMove(Side stm, int ply, Thread *th, MOVE_LIST *moveList) {
+Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
     switch (moveList->stage) {
 
