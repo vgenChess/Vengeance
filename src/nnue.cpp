@@ -567,8 +567,8 @@ bool loadNetwork() {
 
     std::string path;
 
-    if (exists_file("$HOME/epoch206.nnue"))
-        path = "$HOME/epoch206.nnue";
+    if (exists_file("/home/epoch206.nnue"))
+        path = "/home/epoch206.nnue";
     else if (exists_file("epoch206.nnue"))
         path = "epoch206.nnue";
 
