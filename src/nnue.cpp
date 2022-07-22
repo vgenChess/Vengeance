@@ -548,6 +548,15 @@ uint32_t get_file_size(char *file)
     #endif
 }
 
+inline bool exists_file (const std::string& name) {
+    if (FILE *file = fopen(name.c_str(), "r")) {
+        fclose(file);
+        return true;
+    } else {
+        return false;
+    }
+}
+
 bool loadNetwork() {
 
     uint32_t size;
@@ -556,7 +565,12 @@ bool loadNetwork() {
     uint8_t  *iter;
     FILE     *fh = NULL;
 
-    std::string path = "epoch206.nnue";
+    std::string path;
+
+    if (exists_file("$HOME/epoch206.nnue"))
+        path = "$HOME/epoch206.nnue";
+    else if (exists_file("epoch206.nnue"))
+        path = "epoch206.nnue";
 
     size = get_file_size(const_cast<char*>(path.c_str()));
 
@@ -575,6 +589,7 @@ bool loadNetwork() {
     if (count != size)
         return false;
 
+
     /* Parse network header */
     iter = data;
     if (!parse_header(&iter))
@@ -583,6 +598,7 @@ bool loadNetwork() {
     /* Parse network */
     if (!parse_network(&iter))
         return false;
+
 
     return true;
 }
