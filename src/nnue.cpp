@@ -7,72 +7,45 @@
 #include <string.h>
 #include <stdalign.h>
 #include <iostream>
+#include <fstream>
 
 #include "nnue.h"
 #include "structs.h"
 
 #define WEIGHT_SCALE_BITS 6
-
-/* Definition of the network architcechure */
 #define NET_VERSION 0x00000005
 #define NET_HEADER_SIZE 4
 #define NUM_INPUT_FEATURES 64*64*10
 #define MAX_ACTIVE_FEATURES 30
 #define NUM_LAYERS 4
 #define HALFKX_LAYER_SIZE 128
+#define NNUE2SCORE 600.0f
+#define WEIGHT_SCALE_HIDDEN 64.0f
+#define WEIGHT_SCALE_OUT 16.0f
+#define QUANTIZED_ONE 127.0f
 
-#define nnue2score 600.0f
-#define weight_scale_hidden 64.0f
-#define weight_scale_out 16.0f
-#define quantized_one 127.0f
-
-float inputLayerWeightScale = quantized_one;
-float inputLayerBiasScale = quantized_one;
-
-float hiddenLayerWeightScale = weight_scale_hidden;
-float hiddenLayerBiasScale = weight_scale_hidden * quantized_one;
-
-float outputLayerWeightScale = nnue2score * weight_scale_out / quantized_one;
-float outputLayerBiasScale = weight_scale_out * nnue2score;
+constexpr float inputLayerWeightScale = QUANTIZED_ONE;
+constexpr float inputLayerBiasScale = QUANTIZED_ONE;
+constexpr float hiddenLayerWeightScale = WEIGHT_SCALE_HIDDEN;
+constexpr float hiddenLayerBiasScale = WEIGHT_SCALE_HIDDEN * QUANTIZED_ONE;
+constexpr float outputLayerWeightScale = NNUE2SCORE * WEIGHT_SCALE_OUT / QUANTIZED_ONE;
+constexpr float outputLayerBiasScale = WEIGHT_SCALE_OUT * NNUE2SCORE;
 
 constexpr int model_layer_sizes[NUM_LAYERS] = {HALFKX_LAYER_SIZE*2, 32, 32, 1};
-
-uint32_t read_uint32_le(uint8_t *buffer)
-{
-    uint32_t val;
-    uint8_t  *p = (uint8_t*)&val;
-
-#ifndef TARGET_BIG_ENDIAN
-    p[0] = buffer[0];
-    p[1] = buffer[1];
-    p[2] = buffer[2];
-    p[3] = buffer[3];
-#else
-    p[3] = buffer[0];
-    p[2] = buffer[1];
-    p[1] = buffer[2];
-    p[0] = buffer[3];
-#endif
-    return val;
-}
 
 template<typename T1, typename T2, U64 size1, U64 size2>
 struct alignas(64) LinearLayer {
 
-    T1 weights[size1];
-    T2 biases[size2];
+    T1 weights[size1] = {};
+    T2 biases[size2] = {};
 };
 
 template<int size1, int size2>
 struct alignas(64) LayerData {
 
-    int32_t internal[size1];
-    uint8_t external[size2];
+    int32_t internal[size1] = {};
+    uint8_t external[size2] = {};
 };
-
-#define weight_scale_hidden 64.0f
-#define weight_scale_out 16.0f
-#define quantized_one 127.0f
 
 template <int s>
 struct LayerSize {
@@ -96,8 +69,7 @@ LayerSize<1> layer3_size;
 
 void refresh_accumulator(
     GameInfo* gi,
-    Side side
-) {
+    Side side) {
 
     constexpr int register_width = 256 / 16;
     static_assert(HALFKX_LAYER_SIZE % register_width == 0, "We're processing 16 elements at a time");
@@ -172,11 +144,11 @@ void refresh_accumulator(
     }
 }
 
-
-
-
-void update_accumulator ( GameInfo* gi, const std::vector< int >& removed_features, const std::vector< int >& added_features, Side side )
-{
+void update_accumulator (
+    GameInfo* gi,
+    const std::vector< int >& removed_features,
+    const std::vector< int >& added_features,
+    Side side ) {
 
     constexpr int register_width = 256 / 16;
     static_assert(HALFKX_LAYER_SIZE % register_width == 0, "We're processing 16 elements at a time");
@@ -212,46 +184,6 @@ void update_accumulator ( GameInfo* gi, const std::vector< int >& removed_featur
     }
 }
 
-
-
-
-
-
-static void m256_add_dpbusd_epi32(__m256i& acc, __m256i a, __m256i b)
-{
-#if defined (USE_VNNI)
-    acc = _mm256_dpbusd_epi32(acc, a, b);
-#else
-    __m256i product0 = _mm256_maddubs_epi16(a, b);
-    product0 = _mm256_madd_epi16(product0, _mm256_set1_epi16(1));
-    acc = _mm256_add_epi32(acc, product0);
-#endif
-}
-
-static __m128i m256_haddx4(__m256i a, __m256i b, __m256i c, __m256i d)
-{
-    a = _mm256_hadd_epi32(a, b);
-    c = _mm256_hadd_epi32(c, d);
-    a = _mm256_hadd_epi32(a, c);
-    const __m128i sum128lo = _mm256_castsi256_si128(a);
-    const __m128i sum128hi = _mm256_extracti128_si256(a, 1);
-    return _mm_add_epi32(sum128lo, sum128hi);
-}
-
-__m128i m256_haddx4(__m256i sum0, __m256i sum1, __m256i sum2, __m256i sum3, __m128i bias) {
-    sum0 = _mm256_hadd_epi32(sum0, sum1);
-    sum2 = _mm256_hadd_epi32(sum2, sum3);
-
-    sum0 = _mm256_hadd_epi32(sum0, sum2);
-
-    __m128i sum128lo = _mm256_castsi256_si128(sum0);
-    __m128i sum128hi = _mm256_extracti128_si256(sum0, 1);
-
-    return _mm_add_epi32(_mm_add_epi32(sum128lo, sum128hi), bias);
-};
-
-
-
 void hiddenLayer(
     int32_t*           output,
     uint8_t*           input,
@@ -283,26 +215,24 @@ void hiddenLayer(
             const __m256i in =
                 _mm256_load_si256(reinterpret_cast<const __m256i*>(&input[j * register_width]));
 
-            m256_add_dpbusd_epi32(sum0, in, _mm256_load_si256(
+            nnue::m256_add_dpbusd_epi32(sum0, in, _mm256_load_si256(
                     reinterpret_cast<const __m256i*>(&weights[offset0 + j * register_width])));
-            m256_add_dpbusd_epi32(sum1, in, _mm256_load_si256(
+            nnue::m256_add_dpbusd_epi32(sum1, in, _mm256_load_si256(
                     reinterpret_cast<const __m256i*>(&weights[offset1 + j * register_width])));
-            m256_add_dpbusd_epi32(sum2, in, _mm256_load_si256(
+            nnue::m256_add_dpbusd_epi32(sum2, in, _mm256_load_si256(
                     reinterpret_cast<const __m256i*>(&weights[offset2 + j * register_width])));
-            m256_add_dpbusd_epi32(sum3, in, _mm256_load_si256(
+            nnue::m256_add_dpbusd_epi32(sum3, in, _mm256_load_si256(
                     reinterpret_cast<const __m256i*>(&weights[offset3 + j * register_width])));
         }
 
         __m128i bias = _mm_load_si128((const __m128i*)&biases[i*4]);
-        __m128i outval =  m256_haddx4(sum0, sum1, sum2, sum3, bias);
+        __m128i outval =  nnue::m256_haddx4(sum0, sum1, sum2, sum3, bias);
 
         outval = _mm_srai_epi32(outval, WEIGHT_SCALE_BITS);
-
 
         _mm_store_si128((__m128i*)&output[i*4], outval);
     }
 }
-
 
 void outerLayer(
     int32_t*           output,
@@ -319,7 +249,7 @@ void outerLayer(
     {
         const __m256i in = _mm256_load_si256(reinterpret_cast<const __m256i*>(input + j));
 
-        m256_add_dpbusd_epi32(sum, in, _mm256_load_si256(reinterpret_cast<const __m256i*>(weights + j)));
+        nnue::m256_add_dpbusd_epi32(sum, in, _mm256_load_si256(reinterpret_cast<const __m256i*>(weights + j)));
     }
 
     const __m128i sum128lo = _mm256_castsi256_si128(sum);
@@ -333,13 +263,10 @@ void outerLayer(
     output[0] = _mm_cvtsi128_si32(r1) + bias[0];
 }
 
-
-
-void crelu_16(
-    int      size,   // no need to have any layer structure, we just need the number of elements
-    uint8_t*  output, // the already allocated storage for the result
-    const int16_t* input   // the input, which is the output of the previous linear layer
-) {
+void crelu_16 (
+    int      size,
+    uint8_t*  output,
+    const int16_t* input) {
 
     constexpr int in_register_width = 256 / 16;
     constexpr int out_register_width = 256 / 8;
@@ -358,11 +285,13 @@ void crelu_16(
                                 reinterpret_cast<const __m256i*>(&input[(i * 2 + 1) * in_register_width]));
 
         const __m256i result =
+
             // packs changes the order, so we need to fix that with a permute
             _mm256_permute4x64_epi64(
 
                 // clamp from below
                 _mm256_max_epi8(
+
                     // packs saturates to 127, so we only need to clamp from below
                     _mm256_packs_epi16(in0, in1),
 
@@ -376,14 +305,10 @@ void crelu_16(
     }
 }
 
-
-
 void crelu_32(
-
-    int      size,   // no need to have any layer structure, we just need the number of elements
-    uint8_t*  output, // the already allocated storage for the result
-    const int32_t* input) {   // the input, which is the output of the previous linear layer
-
+    int      size,
+    uint8_t*  output,
+    const int32_t* input) {
 
     constexpr int in_register_width = 256 / 32;
     constexpr int out_register_width = 256 / 8;
@@ -392,7 +317,6 @@ void crelu_32(
 
     const __m256i zero    = _mm256_setzero_si256();
     const __m256i control = _mm256_set_epi32(7, 3, 6, 2, 5, 1, 4, 0);
-
 
     for (int i = 0; i < num_out_chunks; ++i) {
 
@@ -426,11 +350,92 @@ void crelu_32(
     }
 }
 
+// Evaluate a position using nnue
+
+int predict ( Side stm, GameInfo* gi ) {
+
+    LayerData<layer1_size.size, layer1_size.size> layer1_data;
+    LayerData<layer2_size.size, layer2_size.size> layer2_data;
+    LayerData<layer3_size.size, layer3_size.size> layer3_data;
+
+    int16_t input[layer0_size.size];
+    alignas(64) uint8_t output0[layer0_size.size];
+
+    // TODO Use perspective after training with data that uses both perspectives
+    //auto perspective = stm == WHITE ? 0 : 1;
+
+    int offset = layer0_size.size / 2;
+    for (int i = 0; i < layer0_size.size / 2; i++) {
+
+        input[i] = gi->accumulator[WHITE][i];
+        input[offset + i] = gi->accumulator[BLACK][i];
+    }
 
 
-static bool parse_header(uint8_t **data)
+    crelu_16 (layer0_size.size, output0, input);
+
+
+    // HIDDEN LAYER 1
+
+    hiddenLayer(layer1_data.internal, output0, layer1.weights,
+                       layer1.biases, layer0_size.size, layer1_size.size);
+
+    crelu_32 (layer1_size.size, layer1_data.external, layer1_data.internal);
+
+
+    // HIDDEN LAYER 2
+
+    hiddenLayer(layer2_data.internal, layer1_data.external, layer2.weights,
+                       layer2.biases, layer1_size.size, layer2_size.size);
+
+    crelu_32 (layer2_size.size, layer2_data.external, layer2_data.internal);
+
+
+    // OUTPUT LAYER
+
+    outerLayer(layer3_data.internal, layer2_data.external, layer3.weights,
+              layer3.biases, layer2_size.size);
+
+
+    int score = layer3_data.internal[0] / WEIGHT_SCALE_OUT;
+
+
+    //return score;
+
+    return stm == WHITE ? score : - score;
+}
+
+
+
+
+
+
+
+// NNUE NETWORK LOADING AND PARSING
+
+
+uint32_t read_uint32_le(char *buffer)
 {
-    uint8_t  *iter = *data;
+    uint32_t val;
+    char  *p = (char*)&val;
+
+#ifndef TARGET_BIG_ENDIAN
+    p[0] = buffer[0];
+    p[1] = buffer[1];
+    p[2] = buffer[2];
+    p[3] = buffer[3];
+#else
+    p[3] = buffer[0];
+    p[2] = buffer[1];
+    p[1] = buffer[2];
+    p[0] = buffer[3];
+#endif
+    return val;
+}
+
+static bool parse_header(char **data)
+{
+    char  *iter = *data;
     uint32_t version;
 
     version = read_uint32_le(iter);
@@ -443,9 +448,7 @@ static bool parse_header(uint8_t **data)
     return true;
 }
 
-
-
-static bool parse_network(uint8_t **data)
+static bool parse_network(char **data)
 {
     float *iter = (float*)*data;
     int   k;
@@ -497,12 +500,11 @@ static bool parse_network(uint8_t **data)
     }
 
 
-    *data = (uint8_t*)iter;
+    *data = (char*)iter;
 
 
     return true;
 }
-
 
 static uint32_t calculate_net_size(void)
 {
@@ -514,7 +516,7 @@ static uint32_t calculate_net_size(void)
     size += HALFKX_LAYER_SIZE*sizeof(float);
     size += HALFKX_LAYER_SIZE*NUM_INPUT_FEATURES*sizeof(float);
 
-    for (k=1; k<NUM_LAYERS; k++) {
+    for (k=1;k<NUM_LAYERS;k++) {
         size += model_layer_sizes[k]*sizeof(float);
         size += model_layer_sizes[k]*model_layer_sizes[k-1]*sizeof(float);
     }
@@ -522,71 +524,46 @@ static uint32_t calculate_net_size(void)
     return size;
 }
 
-#include <sys/stat.h>
+static uint32_t readNetData (std::string path, char** data) {
 
-uint32_t get_file_size(char *file)
-{
-    assert(file != NULL);
+    std::ifstream file(path, std::ios::in | std::ios::binary);
 
-#ifdef WINDOWS
-    HANDLE fh;
-    DWORD  size;
+    if (!file.is_open())
+        return 0;
 
-    fh = CreateFile(file, GENERIC_READ, 0, NULL, OPEN_EXISTING,
-                    FILE_ATTRIBUTE_NORMAL, NULL);
-    size = GetFileSize(fh, NULL);
-    CloseHandle(fh);
+    file.ignore( std::numeric_limits<std::streamsize>::max());
+    std::streamsize length = file.gcount();
+    file.clear();   //  Since ignore will have set eof.
+    file.seekg( 0, std::ios_base::beg );
 
-    return (uint32_t)size;
-#else
-    struct stat sb;
+    *data = new char[length];
 
-    if (stat(file, &sb) != 0) {
-        return 0xFFFFFFFF;
-    }
-    return (uint32_t)sb.st_size;
-    #endif
-}
+    file.read( *data, length );
 
-inline bool exists_file (const std::string& name) {
-    if (FILE *file = fopen(name.c_str(), "r")) {
-        fclose(file);
-        return true;
-    } else {
-        return false;
-    }
+    const auto size = file.gcount();
+
+    file.close();
+
+    return size;
 }
 
 bool loadNetwork() {
 
-    uint32_t size;
-    size_t   count;
-    uint8_t  *data = NULL;
-    uint8_t  *iter;
-    FILE     *fh = NULL;
+    char *data = nullptr, *iter = nullptr;
 
-    std::string path;
+    const auto path1 = "/home/epoch206.nnue";
+    const auto path2 = "epoch206.nnue";
 
-    if (exists_file("/home/epoch206.nnue"))
-        path = "/home/epoch206.nnue";
-    else if (exists_file("epoch206.nnue"))
-        path = "epoch206.nnue";
+    const std::string path =
+        nnue::exists_file(path1) ? path1 :
+        nnue::exists_file(path2) ? path2 : "";
 
-    size = get_file_size(const_cast<char*>(path.c_str()));
-
-    if (size != calculate_net_size())
+    if (path.empty())
         return false;
 
-    fh = fopen(const_cast<char*>(path.c_str()), "rb");
-    if (fh == NULL)
-        return false;
+    const auto size = readNetData(path, &data);
 
-    data = (uint8_t*)malloc(size);
-
-
-    count = fread(data, 1, size, fh);
-
-    if (count != size)
+    if (calculate_net_size() != size)
         return false;
 
 
@@ -601,130 +578,6 @@ bool loadNetwork() {
 
 
     return true;
-}
-
-bool nnue_load_net(std::string path)
-{
-    uint32_t size;
-    size_t   count;
-    uint8_t  *data = NULL;
-    uint8_t  *iter;
-    FILE     *fh = NULL;
-    bool     ret = true;
-
-    /* If an external net is specified then read the complete file */
-    if (!path.empty()) {
-
-        size = get_file_size(const_cast<char*>(path.c_str()));
-        if (size != calculate_net_size()) {
-            ret = false;
-            goto exit;
-        }
-
-        fh = fopen(const_cast<char*>(path.c_str()), "rb");
-        if (fh == NULL) {
-            ret = false;
-            goto exit;
-        }
-
-
-        data = (uint8_t*)malloc(size);
-
-
-        count = fread(data, 1, size, fh);
-        if (count != size) {
-
-            ret = false;
-            goto exit;
-        }
-    } else {
-
-        //  data = (uint8_t*)nnue_net_data;
-        //  size = (uint32_t)nnue_net_size;
-        //  if (size != calculate_net_size()) {
-        //      ret = false;
-        //      goto exit;
-        //  }
-    }
-
-    /* Parse network header */
-    iter = data;
-    if (!parse_header(&iter)) {
-        ret = false;
-        goto exit;
-    }
-
-    /* Parse network */
-    if (!parse_network(&iter)) {
-        ret = false;
-        goto exit;
-    }
-
-exit:
-    if (!path.empty()) {
-        free(data);
-        if (fh != NULL) {
-            fclose(fh);
-        }
-    }
-    return ret;
-}
-
-
-int predict ( Side stm, GameInfo* gi )
-{
-
-
-    LayerData<layer1_size.size, layer1_size.size> layer1_data;
-    LayerData<layer2_size.size, layer2_size.size> layer2_data;
-    LayerData<layer3_size.size, layer3_size.size> layer3_data;
-
-
-    int16_t input[layer0_size.size];
-    alignas(64) uint8_t output0[layer0_size.size];
-
-    // TODO Use perspective after training with data that uses both perspectives
-    //auto perspective = stm == WHITE ? 0 : 1;
-
-    int offset = layer0_size.size / 2;
-    for (int i = 0; i < layer0_size.size / 2; i++) {
-
-        input[i] = gi->accumulator[WHITE][i];
-        input[offset + i] = gi->accumulator[BLACK][i];
-    }
-
-
-    crelu_16 (layer0_size.size, output0, input);
-
-
-    // HIDDEN LAYER 1
-
-    hiddenLayer(layer1_data.internal, output0, layer1.weights,
-                       layer1.biases, layer0_size.size, layer1_size.size);
-
-    crelu_32 (layer1_size.size, layer1_data.external, layer1_data.internal);
-
-
-    // HIDDEN LAYER 2
-
-    hiddenLayer(layer2_data.internal, layer1_data.external, layer2.weights,
-                       layer2.biases, layer1_size.size, layer2_size.size);
-
-    crelu_32 (layer2_size.size, layer2_data.external, layer2_data.internal);
-
-
-    // OUTPUT LAYER
-
-    outerLayer(layer3_data.internal, layer2_data.external, layer3.weights,
-              layer3.biases, layer2_size.size);
-
-
-    int score = layer3_data.internal[0] / weight_scale_out;
-
-
-    //return score;
-
-    return stm == WHITE ? score : - score;
 }
 
 
