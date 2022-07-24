@@ -288,13 +288,13 @@ void UciLoop() {
             print_board(initInfo->occupied, initInfo);
             printf("\n\n");
 
-            int scoreWhite = predict(WHITE, initInfo);
+            int scoreWhite = nnueEval(WHITE, initInfo);
             
             printf("White score = %d\n", scoreWhite);
             
             printf("\n");
 
-            int scoreBlack = predict(BLACK, initInfo);
+            int scoreBlack = nnueEval(BLACK, initInfo);
 
             printf("Black score = %d\n", scoreBlack);
         } 

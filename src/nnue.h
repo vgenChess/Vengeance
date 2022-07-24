@@ -16,6 +16,6 @@ void update_accumulator ( GameInfo* gi,
                          const std::vector<int>& added_features,
                          Side side);
 
-int predict (Side stm, GameInfo *gi );
+int nnueEval (Side stm, GameInfo *gi );
 
 #endif // NN_H_INCLUDED

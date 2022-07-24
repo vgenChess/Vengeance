@@ -6,13 +6,13 @@
 #include <thread>
 #include <algorithm>
 
-#include "TimeManagement.h"
-#include "zobrist.h"
 #include "structs.h"
 #include "classes.h"
 #include "enums.h"
 
 namespace tmg {
+
+#include "TimeManagement.h"
 
     inline TimeManager timeManager;
 
@@ -37,12 +37,14 @@ namespace tt {
 
 namespace zobrist {
 
+#include "zobrist.h"
+
     inline Zobrist zobrist;
 };
 
 namespace game {
 
-    #include "HashManagement.h"
+#include "HashManagement.h"
 
     class GameInfo
     {
@@ -122,22 +124,22 @@ namespace game {
         }
     };
 
-    inline GameInfo *initInfo = new GameInfo();
-
     inline bool abortSearch;
     inline bool searching;
+
+    inline uint64_t previousInfoTime;
+
+    inline GameInfo *initInfo = new GameInfo();
 
     inline std::vector<GameInfo*> infos;
     inline std::vector<std::thread> threads;
 
     template<Stats stats>
-    inline U64 getStats() {
+    inline uint64_t getStats() {
 
-        U64 sum = 0;
-        for (GameInfo *gi : game::infos) {
-
-            sum += stats == NODES ? gi->nodes : (stats == TTHITS ? gi->ttHits : 0);
-        }
+        uint64_t sum = 0;
+        for (GameInfo *gi : game::infos)
+            sum += stats == NODES ? gi->nodes : stats == TTHITS ? gi->ttHits : 0;
 
         return sum;
     }
@@ -146,7 +148,7 @@ namespace game {
 
 namespace nnue {
 
-    #include <immintrin.h>
+#include <immintrin.h>
 
     inline void m256_add_dpbusd_epi32(__m256i& acc, __m256i a, __m256i b)
     {

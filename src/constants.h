@@ -12,6 +12,7 @@ const uint8_t NO_BOUND = 50;
 const uint8_t AP_WINDOW = 20;
 const uint8_t HISTORY_PRUNING_DEPTH = 2;
 const uint8_t SEE_PRUNING_DEPTH = 1;
+const uint8_t MAX_PV_LENGTH = 24;
 
 const uint16_t MAX_PLY = 128;
 const uint16_t MAX_MOVES = 256;
