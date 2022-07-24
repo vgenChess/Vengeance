@@ -12,13 +12,6 @@
 #include "nnue.h"
 #include "structs.h"
 
-#define WEIGHT_SCALE_BITS 6
-#define NET_VERSION 0x00000005
-#define NET_HEADER_SIZE 4
-#define NUM_INPUT_FEATURES 64*64*10
-#define MAX_ACTIVE_FEATURES 30
-#define NUM_LAYERS 4
-#define HALFKX_LAYER_SIZE 128
 #define NNUE2SCORE 600.0f
 #define WEIGHT_SCALE_HIDDEN 64.0f
 #define WEIGHT_SCALE_OUT 16.0f
@@ -30,9 +23,6 @@ constexpr float HIDDEN_LAYER_SCALE_WEIGHT = WEIGHT_SCALE_HIDDEN;
 constexpr float HIDDEN_LAYER_SCALE_BIAS = WEIGHT_SCALE_HIDDEN * QUANTIZED_ONE;
 constexpr float OUTPUT_LAYER_SCALE_WEIGHT = NNUE2SCORE * WEIGHT_SCALE_OUT / QUANTIZED_ONE;
 constexpr float OUTPUT_LAYER_SCALE_BIAS = WEIGHT_SCALE_OUT * NNUE2SCORE;
-
-// TODO refactor
-constexpr int model_layer_sizes[NUM_LAYERS] = {HALFKX_LAYER_SIZE*2, 32, 32, 1};
 
 template<typename T1, typename T2, U64 size1, U64 size2>
 struct alignas(64) LinearLayer {
@@ -54,6 +44,19 @@ struct LayerSize {
     static constexpr int size = s;
 };
 
+
+// TODO refactor=====================================================================
+#define WEIGHT_SCALE_BITS 6
+#define NET_VERSION 0x00000005
+#define NET_HEADER_SIZE 4
+#define NUM_INPUT_FEATURES 64*64*10
+#define MAX_ACTIVE_FEATURES 30
+#define NUM_LAYERS 4
+#define HALFKX_LAYER_SIZE 128
+constexpr int model_layer_sizes[NUM_LAYERS] = {HALFKX_LAYER_SIZE*2, 32, 32, 1};
+//===================================================================================
+
+
 LinearLayer<int16_t, int16_t, HALFKX_LAYER_SIZE * NUM_INPUT_FEATURES, HALFKX_LAYER_SIZE> firstLayer;
 LinearLayer<int8_t, int32_t, 32 * HALFKX_LAYER_SIZE * 2, 32> secondLayer;
 LinearLayer<int8_t, int32_t, 32 * 32, 32> thirdLayer;
@@ -73,7 +76,6 @@ void refresh_accumulator(
     constexpr int num_chunks = HALFKX_LAYER_SIZE / register_width;
 
     __m256i regs[num_chunks];
-
 
     // Load bias to registers and operate on registers only.
     for (int i = 0; i < num_chunks; ++i) {
@@ -134,7 +136,6 @@ void refresh_accumulator(
         }
     }
 
-
     for (int i = 0; i < num_chunks; ++i) {
 
         _mm256_store_si256((__m256i*)&gi->accumulator[side][i * register_width], regs[i]);
@@ -178,6 +179,23 @@ void update_accumulator (
     for (int i = 0; i < num_chunks; ++i) {
 
         _mm256_store_si256((__m256i*)&gi->accumulator[side][i * register_width], regs[i]);
+    }
+}
+
+void inputLayer(
+    int32_t*           output,
+    GameInfo*          gi,
+    Side               stm,
+    int                size) {
+
+    // TODO Use perspective after training with data that uses both perspectives
+    //auto perspective = stm == WHITE ? 0 : 1;
+
+    int offset = size / 2;
+    for (int i = 0; i < size / 2; i++) {
+
+        output[i] = gi->accumulator[WHITE][i];
+        output[offset + i] = gi->accumulator[BLACK][i];
     }
 }
 
@@ -260,49 +278,7 @@ void outerLayer(
     output[0] = _mm_cvtsi128_si32(r1) + bias[0];
 }
 
-void crelu_16 (
-    int      size,
-    uint8_t*  output,
-    const int16_t* input) {
-
-    constexpr int in_register_width = 256 / 16;
-    constexpr int out_register_width = 256 / 8;
-    //assert(size % out_register_width == 0, "We're processing 32 elements at a time");
-    const int num_out_chunks = size / out_register_width;
-
-    const __m256i zero    = _mm256_setzero_si256();
-    const int     control = 0b11011000; // 3, 1, 2, 0; lane 0 is the rightmost one
-
-    for (int i = 0; i < num_out_chunks; ++i) {
-
-        const __m256i in0 = _mm256_load_si256(
-                                reinterpret_cast<const __m256i*>(&input[(i * 2 + 0) * in_register_width]));
-
-        const __m256i in1 = _mm256_load_si256(
-                                reinterpret_cast<const __m256i*>(&input[(i * 2 + 1) * in_register_width]));
-
-        const __m256i result =
-
-            // packs changes the order, so we need to fix that with a permute
-            _mm256_permute4x64_epi64(
-
-                // clamp from below
-                _mm256_max_epi8(
-
-                    // packs saturates to 127, so we only need to clamp from below
-                    _mm256_packs_epi16(in0, in1),
-
-                    zero
-                ),
-
-                control
-            );
-
-        _mm256_store_si256(reinterpret_cast<__m256i*>(&output[i * out_register_width]), result);
-    }
-}
-
-void crelu_32(
+void crelu(
     int      size,
     uint8_t*  output,
     const int32_t* input) {
@@ -347,27 +323,19 @@ void crelu_32(
     }
 }
 
-
-
 // Evaluate a position using nnue
-
-int predict ( Side stm, GameInfo* gi ) {
+int nnueEval ( Side stm, GameInfo* gi ) {
 
     LayerData<HALFKX_LAYER_SIZE * 2, HALFKX_LAYER_SIZE * 2> layerData;
 
-    // TODO Use perspective after training with data that uses both perspectives
-    //auto perspective = stm == WHITE ? 0 : 1;
 
-    int offset = firstLayerSize.size / 2;
-    for (int i = 0; i < firstLayerSize.size / 2; i++) {
+    // INPUT LAYER 1
+    // =============================================================================
 
-        layerData.internal[i] = gi->accumulator[WHITE][i];
-        layerData.internal[offset + i] = gi->accumulator[BLACK][i];
-    }
-
+    inputLayer(layerData.internal, gi, stm, firstLayerSize.size);
 
     // this function clips values within the range 0 to 127
-    crelu_32 (firstLayerSize.size, layerData.external, layerData.internal);
+    crelu (firstLayerSize.size, layerData.external, layerData.internal);
 
 
     // HIDDEN LAYER 1
@@ -376,8 +344,7 @@ int predict ( Side stm, GameInfo* gi ) {
     hiddenLayer(layerData.internal, layerData.external, secondLayer.weights,
                        secondLayer.biases, firstLayerSize.size, secondLayerSize.size);
 
-    // this function clips values within the range 0 to 127
-    crelu_32 (secondLayerSize.size, layerData.external, layerData.internal);
+    crelu (secondLayerSize.size, layerData.external, layerData.internal);
 
 
     // HIDDEN LAYER 2
@@ -386,8 +353,7 @@ int predict ( Side stm, GameInfo* gi ) {
     hiddenLayer(layerData.internal, layerData.external, thirdLayer.weights,
                        thirdLayer.biases, secondLayerSize.size, thirdLayerSize.size);
 
-    // this function clips values within the range 0 to 127
-    crelu_32 (thirdLayerSize.size, layerData.external, layerData.internal);
+    crelu (thirdLayerSize.size, layerData.external, layerData.internal);
 
 
     // OUTPUT LAYER
@@ -433,6 +399,7 @@ uint32_t read_uint32_le(char *buffer)
     return val;
 }
 
+// TODO refactor
 static bool check_net_header(char **data)
 {
     char  *iter = *data;
@@ -447,6 +414,7 @@ static bool check_net_header(char **data)
 
     return true;
 }
+
 
 static bool scale_net_data(char **data)
 {

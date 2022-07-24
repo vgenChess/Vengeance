@@ -22,7 +22,7 @@ private:
 
 public:
     
-    inline static TimePoint time_now() 
+    inline TimePoint time_now()
     {
         return std::chrono::steady_clock::now();
     } 
