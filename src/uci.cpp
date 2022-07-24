@@ -210,7 +210,7 @@ void UciLoop() {
 
                 tmg::timeManager.updateTimePerMove(timePerMove);
 
-                const auto maxTime = std::min(timePerMove * 5, time - 500);
+                const auto maxTime = std::min(timePerMove * 5, (int)(time * 0.75));
 
                 tmg::timeManager.setStopTime(
                     tmg::timeManager.getStartTime() + std::chrono::milliseconds(maxTime));
