@@ -26,19 +26,19 @@ namespace tmg {
 
         return 0;
     }
-}
+};
 
 namespace tt {
 
     inline U16 age;
     inline U64 size;
     inline HashEntry* hashTable;
-}
+};
 
 namespace zobrist {
 
     inline Zobrist zobrist;
-}
+};
 
 namespace game {
 
@@ -141,7 +141,7 @@ namespace game {
 
         return sum;
     }
-}
+};
 
 
 namespace nnue {
@@ -180,7 +180,7 @@ namespace nnue {
         __m128i sum128hi = _mm256_extracti128_si256(sum0, 1);
 
         return _mm_add_epi32(_mm_add_epi32(sum128lo, sum128hi), bias);
-    };
+    }
 
     inline bool exists_file (const std::string& name) {
         if (FILE *file = fopen(name.c_str(), "r")) {
@@ -190,7 +190,7 @@ namespace nnue {
             return false;
         }
     }
-}
+};
 
 
 
