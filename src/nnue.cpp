@@ -438,8 +438,8 @@ bool loadNetwork() {
 
     char *data = nullptr;
 
-    const auto path1 = "/home/epoch206.nnue";
-    const auto path2 = "epoch206.nnue";
+    const auto path1 = "/home/epoch298.nnue";
+    const auto path2 = "epoch298.nnue";
 
     const std::string path =
         nnue::exists_file(path1) ? path1 :
