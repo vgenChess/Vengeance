@@ -244,48 +244,7 @@ void outputLayer(
     output[0] = _mm_cvtsi128_si32(r1) + bias[0];
 }
 
-void crelu_16(
-    int      size,   // no need to have any layer structure, we just need the number of elements
-    uint8_t*  output, // the already allocated storage for the result
-    const int16_t* input   // the input, which is the output of the previous linear layer
-) {
-
-    constexpr int in_register_width = 256 / 16;
-    constexpr int out_register_width = 256 / 8;
-    //assert(size % out_register_width == 0, "We're processing 32 elements at a time");
-    const int num_out_chunks = size / out_register_width;
-
-    const __m256i zero    = _mm256_setzero_si256();
-    const int     control = 0b11011000; // 3, 1, 2, 0; lane 0 is the rightmost one
-
-    for (int i = 0; i < num_out_chunks; ++i) {
-
-        const __m256i in0 = _mm256_load_si256(
-                                reinterpret_cast<const __m256i*>(&input[(i * 2 + 0) * in_register_width]));
-
-        const __m256i in1 = _mm256_load_si256(
-                                reinterpret_cast<const __m256i*>(&input[(i * 2 + 1) * in_register_width]));
-
-        const __m256i result =
-            // packs changes the order, so we need to fix that with a permute
-            _mm256_permute4x64_epi64(
-
-                // clamp from below
-                _mm256_max_epi8(
-                    // packs saturates to 127, so we only need to clamp from below
-                    _mm256_packs_epi16(in0, in1),
-
-                    zero
-                ),
-
-                control
-            );
-
-        _mm256_store_si256(reinterpret_cast<__m256i*>(&output[i * out_register_width]), result);
-    }
-}
-
-void crelu_32(
+void crelu(
 
     int      size,   // no need to have any layer structure, we just need the number of elements
     uint8_t*  output, // the already allocated storage for the result
@@ -340,29 +299,28 @@ int nnueEval ( Side stm, GameInfo* gi ) {
     // INPUT LAYER 1
     // =============================================================================
 
-    int16_t input[layerSize[0]];
-    alignas(64) uint8_t output0[layerSize[0]];
-
-    // TODO Use perspective after training with data that uses both perspectives
+     // TODO Use perspective after training with data that uses both perspectives
     //auto perspective = stm == WHITE ? 0 : 1;
 
     int offset = layerSize[0] / 2;
     for (int i = 0; i < layerSize[0] / 2; i++) {
 
-        input[i] = gi->accumulator[WHITE][i];
-        input[offset + i] = gi->accumulator[BLACK][i];
+        layerData.internal[i] = gi->accumulator[WHITE][i];
+        layerData.internal[offset + i] = gi->accumulator[BLACK][i];
     }
 
-    crelu_16 (layerSize[0], output0, input);
+    // this function clips values within the range 0 to 127
+    crelu (layerSize[0], layerData.external, layerData.internal);
+
 
     // HIDDEN LAYER 1
     // =============================================================================
 
-    hiddenLayer(layerData.internal, output0, secondLayer.weights,
+    hiddenLayer(layerData.internal, layerData.external, secondLayer.weights,
                        secondLayer.biases, layerSize[0], layerSize[1]);
 
     // this function clips values within the range 0 to 127
-    crelu_32 (layerSize[1], layerData.external, layerData.internal);
+    crelu (layerSize[1], layerData.external, layerData.internal);
 
 
     // HIDDEN LAYER 2
@@ -371,7 +329,7 @@ int nnueEval ( Side stm, GameInfo* gi ) {
     hiddenLayer(layerData.internal, layerData.external, thirdLayer.weights,
                        thirdLayer.biases, layerSize[1], layerSize[2]);
 
-    crelu_32 (layerSize[2], layerData.external, layerData.internal);
+    crelu (layerSize[2], layerData.external, layerData.internal);
 
 
     // OUTPUT LAYER
