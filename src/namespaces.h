@@ -192,6 +192,16 @@ namespace nnue {
             return false;
         }
     }
+
+    inline bool skipNetHeader(char **data) {
+
+        char  *iter = *data;
+        iter += 4;
+
+        *data = iter;
+
+        return true;
+    }
 };
 
 

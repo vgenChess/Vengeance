@@ -21,6 +21,7 @@
 #define TOTAL_FEATURES          40960
 #define NUM_LAYERS              4
 #define FEATURE_LAYER_SIZE      128
+#define NET_HEADER_SIZE         4
 
 constexpr float INPUT_LAYER_SCALE_WEIGHT    = QUANTIZED_ONE;
 constexpr float INPUT_LAYER_SCALE_BIAS      = QUANTIZED_ONE;
@@ -44,13 +45,6 @@ struct alignas(64) LayerData {
     int32_t internal[size1] = {};
     uint8_t external[size2] = {};
 };
-
-
-// TODO refactor=====================================================================
-#define NET_VERSION             0x00000005
-#define NET_HEADER_SIZE         4
-//===================================================================================
-
 
 LinearLayer<int16_t, int16_t, FEATURE_LAYER_SIZE * TOTAL_FEATURES, FEATURE_LAYER_SIZE> firstLayer;
 LinearLayer<int8_t, int32_t, 32 * FEATURE_LAYER_SIZE * 2, 32> secondLayer;
@@ -319,9 +313,7 @@ int nnueEval ( Side stm, GameInfo* gi ) {
     hiddenLayer(layerData.internal, layerData.external, secondLayer.weights,
                        secondLayer.biases, layerSize[0], layerSize[1]);
 
-    // this function clips values within the range 0 to 127
     crelu (layerSize[1], layerData.external, layerData.internal);
-
 
     // HIDDEN LAYER 2
     // =============================================================================
@@ -330,7 +322,6 @@ int nnueEval ( Side stm, GameInfo* gi ) {
                        thirdLayer.biases, layerSize[1], layerSize[2]);
 
     crelu (layerSize[2], layerData.external, layerData.internal);
-
 
     // OUTPUT LAYER
     // =============================================================================
@@ -349,49 +340,7 @@ int nnueEval ( Side stm, GameInfo* gi ) {
 }
 
 
-
-
-
-
-
 // NNUE NETWORK LOADING AND PARSING
-
-// TODO refactor
-uint32_t read_uint32_le(char *buffer)
-{
-    uint32_t val;
-    char  *p = (char*)&val;
-
-#ifndef TARGET_BIG_ENDIAN
-    p[0] = buffer[0];
-    p[1] = buffer[1];
-    p[2] = buffer[2];
-    p[3] = buffer[3];
-#else
-    p[3] = buffer[0];
-    p[2] = buffer[1];
-    p[1] = buffer[2];
-    p[0] = buffer[3];
-#endif
-    return val;
-}
-
-// TODO refactor
-static bool checkNetHeader(char **data)
-{
-    char  *iter = *data;
-    uint32_t version;
-
-    version = read_uint32_le(iter);
-    iter += 4;
-
-    *data = iter;
-
-    //return version == NET_VERSION;
-
-    return true;
-}
-
 
 static bool scaleNetData(char **data)
 {
@@ -498,7 +447,7 @@ bool loadNetwork() {
 
     return !path.empty()
         && readNetData(path, &data) == getNetSize()
-        && checkNetHeader(&data)
+        && nnue::skipNetHeader(&data)
         && scaleNetData(&data);
 }
 
