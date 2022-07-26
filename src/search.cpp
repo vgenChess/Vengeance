@@ -584,8 +584,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
         lSi.ply = ply + 1;
 
-        memset(lSi.line, 0, sizeof(U32) * MAX_PLY);
-
+        lSi.line[0] = NO_MOVE;
         const auto score = -alphabeta<opp>(-beta, -beta + 1, mate - 1, depth - R - 1, gi, &lSi );
 
         unmakeNullMove(ply, gi);
@@ -619,8 +618,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         lSi.skipMove = ttMove;
         lSi.ply = ply;
 
-        memset(lSi.line, 0, sizeof(U32) * MAX_PLY);
-
+        lSi.line[0] = NO_MOVE;
         const auto score = alphabeta<stm>(sBeta - 1, sBeta, mate, sDepth, gi, &lSi );
 
         lSi.skipMove = NO_MOVE;
@@ -776,6 +774,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
             if (currentMove.move == ttMove && singularMove )
                 extend = 1;
 
+
             // Recapture extension
             // ==========================================================================
             U8 prevMoveType = move_type(previousMove);
@@ -787,6 +786,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                 if (currentMoveToSq == prevMoveToSq)
                     extend =  1;
             }
+
 
             // Promotion extension
             // ==========================================================================
@@ -840,8 +840,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
         if (pvNode && movesPlayed <= 1) {
 
-            memset(lSi.line, 0, sizeof(U32) * MAX_PLY);
-
+            lSi.line[0] = NO_MOVE;
             score = newDepth > 0 ?
                 -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi ) :
                 -quiescense<opp>(-beta, -alpha, gi, &lSi);
@@ -849,15 +848,13 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
             if (lmr) {
 
-                memset(lSi.line, 0, sizeof(U32) * MAX_PLY);
-
+                lSi.line[0] = NO_MOVE;
                 score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, lmrDepth, gi, &lSi );
             }
 
             if (!lmr || (lmr && score > alpha && lmrDepth != newDepth)) {
 
-                memset(lSi.line, 0, sizeof(U32) * MAX_PLY);
-
+                lSi.line[0] = NO_MOVE;
                 score = newDepth > 0 ?
                     -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, newDepth, gi, &lSi ) :
                     -quiescense<opp>(-alpha - 1, -alpha, gi, &lSi);
@@ -865,8 +862,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
             if (score > alpha && (rootNode || score < beta))  {
 
-                memset(lSi.line, 0, sizeof(U32) * MAX_PLY);
-
+                lSi.line[0] = NO_MOVE;
                 score = newDepth > 0 ?
                     -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi ) :
                     -quiescense<opp>(-beta, -alpha, gi, &lSi);
