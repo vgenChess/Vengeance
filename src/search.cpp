@@ -409,31 +409,14 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
     const auto pvNode = alpha != beta - 1;
     
 
-    // Quiescense Search(under observation)
-
-    if (depth <= 0 || ply >= MAX_PLY )
-    {
-        si->line[0] = NO_MOVE;
-        
-        return quiescenseSearch<stm>(alpha, beta, gi, si );
-    }
-    
-
     // Check time spent
-    if (    mainThread
-        &&  gi->nodes % CHECK_NODES == 0)
-    {
+    if (mainThread && gi->nodes % CHECK_NODES == 0)
         checkTime();
-    }
-
-
 
     if (abortSearch)
-    {
-        return 0; 
-    }
+        return 0;
 
-    
+
     gi->selDepth = rootNode ? 0 : std::max(gi->selDepth, ply);
 
     gi->nodes++;
@@ -546,7 +529,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         // TODO check logic. The quiescense call seems costly
         if (sEval + U16_RAZOR_MARGIN < beta)      // Razoring
         {
-            const auto rscore = quiescenseSearch<stm>(alpha, beta, gi, si );
+            const auto rscore = quiescense<stm>(alpha, beta, gi, si );
 
             if (rscore < beta) 
             {
@@ -584,8 +567,6 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
     // Null Move pruning
 
-    bool mateThreat = false;
-
     if (	!rootNode
         &&	!pvNode
         &&	!isInCheck 
@@ -602,8 +583,9 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         lSi.nullMove = true;
 
         lSi.ply = ply + 1;
-        lSi.line[0] = NO_MOVE;
-        
+
+        memset(lSi.line, 0, sizeof(U32) * MAX_PLY);
+
         const auto score = -alphabeta<opp>(-beta, -beta + 1, mate - 1, depth - R - 1, gi, &lSi );
 
         unmakeNullMove(ply, gi);
@@ -612,9 +594,6 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
         if (score >= beta)
             return beta;
-    
-        if (std::abs(score) >= WIN_SCORE ) // Mate threat
-            mateThreat = true;
     }
     
 
@@ -639,7 +618,8 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         lSi.nullMove = false;
         lSi.skipMove = ttMove;
         lSi.ply = ply;
-        lSi.line[0] = NO_MOVE;
+
+        memset(lSi.line, 0, sizeof(U32) * MAX_PLY);
 
         const auto score = alphabeta<stm>(sBeta - 1, sBeta, mate, sDepth, gi, &lSi );
 
@@ -663,7 +643,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
     
     U8 hashf = hashfALPHA;
     int currentMoveType, currentMoveToSq;
-    int reduce = 0, extend = 0, movesPlayed = 0, newDepth = 0;
+    int movesPlayed = 0, newDepth = 0;
     int score = -MATE, bestScore = -MATE;
 
     U32 bestMove = NO_MOVE, previousMove = rootNode ? NO_MOVE : gi->moveStack[ply - 1].move;
@@ -699,10 +679,9 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
         // skip the move if its in a singular search and the current move is singular
         if (currentMove.move == si->skipMove)
-        {
             continue;
-        }
-        
+
+
         // Prune moves based on conditions met
         if (    movesPlayed > 1
             &&  !rootNode
@@ -734,30 +713,26 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                     continue;
                 }
             } 
-            else
-            {   // SEE pruning
-                if (    depth <= SEE_PRUNING_DEPTH
-                    &&  currentMove.seeScore < SEE_PRUNING * depth)
-                {
-                    continue;
-                }
-            }
         }
+
+
 
         // make the move
         make_move(ply, currentMove.move, gi);
 
-        // check if psuedo-legal move is valid
+        // check if this move leaves our king in check
+        // in which case its an invalid move
         if (isKingInCheck<stm>(gi))
         {
             unmake_move(ply, currentMove.move, gi);
             continue;
         }
 
-        // psuedo legal move is valid, increment number of moves played
+        // the move is valid, increment number of moves played
         movesPlayed++;
 
-        // report current depth, moves played and current move being searched
+
+        // report current move being search and the number of moves played
         if ( rootNode && mainThread )
         {
             const auto timeElapsedMs = tmg::timeManager.timeElapsed<MILLISECONDS>(
@@ -791,133 +766,110 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         gi->moveStack[ply].move = currentMove.move;
 
 
-        extend = 0;
-        float extension = rootNode ? 0 : gi->moveStack[ply - 1].extension;
+        auto extend = 0;
 
-        //	Fractional Extensions
-        if (!rootNode ) // TODO check extensions logic
-        { 
-            int16_t pieceCurrMove = pieceType(currentMove.move);
 
-            if (currentMove.move == ttMove && singularMove ) // Singular extension
-            {
-                extension += VAL_SINGULAR_EXT;
-            }
-            
-            if (isInCheck) 
-            {
-                extension += VAL_CHECK_EXT;	// Check extension
-            }
-            
-            if (mateThreat)
-            {
-                extension += VAL_MATE_THREAT_EXT; // Mate threat extension
-            }
-            
-            if (currentMoveType == MOVE_PROMOTION) 
-            {
-                extension += VAL_PROMOTION_EXT;   // Promotion extension
-            }
-            
-            bool isPrank = stm ? 
-                currentMoveToSq >= 8 && currentMoveToSq <= 15 : 
-                currentMoveToSq >= 48 && currentMoveToSq <= 55;
-            
-            if (pieceCurrMove == PAWNS && isPrank)
-            {
-                extension += VAL_PRANK_EXT;       // Pawn push extension
-            }
-            
+        if (!rootNode) {
+
+            // Singular extension
+            // ==========================================================================
+            if (currentMove.move == ttMove && singularMove )
+                extend = 1;
+
+            // Recapture extension
+            // ==========================================================================
             U8 prevMoveType = move_type(previousMove);
-            
-            if (previousMove != NO_MOVE && prevMoveType == MOVE_CAPTURE) 
+
+            if (previousMove != NO_MOVE && prevMoveType == MOVE_CAPTURE)
             {
                 U8 prevMoveToSq = to_sq(previousMove);
-            
+
                 if (currentMoveToSq == prevMoveToSq)
-                    extension += VAL_RECAPTURE_EXT;   // Recapture extension
+                    extend =  1;
             }
 
-            if (extension >= VAL_ONE_PLY)
-            {
+            // Promotion extension
+            // ==========================================================================
+            if (currentMoveType == MOVE_PROMOTION)
                 extend = 1;
-                extension -= VAL_ONE_PLY;
+        }
 
-                if (extension >= VAL_ONE_PLY)
-                {
-                    extension = 3 * VAL_ONE_PLY / 4;
-                }
-            }
-        } 
 
-        gi->moveStack[ply].extension = extension;
-        
         newDepth = (depth - 1) + extend;
-
-        reduce = 0;
-
 
         lSi.ply = ply + 1;
 
-        
-        if (movesPlayed <= 1) 
-        { // Principal Variation Search
+        int lmrDepth = 1;
 
-            lSi.line[0] = NO_MOVE;
+        const bool lmr = depth > 2 && movesPlayed > 1 && isQuietMove;
 
-            score = -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi );
-        } 
-        else 
-        { // Late Move Reductions (Under observation)
-        
-            if (	depth > 2
-                &&	movesPlayed > 1
-                &&	isQuietMove) 
-            {
-                reduce = LMR[std::min(depth, 63)][std::min(movesPlayed, 63)];
+        // Late Move Reductions (Under observation)
+        if (lmr) {
 
-                if (!pvNode )
-                {
-                    reduce++;
-                }
-                
-                if (!improving && !isInCheck) 
-                {
-                    reduce++; // isInCheck sets improving to false
-                }
-                
-                if (isInCheck && pieceType(currentMove.move) == KING) 
-                {
-                    reduce++;
-                }
-                
-                if (gi->moveList[ply].stage < GEN_QUIETS)
-                {
-                    reduce--; // reduce less for killer and counter moves
-                }
-                
-                reduce -= std::max(-2, std::min(2, currentMove.score / 5000));	// TODO rewrite logic
+            // get the reduction value according to depth and moves played
+            auto reduce = LMR[std::min(depth, 63)][std::min(movesPlayed, 63)];
 
-                reduce = std::min(depth - 1, std::max(reduce, 1));
+            // reduce more if its not a pv node
+            if (!pvNode )
+                reduce++;
 
-                lSi.line[0] = NO_MOVE;
-                
-                score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, newDepth - reduce, gi, &lSi );
+            // reduce more if the score is not improving
+            if (!improving && !isInCheck) // isInCheck sets improving to false
+                reduce++;
+
+            // reduce more for king evasions
+            if (isInCheck && pieceType(currentMove.move) == KING)
+                reduce++;
+
+            // reduce less for killer and counter moves
+            if (gi->moveList[ply].stage < GEN_QUIETS)
+                reduce--;
+
+            // reduce less if the move gives check
+            if (isKingInCheck<opp>(gi))
+                reduce--;
+
+            // reduce according to move history score
+            reduce -= std::max(-2, std::min(2, currentMove.score / 5000));	// TODO rewrite logic
+
+
+            reduce = std::max(reduce, 0);
+
+            lmrDepth = std::max(newDepth - reduce, 1);
+        }
+
+        if (pvNode && movesPlayed <= 1) {
+
+            memset(lSi.line, 0, sizeof(U32) * MAX_PLY);
+
+            score = newDepth > 0 ?
+                -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi ) :
+                -quiescense<opp>(-beta, -alpha, gi, &lSi);
+        } else {
+
+            if (lmr) {
+
+                memset(lSi.line, 0, sizeof(U32) * MAX_PLY);
+
+                score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, lmrDepth, gi, &lSi );
             }
-            else
-            {
-                score = alpha + 1;
+
+            if (!lmr || (lmr && score > alpha && lmrDepth != newDepth)) {
+
+                memset(lSi.line, 0, sizeof(U32) * MAX_PLY);
+
+                score = newDepth > 0 ?
+                    -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, newDepth, gi, &lSi ) :
+                    -quiescense<opp>(-alpha - 1, -alpha, gi, &lSi);
             }
 
-            if (score > alpha) 
-            {   // Research 
-                
-                lSi.line[0] = NO_MOVE;
+            if (score > alpha && (rootNode || score < beta))  {
 
-                score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, newDepth, gi, &lSi );
-                
-                if (score > alpha && score < beta) 
-                    score = -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi );
+                memset(lSi.line, 0, sizeof(U32) * MAX_PLY);
+
+                score = newDepth > 0 ?
+                    -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi ) :
+                    -quiescense<opp>(-beta, -alpha, gi, &lSi);
             }
         }
 
@@ -929,15 +881,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         {
             if (movesPlayed == 1 || score > alpha)
             {
-                auto pline = &si->line[0];
-                auto line = &lSi.line[0];
-
-                *pline++ = currentMove.move;
-
-                while (*line != NO_MOVE)
-                    *pline++ = *line++;
-
-                *pline = NO_MOVE;
+                copyPv(si->line, currentMove.move, lSi.line);
 
                 const auto timeElapsedMs = tmg::timeManager.timeElapsed<MILLISECONDS>(
                     tmg::timeManager.getStartTime());
@@ -965,17 +909,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
                 // record the moves for the PV
                 if (pvNode && !rootNode)
-                {
-                    auto pline = &si->line[0];
-                    auto line = &lSi.line[0];
-
-                    *pline++ = currentMove.move;
-
-                    while (*line != NO_MOVE)
-                        *pline++ = *line++;
-
-                    *pline = NO_MOVE;
-                }
+                    copyPv(si->line, currentMove.move, lSi.line);
 
                 if (score >= beta)
                 {
@@ -990,6 +924,8 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         }
     }
     
+
+
     // TODO check logic
     if (hashf == hashfBETA) 
     {
@@ -1028,7 +964,7 @@ constexpr int seeVal[8] = {	VALUE_DUMMY, VALUE_PAWN, VALUE_KNIGHT, VALUE_BISHOP,
                     
 // TODO should limit Quiescense search explosion
 template<Side stm>
-int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
+int quiescense(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
 
     assert (alpha < beta);
     assert ( si->ply > 0);
@@ -1193,7 +1129,7 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
 
 
         lSi.line[0] = NO_MOVE;
-        score = -quiescenseSearch<opp>(-beta, -alpha, gi, &lSi );
+        score = -quiescense<opp>(-beta, -alpha, gi, &lSi );
 
 
         unmake_move(ply, currentMove.move, gi);
@@ -1209,16 +1145,8 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
                 alpha = score;
                 hashf = hashfEXACT;
                 
-                auto pline = &si->line[0];
-                auto line = &lSi.line[0];
-                
-                *pline++ = currentMove.move;
-                while (*line != NO_MOVE)
-                {
-                    *pline++ = *line++;
-                }
-                *pline = NO_MOVE;
-                
+                copyPv(si->line, currentMove.move, lSi.line);
+
                 if (score >= beta) 
                 {
                     hashf = hashfBETA;
@@ -1233,5 +1161,7 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
 
     return bestScore;
 }
+
+
 
 

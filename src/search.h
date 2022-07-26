@@ -27,6 +27,6 @@ template<Side stm>
 int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo* si);
 
 template<Side stm> 
-int quiescenseSearch(int alpha, int beta, GameInfo* gi, SearchInfo* si);
+int quiescense(int alpha, int beta, GameInfo* gi, SearchInfo* si);
 
 #endif /* search_h */
