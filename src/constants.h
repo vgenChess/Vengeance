@@ -17,7 +17,7 @@ const uint8_t MAX_PV_LENGTH = 24;
 const uint16_t MAX_PLY = 128;
 const uint16_t MAX_MOVES = 256;
 const uint16_t WIN_SCORE = 9000;
-const uint16_t PV_DISPLAY_INTERVAL = 2500;
+const uint16_t UCI_REPORT_INTERVAL = 4000;
 const uint16_t CHECK_NODES = 1024;
 const uint16_t U16_COUNTER_MOVE_BONUS = 2500;
 const uint16_t U16_FPRUNE = 265;
@@ -26,7 +26,6 @@ const uint16_t U16_RAZOR_MARGIN = 250;
 const uint16_t U16_RVRFPRUNE = 265;
 const uint16_t U16_EXT_RVRFPRUNE = 515;
 const uint16_t VAL_Q_DELTA = 150;
-const uint16_t CURRMOVE_INTERVAL = 3000;
 
 const int16_t NO_DEPTH = -127;
 const int16_t HISTORY_PRUNING = -10000;

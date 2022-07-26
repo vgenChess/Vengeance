@@ -126,8 +126,11 @@ namespace game {
 
     inline bool abortSearch;
     inline bool searching;
+    inline bool canReportDepth;
 
-    inline uint64_t previousInfoTime;
+    inline U64 previousInfoTime;
+
+    inline U64 moveNodeCount[MAX_SQUARES][MAX_SQUARES];
 
     inline GameInfo *initInfo = new GameInfo();
 
@@ -135,9 +138,9 @@ namespace game {
     inline std::vector<std::thread> threads;
 
     template<Stats stats>
-    inline uint64_t getStats() {
+    inline U64 getStats() {
 
-        uint64_t sum = 0;
+        U64 sum = 0;
         for (GameInfo *gi : game::infos)
             sum += stats == NODES ? gi->nodes : stats == TTHITS ? gi->ttHits : 0;
 
