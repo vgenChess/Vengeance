@@ -83,7 +83,7 @@ typedef struct
 typedef struct 
 {
     bool skipQuiets;
-    int stage;
+    int stage, currentStage;
     U32 ttMove, counterMove;
 
     std::vector<Move> moves;

@@ -94,7 +94,7 @@ public:
 	bool singularSearch;
 	bool nullMove;
 
-	int ply;
+	int treePos;
 	U32 skipMove;
     
     U32 line[MAX_PLY];
@@ -106,7 +106,7 @@ public:
 		singularSearch = false;
 		nullMove = false;
 
-		ply = 0;
+		      treePos = 0;
 
 		skipMove = 0UL;
         

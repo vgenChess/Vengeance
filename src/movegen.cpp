@@ -614,10 +614,12 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
         case PLAY_HASH_MOVE : {
 
+            moveList->currentStage = PLAY_HASH_MOVE;
+
             moveList->stage = GEN_CAPTURES;
 
             if (isValidMove(stm, ply, moveList->ttMove, th)) {
-                    
+
                 Move m;
 
                 m.move = moveList->ttMove;
@@ -631,6 +633,8 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
         case GEN_CAPTURES : {
 
+            moveList->currentStage = GEN_CAPTURES;
+
             moveList->moves.clear();
             genAttacks(stm, ply, moveList->moves, th);
 
@@ -642,6 +646,8 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
         // fallthrough
         
         case PLAY_CAPTURES : {
+
+            moveList->currentStage = PLAY_CAPTURES;
 
             if (moveList->moves.size() > 0) {
 
@@ -675,6 +681,8 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
         case PLAY_KILLER_MOVE_1 : {
 
+            moveList->currentStage = PLAY_KILLER_MOVE_1;
+
             moveList->stage = PLAY_KILLER_MOVE_2;
 
             U32 killerMove1 = th->moveStack[ply].killerMoves[0];
@@ -694,6 +702,8 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
         //fallthrough
 
         case PLAY_KILLER_MOVE_2 : {
+
+            moveList->currentStage = PLAY_KILLER_MOVE_2;
 
             moveList->stage = PLAY_COUNTER_MOVE;
 
@@ -716,6 +726,8 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
         case PLAY_COUNTER_MOVE : {
 
+            moveList->currentStage = PLAY_COUNTER_MOVE;
+
             moveList->stage = GEN_PROMOTIONS;
 
             if (    !moveList->skipQuiets
@@ -729,10 +741,12 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
             }           
         }
 
-
          // fallthrough
+
         // ignore skipQuiets for promotions 
         case GEN_PROMOTIONS : {
+
+            moveList->currentStage = GEN_PROMOTIONS;
 
             moveList->moves.clear();
 
@@ -750,6 +764,8 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
         //fallthrough 
 
         case PLAY_PROMOTIONS : {
+
+            moveList->currentStage = PLAY_PROMOTIONS;
 
             if (moveList->moves.size() > 0) {
 
@@ -775,6 +791,8 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
         case PLAY_BAD_CAPTURES : {
 
+            moveList->currentStage = PLAY_BAD_CAPTURES;
+
             if (moveList->badCaptures.size() > 0) {
 
                 int index = getBestMoveIndex(moveList->badCaptures);
@@ -794,6 +812,8 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
         case GEN_QUIETS : { // generate all non-capture moves excluding promotions
 
+            moveList->currentStage = GEN_QUIETS;
+
             if (!moveList->skipQuiets) {
 
                 moveList->moves.clear();
@@ -810,6 +830,8 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
         //fallthrough
 
         case PLAY_QUIETS : {
+
+            moveList->currentStage = PLAY_QUIETS;
 
             if (    !moveList->skipQuiets
                 &&  moveList->moves.size() > 0) {
@@ -837,6 +859,8 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
         }
 
         case STAGE_DONE:
+
+            moveList->currentStage = STAGE_DONE;
 
             return getNoMove();
     }

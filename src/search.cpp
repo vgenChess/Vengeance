@@ -129,7 +129,6 @@ void startSearch()
     }
 
 
-
     // after the main thread return from the search
     // signal abort for other threads if any
     abortSearch = true;
@@ -140,48 +139,47 @@ void startSearch()
         th.join();
 
 
-
-
     // Display the best move from the search
 
     auto bestIndex = 0;
-    auto bestThread = infos[0];
+    auto bestInfo = infos[0];
 
-    int bestDepth, currentDepth;
-    int bestScore, currentScore;
+    int bestDepth = bestInfo->completedDepth;
+    int bestScore = bestInfo->pvLine[bestDepth].score;
+
+    int currentDepth, currentScore;
 
     for (uint16_t i = 1; i < infos.size(); i++)
     {
         GameInfo* g = infos[i];
 
-        bestDepth = bestThread->completedDepth;
         currentDepth = g->completedDepth;
-
-        bestScore = bestThread->pvLine[bestDepth].score;
         currentScore = g->pvLine[currentDepth].score;
 
-        if (    currentScore > bestScore
-            &&  currentDepth > bestDepth)
-        {
-            bestThread = g;
+        if (currentScore > bestScore && currentDepth > bestDepth) {
+
+            bestInfo = g;
             bestIndex = i;
         }
     }
+
+
+   const auto completedDepth = bestInfo->completedDepth;
 
     if (bestIndex > 0) {
 
         const auto timeElapsedMs = tmg::timeManager.timeElapsed<MILLISECONDS>(
             tmg::timeManager.getStartTime());
 
-        const auto score = bestThread->pvLine[bestThread->completedDepth].score;
-        const auto pline = bestThread->pvLine[bestThread->completedDepth].line;
+        const auto score = bestInfo->pvLine[completedDepth].score;
+        const auto pline = bestInfo->pvLine[completedDepth].line;
 
-        std::cout << reportPV(bestThread->depth, bestThread->selDepth, score, timeElapsedMs,
+        std::cout << reportPV(completedDepth, bestInfo->selDepth, score, timeElapsedMs,
                               pline, getStats<NODES>(), getStats<TTHITS>()) << std::endl;
     }
 
 
-    const auto bestMove = bestThread->pvLine[bestThread->completedDepth].line[0];
+    const auto bestMove = bestInfo->pvLine[completedDepth].line[0];
 
     std::cout << "bestmove " << getMoveNotation(bestMove) << std::endl;
 
@@ -300,7 +298,7 @@ void aspirationWindow(int index, GameInfo *gi)
     
     SearchInfo si;
 
-    si.ply = 0;
+    si.treePos = 0;
     si.rootNode = true;
     si.nullMove = false;
     si.singularSearch = false;
@@ -309,18 +307,20 @@ void aspirationWindow(int index, GameInfo *gi)
 
     int failHighCounter = 0;
 
+    int depth = NO_DEPTH;
+
     while (true)
     {
         si.line[0] = NO_MOVE;
         
         gi->selDepth = NO_DEPTH;
         
-        score = alphabeta<stm>(alpha, beta, MATE, std::max(1, gi->depth - failHighCounter), gi, &si);
+        depth = std::max(PLY, (gi->depth - failHighCounter) * PLY);
+
+        score = alphabeta<stm>(alpha, beta, MATE, depth, gi, &si);
 
         if (abortSearch)
-        {
             return;
-        }
 
         if (score <= alpha) 
         {
@@ -334,30 +334,15 @@ void aspirationWindow(int index, GameInfo *gi)
             beta = std::min(score + window, MATE );
             
             if (std::abs(score) < WIN_SCORE )
-            {
                 failHighCounter++;
-            }
         }
         else 
         {
-            const auto currentDepth = gi->depth;
+            gi->completedDepth = gi->depth;
             
-            gi->completedDepth = currentDepth;
-            
-            PV pv;
-            pv.score = score;
-            
-            for (int i = 0; i < MAX_PLY; i++)
-            {
-                pv.line[i] = si.line[i];
-            
-                if (pv.line[i] == NO_MOVE)
-                {
-                    break;
-                }
-            }
-            
-            gi->pvLine[currentDepth] = pv;
+            gi->pvLine[gi->depth].score = score;
+
+            memcpy(gi->pvLine[gi->depth].line, si.line, sizeof(U32) * MAX_PLY);
             
             break;
         }
@@ -367,6 +352,11 @@ void aspirationWindow(int index, GameInfo *gi)
 
     assert (score > alpha && score < beta);
 }
+
+
+
+
+
 
 void checkTime()
 {
@@ -389,11 +379,14 @@ void checkTime()
             >= tmg::timeManager.getStopTime().time_since_epoch();
 }
 
+
+
+
 template<Side stm>
 int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo *si )
 {
     // if (alpha >= beta) {
-    // 	std::cout<<"realDepth=" << si->realDepth << ", depth=" << si->depth << ", ply =" << si->ply << "\n";
+    // 	std::cout<<"realDepth=" << si->realDepth << ", depth=" << si->depth << ", treePos =" << si->treePos << "\n";
     // 	std::cout<<alpha<<","<<beta<<std::endl;
     // }
 
@@ -401,7 +394,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
     
     constexpr auto opp = stm == WHITE ? BLACK : WHITE;
     
-    const auto ply = si->ply;
+    const auto treePos = si->treePos;
     const auto rootNode = si->rootNode;
     const auto mainThread = si->mainThread;
     const auto singularSearch = si->singularSearch;
@@ -417,14 +410,14 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         return 0;
 
 
-    gi->selDepth = rootNode ? 0 : std::max(gi->selDepth, ply);
+    gi->selDepth = rootNode ? 0 : std::max(gi->selDepth, treePos);
 
     gi->nodes++;
 
     
     //http://www.talkchess.com/forum3/viewtopic.php?t=63090
-    gi->moveStack[ply + 1].killerMoves[0] = NO_MOVE;
-    gi->moveStack[ply + 1].killerMoves[1] = NO_MOVE;
+    gi->moveStack[treePos + 1].killerMoves[0] = NO_MOVE;
+    gi->moveStack[treePos + 1].killerMoves[1] = NO_MOVE;
 
 
 
@@ -434,7 +427,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
     
     if (!rootNode )
     {
-        if (isRepetition(ply, gi))
+        if (isRepetition(treePos, gi))
         {
             if (allPiecesCount > 22) // earlygame
             {
@@ -450,7 +443,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
             }
         }
         
-        gi->movesHistory[gi->moves_history_counter + ply + 1].hashKey = gi->hashKey;
+        gi->movesHistory[gi->moves_history_counter + treePos + 1].hashKey = gi->hashKey;
     }
     
 
@@ -484,28 +477,27 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
 
     // Alternative to IID
-    if (depth >= 4 && !ttMove && !singularSearch )
-        depth--;
+    if (depth >= 4 * PLY && !ttMove && !singularSearch )
+        depth -= PLY;
 
 
     const auto isInCheck = isKingInCheck<stm>(gi);
 
     const auto sEval =
         singularSearch
-            ? gi->moveStack[ply].sEval : isInCheck
+            ? gi->moveStack[treePos].sEval : isInCheck
             ? VAL_UNKNOWN : hashHit
             ? ((hashEntry->sEval == VAL_UNKNOWN)
             ? nnueEval(stm, gi) : hashEntry->sEval) : nnueEval(stm, gi);
 
-    const auto improving = isInCheck ? false : ply >= 2 ? sEval > gi->moveStack[ply - 2].sEval : true;
+    const auto improving = isInCheck ? false : treePos >= 2 ? sEval > gi->moveStack[treePos - 2].sEval : true;
 
     if (!singularSearch && !isInCheck && !hashHit)
-    {
         gi->hashManager.recordHash(gi->hashKey, NO_MOVE, NO_DEPTH, VAL_UNKNOWN, NO_BOUND, sEval);
-    }
 
 
     // Search tree pruning
+    // ===============================================================================================
 
     const auto oppPiecesCount = POPCOUNT(opp ? gi->blackPieceBB[PIECES] : gi->whitePieceBB[PIECES]);
     bool fPrune = false;
@@ -516,14 +508,14 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         &&	!singularSearch
         &&	std::abs(alpha) < WIN_SCORE
         &&	std::abs(beta) < WIN_SCORE
-        &&  depth <= 3
+        &&  depth <= 3 * PLY
         &&	oppPiecesCount > 3) 
     { 
 
         assert(sEval != VAL_UNKNOWN);
-        
 
-        if (sEval - fmargin[depth] >= beta)       // Reverse Futility Pruning
+        // TODO Futility pruning
+        if (sEval - fmargin[depth / PLY] >= beta)       // Reverse Futility Pruning
             return beta;          
     
         // TODO check logic. The quiescense call seems costly
@@ -532,12 +524,10 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
             const auto rscore = quiescense<stm>(alpha, beta, gi, si );
 
             if (rscore < beta) 
-            {
                 return rscore;
-            }
         }
 
-        if (sEval + fmargin[depth] <= alpha)      // Futility Pruning
+        if (sEval + fmargin[depth / PLY] <= alpha)      // Futility Pruning
             fPrune = true;
     }
 
@@ -545,13 +535,13 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
     if (!rootNode )
     {
-        gi->moveStack[ply].epFlag = gi->moveStack[ply - 1].epFlag;
-        gi->moveStack[ply].epSquare = gi->moveStack[ply - 1].epSquare;
-        gi->moveStack[ply].castleFlags = gi->moveStack[ply - 1].castleFlags;
+        gi->moveStack[treePos].epFlag = gi->moveStack[treePos - 1].epFlag;
+        gi->moveStack[treePos].epSquare = gi->moveStack[treePos - 1].epSquare;
+        gi->moveStack[treePos].castleFlags = gi->moveStack[treePos - 1].castleFlags;
     }
 
-    gi->moveStack[ply].ttMove = ttMove;
-    gi->moveStack[ply].sEval = sEval;
+    gi->moveStack[treePos].ttMove = ttMove;
+    gi->moveStack[treePos].sEval = sEval;
 
 
 
@@ -573,28 +563,27 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         &&	!singularSearch
         &&	!nullMove
         &&	oppPiecesCount > 3 // Check the logic for endgame
-        &&	depth > 2
+        &&	depth > 2 * PLY
         &&	sEval >= beta)
     {
-        makeNullMove(ply, gi);
+        makeNullMove(treePos, gi);
 
-        const auto R = depth > 6 ? 2 : 1;
+        const auto R = depth > 6 * PLY ? 2 * PLY : PLY;
     
         lSi.nullMove = true;
 
-        lSi.ply = ply + 1;
+        lSi.treePos = treePos + 1;
 
         lSi.line[0] = NO_MOVE;
-        const auto score = -alphabeta<opp>(-beta, -beta + 1, mate - 1, depth - R - 1, gi, &lSi );
+        const auto score = -alphabeta<opp>(-beta, -beta + 1, mate - 1, depth - R - PLY, gi, &lSi );
 
-        unmakeNullMove(ply, gi);
+        unmakeNullMove(treePos, gi);
 
         lSi.nullMove = false;
 
         if (score >= beta)
             return beta;
     }
-    
 
 
     // Singular search
@@ -603,20 +592,20 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
     if (    !rootNode
         &&  !singularSearch
-        &&  depth >= 7
+        &&  depth >= 8 * PLY
         &&  hashHit
-        &&  ttMove != NO_MOVE 
+        &&  ttMove != NO_MOVE
         &&  std::abs(ttScore) < WIN_SCORE
         &&  hashEntry->flags == hashfBETA
-        &&  hashEntry->depth >= depth - 3)
+        &&  hashEntry->depth >= depth - 3 * PLY)
     {
-        const auto sBeta = ttScore - 4 * depth;
-        const auto sDepth = depth / 2 - 1;
+        const auto sBeta = ttScore - 4 * depth / PLY;
+        const auto sDepth = ((depth / PLY) / 2 - PLY) * PLY;
 
         lSi.singularSearch = true;
         lSi.nullMove = false;
         lSi.skipMove = ttMove;
-        lSi.ply = ply;
+        lSi.treePos = treePos;
 
         lSi.line[0] = NO_MOVE;
         const auto score = alphabeta<stm>(sBeta - 1, sBeta, mate, sDepth, gi, &lSi );
@@ -624,16 +613,15 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         lSi.skipMove = NO_MOVE;
         lSi.singularSearch = false;
 
-        if (score < sBeta) 
+        if (score < sBeta)
         {
             singularMove = true;
-        } 
-        else if (sBeta >= beta)
-        { 
+        }
+        else if (sBeta >= beta) // Todo check logic // fail high fail soft framework
+        {
             return sBeta;
         }
     }
-
 
 
 
@@ -644,41 +632,35 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
     int movesPlayed = 0, newDepth = 0;
     int score = -MATE, bestScore = -MATE;
 
-    U32 bestMove = NO_MOVE, previousMove = rootNode ? NO_MOVE : gi->moveStack[ply - 1].move;
+    U32 bestMove = NO_MOVE, previousMove = rootNode ? NO_MOVE : gi->moveStack[treePos - 1].move;
 
-    const U32 KILLER_MOVE_1 = gi->moveStack[ply].killerMoves[0];
-    const U32 KILLER_MOVE_2 = gi->moveStack[ply].killerMoves[1];
+    const U32 KILLER_MOVE_1 = gi->moveStack[treePos].killerMoves[0];
+    const U32 KILLER_MOVE_2 = gi->moveStack[treePos].killerMoves[1];
 
     Move currentMove;
 
     std::vector<U32> quietsPlayed, capturesPlayed;
     
-    gi->moveList[ply].skipQuiets = false;
-    gi->moveList[ply].stage = PLAY_HASH_MOVE;
-    gi->moveList[ply].ttMove = ttMove;
-    gi->moveList[ply].counterMove = previousMove == NO_MOVE ?
+    gi->moveList[treePos].skipQuiets = false;
+    gi->moveList[treePos].stage = PLAY_HASH_MOVE;
+    gi->moveList[treePos].ttMove = ttMove;
+    gi->moveList[treePos].counterMove = previousMove == NO_MOVE ?
         NO_MOVE : gi->counterMove[stm][from_sq(previousMove)][to_sq(previousMove)];
-    gi->moveList[ply].moves.clear();
-    gi->moveList[ply].badCaptures.clear();
+    gi->moveList[treePos].moves.clear();
+    gi->moveList[treePos].badCaptures.clear();
 
 
-    while (true) 
-    {
+    while (gi->moveList[treePos].stage < STAGE_DONE) {
+
         // fetch next psuedo-legal move
-        currentMove = getNextMove(stm, ply, gi, &gi->moveList[ply]);
+        currentMove = getNextMove(stm, treePos, gi, &gi->moveList[treePos]);
 
-        if (gi->moveList[ply].stage == STAGE_DONE)
-        {
-            break;
-        }
-        
         // check if move generator returns a valid psuedo-legal move
         assert(currentMove.move != NO_MOVE);
 
         // skip the move if its in a singular search and the current move is singular
         if (currentMove.move == si->skipMove)
             continue;
-
 
         // Prune moves based on conditions met
         if (    movesPlayed > 1
@@ -692,46 +674,47 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                 // Futility pruning
                 if (fPrune) 
                 {
-                    gi->moveList[ply].skipQuiets = true;
+                    gi->moveList[treePos].skipQuiets = true;
                     continue;
                 }
 
                 // Late move pruning
-                if (    depth < LMP_DEPTH
-                    &&  movesPlayed >= LMP[improving][depth])
+                if (    depth < LMP_DEPTH * PLY
+                    &&  movesPlayed >= LMP[improving][depth / PLY])
                 {
-                    gi->moveList[ply].skipQuiets = true;
+                    gi->moveList[treePos].skipQuiets = true;
                     continue;
                 }
 
                 // History pruning
-                if (    depth <= HISTORY_PRUNING_DEPTH
-                    &&  currentMove.score < HISTORY_PRUNING * depth)
+                if (    depth <= HISTORY_PRUNING_DEPTH * PLY
+                    &&  currentMove.score < HISTORY_PRUNING * depth / PLY)
                 {
                     continue;
                 }
-            } 
+            }
         }
 
 
 
         // make the move
-        make_move(ply, currentMove.move, gi);
+        make_move(treePos, currentMove.move, gi);
 
         // check if this move leaves our king in check
         // in which case its an invalid move
         if (isKingInCheck<stm>(gi))
         {
-            unmake_move(ply, currentMove.move, gi);
+            unmake_move(treePos, currentMove.move, gi);
             continue;
         }
+
 
         // the move is valid, increment number of moves played
         movesPlayed++;
 
 
         // report current move being search and the number of moves played
-        if ( rootNode && mainThread )
+        if (rootNode && mainThread )
         {
             const auto timeElapsedMs = tmg::timeManager.timeElapsed<MILLISECONDS>(
                 tmg::timeManager.getStartTime());
@@ -742,6 +725,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                 std::cout << " currmovenumber " << movesPlayed << std::endl;
             }
         }
+
 
 
         currentMoveType = move_type(currentMove.move);
@@ -761,89 +745,111 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         }
 
         
-        gi->moveStack[ply].move = currentMove.move;
+        gi->moveStack[treePos].move = currentMove.move;
 
 
-        auto extend = 0;
 
 
-        if (!rootNode) {
+        // Fractional Extensions
+        // =====================================================================
+
+        int extension = 0;
+
+        if (!rootNode ) // TODO check extensions logic
+        {
+            const auto pieceCurrMove = pieceType(currentMove.move);
+            const auto prevMoveType = move_type(previousMove);
+
+            const bool isPRank = stm ?
+                currentMoveToSq >= 8 && currentMoveToSq <= 15 :
+                currentMoveToSq >= 48 && currentMoveToSq <= 55;
+
+            // Check extension
+            if (isInCheck)
+                extension = PLY;
 
             // Singular extension
-            // ==========================================================================
-            if (currentMove.move == ttMove && singularMove )
-                extend = 1;
+            else if (currentMove.move == ttMove && singularMove )
+                extension = PLY;
 
+            // PRank extension
+            else if (pieceCurrMove == PAWNS && isPRank)
+                extension = PLY;
 
             // Recapture extension
-            // ==========================================================================
-            U8 prevMoveType = move_type(previousMove);
-
-            if (previousMove != NO_MOVE && prevMoveType == MOVE_CAPTURE)
+            else if (previousMove != NO_MOVE && prevMoveType == MOVE_CAPTURE)
             {
                 U8 prevMoveToSq = to_sq(previousMove);
 
                 if (currentMoveToSq == prevMoveToSq)
-                    extend =  1;
+                    extension = PLY / 2;
             }
-
-
-            // Promotion extension
-            // ==========================================================================
-            if (currentMoveType == MOVE_PROMOTION)
-                extend = 1;
         }
 
 
-        newDepth = (depth - 1) + extend;
 
-        lSi.ply = ply + 1;
+
+        gi->moveStack[treePos].extension = extension;
+
+
+        newDepth = (depth - PLY) + extension;
+
+        lSi.treePos = treePos + 1;
+
+
+
+
+        // Late Move Reductions (Under observation)
+        // ===============================================================================
 
         int lmrDepth = 1;
 
-        const bool lmr = depth > 2 && movesPlayed > 1 && isQuietMove;
+        const bool lmr = depth > 2 * PLY && movesPlayed > 1 && isQuietMove;
 
-        // Late Move Reductions (Under observation)
         if (lmr) {
 
             // get the reduction value according to depth and moves played
-            auto reduce = LMR[std::min(depth, 63)][std::min(movesPlayed, 63)];
+            auto reduce = LMR[std::min(depth / PLY, 63)][std::min(movesPlayed, 63)] * PLY;
 
             // reduce more if its not a pv node
             if (!pvNode )
-                reduce++;
+                reduce += PLY;
 
             // reduce more if the score is not improving
             if (!improving && !isInCheck) // isInCheck sets improving to false
-                reduce++;
+                reduce += PLY;
 
             // reduce more for king evasions
             if (isInCheck && pieceType(currentMove.move) == KING)
-                reduce++;
+                reduce += PLY;
+
+            bool isKillerOrCounterMove =
+                gi->moveList[treePos].currentStage == PLAY_KILLER_MOVE_1 ||
+                gi->moveList[treePos].currentStage == PLAY_KILLER_MOVE_2 ||
+                gi->moveList[treePos].currentStage == PLAY_COUNTER_MOVE;
 
             // reduce less for killer and counter moves
-            if (gi->moveList[ply].stage < GEN_QUIETS)
-                reduce--;
-
-            // reduce less if the move gives check
-            if (isKingInCheck<opp>(gi))
-                reduce--;
+            if (isKillerOrCounterMove)
+                reduce -= PLY;
 
             // reduce according to move history score
-            reduce -= std::max(-2, std::min(2, currentMove.score / 5000));	// TODO rewrite logic
-
+            reduce -= std::max(-2, std::min(2, currentMove.score / 5000)) * PLY; // TODO rewrite logic
 
             reduce = std::max(reduce, 0);
 
-            lmrDepth = std::max(newDepth - reduce, 1);
+            lmrDepth = std::max(newDepth - reduce, PLY);
         }
+
+
+        // PVS framework with LMR research
+        // ================================================================================
 
         if (pvNode && movesPlayed <= 1) {
 
             lSi.line[0] = NO_MOVE;
-            score = newDepth > 0 ?
-                -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi ) :
-                -quiescense<opp>(-beta, -alpha, gi, &lSi);
+            score = newDepth < PLY ?
+                -quiescense<opp>(-beta, -alpha, gi, &lSi) :
+                -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi );
         } else {
 
             if (lmr) {
@@ -855,22 +861,23 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
             if (!lmr || (lmr && score > alpha && lmrDepth != newDepth)) {
 
                 lSi.line[0] = NO_MOVE;
-                score = newDepth > 0 ?
-                    -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, newDepth, gi, &lSi ) :
-                    -quiescense<opp>(-alpha - 1, -alpha, gi, &lSi);
+                score = newDepth < PLY ?
+                    -quiescense<opp>(-alpha - 1, -alpha, gi, &lSi) :
+                    -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, newDepth, gi, &lSi );
             }
 
             if (score > alpha && (rootNode || score < beta))  {
 
                 lSi.line[0] = NO_MOVE;
-                score = newDepth > 0 ?
-                    -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi ) :
-                    -quiescense<opp>(-beta, -alpha, gi, &lSi);
+                score = newDepth < PLY ?
+                    -quiescense<opp>(-beta, -alpha, gi, &lSi) :
+                    -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi );
             }
         }
 
 
-        unmake_move(ply, currentMove.move, gi);
+
+        unmake_move(treePos, currentMove.move, gi);
 
 
         if (rootNode)
@@ -921,7 +928,6 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
     }
     
 
-
     // TODO check logic
     if (hashf == hashfBETA) 
     {
@@ -930,11 +936,11 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
             if (bestMove != KILLER_MOVE_1 && bestMove != KILLER_MOVE_2) 
             {   // update killers
         
-                gi->moveStack[ply].killerMoves[1] = KILLER_MOVE_1;
-                gi->moveStack[ply].killerMoves[0] = bestMove;
+                gi->moveStack[treePos].killerMoves[1] = KILLER_MOVE_1;
+                gi->moveStack[treePos].killerMoves[0] = bestMove;
             }
 
-            updateHistory(stm, ply, depth, bestMove, quietsPlayed, gi);
+            updateHistory(stm, treePos, depth, bestMove, quietsPlayed, gi);
         } 
 
         updateCaptureHistory(depth, bestMove, capturesPlayed, gi);
@@ -955,6 +961,12 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
 
 
+
+
+
+
+
+
 constexpr int seeVal[8] = {	VALUE_DUMMY, VALUE_PAWN, VALUE_KNIGHT, VALUE_BISHOP,
                             VALUE_ROOK, VALUE_QUEEN, VALUE_KING, VALUE_DUMMY };
                     
@@ -963,13 +975,13 @@ template<Side stm>
 int quiescense(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
 
     assert (alpha < beta);
-    assert ( si->ply > 0);
+    assert ( si->treePos > 0);
 
     constexpr auto opp = stm == WHITE ? BLACK : WHITE;
 
     const bool mainThread = si->mainThread;
 
-    const auto ply = si->ply;
+    const auto treePos = si->treePos;
 
     // Check if time limit has been reached
     if (    tmg::timeManager.isTimeSet()
@@ -985,14 +997,14 @@ int quiescense(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     }
 
     
-    gi->selDepth = std::max(gi->selDepth, ply);
+    gi->selDepth = std::max(gi->selDepth, treePos);
     gi->nodes++;
 
 
     const auto allPiecesCount = POPCOUNT(gi->occupied);
 
     // Repetition detection
-    if (isRepetition(ply, gi))
+    if (isRepetition(treePos, gi))
     {
         // earlygame
         if (allPiecesCount > 22)
@@ -1011,10 +1023,10 @@ int quiescense(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
         }
     }
 
-    gi->movesHistory[gi->moves_history_counter + ply + 1].hashKey = gi->hashKey;
+    gi->movesHistory[gi->moves_history_counter + treePos + 1].hashKey = gi->hashKey;
 
     
-    if (ply >= MAX_PLY - 1)
+    if (treePos >= MAX_PLY - 1)
     {
         return nnueEval(stm, gi);
     }
@@ -1062,17 +1074,17 @@ int quiescense(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
         return sEval;
     }
     
-    gi->moveStack[ply].epFlag = gi->moveStack[ply - 1].epFlag;
-    gi->moveStack[ply].epSquare = gi->moveStack[ply - 1].epSquare;
-    gi->moveStack[ply].castleFlags = gi->moveStack[ply - 1].castleFlags;
+    gi->moveStack[treePos].epFlag = gi->moveStack[treePos - 1].epFlag;
+    gi->moveStack[treePos].epSquare = gi->moveStack[treePos - 1].epSquare;
+    gi->moveStack[treePos].castleFlags = gi->moveStack[treePos - 1].castleFlags;
 
 
-    gi->moveList[ply].skipQuiets = true;
-    gi->moveList[ply].stage = GEN_CAPTURES;
-    gi->moveList[ply].ttMove = NO_MOVE;
-    gi->moveList[ply].counterMove = NO_MOVE;
-    gi->moveList[ply].moves.clear();
-    gi->moveList[ply].badCaptures.clear();
+    gi->moveList[treePos].skipQuiets = true;
+    gi->moveList[treePos].stage = GEN_CAPTURES;
+    gi->moveList[treePos].ttMove = NO_MOVE;
+    gi->moveList[treePos].counterMove = NO_MOVE;
+    gi->moveList[treePos].moves.clear();
+    gi->moveList[treePos].badCaptures.clear();
 
     const auto oppPiecesCount = POPCOUNT(opp ? gi->blackPieceBB[PIECES] : gi->whitePieceBB[PIECES]);
     const auto qFutilityBase = sEval + VAL_Q_DELTA;
@@ -1084,16 +1096,12 @@ int quiescense(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     Move currentMove;
     
     SearchInfo lSi;
-    lSi.ply = ply + 1;
-    
-    while (true) 
-    {
-        currentMove = getNextMove(stm, ply, gi, &gi->moveList[ply]);
+    lSi.treePos = treePos + 1;
 
-        if (gi->moveList[ply].stage >= PLAY_BAD_CAPTURES)
-        {
-            break;
-        }
+
+    while (gi->moveList[treePos].stage < STAGE_DONE) {
+
+        currentMove = getNextMove(stm, treePos, gi, &gi->moveList[treePos]);
         
         assert(currentMove.move != NO_MOVE);
 
@@ -1110,11 +1118,11 @@ int quiescense(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
         }
 
 
-        make_move(ply, currentMove.move, gi);
+        make_move(treePos, currentMove.move, gi);
 
         if (isKingInCheck<stm>(gi))
         {
-            unmake_move(ply, currentMove.move, gi);
+            unmake_move(treePos, currentMove.move, gi);
 
             continue;
         }
@@ -1128,7 +1136,7 @@ int quiescense(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
         score = -quiescense<opp>(-beta, -alpha, gi, &lSi );
 
 
-        unmake_move(ply, currentMove.move, gi);
+        unmake_move(treePos, currentMove.move, gi);
 
 
         if (score > bestScore) 
