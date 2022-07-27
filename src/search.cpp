@@ -554,6 +554,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
     lSi.rootNode = false;
 
 
+    bool mateThreat = false;
 
     // Null Move pruning
 
@@ -583,8 +584,10 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
         if (score >= beta)
             return beta;
-    }
 
+        if (std::abs(score) >= MATE - 5000) // Mate threat
+            mateThreat = true;
+    }
 
     // Singular search
 
@@ -592,7 +595,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
     if (    !rootNode
         &&  !singularSearch
-        &&  depth >= 8 * PLY
+        &&  depth >= 7 * PLY
         &&  hashHit
         &&  ttMove != NO_MOVE
         &&  std::abs(ttScore) < WIN_SCORE
@@ -693,6 +696,15 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                     continue;
                 }
             }
+
+            else
+            {   // SEE pruning
+                if (    depth <= SEE_PRUNING_DEPTH
+                    &&  currentMove.seeScore < SEE_PRUNING * depth)
+                {
+                    continue;
+                }
+            }
         }
 
 
@@ -776,6 +788,9 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
             else if (pieceCurrMove == PAWNS && isPRank)
                 extension = PLY;
 
+            else if (mateThreat)
+                extension = PLY / 2;
+
             // Recapture extension
             else if (previousMove != NO_MOVE && prevMoveType == MOVE_CAPTURE)
             {
@@ -786,10 +801,6 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
             }
         }
 
-
-
-
-        gi->moveStack[treePos].extension = extension;
 
 
         newDepth = (depth - PLY) + extension;

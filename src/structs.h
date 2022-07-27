@@ -57,8 +57,6 @@ typedef struct
     U32 killerMoves[2];
 
     int sEval;
-
-    float extension; 
 } MOVE_STACK;
 
 typedef struct 
