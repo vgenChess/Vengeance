@@ -33,7 +33,7 @@ inline std::string getMoveNotation(const U32 move) {
     return str;
 }
 
-inline std::string reportPV(int depth, int selDepth, int score,
+inline std::string reportPv(int depth, int selDepth, int score,
                      int timeElapsedMs, U32* pvLine, U64 totalNodes, U64 totalTTHits) {
 
   std::stringstream ss;
