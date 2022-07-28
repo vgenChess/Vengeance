@@ -40,6 +40,11 @@ const int32_t I32_INF = 50000;
 const int32_t VAL_UNKNOWN = 40000;
 const int32_t MATE = 30000;
 
+
+
+
+
+
 const float VAL_ONE_PLY = 1.25;
 const float VAL_CHECK_EXT = 0.5;
 const float VAL_MATE_THREAT_EXT = 0.5;
@@ -47,7 +52,6 @@ const float VAL_RECAPTURE_EXT = 0.75;
 const float VAL_PRANK_EXT = 1;
 const float VAL_PROMOTION_EXT = 0.75;
 const float VAL_SINGULAR_EXT = 1.25;
-
 
 const int NN_SIZE = 128;
 

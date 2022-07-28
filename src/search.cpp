@@ -619,51 +619,10 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
     
 
 
-    // Singular search
-
-    bool singularMove = false;
-
-    if (    !rootNode
-        &&  !singularSearch
-        &&  depth >= 7
-        &&  hashHit
-        &&  ttMove != NO_MOVE 
-        &&  std::abs(ttScore) < WIN_SCORE
-        &&  hashEntry->flags == hashfBETA
-        &&  hashEntry->depth >= depth - 3)
-    {
-        const auto sBeta = ttScore - 4 * depth;
-        const auto sDepth = depth / 2 - 1;
-
-        lSi.singularSearch = true;
-        lSi.nullMove = false;
-        lSi.skipMove = ttMove;
-        lSi.ply = ply;
-        lSi.line[0] = NO_MOVE;
-
-        const auto score = alphabeta<stm>(sBeta - 1, sBeta, mate, sDepth, gi, &lSi );
-
-        lSi.skipMove = NO_MOVE;
-        lSi.singularSearch = false;
-
-        if (score < sBeta) 
-        {
-            singularMove = true;
-        } 
-        else if (sBeta >= beta)
-        { 
-            return sBeta;
-        }
-    }
-
-
-
-
     bool isQuietMove = false;
     
     U8 hashf = hashfALPHA;
-    int currentMoveType, currentMoveToSq;
-    int reduce = 0, extend = 0, movesPlayed = 0, newDepth = 0;
+    int movesPlayed = 0, newDepth = 0;
     int score = -MATE, bestScore = -MATE;
 
     U32 bestMove = NO_MOVE, previousMove = rootNode ? NO_MOVE : gi->moveStack[ply - 1].move;
@@ -675,21 +634,24 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
     std::vector<U32> quietsPlayed, capturesPlayed;
     
-    gi->moveList[ply].skipQuiets = false;
-    gi->moveList[ply].stage = PLAY_HASH_MOVE;
-    gi->moveList[ply].ttMove = ttMove;
-    gi->moveList[ply].counterMove = previousMove == NO_MOVE ?
+    MOVE_LIST moveList;
+
+
+    moveList.skipQuiets = false;
+    moveList.stage = PLAY_HASH_MOVE;
+    moveList.ttMove = ttMove;
+    moveList.counterMove = previousMove == NO_MOVE ?
         NO_MOVE : gi->counterMove[stm][from_sq(previousMove)][to_sq(previousMove)];
-    gi->moveList[ply].moves.clear();
-    gi->moveList[ply].badCaptures.clear();
+    moveList.moves.clear();
+    moveList.badCaptures.clear();
 
 
     while (true) 
     {
         // fetch next psuedo-legal move
-        currentMove = getNextMove(stm, ply, gi, &gi->moveList[ply]);
+        currentMove = getNextMove(stm, ply, gi, &moveList);
 
-        if (gi->moveList[ply].stage == STAGE_DONE)
+        if (moveList.stage == STAGE_DONE)
         {
             break;
         }
@@ -702,7 +664,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         {
             continue;
         }
-        
+
         // Prune moves based on conditions met
         if (    movesPlayed > 1
             &&  !rootNode
@@ -715,7 +677,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                 // Futility pruning
                 if (fPrune) 
                 {
-                    gi->moveList[ply].skipQuiets = true;
+                    moveList.skipQuiets = true;
                     continue;
                 }
 
@@ -723,7 +685,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                 if (    depth < LMP_DEPTH
                     &&  movesPlayed >= LMP[improving][depth])
                 {
-                    gi->moveList[ply].skipQuiets = true;
+                    moveList.skipQuiets = true;
                     continue;
                 }
 
@@ -743,6 +705,104 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                 }
             }
         }
+
+
+        const auto currentMoveType = move_type(currentMove.move);
+        const auto currentMoveToSq = to_sq(currentMove.move);
+
+
+        // Fractional Extensions
+        // ======================================================================
+
+        int extension = 0, extend = 0;
+
+        if (!rootNode ) // TODO check extensions logic
+        {
+            int16_t pieceCurrMove = pieceType(currentMove.move);
+
+            bool isPrank = stm ?
+                currentMoveToSq >= 8 && currentMoveToSq <= 15 :
+                currentMoveToSq >= 48 && currentMoveToSq <= 55;
+
+            U8 prevMoveType = move_type(previousMove);
+
+            // Check extension
+            if (isInCheck)
+                extension += VAL_CHECK_EXT;
+
+            // Mate threat extension
+            if (mateThreat)
+                extension += VAL_MATE_THREAT_EXT;
+
+            // Promotion extension
+            if (currentMoveType == MOVE_PROMOTION)
+                extension += VAL_PROMOTION_EXT;
+
+            // Pawn push extension
+            if (pieceCurrMove == PAWNS && isPrank)
+                extension += VAL_PRANK_EXT;
+
+            // Recapture extension
+            if (previousMove != NO_MOVE && prevMoveType == MOVE_CAPTURE)
+            {
+                U8 prevMoveToSq = to_sq(previousMove);
+
+                if (currentMoveToSq == prevMoveToSq)
+                    extension += VAL_RECAPTURE_EXT;
+            }
+        }
+
+        // Singular search
+        if (    !rootNode
+            &&  !singularSearch
+            &&  depth >= 7
+            &&  hashHit
+            &&  ttMove != NO_MOVE
+            &&  currentMove.move == ttMove
+            &&  std::abs(ttScore) < WIN_SCORE
+            &&  hashEntry->flags == hashfBETA
+            &&  hashEntry->depth >= depth - 3)
+        {
+            const auto sBeta = ttScore - 4 * depth;
+            const auto sDepth = depth / 2 - 1;
+
+            lSi.singularSearch = true;
+            lSi.nullMove = false;
+            lSi.skipMove = ttMove;
+            lSi.ply = ply;
+            lSi.line[0] = NO_MOVE;
+
+            const auto ssScore = alphabeta<stm>(sBeta - 1, sBeta, mate, sDepth, gi, &lSi );
+
+            lSi.skipMove = NO_MOVE;
+            lSi.singularSearch = false;
+
+            if (ssScore < sBeta)
+            {
+                extension += VAL_SINGULAR_EXT;
+            }
+            else if (sBeta >= beta)
+            {
+                return sBeta;
+            }
+        }
+
+        if (extension >= VAL_ONE_PLY)
+        {
+            extend = 1;
+            extension -= VAL_ONE_PLY;
+
+            if (extension >= VAL_ONE_PLY)
+            {
+                extension = 3 * VAL_ONE_PLY / 4;
+            }
+        }
+
+
+
+
+        newDepth = (depth - 1) + extend;
+
 
         // make the move
         make_move(ply, currentMove.move, gi);
@@ -770,10 +830,6 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
             }
         }
 
-
-        currentMoveType = move_type(currentMove.move);
-        currentMoveToSq = to_sq(currentMove.move);
-
         isQuietMove = currentMoveType == MOVE_NORMAL || currentMoveType == MOVE_CASTLE 
             || currentMoveType == MOVE_DOUBLE_PUSH;
 
@@ -791,70 +847,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         gi->moveStack[ply].move = currentMove.move;
 
 
-        extend = 0;
-        float extension = rootNode ? 0 : gi->moveStack[ply - 1].extension;
-
-        //	Fractional Extensions
-        if (!rootNode ) // TODO check extensions logic
-        { 
-            int16_t pieceCurrMove = pieceType(currentMove.move);
-
-            if (currentMove.move == ttMove && singularMove ) // Singular extension
-            {
-                extension += VAL_SINGULAR_EXT;
-            }
-            
-            if (isInCheck) 
-            {
-                extension += VAL_CHECK_EXT;	// Check extension
-            }
-            
-            if (mateThreat)
-            {
-                extension += VAL_MATE_THREAT_EXT; // Mate threat extension
-            }
-            
-            if (currentMoveType == MOVE_PROMOTION) 
-            {
-                extension += VAL_PROMOTION_EXT;   // Promotion extension
-            }
-            
-            bool isPrank = stm ? 
-                currentMoveToSq >= 8 && currentMoveToSq <= 15 : 
-                currentMoveToSq >= 48 && currentMoveToSq <= 55;
-            
-            if (pieceCurrMove == PAWNS && isPrank)
-            {
-                extension += VAL_PRANK_EXT;       // Pawn push extension
-            }
-            
-            U8 prevMoveType = move_type(previousMove);
-            
-            if (previousMove != NO_MOVE && prevMoveType == MOVE_CAPTURE) 
-            {
-                U8 prevMoveToSq = to_sq(previousMove);
-            
-                if (currentMoveToSq == prevMoveToSq)
-                    extension += VAL_RECAPTURE_EXT;   // Recapture extension
-            }
-
-            if (extension >= VAL_ONE_PLY)
-            {
-                extend = 1;
-                extension -= VAL_ONE_PLY;
-
-                if (extension >= VAL_ONE_PLY)
-                {
-                    extension = 3 * VAL_ONE_PLY / 4;
-                }
-            }
-        } 
-
-        gi->moveStack[ply].extension = extension;
-        
-        newDepth = (depth - 1) + extend;
-
-        reduce = 0;
+        int reduce = 0;
 
 
         lSi.ply = ply + 1;
@@ -891,7 +884,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                     reduce++;
                 }
                 
-                if (gi->moveList[ply].stage < GEN_QUIETS)
+                if (moveList.stage < GEN_QUIETS)
                 {
                     reduce--; // reduce less for killer and counter moves
                 }
@@ -1135,12 +1128,14 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     gi->moveStack[ply].castleFlags = gi->moveStack[ply - 1].castleFlags;
 
 
-    gi->moveList[ply].skipQuiets = true;
-    gi->moveList[ply].stage = GEN_CAPTURES;
-    gi->moveList[ply].ttMove = NO_MOVE;
-    gi->moveList[ply].counterMove = NO_MOVE;
-    gi->moveList[ply].moves.clear();
-    gi->moveList[ply].badCaptures.clear();
+    MOVE_LIST moveList;
+
+    moveList.skipQuiets = true;
+    moveList.stage = GEN_CAPTURES;
+    moveList.ttMove = NO_MOVE;
+    moveList.counterMove = NO_MOVE;
+    moveList.moves.clear();
+    moveList.badCaptures.clear();
 
     const auto oppPiecesCount = POPCOUNT(opp ? gi->blackPieceBB[PIECES] : gi->whitePieceBB[PIECES]);
     const auto qFutilityBase = sEval + VAL_Q_DELTA;
@@ -1156,9 +1151,9 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     
     while (true) 
     {
-        currentMove = getNextMove(stm, ply, gi, &gi->moveList[ply]);
+        currentMove = getNextMove(stm, ply, gi, &moveList);
 
-        if (gi->moveList[ply].stage >= PLAY_BAD_CAPTURES)
+        if (moveList.stage >= PLAY_BAD_CAPTURES)
         {
             break;
         }
