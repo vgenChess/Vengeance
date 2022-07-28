@@ -734,10 +734,6 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
             if (mateThreat)
                 extension = PLY / 2;
 
-            // Promotion extension
-            if (currentMoveType == MOVE_PROMOTION)
-                extension = PLY;
-
             // Pawn push extension
             if (pieceCurrMove == PAWNS && isPrank)
                 extension = PLY;
@@ -756,7 +752,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         if (    !rootNode
             &&  !singularSearch
             &&  extension < PLY
-            &&  depth >= 7
+            &&  depth >= 7 * PLY
             &&  hashHit
             &&  ttMove != NO_MOVE
             &&  currentMove.move == ttMove
