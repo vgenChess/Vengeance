@@ -982,10 +982,10 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                 gi->moveStack[ply].killerMoves[0] = bestMove;
             }
 
-            updateHistory(stm, ply, depth, bestMove, quietsPlayed, gi);
+            updateHistory(stm, ply, depth / PLY, bestMove, quietsPlayed, gi);
         } 
 
-        updateCaptureHistory(depth, bestMove, capturesPlayed, gi);
+        updateCaptureHistory(depth / PLY, bestMove, capturesPlayed, gi);
     }
 
 
