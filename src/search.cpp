@@ -315,7 +315,7 @@ void aspirationWindow(int index, GameInfo *gi)
         
         gi->selDepth = NO_DEPTH;
         
-        score = alphabeta<stm>(alpha, beta, MATE, std::max(1, gi->depth - failHighCounter), gi, &si);
+        score = alphabeta<stm>(alpha, beta, MATE, std::max(PLY, (gi->depth - failHighCounter) * PLY), gi, &si);
 
         if (abortSearch)
         {
@@ -411,7 +411,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
     // Quiescense Search(under observation)
 
-    if (depth <= 0 || ply >= MAX_PLY )
+    if (depth < PLY || ply >= MAX_PLY )
     {
         si->line[0] = NO_MOVE;
         
@@ -501,8 +501,8 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
 
     // Alternative to IID
-    if (depth >= 4 && !ttMove && !singularSearch )
-        depth--;
+    if (depth >= 4 * PLY && !ttMove && !singularSearch )
+        depth -= PLY;
 
 
     const auto isInCheck = isKingInCheck<stm>(gi);
@@ -533,14 +533,14 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         &&	!singularSearch
         &&	std::abs(alpha) < WIN_SCORE
         &&	std::abs(beta) < WIN_SCORE
-        &&  depth <= 3
+        &&  depth <= 3 * PLY
         &&	oppPiecesCount > 3) 
     { 
 
         assert(sEval != VAL_UNKNOWN);
         
 
-        if (sEval - fmargin[depth] >= beta)       // Reverse Futility Pruning
+        if (sEval - fmargin[depth / PLY] >= beta)       // Reverse Futility Pruning
             return beta;          
     
         // TODO check logic. The quiescense call seems costly
@@ -554,7 +554,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
             }
         }
 
-        if (sEval + fmargin[depth] <= alpha)      // Futility Pruning
+        if (sEval + fmargin[depth / PLY] <= alpha)      // Futility Pruning
             fPrune = true;
     }
 
@@ -592,19 +592,19 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         &&	!singularSearch
         &&	!nullMove
         &&	oppPiecesCount > 3 // Check the logic for endgame
-        &&	depth > 2
+        &&	depth > 2 * PLY
         &&	sEval >= beta)
     {
         makeNullMove(ply, gi);
 
-        const auto R = depth > 6 ? 2 : 1;
+        const auto R = depth > 6 * PLY ? 2 * PLY : PLY;
     
         lSi.nullMove = true;
 
         lSi.ply = ply + 1;
         lSi.line[0] = NO_MOVE;
         
-        const auto score = -alphabeta<opp>(-beta, -beta + 1, mate - 1, depth - R - 1, gi, &lSi );
+        const auto score = -alphabeta<opp>(-beta, -beta + 1, mate - 1, depth - R - PLY, gi, &lSi );
 
         unmakeNullMove(ply, gi);
 
@@ -682,24 +682,24 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                 }
 
                 // Late move pruning
-                if (    depth < LMP_DEPTH
-                    &&  movesPlayed >= LMP[improving][depth])
+                if (    depth < LMP_DEPTH * PLY
+                    &&  movesPlayed >= LMP[improving][depth / PLY])
                 {
                     moveList.skipQuiets = true;
                     continue;
                 }
 
                 // History pruning
-                if (    depth <= HISTORY_PRUNING_DEPTH
-                    &&  currentMove.score < HISTORY_PRUNING * depth)
+                if (    depth <= HISTORY_PRUNING_DEPTH * PLY
+                    &&  currentMove.score < HISTORY_PRUNING * depth / PLY)
                 {
                     continue;
                 }
             } 
             else
             {   // SEE pruning
-                if (    depth <= SEE_PRUNING_DEPTH
-                    &&  currentMove.seeScore < SEE_PRUNING * depth)
+                if (    depth <= SEE_PRUNING_DEPTH * PLY
+                    &&  currentMove.seeScore < SEE_PRUNING * depth / PLY)
                 {
                     continue;
                 }
@@ -714,11 +714,9 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         // Fractional Extensions
         // ======================================================================
 
-        int extend = 0;
+        int extension = 0;
 
-        float extension = rootNode ? 0 : gi->moveStack[ply - 1].extension;
-
-        if (!rootNode ) // TODO check extensions logic
+        if (!rootNode )
         {
             int16_t pieceCurrMove = pieceType(currentMove.move);
 
@@ -730,19 +728,19 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
             // Check extension
             if (isInCheck)
-                extension += VAL_CHECK_EXT;
+                extension = PLY;
 
             // Mate threat extension
             if (mateThreat)
-                extension += VAL_MATE_THREAT_EXT;
+                extension = PLY / 2;
 
             // Promotion extension
             if (currentMoveType == MOVE_PROMOTION)
-                extension += VAL_PROMOTION_EXT;
+                extension = PLY;
 
             // Pawn push extension
             if (pieceCurrMove == PAWNS && isPrank)
-                extension += VAL_PRANK_EXT;
+                extension = PLY;
 
             // Recapture extension
             if (previousMove != NO_MOVE && prevMoveType == MOVE_CAPTURE)
@@ -750,23 +748,24 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                 U8 prevMoveToSq = to_sq(previousMove);
 
                 if (currentMoveToSq == prevMoveToSq)
-                    extension += VAL_RECAPTURE_EXT;
+                    extension = PLY / 2;
             }
         }
 
         // Singular search
         if (    !rootNode
             &&  !singularSearch
+            &&  extension < PLY
             &&  depth >= 7
             &&  hashHit
             &&  ttMove != NO_MOVE
             &&  currentMove.move == ttMove
             &&  std::abs(ttScore) < WIN_SCORE
             &&  hashEntry->flags == hashfBETA
-            &&  hashEntry->depth >= depth - 3)
+            &&  hashEntry->depth >= depth - 3 * PLY)
         {
-            const auto sBeta = ttScore - 4 * depth;
-            const auto sDepth = depth / 2 - 1;
+            const auto sBeta = ttScore - 4 * depth / PLY;
+            const auto sDepth = (depth / PLY / 2 - 1) * PLY;
 
             lSi.singularSearch = true;
             lSi.nullMove = false;
@@ -781,7 +780,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
             if (ssScore < sBeta)
             {
-                extension += VAL_SINGULAR_EXT;
+                extension = PLY;
             }
             else if (sBeta >= beta)
             {
@@ -789,20 +788,11 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
             }
         }
 
-        if (extension >= VAL_ONE_PLY)
-        {
-            extend = 1;
-            extension -= VAL_ONE_PLY;
-
-            if (extension >= VAL_ONE_PLY)
-                extension = 3 * VAL_ONE_PLY / 4;
-        }
 
 
-        gi->moveStack[ply].extension = extension;
 
+        newDepth = (depth - PLY) + extension;
 
-        newDepth = (depth - 1) + extend;
 
 
         // make the move
@@ -864,11 +854,11 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         else 
         { // Late Move Reductions (Under observation)
         
-            if (	depth > 2
+            if (	depth > 2 * PLY
                 &&	movesPlayed > 1
                 &&	isQuietMove) 
             {
-                reduce = LMR[std::min(depth, 63)][std::min(movesPlayed, 63)];
+                reduce = LMR[std::min(depth / PLY, 63)][std::min(movesPlayed, 63)];
 
                 if (!pvNode )
                 {
@@ -896,7 +886,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
                 lSi.line[0] = NO_MOVE;
                 
-                score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, newDepth - reduce, gi, &lSi );
+                score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, newDepth - reduce * PLY, gi, &lSi );
             }
             else
             {
