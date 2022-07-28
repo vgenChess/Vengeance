@@ -714,7 +714,9 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         // Fractional Extensions
         // ======================================================================
 
-        int extension = 0, extend = 0;
+        int extend = 0;
+
+        float extension = rootNode ? 0 : gi->moveStack[ply - 1].extension;
 
         if (!rootNode ) // TODO check extensions logic
         {
@@ -793,12 +795,11 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
             extension -= VAL_ONE_PLY;
 
             if (extension >= VAL_ONE_PLY)
-            {
                 extension = 3 * VAL_ONE_PLY / 4;
-            }
         }
 
 
+        gi->moveStack[ply].extension = extension;
 
 
         newDepth = (depth - 1) + extend;
