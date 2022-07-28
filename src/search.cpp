@@ -149,8 +149,8 @@ void startSearch()
 
     int currentDepth, currentScore;
 
-    for (uint16_t i = 1; i < infos.size(); i++)
-    {
+    for (uint16_t i = 1; i < infos.size(); i++) {
+
         GameInfo* g = infos[i];
 
         currentDepth = g->completedDepth;
@@ -160,6 +160,9 @@ void startSearch()
 
             bestInfo = g;
             bestIndex = i;
+
+            bestScore = currentScore;
+            bestDepth = currentDepth;
         }
     }
 
@@ -811,17 +814,17 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         if (lmr) {
 
             // get the reduction value according to depth and moves played
-            auto reduce = LMR[std::min(depth / PLY, 63)][std::min(movesPlayed, 63)] * PLY; // TODO recheck logic
+            auto reduce = LMR[std::min(depth / PLY, 63)][std::min(movesPlayed, 63)]; // TODO recheck logic
 
             if (!pvNode )
-                reduce += PLY;
+                reduce++;
 
             if (!improving && !isInCheck) // isInCheck sets improving to false
-                reduce += PLY;
+                reduce++;
 
             // reduce more for king evasions
             if (isInCheck && pieceType(currentMove.move) == KING)
-                reduce += PLY;
+                reduce++;
 
             bool isKillerOrCounterMove =
                 moveList.currentStage == PLAY_KILLER_MOVE_1 ||
@@ -829,14 +832,14 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                 moveList.currentStage == PLAY_COUNTER_MOVE;
 
             if (isKillerOrCounterMove)
-                reduce -= PLY;
+                reduce--;
 
             // reduce according to move history score
-            reduce -= std::max(-2, std::min(2, currentMove.score / 5000)) * PLY; // TODO rewrite logic
+            reduce -= std::max(-2, std::min(2, currentMove.score / 5000)); // TODO rewrite logic
 
             reduce = std::max(reduce, 0);
 
-            lmrDepth = std::max(newDepth - reduce, PLY);
+            lmrDepth = std::max((newDepth - reduce * PLY), PLY);
         }
 
 
