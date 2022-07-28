@@ -77,7 +77,6 @@ namespace game {
         alignas(64) U64 whitePieceBB[MAX_PIECES] = {};
         alignas(64)	U64 blackPieceBB[MAX_PIECES] = {};
 
-        std::vector<MOVE_LIST> moveList =               std::vector<MOVE_LIST> ( MAX_MOVES );
         std::vector<PV> pvLine          =               std::vector<PV> ( MAX_PLY );
         std::vector<MOVE_STACK> moveStack   =           std::vector<MOVE_STACK> ( MAX_PLY );
         std::vector<UNDO_MOVE_STACK> undoMoveStack =    std::vector<UNDO_MOVE_STACK> ( MAX_PLY );

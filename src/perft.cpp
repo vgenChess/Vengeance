@@ -62,21 +62,23 @@ U64 perft(int ply, U8 depth, Side side, GameInfo *th) {
         th->moveStack[ply].castleFlags = th->moveStack[ply - 1].castleFlags;
     }
     
-    th->moveList[ply].skipQuiets = false;
-    th->moveList[ply].stage = PLAY_HASH_MOVE;
-    th->moveList[ply].ttMove = NO_MOVE;
-    th->moveList[ply].counterMove = NO_MOVE;
-    th->moveList[ply].moves.clear();
-    th->moveList[ply].badCaptures.clear();
+    MOVE_LIST moveList;
+
+    moveList.skipQuiets = false;
+    moveList.stage = PLAY_HASH_MOVE;
+    moveList.ttMove = NO_MOVE;
+    moveList.counterMove = NO_MOVE;
+    moveList.moves.clear();
+    moveList.badCaptures.clear();
     
     Move currentMove;
     
     while (true) 
     {
         // fetch next psuedo-legal move
-        currentMove = getNextMove(side, ply, th, &th->moveList[ply]);
+        currentMove = getNextMove(side, ply, th, &moveList);
 
-        if (th->moveList[ply].stage == STAGE_DONE)
+        if (moveList.stage == STAGE_DONE)
         {
             break;
         }

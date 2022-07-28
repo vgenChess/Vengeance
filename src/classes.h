@@ -91,26 +91,23 @@ public:
 
 	bool rootNode;
 	bool mainThread;
-	bool singularSearch;
 	bool nullMove;
 
 	int treePos;
 	U32 skipMove;
     
-    U32 line[MAX_PLY];
-    
+	U32 line[MAX_PLY];
+
 	SearchInfo() 
 	{
 		rootNode = false;
 		mainThread = false;
-		singularSearch = false;
 		nullMove = false;
 
-		      treePos = 0;
+		treePos = 0;
 
-		skipMove = 0UL;
-        
-        line[0] = NO_MOVE;
+		skipMove = NO_MOVE;
+		line[0] = NO_MOVE;
 	}
 };
 

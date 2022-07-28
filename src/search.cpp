@@ -301,7 +301,6 @@ void aspirationWindow(int index, GameInfo *gi)
     si.treePos = 0;
     si.rootNode = true;
     si.nullMove = false;
-    si.singularSearch = false;
     si.skipMove = NO_MOVE;
     si.mainThread = index == 0;
 
@@ -397,7 +396,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
     const auto treePos = si->treePos;
     const auto rootNode = si->rootNode;
     const auto mainThread = si->mainThread;
-    const auto singularSearch = si->singularSearch;
+    const auto singularSearch = si->skipMove != NO_MOVE;
     const auto nullMove = si->nullMove;
     const auto pvNode = alpha != beta - 1;
     
@@ -496,7 +495,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         gi->hashManager.recordHash(gi->hashKey, NO_MOVE, NO_DEPTH, VAL_UNKNOWN, NO_BOUND, sEval);
 
 
-    // Search tree pruning
+    // Pruning
     // ===============================================================================================
 
     const auto oppPiecesCount = POPCOUNT(opp ? gi->blackPieceBB[PIECES] : gi->whitePieceBB[PIECES]);
@@ -519,7 +518,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
             return beta;          
     
         // TODO check logic. The quiescense call seems costly
-        if (sEval + U16_RAZOR_MARGIN < beta)      // Razoring
+        if (sEval + U16_RAZOR_MARGIN < beta)            // Razoring
         {
             const auto rscore = quiescense<stm>(alpha, beta, gi, si );
 
@@ -544,19 +543,18 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
     gi->moveStack[treePos].sEval = sEval;
 
 
-
     SearchInfo lSi;
 
     lSi.skipMove = NO_MOVE;
     lSi.mainThread = mainThread;
-    lSi.singularSearch = false;
     lSi.nullMove = false;
     lSi.rootNode = false;
 
 
-    bool mateThreat = false;
-
     // Null Move pruning
+    // ==========================================================================================
+
+    bool mateThreat = false;
 
     if (	!rootNode
         &&	!pvNode
@@ -576,6 +574,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         lSi.treePos = treePos + 1;
 
         lSi.line[0] = NO_MOVE;
+
         const auto score = -alphabeta<opp>(-beta, -beta + 1, mate - 1, depth - R - PLY, gi, &lSi );
 
         unmakeNullMove(treePos, gi);
@@ -585,99 +584,69 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         if (score >= beta)
             return beta;
 
-        if (std::abs(score) >= MATE - 5000) // Mate threat
+        // Mate threat
+        if (std::abs(score) >= MATE - 5000)
             mateThreat = true;
     }
 
-    // Singular search
 
-    bool singularMove = false;
+    const auto KILLER_MOVE_1 = gi->moveStack[treePos].killerMoves[0];
+    const auto KILLER_MOVE_2 = gi->moveStack[treePos].killerMoves[1];
 
-    if (    !rootNode
-        &&  !singularSearch
-        &&  depth >= 7 * PLY
-        &&  hashHit
-        &&  ttMove != NO_MOVE
-        &&  std::abs(ttScore) < WIN_SCORE
-        &&  hashEntry->flags == hashfBETA
-        &&  hashEntry->depth >= depth - 3 * PLY)
-    {
-        const auto sBeta = ttScore - 4 * depth / PLY;
-        const auto sDepth = ((depth / PLY) / 2 - PLY) * PLY;
-
-        lSi.singularSearch = true;
-        lSi.nullMove = false;
-        lSi.skipMove = ttMove;
-        lSi.treePos = treePos;
-
-        lSi.line[0] = NO_MOVE;
-        const auto score = alphabeta<stm>(sBeta - 1, sBeta, mate, sDepth, gi, &lSi );
-
-        lSi.skipMove = NO_MOVE;
-        lSi.singularSearch = false;
-
-        if (score < sBeta)
-        {
-            singularMove = true;
-        }
-        else if (sBeta >= beta) // Todo check logic // fail high fail soft framework
-        {
-            return sBeta;
-        }
-    }
-
-
-
-    bool isQuietMove = false;
+    auto isQuietMove = false;
     
-    U8 hashf = hashfALPHA;
-    int currentMoveType, currentMoveToSq;
-    int movesPlayed = 0, newDepth = 0;
-    int score = -MATE, bestScore = -MATE;
+    auto hashf = hashfALPHA;
+    auto movesPlayed = 0;
+    auto score = -MATE, bestScore = -MATE;
+
+    int newDepth = 0;
 
     U32 bestMove = NO_MOVE, previousMove = rootNode ? NO_MOVE : gi->moveStack[treePos - 1].move;
 
-    const U32 KILLER_MOVE_1 = gi->moveStack[treePos].killerMoves[0];
-    const U32 KILLER_MOVE_2 = gi->moveStack[treePos].killerMoves[1];
-
-    Move currentMove;
-
     std::vector<U32> quietsPlayed, capturesPlayed;
     
-    gi->moveList[treePos].skipQuiets = false;
-    gi->moveList[treePos].stage = PLAY_HASH_MOVE;
-    gi->moveList[treePos].ttMove = ttMove;
-    gi->moveList[treePos].counterMove = previousMove == NO_MOVE ?
+
+    MOVE_LIST moveList;
+
+    moveList.skipQuiets = false;
+    moveList.stage = PLAY_HASH_MOVE;
+    moveList.ttMove = ttMove;
+    // TODO check logic
+    moveList.counterMove = previousMove == NO_MOVE ?
         NO_MOVE : gi->counterMove[stm][from_sq(previousMove)][to_sq(previousMove)];
-    gi->moveList[treePos].moves.clear();
-    gi->moveList[treePos].badCaptures.clear();
 
 
-    while (gi->moveList[treePos].stage < STAGE_DONE) {
+    while (true) {
 
         // fetch next psuedo-legal move
-        currentMove = getNextMove(stm, treePos, gi, &gi->moveList[treePos]);
+        const auto currentMove = getNextMove(stm, treePos, gi, &moveList);
+
+        if (moveList.stage == STAGE_DONE)
+            break;
 
         // check if move generator returns a valid psuedo-legal move
         assert(currentMove.move != NO_MOVE);
 
         // skip the move if its in a singular search and the current move is singular
-        if (currentMove.move == si->skipMove)
+        if (singularSearch && currentMove.move == si->skipMove)
             continue;
 
-        // Prune moves based on conditions met
+
+        // Pruning
+        // ==============================================================================
+
         if (    movesPlayed > 1
             &&  !rootNode
             &&  !pvNode
-            &&  !isInCheck 
-            &&  move_type(currentMove.move) != MOVE_PROMOTION) 
+            &&  !isInCheck
+            &&  move_type(currentMove.move) != MOVE_PROMOTION)
         {
-            if (isQuietMove) 
+            if (isQuietMove)
             {
                 // Futility pruning
-                if (fPrune) 
+                if (fPrune)
                 {
-                    gi->moveList[treePos].skipQuiets = true;
+                    moveList.skipQuiets = true;
                     continue;
                 }
 
@@ -685,7 +654,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                 if (    depth < LMP_DEPTH * PLY
                     &&  movesPlayed >= LMP[improving][depth / PLY])
                 {
-                    gi->moveList[treePos].skipQuiets = true;
+                    moveList.skipQuiets = true;
                     continue;
                 }
 
@@ -696,21 +665,58 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                     continue;
                 }
             }
+        }
 
-            else
-            {   // SEE pruning
-                if (    depth <= SEE_PRUNING_DEPTH
-                    &&  currentMove.seeScore < SEE_PRUNING * depth)
-                {
-                    continue;
-                }
+
+        // Extensions
+        // =====================================================================
+
+        int extension = 0;
+
+        // Check extension
+        if (!rootNode && isInCheck)
+            extension = PLY;
+
+        // Singular extension
+        if (    !rootNode
+            &&  !singularSearch
+            &&  extension < PLY
+            &&  depth >= 8 * PLY
+            &&  hashHit
+            &&  ttMove != NO_MOVE
+            &&  currentMove.move == ttMove
+            &&  std::abs(ttScore) < WIN_SCORE
+            &&  hashEntry->flags == hashfBETA
+            &&  hashEntry->depth >= depth - 3 * PLY)
+        {
+            const auto sBeta = ttScore - (depth / PLY) * 2;
+            const auto sDepth = (depth / PLY) / 2 * PLY;
+
+            lSi.nullMove = false;
+            lSi.skipMove = currentMove.move;
+            lSi.treePos = treePos;
+            lSi.line[0] = NO_MOVE;
+
+            const auto ssScore = alphabeta<stm>(sBeta - 1, sBeta, mate, sDepth, gi, &lSi );
+
+            lSi.skipMove = NO_MOVE;
+
+            if (ssScore < sBeta)
+            {
+                extension = PLY;
+            }
+            else if (sBeta >= beta) // Todo check logic // fail high fail soft framework
+            {
+                return sBeta;
             }
         }
 
 
 
-        // make the move
+       // make the move
         make_move(treePos, currentMove.move, gi);
+
+
 
         // check if this move leaves our king in check
         // in which case its an invalid move
@@ -720,12 +726,17 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
             continue;
         }
 
-
         // the move is valid, increment number of moves played
         movesPlayed++;
 
+        // record the move being played
+        gi->moveStack[treePos].move = currentMove.move;
 
-        // report current move being search and the number of moves played
+        // increment the position on the search tree
+        lSi.treePos = treePos + 1;
+
+
+        // report current move and number of moves played
         if (rootNode && mainThread )
         {
             const auto timeElapsedMs = tmg::timeManager.timeElapsed<MILLISECONDS>(
@@ -740,77 +751,57 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
 
 
-        currentMoveType = move_type(currentMove.move);
-        currentMoveToSq = to_sq(currentMove.move);
+        const auto currentMoveType = move_type(currentMove.move);
+        const auto currentMoveToSq = to_sq(currentMove.move);
 
-        isQuietMove = currentMoveType == MOVE_NORMAL || currentMoveType == MOVE_CASTLE 
+        isQuietMove = currentMoveType == MOVE_NORMAL || currentMoveType == MOVE_CASTLE
             || currentMoveType == MOVE_DOUBLE_PUSH;
 
-        if (isQuietMove) 
-        {
+        if (isQuietMove)
             quietsPlayed.push_back(currentMove.move);
-        } 
+        // all promotions are scored equal and ordered differently from capture moves
         else if (currentMoveType != MOVE_PROMOTION) 
-        { 
-            // all promotions are scored equal and ordered differently from capture moves
             capturesPlayed.push_back(currentMove.move);
-        }
-
-        
-        gi->moveStack[treePos].move = currentMove.move;
-
 
 
 
         // Fractional Extensions
-        // =====================================================================
+        // ========================================================================
 
-        int extension = 0;
+        if (!rootNode && extension < PLY) {
 
-        if (!rootNode ) // TODO check extensions logic
-        {
-            const auto pieceCurrMove = pieceType(currentMove.move);
-            const auto prevMoveType = move_type(previousMove);
-
-            const bool isPRank = stm ?
+            const bool isPromotionRank = stm ?
                 currentMoveToSq >= 8 && currentMoveToSq <= 15 :
                 currentMoveToSq >= 48 && currentMoveToSq <= 55;
 
-            // Check extension
-            if (isInCheck)
-                extension = PLY;
-
-            // Singular extension
-            else if (currentMove.move == ttMove && singularMove )
-                extension = PLY;
+            const auto currentMovePiece = pieceType(currentMove.move);
+            const auto previousMoveType = move_type(previousMove);
 
             // PRank extension
-            else if (pieceCurrMove == PAWNS && isPRank)
+            if (currentMovePiece == PAWNS && isPromotionRank)
                 extension = PLY;
 
-            else if (mateThreat)
-                extension = PLY / 2;
-
             // Recapture extension
-            else if (previousMove != NO_MOVE && prevMoveType == MOVE_CAPTURE)
+            else if (previousMove != NO_MOVE && previousMoveType == MOVE_CAPTURE)
             {
-                U8 prevMoveToSq = to_sq(previousMove);
+                const auto prevMoveToSq = to_sq(previousMove);
 
                 if (currentMoveToSq == prevMoveToSq)
                     extension = PLY / 2;
             }
+
+            // Mate threat extension
+            else if (mateThreat)
+                extension = PLY / 2;
         }
 
 
 
         newDepth = (depth - PLY) + extension;
 
-        lSi.treePos = treePos + 1;
 
 
-
-
-        // Late Move Reductions (Under observation)
+        // Late Move Reduction
         // ===============================================================================
 
         int lmrDepth = 1;
@@ -820,13 +811,11 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         if (lmr) {
 
             // get the reduction value according to depth and moves played
-            auto reduce = LMR[std::min(depth / PLY, 63)][std::min(movesPlayed, 63)] * PLY;
+            auto reduce = LMR[std::min(depth / PLY, 63)][std::min(movesPlayed, 63)] * PLY; // TODO recheck logic
 
-            // reduce more if its not a pv node
             if (!pvNode )
                 reduce += PLY;
 
-            // reduce more if the score is not improving
             if (!improving && !isInCheck) // isInCheck sets improving to false
                 reduce += PLY;
 
@@ -835,11 +824,10 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                 reduce += PLY;
 
             bool isKillerOrCounterMove =
-                gi->moveList[treePos].currentStage == PLAY_KILLER_MOVE_1 ||
-                gi->moveList[treePos].currentStage == PLAY_KILLER_MOVE_2 ||
-                gi->moveList[treePos].currentStage == PLAY_COUNTER_MOVE;
+                moveList.currentStage == PLAY_KILLER_MOVE_1 ||
+                moveList.currentStage == PLAY_KILLER_MOVE_2 ||
+                moveList.currentStage == PLAY_COUNTER_MOVE;
 
-            // reduce less for killer and counter moves
             if (isKillerOrCounterMove)
                 reduce -= PLY;
 
@@ -850,6 +838,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
             lmrDepth = std::max(newDepth - reduce, PLY);
         }
+
 
 
         // PVS framework with LMR research
@@ -889,6 +878,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
 
         unmake_move(treePos, currentMove.move, gi);
+
 
 
         if (rootNode)
@@ -939,6 +929,9 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
     }
     
 
+
+
+
     // TODO check logic
     if (hashf == hashfBETA) 
     {
@@ -958,8 +951,12 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
     }
 
 
+
+
+
     if (movesPlayed == 0)
-        return isInCheck ? -mate : 0; // Mate and stalemate check
+        return isInCheck ? -mate : 0; // check for mate and stalemate
+
 
     if (!singularSearch )
         gi->hashManager.recordHash(gi->hashKey, bestMove, depth, bestScore, hashf, sEval);
@@ -1038,10 +1035,8 @@ int quiescense(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
 
     
     if (treePos >= MAX_PLY - 1)
-    {
         return nnueEval(stm, gi);
-    }
-    
+
     
     auto hashEntry = gi->hashManager.getHashEntry(gi->hashKey);
     
@@ -1090,12 +1085,12 @@ int quiescense(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     gi->moveStack[treePos].castleFlags = gi->moveStack[treePos - 1].castleFlags;
 
 
-    gi->moveList[treePos].skipQuiets = true;
-    gi->moveList[treePos].stage = GEN_CAPTURES;
-    gi->moveList[treePos].ttMove = NO_MOVE;
-    gi->moveList[treePos].counterMove = NO_MOVE;
-    gi->moveList[treePos].moves.clear();
-    gi->moveList[treePos].badCaptures.clear();
+    MOVE_LIST moveList;
+
+    moveList.skipQuiets = true;
+    moveList.stage = GEN_CAPTURES;
+    moveList.ttMove = NO_MOVE;
+    moveList.counterMove = NO_MOVE;
 
     const auto oppPiecesCount = POPCOUNT(opp ? gi->blackPieceBB[PIECES] : gi->whitePieceBB[PIECES]);
     const auto qFutilityBase = sEval + VAL_Q_DELTA;
@@ -1110,9 +1105,12 @@ int quiescense(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     lSi.treePos = treePos + 1;
 
 
-    while (gi->moveList[treePos].stage < STAGE_DONE) {
+    while (true) {
 
-        currentMove = getNextMove(stm, treePos, gi, &gi->moveList[treePos]);
+        currentMove = getNextMove(stm, treePos, gi, &moveList);
+
+        if (moveList.stage == STAGE_DONE)
+            break;
         
         assert(currentMove.move != NO_MOVE);
 
