@@ -730,16 +730,16 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
             if (isInCheck)
                 extension = PLY;
 
-            // Mate threat extension
-            if (mateThreat)
-                extension = PLY / 2;
-
             // Pawn push extension
-            if (pieceCurrMove == PAWNS && isPrank)
+            else if (pieceCurrMove == PAWNS && isPrank)
                 extension = PLY;
 
+            // Mate threat extension
+            else if (mateThreat)
+                extension = PLY / 2;
+
             // Recapture extension
-            if (previousMove != NO_MOVE && prevMoveType == MOVE_CAPTURE)
+            else if (previousMove != NO_MOVE && prevMoveType == MOVE_CAPTURE)
             {
                 U8 prevMoveToSq = to_sq(previousMove);
 
