@@ -900,7 +900,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                 if (!lmr || (lmr && newDepth != lmrDepth))
                     score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, newDepth, gi, &lSi );
                 
-                if (score > alpha && score < beta) 
+                if (score > alpha && (rootNode || score < beta))
                     score = -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi );
             }
         }
