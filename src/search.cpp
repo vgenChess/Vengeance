@@ -834,13 +834,10 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         gi->moveStack[ply].move = currentMove.move;
 
 
-        int reduce = 0;
-
-
         lSi.ply = ply + 1;
 
         
-        if (movesPlayed <= 1) 
+        if (pvNode && movesPlayed <= 1)
         { // Principal Variation Search
 
             lSi.line[0] = NO_MOVE;
@@ -849,12 +846,15 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         } 
         else 
         { // Late Move Reductions (Under observation)
-        
-            if (	depth > 2 * PLY
-                &&	movesPlayed > 1
-                &&	isQuietMove) 
-            {
-                reduce = LMR[std::min(depth / PLY, 63)][std::min(movesPlayed, 63)];
+
+            int lmrDepth = 0;
+            bool lmr = false;
+
+            if ( depth > 2 * PLY &&	movesPlayed > 1 && isQuietMove) {
+
+                lmr = true;
+
+                auto reduce = LMR[std::min(depth / PLY, 63)][std::min(movesPlayed, 63)];
 
                 if (!pvNode )
                 {
@@ -875,26 +875,30 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                 {
                     reduce--; // reduce less for killer and counter moves
                 }
-                
+
                 reduce -= std::max(-2, std::min(2, currentMove.score / 5000));	// TODO rewrite logic
 
-                reduce = std::min(depth - 1, std::max(reduce, 1));
+                reduce = std::max(reduce, 0);
+
+                lmrDepth = std::max((newDepth - reduce * PLY), PLY);
+
 
                 lSi.line[0] = NO_MOVE;
                 
-                score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, newDepth - reduce * PLY, gi, &lSi );
+                score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, lmrDepth, gi, &lSi );
             }
             else
             {
                 score = alpha + 1;
             }
 
-            if (score > alpha) 
+            if (score > alpha)
             {   // Research 
                 
                 lSi.line[0] = NO_MOVE;
 
-                score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, newDepth, gi, &lSi );
+                if (!lmr || (lmr && newDepth != lmrDepth))
+                    score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, newDepth, gi, &lSi );
                 
                 if (score > alpha && score < beta) 
                     score = -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi );
