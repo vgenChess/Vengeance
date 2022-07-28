@@ -790,7 +790,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                 const auto prevMoveToSq = to_sq(previousMove);
 
                 if (currentMoveToSq == prevMoveToSq)
-                    extension = PLY / 2;
+                    extension = 3 * PLY / 4;
             }
 
             // Mate threat extension
