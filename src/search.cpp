@@ -833,78 +833,67 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         
         gi->moveStack[ply].move = currentMove.move;
 
-
         lSi.ply = ply + 1;
 
         
-        if (pvNode && movesPlayed <= 1)
-        { // Principal Variation Search
+        // Late Move Reductions (Under observation)
+
+        int lmrDepth = 0;
+        bool lmr = false;
+
+        if ( depth > 2 * PLY &&	movesPlayed > 1 && isQuietMove) {
+
+            lmr = true;
+
+            auto reduce = LMR[std::min(depth / PLY, 63)][std::min(movesPlayed, 63)];
+
+            if (!pvNode )
+                reduce++;
+            
+            if (!improving && !isInCheck) 
+                reduce++; // isInCheck sets improving to false
+            
+            if (isInCheck && pieceType(currentMove.move) == KING) 
+                reduce++;
+            
+            if (moveList.stage >= PLAY_KILLER_MOVE_1 && moveList.stage <= PLAY_COUNTER_MOVE)
+                reduce--; // reduce less for killer and counter moves
+         
+            reduce -= std::max(-2, std::min(2, currentMove.score / 5000));	// TODO rewrite logic
+
+            reduce = std::max(reduce, 0);
+
+            lmrDepth = std::max((newDepth - reduce * PLY), PLY);
+
+            lSi.line[0] = NO_MOVE;
+            
+            score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, lmrDepth, gi, &lSi );
+        }
+        
+        // Principal Variation Search
+
+        if (pvNode && movesPlayed <= 1) { 
 
             lSi.line[0] = NO_MOVE;
 
             score = -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi );
-        } 
-        else 
-        { // Late Move Reductions (Under observation)
+        } else {
 
-            int lmrDepth = 0;
-            bool lmr = false;
+            if (!lmr || (lmr && score > alpha && newDepth != lmrDepth)) {
 
-            if ( depth > 2 * PLY &&	movesPlayed > 1 && isQuietMove) {
-
-                lmr = true;
-
-                auto reduce = LMR[std::min(depth / PLY, 63)][std::min(movesPlayed, 63)];
-
-                if (!pvNode )
-                {
-                    reduce++;
-                }
+                lSi.line[0] = NO_MOVE;                
                 
-                if (!improving && !isInCheck) 
-                {
-                    reduce++; // isInCheck sets improving to false
-                }
-                
-                if (isInCheck && pieceType(currentMove.move) == KING) 
-                {
-                    reduce++;
-                }
-                
-                if (moveList.stage < GEN_QUIETS)
-                {
-                    reduce--; // reduce less for killer and counter moves
-                }
-
-                reduce -= std::max(-2, std::min(2, currentMove.score / 5000));	// TODO rewrite logic
-
-                reduce = std::max(reduce, 0);
-
-                lmrDepth = std::max((newDepth - reduce * PLY), PLY);
-
-
-                lSi.line[0] = NO_MOVE;
-                
-                score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, lmrDepth, gi, &lSi );
+                score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, newDepth, gi, &lSi );
             }
-            else
-            {
-                score = alpha + 1;
-            }
+            
+            if (score > alpha && (rootNode || score < beta)) {
 
-            if (score > alpha)
-            {   // Research 
-                
-                lSi.line[0] = NO_MOVE;
-
-                if (!lmr || (lmr && newDepth != lmrDepth))
-                    score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, newDepth, gi, &lSi );
-                
-                if (score > alpha && (rootNode || score < beta))
-                    score = -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi );
+                lSi.line[0] = NO_MOVE;                
+                   
+                score = -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi );
             }
         }
-
+    
 
         unmake_move(ply, currentMove.move, gi);
 
