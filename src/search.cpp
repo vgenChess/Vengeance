@@ -409,15 +409,15 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
     const auto pvNode = alpha != beta - 1;
     
 
-    // Quiescense Search(under observation)
+    // Quiescense Search
 
-    if (depth < PLY || ply >= MAX_PLY )
+    if (ply >= MAX_PLY )
     {
         si->line[0] = NO_MOVE;
-        
-        return quiescenseSearch<stm>(alpha, beta, gi, si );
+
+        return quiescense<stm>(alpha, beta, gi, si );
     }
-    
+
 
     // Check time spent
     if (    mainThread
@@ -546,7 +546,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         // TODO check logic. The quiescense call seems costly
         if (sEval + U16_RAZOR_MARGIN < beta)      // Razoring
         {
-            const auto rscore = quiescenseSearch<stm>(alpha, beta, gi, si );
+            const auto rscore = quiescense<stm>(alpha, beta, gi, si );
 
             if (rscore < beta) 
             {
@@ -748,6 +748,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
             }
         }
 
+
         // Singular search
         if (    !rootNode
             &&  !singularSearch
@@ -834,70 +835,76 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         gi->moveStack[ply].move = currentMove.move;
 
 
-        int reduce = 0;
-
-
         lSi.ply = ply + 1;
 
         
-        if (movesPlayed <= 1) 
-        { // Principal Variation Search
+
+        // Late Move Reduction
+        // ===============================================================================
+
+        int lmrDepth = 1;
+
+        const bool lmr = depth > 2 * PLY && movesPlayed > 1 && isQuietMove;
+
+        if (lmr) {
+
+            // get the reduction value according to depth and moves played
+            auto reduce = LMR[std::min(depth / PLY, 63)][std::min(movesPlayed, 63)]; // TODO recheck logic
+
+            if (!pvNode )
+                reduce++;
+
+            if (!improving && !isInCheck) // isInCheck sets improving to false
+                reduce++;
+
+            // reduce more for king evasions
+            if (isInCheck && pieceType(currentMove.move) == KING)
+                reduce++;
+
+            if (moveList.stage >= PLAY_KILLER_MOVE_1 && moveList.stage <= PLAY_COUNTER_MOVE)
+                reduce--;
+
+            // reduce according to move history score
+            reduce -= std::max(-2, std::min(2, currentMove.score / 5000)); // TODO rewrite logic
+
+            reduce = std::max(reduce, 0);
+
+            lmrDepth = std::max((newDepth - reduce * PLY), PLY);
+        }
+
+
+
+        // PVS framework with LMR research
+        // ================================================================================
+
+        if (pvNode && movesPlayed <= 1) {
 
             lSi.line[0] = NO_MOVE;
+            score = newDepth < PLY ?
+                -quiescense<opp>(-beta, -alpha, gi, &lSi) :
+                -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi );
+        } else {
 
-            score = -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi );
-        } 
-        else 
-        { // Late Move Reductions (Under observation)
-        
-            if (	depth > 2 * PLY
-                &&	movesPlayed > 1
-                &&	isQuietMove) 
-            {
-                reduce = LMR[std::min(depth / PLY, 63)][std::min(movesPlayed, 63)];
-
-                if (!pvNode )
-                {
-                    reduce++;
-                }
-                
-                if (!improving && !isInCheck) 
-                {
-                    reduce++; // isInCheck sets improving to false
-                }
-                
-                if (isInCheck && pieceType(currentMove.move) == KING) 
-                {
-                    reduce++;
-                }
-                
-                if (moveList.stage < GEN_QUIETS)
-                {
-                    reduce--; // reduce less for killer and counter moves
-                }
-                
-                reduce -= std::max(-2, std::min(2, currentMove.score / 5000));	// TODO rewrite logic
-
-                reduce = std::min(depth - 1, std::max(reduce, 1));
+            if (lmr) {
 
                 lSi.line[0] = NO_MOVE;
-                
-                score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, newDepth - reduce * PLY, gi, &lSi );
-            }
-            else
-            {
-                score = alpha + 1;
+                score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, lmrDepth, gi, &lSi );
             }
 
-            if (score > alpha) 
-            {   // Research 
-                
+            if (!lmr || (lmr && score > alpha && lmrDepth != newDepth)) {
+
                 lSi.line[0] = NO_MOVE;
+                score = newDepth < PLY ?
+                    -quiescense<opp>(-alpha - 1, -alpha, gi, &lSi) :
+                    -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, newDepth, gi, &lSi );
+            }
 
-                score = -alphabeta<opp>(-alpha - 1, -alpha, mate - 1, newDepth, gi, &lSi );
-                
-                if (score > alpha && score < beta) 
-                    score = -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi );
+            if (score > alpha && (rootNode || score < beta))  {
+
+                lSi.line[0] = NO_MOVE;
+                score = newDepth < PLY ?
+                    -quiescense<opp>(-beta, -alpha, gi, &lSi) :
+                    -alphabeta<opp>(-beta, -alpha, mate - 1, newDepth, gi, &lSi );
             }
         }
 
@@ -909,15 +916,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         {
             if (movesPlayed == 1 || score > alpha)
             {
-                auto pline = &si->line[0];
-                auto line = &lSi.line[0];
-
-                *pline++ = currentMove.move;
-
-                while (*line != NO_MOVE)
-                    *pline++ = *line++;
-
-                *pline = NO_MOVE;
+                copyPv(si->line, currentMove.move, lSi.line);
 
                 const auto timeElapsedMs = tmg::timeManager.timeElapsed<MILLISECONDS>(
                     tmg::timeManager.getStartTime());
@@ -932,7 +931,6 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
             }
         }
 
-
         if (score > bestScore)
         {
             bestScore = score;
@@ -945,17 +943,7 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
                 // record the moves for the PV
                 if (pvNode && !rootNode)
-                {
-                    auto pline = &si->line[0];
-                    auto line = &lSi.line[0];
-
-                    *pline++ = currentMove.move;
-
-                    while (*line != NO_MOVE)
-                        *pline++ = *line++;
-
-                    *pline = NO_MOVE;
-                }
+                    copyPv(si->line, currentMove.move, lSi.line);
 
                 if (score >= beta)
                 {
@@ -1008,7 +996,7 @@ constexpr int seeVal[8] = {	VALUE_DUMMY, VALUE_PAWN, VALUE_KNIGHT, VALUE_BISHOP,
                     
 // TODO should limit Quiescense search explosion
 template<Side stm>
-int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
+int quiescense(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
 
     assert (alpha < beta);
     assert ( si->ply > 0);
@@ -1175,7 +1163,7 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
 
 
         lSi.line[0] = NO_MOVE;
-        score = -quiescenseSearch<opp>(-beta, -alpha, gi, &lSi );
+        score = -quiescense<opp>(-beta, -alpha, gi, &lSi );
 
 
         unmake_move(ply, currentMove.move, gi);
@@ -1190,17 +1178,9 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
             {
                 alpha = score;
                 hashf = hashfEXACT;
-                
-                auto pline = &si->line[0];
-                auto line = &lSi.line[0];
-                
-                *pline++ = currentMove.move;
-                while (*line != NO_MOVE)
-                {
-                    *pline++ = *line++;
-                }
-                *pline = NO_MOVE;
-                
+
+                copyPv(si->line, currentMove.move, lSi.line);
+
                 if (score >= beta) 
                 {
                     hashf = hashfBETA;

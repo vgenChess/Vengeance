@@ -142,6 +142,15 @@ namespace game {
 
         return sum;
     }
+
+    inline void copyPv(U32* pv, U32 move, U32* pvLower)
+    {
+        *pv++ = move;
+        if (pvLower)
+            while (*pvLower != NO_MOVE)
+                *pv++ = *pvLower++;
+        *pv = NO_MOVE;
+    }
 };
 
 
