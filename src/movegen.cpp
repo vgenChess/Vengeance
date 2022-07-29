@@ -636,12 +636,12 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
             scoreCaptureMoves(th, moveList);
             
-            moveList->stage = PLAY_CAPTURES;
+            moveList->stage = PLAY_GOOD_CAPTURES;
         }
         
         // fallthrough
         
-        case PLAY_CAPTURES : {
+        case PLAY_GOOD_CAPTURES : {
 
             if (moveList->moves.size() > 0) {
 
@@ -667,6 +667,13 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
                 return m;
             }   
+
+            if (moveList->skipQuiets) {
+
+                moveList->stage = PLAY_BAD_CAPTURES;
+
+                return getNextMove(stm, ply, th, moveList);
+            }
 
             moveList->stage = PLAY_KILLER_MOVE_1;
         }

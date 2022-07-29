@@ -1043,30 +1043,19 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     if (isRepetition(ply, gi))
     {
         // earlygame
-        if (allPiecesCount > 22)
-        {
-            return -50;
-        }
+        if (allPiecesCount > 22)        return -50;
         // middlegame
-        else if (allPiecesCount > 12)
-        {
-            return -25;
-        }
+        else if (allPiecesCount > 12)   return -25;
         // endgame
-        else
-        {
-            return 0;
-        }
+        else                            return 0;
     }
 
     gi->movesHistory[gi->moves_history_counter + ply + 1].hashKey = gi->hashKey;
 
     
     if (ply >= MAX_PLY - 1)
-    {
         return nnueEval(stm, gi);
-    }
-    
+
     
     auto hashEntry = gi->hashManager.getHashEntry(gi->hashKey);
     
@@ -1097,19 +1086,20 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     auto sEval = hashHit ? ((hashEntry->sEval == VAL_UNKNOWN) ?
                                     nnueEval(stm, gi) : hashEntry->sEval) : nnueEval(stm, gi);
     if (!hashHit)
-    {
         gi->hashManager.recordHash(gi->hashKey, NO_MOVE, NO_DEPTH, VAL_UNKNOWN, NO_BOUND, sEval);
-    }
-    
+
+
+
+    if (sEval >= beta)
+        return sEval;
+
+    if (sEval > alpha)
+        alpha = sEval;
 
     bestScore = sEval;
-    alpha = std::max(alpha, sEval);
 
-    if (alpha >= beta)
-    {
-        return sEval;
-    }
-    
+
+
     gi->moveStack[ply].epFlag = gi->moveStack[ply - 1].epFlag;
     gi->moveStack[ply].epSquare = gi->moveStack[ply - 1].epSquare;
     gi->moveStack[ply].castleFlags = gi->moveStack[ply - 1].castleFlags;
@@ -1127,7 +1117,7 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     const auto oppPiecesCount = POPCOUNT(opp ? gi->blackPieceBB[PIECES] : gi->whitePieceBB[PIECES]);
     const auto qFutilityBase = sEval + VAL_Q_DELTA;
 
-    U8 hashf = hashfALPHA, capPiece = DUMMY;
+    U8 hashf = hashfALPHA;
     int movesPlayed = 0; 
     int score = -MATE;
 
@@ -1140,24 +1130,20 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     {
         currentMove = getNextMove(stm, ply, gi, &moveList);
 
-        if (moveList.stage >= PLAY_BAD_CAPTURES)
-        {
+        if (moveList.stage > PLAY_GOOD_CAPTURES)
             break;
-        }
-        
+
         assert(currentMove.move != NO_MOVE);
 
-        // Pruning
-        if (    movesPlayed > 1
-            &&  capPiece != DUMMY
-            &&  move_type(currentMove.move) != MOVE_PROMOTION) 
-        {
-            // Delta pruning
-            if (oppPiecesCount > 3 && qFutilityBase + seeVal[capPiece] <= alpha) 
-            {
-                continue;
-            }
-        }
+
+        const auto capPiece = cPieceType(currentMove.move);
+
+        assert(capPiece != DUMMY);
+
+
+        // Delta pruning
+        if (movesPlayed > 1 && oppPiecesCount > 3 && qFutilityBase + seeVal[capPiece] <= alpha)
+            continue;
 
 
         make_move(ply, currentMove.move, gi);
@@ -1169,9 +1155,8 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
             continue;
         }
 
-        movesPlayed++;
 
-        capPiece = cPieceType(currentMove.move);
+        movesPlayed++;
 
 
         lSi.line[0] = NO_MOVE;
@@ -1196,9 +1181,7 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
                 
                 *pline++ = currentMove.move;
                 while (*line != NO_MOVE)
-                {
                     *pline++ = *line++;
-                }
                 *pline = NO_MOVE;
                 
                 if (score >= beta) 
