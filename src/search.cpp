@@ -627,19 +627,17 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
     U32 bestMove = NO_MOVE, previousMove = rootNode ? NO_MOVE : gi->moveStack[ply - 1].move;
 
-    const U32 KILLER_MOVE_1 = gi->moveStack[ply].killerMoves[0];
-    const U32 KILLER_MOVE_2 = gi->moveStack[ply].killerMoves[1];
-
     Move currentMove;
 
     std::vector<U32> quietsPlayed, capturesPlayed;
     
     MOVE_LIST moveList;
 
-
     moveList.skipQuiets = false;
     moveList.stage = PLAY_HASH_MOVE;
     moveList.ttMove = ttMove;
+    moveList.killerMove1 = gi->moveStack[ply].killerMoves[0];
+    moveList.killerMove2 = gi->moveStack[ply].killerMoves[1];
     moveList.counterMove = previousMove == NO_MOVE ?
         NO_MOVE : gi->counterMove[stm][from_sq(previousMove)][to_sq(previousMove)];
     moveList.moves.clear();
@@ -975,10 +973,10 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
     {
         if (isQuietMove) 
         {
-            if (bestMove != KILLER_MOVE_1 && bestMove != KILLER_MOVE_2) 
+            if (bestMove != moveList.killerMove1 && bestMove != moveList.killerMove2)
             {   // update killers
         
-                gi->moveStack[ply].killerMoves[1] = KILLER_MOVE_1;
+                gi->moveStack[ply].killerMoves[1] = moveList.killerMove1;
                 gi->moveStack[ply].killerMoves[0] = bestMove;
             }
 
@@ -1127,7 +1125,7 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     const auto oppPiecesCount = POPCOUNT(opp ? gi->blackPieceBB[PIECES] : gi->whitePieceBB[PIECES]);
     const auto qFutilityBase = sEval + VAL_Q_DELTA;
 
-    U8 hashf = hashfALPHA, capPiece = DUMMY;
+    U8 hashf = hashfALPHA;
     int movesPlayed = 0; 
     int score = -MATE;
 
@@ -1144,8 +1142,10 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
         {
             break;
         }
-        
+
         assert(currentMove.move != NO_MOVE);
+
+        const auto capPiece = cPieceType(currentMove.move);
 
         // Pruning
         if (    movesPlayed > 1
@@ -1170,9 +1170,6 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
         }
 
         movesPlayed++;
-
-        capPiece = cPieceType(currentMove.move);
-
 
         lSi.line[0] = NO_MOVE;
         score = -quiescenseSearch<opp>(-beta, -alpha, gi, &lSi );

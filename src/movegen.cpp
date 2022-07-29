@@ -636,12 +636,12 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
             scoreCaptureMoves(th, moveList);
             
-            moveList->stage = PLAY_CAPTURES;
+            moveList->stage = PLAY_GOOD_CAPTURES;
         }
         
         // fallthrough
         
-        case PLAY_CAPTURES : {
+        case PLAY_GOOD_CAPTURES : {
 
             if (moveList->moves.size() > 0) {
 
@@ -651,10 +651,8 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
                 moveList->moves.erase(moveList->moves.begin() + index);
                 
-                if (m.move == moveList->ttMove) {
-    
+                if (m.move == moveList->ttMove)
                     return getNextMove(stm, ply, th, moveList);
-                }
 
                 m.seeScore = SEE(stm, m.move, th);
 
@@ -677,15 +675,13 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
             moveList->stage = PLAY_KILLER_MOVE_2;
 
-            U32 killerMove1 = th->moveStack[ply].killerMoves[0];
-
             if (    !moveList->skipQuiets
-                &&  killerMove1 != moveList->ttMove
-                &&  isValidMove(stm, ply, killerMove1, th)) {
+                &&  moveList->killerMove1 != moveList->ttMove
+                &&  isValidMove(stm, ply, moveList->killerMove1, th)) {
                     
                 Move m;
 
-                m.move = killerMove1;
+                m.move = moveList->killerMove1;
                
                 return m;           
             }
@@ -697,20 +693,17 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
             moveList->stage = PLAY_COUNTER_MOVE;
 
-            U32 killerMove2 = th->moveStack[ply].killerMoves[1];
-
             if (    !moveList->skipQuiets    
-                &&  killerMove2 != moveList->ttMove
-                &&  isValidMove(stm, ply, killerMove2, th)) {
+                &&  moveList->killerMove2 != moveList->ttMove
+                &&  isValidMove(stm, ply, moveList->killerMove2, th)) {
                     
                 Move m;
 
-                m.move = killerMove2;
+                m.move = moveList->killerMove2;
                
                 return m;           
             }
         }
-
 
         // fallthrough
 
@@ -719,6 +712,9 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
             moveList->stage = GEN_PROMOTIONS;
 
             if (    !moveList->skipQuiets
+                &&  moveList->counterMove != moveList->ttMove
+                &&  moveList->counterMove != moveList->killerMove1
+                &&  moveList->counterMove != moveList->killerMove2
                 &&  isValidMove(stm, ply, moveList->counterMove, th)) {
 
                 Move m;
@@ -822,8 +818,8 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
                 if (    m.move == moveList->ttMove 
                     ||  m.move == moveList->counterMove
-                    ||  m.move == th->moveStack[ply].killerMoves[0] 
-                    ||  m.move == th->moveStack[ply].killerMoves[1]) {
+                    ||  m.move == moveList->killerMove1
+                    ||  m.move == moveList->killerMove2) {
                   
                     return getNextMove(stm, ply, th, moveList);
                 }

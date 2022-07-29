@@ -84,7 +84,7 @@ typedef struct
 {
     bool skipQuiets;
     int stage;
-    U32 ttMove, counterMove;
+    U32 ttMove, killerMove1, killerMove2, counterMove;
 
     std::vector<Move> moves;
     std::vector<Move> badCaptures;
