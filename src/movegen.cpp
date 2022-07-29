@@ -614,7 +614,7 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
             }
         }
         
-        
+
         //fallthrough
 
         case GEN_CAPTURES : {

@@ -169,7 +169,8 @@ void UciLoop() {
 
             tmg::timeManager.updateTimeSet(false);
 
-            int32_t time = -1, moveTime = -1, nodes = 0, inc = 0, movesToGo = -1, depthCurrent = 0;
+            uint64_t time = 0, moveTime = 0;
+            int nodes = 0, inc = 0, movesToGo = -1, depthCurrent = 0;
 
             while (is >> token) {
 
@@ -183,37 +184,33 @@ void UciLoop() {
                 else if (token == "movetime")   is >> moveTime;                    
             }
 
-            if (moveTime != -1) {
+            if (moveTime > 0) {
                 
                 tmg::timeManager.updateTimeSet(true);
-                tmg::timeManager.updateTimePerMove(moveTime);
 
-                tmg::timeManager.setStopTime(
-                    tmg::timeManager.getStartTime() + std::chrono::milliseconds(moveTime));
+                timePerMove = moveTime;
+
+                maxTime = moveTime - 500;
             }
 
-            else if (time > -1) {
+            else if (time > 0) {
 
                 tmg::timeManager.updateTimeSet(true);
-
-                int timePerMove = 0;
 
                 movesToGo = movesToGo > -1 ? movesToGo : 40;
 
-
-                const auto total = (int)std::max(1.0f, (float)(time + movesToGo * inc - MOVE_OVERHEAD));
-                const auto factor = 1.6;
-                const auto target = total / movesToGo;
+                const auto factor = 1.25;
+                const auto target = (time - MOVE_OVERHEAD) / movesToGo + inc / 2;
 
                 timePerMove = factor * target;
 
+                maxTime = std::min(timePerMove * 5, (uint64_t)(time - 500));
 
-                tmg::timeManager.updateTimePerMove(timePerMove);
+                if (timePerMove >= time)
+                    timePerMove = time - 500;
 
-                const auto maxTime = std::min(timePerMove * 5, (int)(time * 0.75));
-
-                tmg::timeManager.setStopTime(
-                    tmg::timeManager.getStartTime() + std::chrono::milliseconds(maxTime));
+                if (timePerMove == 0)
+                    timePerMove = 100;
             }
 
             else {

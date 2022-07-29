@@ -16,10 +16,8 @@ class TimeManager
 private:
     
     bool mIsTimeSet, mIsStopped;
-    int mTimePerMove;
-    
-    TimePoint mStartTime, mStopTime;
 
+    TimePoint mStartTime;
 public:
     
     inline TimePoint time_now()
@@ -56,18 +54,7 @@ public:
     {
         return mStartTime;
     }
-    
-    inline TimePoint getStopTime() const
-    {
-        return mStopTime;
-    }        
-    
-    inline int getTimePerMove() const
-    {
-        return mTimePerMove;
-    }
-    
-    
+
     inline void updateTimeSet(const bool isTimeSet)
     {
         mIsTimeSet = isTimeSet;
@@ -78,19 +65,9 @@ public:
         mIsStopped = isStopped;
     }
     
-    inline void updateTimePerMove(const int timePerMove)
-    {
-        mTimePerMove = timePerMove;
-    }
-    
-    inline void setStartTime(const TimePoint startTime) 
+    inline void setStartTime(const TimePoint startTime)
     {
         mStartTime = startTime;
-    }
-    
-    inline void setStopTime(const TimePoint stopTime)
-    {
-        mStopTime = stopTime;
     }
 };
 

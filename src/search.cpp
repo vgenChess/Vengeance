@@ -1,4 +1,4 @@
-//
+ //
 //  search.c
 //  Vgen
 //
@@ -78,6 +78,8 @@ void startSearch()
     abortSearch = false;
 
     previousInfoTime = 0;
+
+    memset(moveNodeCount, 0, sizeof(moveNodeCount[0][0]) * MAX_SQUARES * MAX_SQUARES);
 
     for (GameInfo *g: infos) {
 
@@ -236,31 +238,34 @@ void iterativeDeepening(int index, GameInfo *gi)
 
         if (tmg::timeManager.isTimeSet() && gi->completedDepth >= 4) {
 
-            float multiplier = 1;
-            const auto timePerMove = tmg::timeManager.getTimePerMove();
-
             const auto completedDepth = gi->completedDepth;
 
             const auto prevScore = gi->pvLine[completedDepth-3].score;
             const auto currentScore = gi->pvLine[completedDepth].score;
 
-            // reduce time for winning scores
+            float scoreFactor = 1, stableFactor = 1, nodesFactor = 1;
+
+
+            // Score difference
+            //===================================================================
+
             if (std::abs(currentScore) >= 10000) {
 
-                multiplier = 0.5;
+                scoreFactor = 0.5;
             } else {
 
                 const auto scoreDiff = prevScore - currentScore;
 
-                if (scoreDiff <= 10) multiplier = 0.5;
+                if (scoreDiff <= 10) scoreFactor = 0.5;
 
-                if (scoreDiff > 15) multiplier += 0.125;
-                if (scoreDiff > 25) multiplier += 0.125;
-                if (scoreDiff > 35) multiplier += 0.125;
+                if (scoreDiff > 15) scoreFactor += 0.1;
+                if (scoreDiff > 25) scoreFactor += 0.1;
+                if (scoreDiff > 35) scoreFactor += 0.1;
             }
 
 
             // Stable Move
+            //===================================================================
 
             assert( gi->pvLine[completedDepth].line[0] != NO_MOVE
                 && gi->pvLine[completedDepth-1].line[0] != NO_MOVE);
@@ -268,13 +273,29 @@ void iterativeDeepening(int index, GameInfo *gi)
             const auto previousMove = gi->pvLine[completedDepth-1].line[0];
             const auto currentMove = gi->pvLine[completedDepth].line[0];
 
-            gi->stableMoveCount = previousMove == currentMove ? gi->stableMoveCount + 1 : 0;
+            gi->stableMoveCount = previousMove == currentMove ?
+                std::min(10, gi->stableMoveCount + 1) : 0;
 
-            if ( gi->stableMoveCount >= 10)
-                multiplier = 0.5;
+            if (gi->stableMoveCount > 4)
+                stableFactor = pow(1 - gi->stableMoveCount / 100, 3);
+
+
+            // Ratio of the tree size under best move to the whole tree
+            //======================================================================================
+
+            const auto bestMoveTotalNodes = moveNodeCount[from_sq(currentMove)][to_sq(currentMove)];
+            const auto totalNodes = getStats<NODES>();
+
+            const auto x = bestMoveTotalNodes / totalNodes;
+
+                 if (x > 0.9)        nodesFactor = 0.6;
+            else if (x > 0.8)        nodesFactor = 0.8;
+            else if (x < 0.2)        nodesFactor = 1.3;
+            else if (x < 0.1)        nodesFactor = 1.6;
+
 
             if (tmg::timeManager.timeElapsed<MILLISECONDS>(
-                tmg::timeManager.getStartTime()) >= timePerMove * multiplier)
+                tmg::timeManager.getStartTime()) >= timePerMove * scoreFactor * stableFactor * nodesFactor)
                 return;
         }
     }
@@ -370,7 +391,7 @@ void aspirationWindow(int index, GameInfo *gi)
 
 void checkTime()
 {
-    const auto timeElapsedMs = tmg::timeManager.timeElapsed<MILLISECONDS>(
+    const uint64_t timeElapsedMs = tmg::timeManager.timeElapsed<MILLISECONDS>(
         tmg::timeManager.getStartTime());
 
     if (timeElapsedMs - previousInfoTime >= 1000)
@@ -385,8 +406,7 @@ void checkTime()
             << " tbhits " << ttHits << std::endl;
     }
 
-    abortSearch = tmg::timeManager.isTimeSet() && tmg::timeManager.time_now().time_since_epoch()
-            >= tmg::timeManager.getStopTime().time_since_epoch();
+    abortSearch = tmg::timeManager.isTimeSet() && timeElapsedMs >= maxTime;
 }
 
 template<Side stm>
@@ -643,6 +663,8 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
     while (true) 
     {
+        U64 startingNodeCount = gi->nodes;
+
         // fetch next psuedo-legal move
         currentMove = getNextMove(stm, ply, gi, &moveList);
 
@@ -890,6 +912,8 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
         if (rootNode)
         {
+            moveNodeCount[from_sq(currentMove.move)][to_sq(currentMove.move)] += gi->nodes - startingNodeCount;
+
             if (movesPlayed == 1 || score > alpha)
             {
                 auto pline = &si->line[0];
@@ -983,9 +1007,6 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 }
 
 
-
-
-
 constexpr int seeVal[8] = {	VALUE_DUMMY, VALUE_PAWN, VALUE_KNIGHT, VALUE_BISHOP,
                             VALUE_ROOK, VALUE_QUEEN, VALUE_KING, VALUE_DUMMY };
                     
@@ -1006,8 +1027,10 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     if (    tmg::timeManager.isTimeSet()
         &&  mainThread && gi->nodes % CHECK_NODES == 0)
     {
-        abortSearch = tmg::timeManager.time_now().time_since_epoch()
-            >= tmg::timeManager.getStopTime().time_since_epoch();
+        const uint64_t timeElapsedMs = tmg::timeManager.timeElapsed<MILLISECONDS>(
+            tmg::timeManager.getStartTime());
+
+        abortSearch = timeElapsedMs >= maxTime;
     }
     
     if (abortSearch)
