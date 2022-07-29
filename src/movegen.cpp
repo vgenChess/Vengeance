@@ -529,36 +529,24 @@ bool isValidMove(Side stm, const int ply, const U32 move, GameInfo *th) {
 }
 
 
-void genSpecialMoves(Side stm, int ply, std::vector<Move> &moves, GameInfo *th) {
-     
-    genPromotionsAttacks(stm, moves, th);
-    genPromotionsNormal(stm, moves, th);
-    genCastlingMoves(stm, ply, moves, th);  
-}
-
 void genAttacks(Side stm, int ply, std::vector<Move> &moves, GameInfo *th) {
-    
+
+    genPromotionsAttacks(stm, moves, th);
     genEnpassantMoves(stm, ply, moves, th);
     generateCaptures(stm, moves, th);
 }
 
 void genMoves(Side stm, int ply, std::vector<Move> &moves, GameInfo *th) {
-   
-   if (stm) {
-    
-        genSpecialMoves(BLACK, ply, moves, th);
-        genAttacks(BLACK, ply, moves, th);
-        generatePushes(BLACK, moves, th);
-   } else {
 
-        genSpecialMoves(WHITE, ply, moves, th);
-        genAttacks(WHITE, ply, moves, th);
-        generatePushes(WHITE, moves, th);
-   }
+    genAttacks(stm, ply, moves, th);
+    genPromotionsNormal(stm, moves, th);
+    genCastlingMoves(stm, ply, moves, th);
+    generatePushes(stm, moves, th);
 }
 
+
 inline int getBestMoveIndex(std::vector<Move> &moves) {
-  
+
     int m = 0;
     int n = moves.size();
     for (int i = m + 1; i < n; i++) {
@@ -636,12 +624,13 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
             scoreCaptureMoves(th, moveList);
             
-            moveList->stage = PLAY_CAPTURES;
+            moveList->stage = PLAY_GOOD_CAPTURES;
         }
         
+
         // fallthrough
         
-        case PLAY_CAPTURES : {
+        case PLAY_GOOD_CAPTURES : {
 
             if (moveList->moves.size() > 0) {
 
@@ -668,24 +657,30 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
                 return m;
             }   
 
+            if (moveList->skipQuiets) {
+
+                moveList->stage = PLAY_BAD_CAPTURES;
+
+                return getNextMove(stm, ply, th, moveList);
+            }
+
             moveList->stage = PLAY_KILLER_MOVE_1;
         }
         
+
         //fallthrough
 
         case PLAY_KILLER_MOVE_1 : {
 
             moveList->stage = PLAY_KILLER_MOVE_2;
 
-            U32 killerMove1 = th->moveStack[ply].killerMoves[0];
-
             if (    !moveList->skipQuiets
-                &&  killerMove1 != moveList->ttMove
-                &&  isValidMove(stm, ply, killerMove1, th)) {
+                &&  moveList->killerMove1 != moveList->ttMove
+                &&  isValidMove(stm, ply, moveList->killerMove1, th)) {
                     
                 Move m;
 
-                m.move = killerMove1;
+                m.move = moveList->killerMove1;
                
                 return m;           
             }
@@ -697,15 +692,13 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
             moveList->stage = PLAY_COUNTER_MOVE;
 
-            U32 killerMove2 = th->moveStack[ply].killerMoves[1];
-
             if (    !moveList->skipQuiets    
-                &&  killerMove2 != moveList->ttMove
-                &&  isValidMove(stm, ply, killerMove2, th)) {
+                &&  moveList->killerMove2 != moveList->ttMove
+                &&  isValidMove(stm, ply, moveList->killerMove2, th)) {
                     
                 Move m;
 
-                m.move = killerMove2;
+                m.move = moveList->killerMove2;
                
                 return m;           
             }
@@ -716,9 +709,12 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
         case PLAY_COUNTER_MOVE : {
 
-            moveList->stage = GEN_PROMOTIONS;
+            moveList->stage = PLAY_BAD_CAPTURES;
 
             if (    !moveList->skipQuiets
+                &&  moveList->counterMove != moveList->ttMove
+                &&  moveList->counterMove != moveList->killerMove1
+                &&  moveList->counterMove != moveList->killerMove2
                 &&  isValidMove(stm, ply, moveList->counterMove, th)) {
 
                 Move m;
@@ -727,47 +723,6 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
                 return m;
             }           
-        }
-
-
-         // fallthrough
-        // ignore skipQuiets for promotions 
-        case GEN_PROMOTIONS : {
-
-            moveList->moves.clear();
-
-            genPromotionsAttacks(stm, moveList->moves, th);
-            genPromotionsNormal(stm, moveList->moves, th);
-
-            for (auto &m : moveList->moves) {
-
-                m.score = 1000; // give equal score for promotions
-            }
-            
-            moveList->stage = PLAY_PROMOTIONS;              
-        }
-        
-        //fallthrough 
-
-        case PLAY_PROMOTIONS : {
-
-            if (moveList->moves.size() > 0) {
-
-                int index = getBestMoveIndex(moveList->moves);
-                
-                Move m = moveList->moves[index];
-                
-                moveList->moves.erase(moveList->moves.begin() + index);
-                    
-                if (m.move == moveList->ttMove) {
-    
-                    return getNextMove(stm, ply, th, moveList);
-                }
-
-                return m;
-            }
-
-            moveList->stage = PLAY_BAD_CAPTURES;
         }
 
 
@@ -798,6 +753,7 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
 
                 moveList->moves.clear();
 
+                genPromotionsNormal(stm, moveList->moves, th);
                 genCastlingMoves(stm, ply, moveList->moves, th);
                 generatePushes(stm, moveList->moves, th);
                 
@@ -821,9 +777,9 @@ Move getNextMove(Side stm, int ply, GameInfo *th, MOVE_LIST *moveList) {
                 moveList->moves.erase(moveList->moves.begin() + index);
 
                 if (    m.move == moveList->ttMove 
-                    ||  m.move == moveList->counterMove
-                    ||  m.move == th->moveStack[ply].killerMoves[0] 
-                    ||  m.move == th->moveStack[ply].killerMoves[1]) {
+                    ||  m.move == moveList->killerMove1
+                    ||  m.move == moveList->killerMove2
+                    ||  m.move == moveList->counterMove) {
                   
                     return getNextMove(stm, ply, th, moveList);
                 }

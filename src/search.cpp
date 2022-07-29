@@ -627,24 +627,19 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
     U32 bestMove = NO_MOVE, previousMove = rootNode ? NO_MOVE : gi->moveStack[ply - 1].move;
 
-    const U32 KILLER_MOVE_1 = gi->moveStack[ply].killerMoves[0];
-    const U32 KILLER_MOVE_2 = gi->moveStack[ply].killerMoves[1];
-
     Move currentMove;
 
     std::vector<U32> quietsPlayed, capturesPlayed;
     
     MOVE_LIST moveList;
 
-
     moveList.skipQuiets = false;
     moveList.stage = PLAY_HASH_MOVE;
     moveList.ttMove = ttMove;
+    moveList.killerMove1 = gi->moveStack[ply].killerMoves[0];
+    moveList.killerMove2 = gi->moveStack[ply].killerMoves[1];
     moveList.counterMove = previousMove == NO_MOVE ?
         NO_MOVE : gi->counterMove[stm][from_sq(previousMove)][to_sq(previousMove)];
-    moveList.moves.clear();
-    moveList.badCaptures.clear();
-
 
     while (true) 
     {
@@ -652,18 +647,14 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
         currentMove = getNextMove(stm, ply, gi, &moveList);
 
         if (moveList.stage == STAGE_DONE)
-        {
             break;
-        }
-        
+
         // check if move generator returns a valid psuedo-legal move
         assert(currentMove.move != NO_MOVE);
 
         // skip the move if its in a singular search and the current move is singular
         if (currentMove.move == si->skipMove)
-        {
             continue;
-        }
 
         // Prune moves based on conditions met
         if (    movesPlayed > 1
@@ -801,6 +792,8 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
             continue;
         }
 
+
+
         // psuedo legal move is valid, increment number of moves played
         movesPlayed++;
 
@@ -817,18 +810,15 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
             }
         }
 
-        isQuietMove = currentMoveType == MOVE_NORMAL || currentMoveType == MOVE_CASTLE 
-            || currentMoveType == MOVE_DOUBLE_PUSH;
+        isQuietMove = currentMoveType == MOVE_NORMAL
+            || currentMoveType == MOVE_CASTLE
+            || currentMoveType == MOVE_DOUBLE_PUSH
+            || (currentMoveType == MOVE_PROMOTION && cPieceType(currentMove.move) == DUMMY);
 
         if (isQuietMove) 
-        {
             quietsPlayed.push_back(currentMove.move);
-        } 
-        else if (currentMoveType != MOVE_PROMOTION) 
-        { 
-            // all promotions are scored equal and ordered differently from capture moves
+        else
             capturesPlayed.push_back(currentMove.move);
-        }
 
         
         gi->moveStack[ply].move = currentMove.move;
@@ -857,26 +847,19 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
                 reduce = LMR[std::min(depth / PLY, 63)][std::min(movesPlayed, 63)];
 
                 if (!pvNode )
-                {
                     reduce++;
-                }
-                
+
                 if (!improving && !isInCheck) 
-                {
                     reduce++; // isInCheck sets improving to false
-                }
-                
+
                 if (isInCheck && pieceType(currentMove.move) == KING) 
-                {
                     reduce++;
-                }
-                
-                if (moveList.stage < GEN_QUIETS)
-                {
+
+                if (moveList.stage >= PLAY_KILLER_MOVE_1 && moveList.stage <= PLAY_COUNTER_MOVE)
                     reduce--; // reduce less for killer and counter moves
-                }
-                
+
                 reduce -= std::max(-2, std::min(2, currentMove.score / 5000));	// TODO rewrite logic
+
 
                 reduce = std::min(depth - 1, std::max(reduce, 1));
 
@@ -975,10 +958,10 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
     {
         if (isQuietMove) 
         {
-            if (bestMove != KILLER_MOVE_1 && bestMove != KILLER_MOVE_2) 
+            if (bestMove != moveList.killerMove1 && bestMove != moveList.killerMove2)
             {   // update killers
         
-                gi->moveStack[ply].killerMoves[1] = KILLER_MOVE_1;
+                gi->moveStack[ply].killerMoves[1] = moveList.killerMove1;
                 gi->moveStack[ply].killerMoves[0] = bestMove;
             }
 
@@ -1102,13 +1085,12 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     }
     
 
-    bestScore = sEval;
-    alpha = std::max(alpha, sEval);
+    if (sEval >= beta) return sEval;
 
-    if (alpha >= beta)
-    {
-        return sEval;
-    }
+    if (sEval > alpha) alpha = sEval;
+
+    bestScore = sEval;
+
     
     gi->moveStack[ply].epFlag = gi->moveStack[ply - 1].epFlag;
     gi->moveStack[ply].epSquare = gi->moveStack[ply - 1].epSquare;
@@ -1121,13 +1103,11 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     moveList.stage = GEN_CAPTURES;
     moveList.ttMove = NO_MOVE;
     moveList.counterMove = NO_MOVE;
-    moveList.moves.clear();
-    moveList.badCaptures.clear();
 
     const auto oppPiecesCount = POPCOUNT(opp ? gi->blackPieceBB[PIECES] : gi->whitePieceBB[PIECES]);
     const auto qFutilityBase = sEval + VAL_Q_DELTA;
 
-    U8 hashf = hashfALPHA, capPiece = DUMMY;
+    U8 hashf = hashfALPHA;
     int movesPlayed = 0; 
     int score = -MATE;
 
@@ -1140,25 +1120,18 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
     {
         currentMove = getNextMove(stm, ply, gi, &moveList);
 
-        if (moveList.stage >= PLAY_BAD_CAPTURES)
-        {
+        if (moveList.stage > PLAY_GOOD_CAPTURES)
             break;
-        }
-        
+
         assert(currentMove.move != NO_MOVE);
 
-        // Pruning
-        if (    movesPlayed > 1
-            &&  capPiece != DUMMY
-            &&  move_type(currentMove.move) != MOVE_PROMOTION) 
-        {
-            // Delta pruning
-            if (oppPiecesCount > 3 && qFutilityBase + seeVal[capPiece] <= alpha) 
-            {
-                continue;
-            }
-        }
+        const auto capPiece = cPieceType(currentMove.move);
 
+        assert(capPiece != DUMMY);
+
+        // Delta pruning
+        if (movesPlayed > 1 && oppPiecesCount > 3 && qFutilityBase + seeVal[capPiece] <= alpha)
+            continue;
 
         make_move(ply, currentMove.move, gi);
 
@@ -1170,8 +1143,6 @@ int quiescenseSearch(int alpha, int beta, GameInfo *gi, SearchInfo* si ) {
         }
 
         movesPlayed++;
-
-        capPiece = cPieceType(currentMove.move);
 
 
         lSi.line[0] = NO_MOVE;
