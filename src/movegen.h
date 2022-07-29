@@ -22,7 +22,6 @@ void genPushes(Side stm, std::vector<Move> &moves, GameInfo *th);
 void genAttacks(Side stm, int ply, std::vector<Move> &moves, GameInfo *th);
 void generateCaptures(Side stm, std::vector<Move> &moves, GameInfo *th);
 void generatePushes(Side stm, std::vector<Move> &moves, GameInfo *th);
-void genSpecialMoves(Side stm, int ply, std::vector<Move> &moves, GameInfo *th);
 
 void genCastlingMoves(Side stm, int ply, std::vector<Move> &moves, GameInfo *th);
 void genEnpassantMoves(Side stm, int ply, std::vector<Move> &moves, GameInfo *th);
