@@ -252,9 +252,9 @@ void iterativeDeepening(int index, GameInfo *gi)
             if (std::abs(currentScore) > WIN_SCORE 
                 || (currentScore - prevScore > -5)) scoreFactor = 0.5;
 
-            if (prevScore > currentScore + 20) scoreFactor += 0.075;
-            if (prevScore > currentScore + 30) scoreFactor += 0.075;
-            if (prevScore > currentScore + 40) scoreFactor += 0.075;
+            if (prevScore > currentScore + 20) scoreFactor += 0.1;
+            if (prevScore > currentScore + 30) scoreFactor += 0.1;
+            if (prevScore > currentScore + 40) scoreFactor += 0.1;
 
 
             // Stable Move
