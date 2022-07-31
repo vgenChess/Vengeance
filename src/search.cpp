@@ -258,9 +258,9 @@ void iterativeDeepening(int index, GameInfo *gi)
 
                 if (scoreDiff <= 10) scoreFactor = 0.5;
 
-                if (scoreDiff > 20) scoreFactor += 0.1;
-                if (scoreDiff > 30) scoreFactor += 0.1;
-                if (scoreDiff > 40) scoreFactor += 0.1;
+                if (scoreDiff > 20) scoreFactor += 0.125;
+                if (scoreDiff > 30) scoreFactor += 0.125;
+                if (scoreDiff > 40) scoreFactor += 0.125;
             }
 
 
@@ -288,11 +288,8 @@ void iterativeDeepening(int index, GameInfo *gi)
 
             const auto x = bestMoveTotalNodes / totalNodes;
 
-                 if (x > 0.9)        nodesFactor = 0.5;
-            else if (x > 0.8)        nodesFactor = 0.75;
-            else if (x < 0.2)        nodesFactor = 1.3;
-            else if (x < 0.1)        nodesFactor = 1.5;
-
+            if (x > 0.5)
+                nodesFactor = pow(1 - x / 8, 3);
 
             if (tmg::timeManager.timeElapsed<MILLISECONDS>(
                 tmg::timeManager.getStartTime()) >= timePerMove * scoreFactor * stableFactor * nodesFactor)
