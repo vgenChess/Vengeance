@@ -284,9 +284,8 @@ void iterativeDeepening(int index, GameInfo *gi)
             //======================================================================================
 
             const auto bestMoveTotalNodes = moveNodeCount[from_sq(currentMove)][to_sq(currentMove)];
-            const auto totalNodes = getStats<NODES>();
 
-            const auto x = bestMoveTotalNodes / totalNodes;
+            const auto x = bestMoveTotalNodes / gi->nodes;
 
             if (x > 0.75)
                 nodesFactor = pow(1 - x / 8, 3);
