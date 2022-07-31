@@ -909,7 +909,8 @@ int alphabeta(int alpha, int beta, int mate, int depth, GameInfo *gi, SearchInfo
 
         if (rootNode)
         {
-            moveNodeCount[from_sq(currentMove.move)][to_sq(currentMove.move)] += gi->nodes - startingNodeCount;
+            if (mainThread)
+                moveNodeCount[from_sq(currentMove.move)][to_sq(currentMove.move)] += gi->nodes - startingNodeCount;
 
             if (movesPlayed == 1 || score > alpha)
             {
