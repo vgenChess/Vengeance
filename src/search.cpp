@@ -258,9 +258,9 @@ void iterativeDeepening(int index, GameInfo *gi)
 
                 if (scoreDiff <= 10) scoreFactor = 0.5;
 
-                if (scoreDiff > 20) scoreFactor += 0.15;
-                if (scoreDiff > 30) scoreFactor += 0.15;
-                if (scoreDiff > 40) scoreFactor += 0.15;
+                if (scoreDiff > 20) scoreFactor += 0.1;
+                if (scoreDiff > 30) scoreFactor += 0.1;
+                if (scoreDiff > 40) scoreFactor += 0.1;
             }
 
 
