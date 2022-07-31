@@ -277,7 +277,7 @@ void iterativeDeepening(int index, GameInfo *gi)
                 std::min(10, gi->stableMoveCount + 1) : 0;
 
             if (gi->stableMoveCount > 3)
-                stableFactor = pow(1 - gi->stableMoveCount / 75, 3);
+                stableFactor = pow(1 - gi->stableMoveCount / 100, 3);
 
 
             // Ratio of the tree size under best move to the whole tree
@@ -288,8 +288,8 @@ void iterativeDeepening(int index, GameInfo *gi)
 
             const auto x = bestMoveTotalNodes / totalNodes;
 
-            if (x > 0.5)
-                nodesFactor = pow(1 - x / 10, 3);
+            if (x > 0.75)
+                nodesFactor = pow(1 - x / 8, 3);
 
             if (tmg::timeManager.timeElapsed<MILLISECONDS>(
                 tmg::timeManager.getStartTime()) >= timePerMove * scoreFactor * stableFactor * nodesFactor)
