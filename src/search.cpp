@@ -288,8 +288,8 @@ void iterativeDeepening(int index, GameInfo *gi)
 
             const auto x = bestMoveTotalNodes / totalNodes;
 
-            if (x > 0.75)
-                nodesFactor = pow(1 - x / 10, 3);
+            if (x > 0.5)
+                nodesFactor = pow(1 - x / 8, 3);
 
             if (tmg::timeManager.timeElapsed<MILLISECONDS>(
                 tmg::timeManager.getStartTime()) >= timePerMove * scoreFactor * stableFactor * nodesFactor)
