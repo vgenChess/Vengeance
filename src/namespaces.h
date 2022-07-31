@@ -126,12 +126,7 @@ namespace game {
     inline bool abortSearch;
     inline bool searching;
 
-    inline uint64_t timePerMove;
-    inline uint64_t maxTime;
-
     inline uint64_t previousInfoTime;
-
-    inline uint64_t moveNodeCount[MAX_SQUARES][MAX_SQUARES];
 
     inline GameInfo *initInfo = new GameInfo();
 
