@@ -256,7 +256,7 @@ void iterativeDeepening(int index, GameInfo *gi)
 
                 const auto scoreDiff = prevScore - currentScore;
 
-                if (scoreDiff <= 10) scoreFactor = 0.5;
+                if (scoreDiff <= 5) scoreFactor = 0.5;
 
                 if (scoreDiff > 20) scoreFactor += 0.125;
                 if (scoreDiff > 30) scoreFactor += 0.125;
@@ -276,8 +276,8 @@ void iterativeDeepening(int index, GameInfo *gi)
             gi->stableMoveCount = previousMove == currentMove ?
                 std::min(10, gi->stableMoveCount + 1) : 0;
 
-            if (gi->stableMoveCount > 4)
-                stableFactor = pow(1 - gi->stableMoveCount / 80, 3);
+            if (gi->stableMoveCount > 3)
+                stableFactor = pow(1 - gi->stableMoveCount / 75, 3);
 
 
             // Ratio of the tree size under best move to the whole tree
@@ -289,7 +289,7 @@ void iterativeDeepening(int index, GameInfo *gi)
             const auto x = bestMoveTotalNodes / totalNodes;
 
             if (x > 0.5)
-                nodesFactor = pow(1 - x / 8, 3);
+                nodesFactor = pow(1 - x / 10, 3);
 
             if (tmg::timeManager.timeElapsed<MILLISECONDS>(
                 tmg::timeManager.getStartTime()) >= timePerMove * scoreFactor * stableFactor * nodesFactor)
