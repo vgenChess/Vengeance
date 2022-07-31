@@ -256,7 +256,7 @@ void iterativeDeepening(int index, GameInfo *gi)
 
                 const auto scoreDiff = prevScore - currentScore;
 
-                if (scoreDiff <= 5) scoreFactor = 0.5;
+                if (scoreDiff <= 10) scoreFactor = 0.5;
 
                 if (scoreDiff > 20) scoreFactor += 0.125;
                 if (scoreDiff > 30) scoreFactor += 0.125;
