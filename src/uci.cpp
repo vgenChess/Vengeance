@@ -199,14 +199,9 @@ void UciLoop() {
 
                 movesToGo = movesToGo > -1 ? movesToGo : 40;
 
-                const auto total = (int)std::max(1.0f, (float)(time + movesToGo * inc - MOVE_OVERHEAD));
-                const auto factor = 1.6;
-                const auto target = total / movesToGo;
-
-                timePerMove = factor * target;
-
-                maxTime = std::min(timePerMove * 5, (uint64_t)(time - 500));
-
+                timePerMove =  1.80 * (time - MOVE_OVERHEAD) / (movesToGo +  5) + inc;
+                maxTime     = 10.00 * (time - MOVE_OVERHEAD) / (movesToGo + 10) + inc;
+      
                 if (timePerMove >= time)
                     timePerMove = time - 500;
 

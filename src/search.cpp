@@ -249,8 +249,9 @@ void iterativeDeepening(int index, GameInfo *gi)
             // Score difference
             //===================================================================
 
-            if (std::abs(currentScore) > WIN_SCORE 
-                || (currentScore - prevScore > -5)) scoreFactor = 0.5;
+            if (std::abs(currentScore) > WIN_SCORE) scoreFactor = 0.5;
+
+            if (currentScore - prevScore > -5) scoreFactor = 0.5;
 
             if (prevScore > currentScore + 20) scoreFactor += 0.1;
             if (prevScore > currentScore + 30) scoreFactor += 0.1;
